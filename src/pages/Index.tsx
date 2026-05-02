@@ -18,9 +18,6 @@ const Index = () => {
             <Link to="/client">
               <Button variant="ghost" size="sm">Client Portal</Button>
             </Link>
-            <Link to="/admin">
-              <Button variant="ghost" size="sm">Admin Portal</Button>
-            </Link>
           </div>
         </div>
       </header>
@@ -41,11 +38,6 @@ const Index = () => {
           <Link to="/client">
             <Button size="lg" className="text-lg px-8">
               I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
-          <Link to="/admin">
-            <Button size="lg" variant="outline" className="text-lg px-8">
-              Admin Dashboard
             </Button>
           </Link>
         </div>
