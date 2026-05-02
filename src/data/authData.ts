@@ -9,16 +9,14 @@ export interface AuthUser {
   bumId?: string;
 }
 
-export interface DemoAccount extends AuthUser {
-  password: string;
+export interface AuthorizationProfile extends AuthUser {
   description: string;
 }
 
-export const demoAccounts: DemoAccount[] = [
+export const authorizationProfiles: AuthorizationProfile[] = [
   {
     id: "admin-1",
     email: "admin@trustedbums.com",
-    password: "password",
     name: "Marketplace Admin",
     role: "ADMIN",
     description: "Can manage clients, bums, opportunities, payments, and payouts.",
@@ -26,7 +24,6 @@ export const demoAccounts: DemoAccount[] = [
   {
     id: "client-c1-1",
     email: "sarah@acmecorp.com",
-    password: "password",
     name: "Sarah Chen",
     role: "CLIENT",
     clientId: "c1",
@@ -35,7 +32,6 @@ export const demoAccounts: DemoAccount[] = [
   {
     id: "client-c1-2",
     email: "revops@acmecorp.com",
-    password: "password",
     name: "Acme RevOps",
     role: "CLIENT",
     clientId: "c1",
@@ -44,7 +40,6 @@ export const demoAccounts: DemoAccount[] = [
   {
     id: "client-c2-1",
     email: "marcus@bluewave.io",
-    password: "password",
     name: "Marcus Johnson",
     role: "CLIENT",
     clientId: "c2",
@@ -53,7 +48,6 @@ export const demoAccounts: DemoAccount[] = [
   {
     id: "bum-b1",
     email: "jake@email.com",
-    password: "password",
     name: "Jake Thompson",
     role: "BUM",
     bumId: "b1",
@@ -62,7 +56,6 @@ export const demoAccounts: DemoAccount[] = [
   {
     id: "bum-b2",
     email: "amy@email.com",
-    password: "password",
     name: "Amy Liu",
     role: "BUM",
     bumId: "b2",
@@ -70,7 +63,7 @@ export const demoAccounts: DemoAccount[] = [
   },
 ];
 
-export function toAuthUser(account: DemoAccount): AuthUser {
+export function toAuthUser(account: AuthorizationProfile): AuthUser {
   return {
     id: account.id,
     email: account.email,
@@ -79,6 +72,16 @@ export function toAuthUser(account: DemoAccount): AuthUser {
     clientId: account.clientId,
     bumId: account.bumId,
   };
+}
+
+export function getAuthorizationProfileByEmail(email?: string | null) {
+  if (!email) {
+    return undefined;
+  }
+
+  return authorizationProfiles.find(
+    (profile) => profile.email.toLowerCase() === email.trim().toLowerCase(),
+  );
 }
 
 export function getDefaultPathForRole(role: UserRole) {

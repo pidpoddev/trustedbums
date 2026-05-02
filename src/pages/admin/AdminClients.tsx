@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { mockClients } from "@/data/mockData";
-import { demoAccounts } from "@/data/authData";
+import { authorizationProfiles } from "@/data/authData";
 import { Plus } from "lucide-react";
 
 export default function AdminClients() {
@@ -15,7 +15,7 @@ export default function AdminClients() {
 
       <div className="grid gap-4">
         {mockClients.map(client => {
-          const users = demoAccounts.filter((account) => account.role === "CLIENT" && account.clientId === client.id);
+          const users = authorizationProfiles.filter((account) => account.role === "CLIENT" && account.clientId === client.id);
 
           return (
             <Card key={client.id} className="hover:shadow-md transition-shadow cursor-pointer">

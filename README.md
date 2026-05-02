@@ -59,6 +59,37 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Clerk
+
+## Clerk setup
+
+Create `.env.local` for local development:
+
+```sh
+VITE_CLERK_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+```
+
+The app is wrapped with Clerk in `src/main.tsx`:
+
+```tsx
+<ClerkProvider afterSignOutUrl="/">
+  <App />
+</ClerkProvider>
+```
+
+Auth controls use Clerk's React components:
+
+```tsx
+<Show when="signed-out">
+  <SignInButton />
+  <SignUpButton />
+</Show>
+<Show when="signed-in">
+  <UserButton />
+</Show>
+```
+
+For the current setup steps, see the [Clerk React Quickstart](https://clerk.com/docs/react/getting-started/quickstart).
 
 ## How can I deploy this project?
 

@@ -42,6 +42,8 @@ jobs:
         run: npm run test
 
       - name: Build
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
         run: npm run build -- --base=/trustedbums/
 
       - name: Add SPA fallback

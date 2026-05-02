@@ -1,13 +1,11 @@
-import { useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Flame, LogIn } from "lucide-react";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
+import { ArrowRight, Flame, LogIn, UserPlus } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { demoAccounts, getDefaultPathForRole, type AuthUser } from "@/data/authData";
+import { authorizationProfiles, getDefaultPathForRole, type AuthUser } from "@/data/authData";
 
 interface LocationState {
   from?: {
@@ -22,28 +20,12 @@ function getDestination(user: AuthUser, fallbackPath?: string) {
 }
 
 export default function Login() {
-  const [email, setEmail] = useState("admin@trustedbums.com");
-  const [password, setPassword] = useState("password");
-  const [error, setError] = useState("");
-  const { login, loginAsDemo } = useAuth();
+  const { user, isLoaded, authorizationError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
 
-  const submitLogin = () => {
-    const user = login(email, password);
-
-    if (!user) {
-      setError("Use one of the demo emails with password: password.");
-      return;
-    }
-
-    navigate(getDestination(user, state?.from?.pathname), { replace: true });
-  };
-
-  const chooseDemoAccount = (userId: string) => {
-    const user = loginAsDemo(userId);
-
+  const continueToPortal = () => {
     if (user) {
       navigate(getDestination(user, state?.from?.pathname), { replace: true });
     }
@@ -59,6 +41,9 @@ export default function Login() {
             </div>
             <span className="font-display font-bold text-xl">Trusted Bums</span>
           </Link>
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
         </div>
       </header>
 
@@ -68,65 +53,75 @@ export default function Login() {
             <CardHeader>
               <CardTitle className="font-display flex items-center gap-2">
                 <LogIn className="h-5 w-5 text-primary" />
-                Sign in
+                Account access
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label>Email</Label>
-                <Input value={email} onChange={(event) => setEmail(event.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Password</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      submitLogin();
-                    }
-                  }}
-                />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button className="w-full" onClick={submitLogin}>
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <Show when="signed-out">
+                <SignInButton mode="modal">
+                  <Button className="w-full">
+                    Sign in <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button className="w-full" variant="outline">
+                    Create account <UserPlus className="ml-2 h-4 w-4" />
+                  </Button>
+                </SignUpButton>
+              </Show>
+
+              <Show when="signed-in">
+                {isLoaded && user ? (
+                  <>
+                    <div className="rounded-md border bg-muted/40 p-4">
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
+                      <StatusBadge
+                        label={user.role}
+                        variant={user.role === "ADMIN" ? "warning" : user.role === "CLIENT" ? "info" : "success"}
+                        className="mt-3"
+                      />
+                    </div>
+                    <Button className="w-full" onClick={continueToPortal}>
+                      Continue to portal <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm">
+                    <p className="font-medium text-destructive">Authorization required</p>
+                    <p className="text-muted-foreground mt-1">
+                      {authorizationError ?? "This Clerk user does not have a Trusted Bums role yet."}
+                    </p>
+                  </div>
+                )}
+              </Show>
             </CardContent>
           </Card>
 
           <div>
             <div className="mb-4">
-              <h1 className="font-display text-3xl font-bold">Demo Accounts</h1>
+              <h1 className="font-display text-3xl font-bold">Authorization Profiles</h1>
               <p className="text-muted-foreground mt-1">
-                Clients can have multiple users under the same client workspace. Each Trusted Bum account maps to one bum profile.
+                Client users share a client workspace. Each Trusted Bum account maps to one bum profile.
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {demoAccounts.map((account) => (
-                <Card key={account.id} className="hover:shadow-md transition-shadow">
+              {authorizationProfiles.map((profile) => (
+                <Card key={profile.id}>
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{account.name}</p>
+                          <p className="font-medium">{profile.name}</p>
                           <StatusBadge
-                            label={account.role}
-                            variant={account.role === "ADMIN" ? "warning" : account.role === "CLIENT" ? "info" : "success"}
+                            label={profile.role}
+                            variant={profile.role === "ADMIN" ? "warning" : profile.role === "CLIENT" ? "info" : "success"}
                           />
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">{account.email}</p>
-                        <p className="text-sm mt-3">{account.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{profile.email}</p>
+                        <p className="text-sm mt-3">{profile.description}</p>
                       </div>
                     </div>
-                    <Button
-                      className="mt-4 w-full"
-                      variant="outline"
-                      onClick={() => chooseDemoAccount(account.id)}
-                    >
-                      Use this account
-                    </Button>
                   </CardContent>
                 </Card>
               ))}

@@ -7,10 +7,22 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, isLoaded, isSignedIn } = useAuth();
   const location = useLocation();
 
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
+        Loading session...
+      </div>
+    );
+  }
+
   if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (!isSignedIn) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
