@@ -103,7 +103,7 @@ export default function BumClients() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <Badge variant="success">{openCount} open</Badge>
+                    <Badge className="bg-success text-success-foreground hover:bg-success/90">{openCount} open</Badge>
                     <Link to="/bum/opportunities">
                       <Button size="sm" variant="outline">
                         <Briefcase className="mr-2 h-4 w-4" /> View opps
