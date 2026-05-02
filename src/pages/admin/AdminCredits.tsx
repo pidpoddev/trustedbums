@@ -1,9 +1,12 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { mockIntroClaims, claimStatusConfig } from "@/data/mockData";
+import { claimStatusConfig } from "@/data/mockData";
+import { useIntroClaims } from "@/hooks/use-intro-claims";
 
 export default function AdminCredits() {
+  const { introClaims } = useIntroClaims();
+
   return (
     <div>
       <PageHeader title="Credits & Disputes" description="Manage door-opener/closer assignments and team splits" />
@@ -24,8 +27,8 @@ export default function AdminCredits() {
                 </tr>
               </thead>
               <tbody>
-                {mockIntroClaims.map(claim => {
-                  const config = claimStatusConfig[claim.status as keyof typeof claimStatusConfig];
+                {introClaims.map(claim => {
+                  const config = claimStatusConfig[claim.status];
                   return (
                     <tr key={claim.id} className="border-b last:border-0 hover:bg-muted/50">
                       <td className="py-3 font-medium">{claim.contact} <span className="text-muted-foreground">@ {claim.company}</span></td>

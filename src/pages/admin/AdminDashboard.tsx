@@ -2,11 +2,13 @@ import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { mockStats, mockIntroClaims, mockPayouts, claimStatusConfig } from "@/data/mockData";
+import { mockStats, mockPayouts, claimStatusConfig } from "@/data/mockData";
+import { useIntroClaims } from "@/hooks/use-intro-claims";
 import { Users, Briefcase, Target, DollarSign, Handshake, TrendingUp, AlertCircle, CreditCard } from "lucide-react";
 
 export default function AdminDashboard() {
   const s = mockStats.admin;
+  const { introClaims } = useIntroClaims();
   return (
     <div>
       <PageHeader title="Admin Dashboard" description="Overview of Trusted Bums marketplace" />
@@ -30,8 +32,8 @@ export default function AdminDashboard() {
           <CardHeader><CardTitle className="font-display">Recent Intro Claims</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockIntroClaims.slice(0, 4).map(claim => {
-                const config = claimStatusConfig[claim.status as keyof typeof claimStatusConfig];
+              {introClaims.slice(0, 4).map(claim => {
+                const config = claimStatusConfig[claim.status];
                 return (
                   <div key={claim.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div>

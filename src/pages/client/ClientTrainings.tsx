@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { mockTrainings } from "@/data/mockData";
 import { Plus, FileText, Upload } from "lucide-react";

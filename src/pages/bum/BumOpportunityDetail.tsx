@@ -17,11 +17,14 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   mockOpportunities,
-  mockIntroClaims,
   opportunityStatusConfig,
   claimStatusConfig,
   type ClaimStatus,
+  type RelationshipStrength,
+  isClaimStatus,
+  isRelationshipStrength,
 } from "@/data/mockData";
+import { useIntroClaims } from "@/hooks/use-intro-claims";
 import { ArrowLeft, Plus, Activity } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,11 +39,12 @@ interface ActivityEntry {
 export default function BumOpportunityDetail() {
   const { id } = useParams();
   const opp = mockOpportunities.find((o) => o.id === id);
+  const { introClaims, addIntroClaim, updateIntroClaimStatus } = useIntroClaims();
 
   // Recommendation form
   const [contact, setContact] = useState("");
   const [company, setCompany] = useState("");
-  const [strength, setStrength] = useState("MODERATE");
+  const [strength, setStrength] = useState<RelationshipStrength>("MODERATE");
   const [note, setNote] = useState("");
 
   // Status update form
@@ -71,20 +75,28 @@ export default function BumOpportunityDetail() {
     );
   }
 
-  const claims = mockIntroClaims.filter((c) => c.opportunityTitle === opp.title);
+  const claims = introClaims.filter((claim) => claim.opportunityId === opp.id);
 
   const submitRecommendation = () => {
     if (!contact || !company) {
       toast.error("Contact name and company are required");
       return;
     }
+    const claim = addIntroClaim({
+      opportunityId: opp.id,
+      opportunityTitle: opp.title,
+      contact,
+      company,
+      strength,
+      note,
+    });
     setActivity((a) => [
       {
-        id: `a${Date.now()}`,
-        contact,
-        status: "PROPOSED",
-        note: `Recommended (${strength}): ${note || "No additional context"}`,
-        at: new Date().toISOString().slice(0, 10),
+        id: `a-${claim.id}`,
+        contact: claim.contact,
+        status: claim.status,
+        note: `Recommended (${claim.strength}): ${claim.note || "No additional context"}`,
+        at: claim.createdAt,
       },
       ...a,
     ]);
@@ -99,6 +111,7 @@ export default function BumOpportunityDetail() {
       toast.error("Contact and note are required");
       return;
     }
+    updateIntroClaimStatus(updateContact, updateStatus);
     setActivity((a) => [
       {
         id: `a${Date.now()}`,
@@ -121,7 +134,7 @@ export default function BumOpportunityDetail() {
       </Link>
 
       <PageHeader title={opp.title} description={`${opp.client} • ${opp.commission}`}>
-        <StatusBadge {...opportunityStatusConfig[opp.status as keyof typeof opportunityStatusConfig]} />
+        <StatusBadge {...opportunityStatusConfig[opp.status]} />
       </PageHeader>
 
       <Card>
@@ -159,7 +172,14 @@ export default function BumOpportunityDetail() {
             </div>
             <div className="grid gap-2">
               <Label>Relationship strength</Label>
-              <Select value={strength} onValueChange={setStrength}>
+              <Select
+                value={strength}
+                onValueChange={(value) => {
+                  if (isRelationshipStrength(value)) {
+                    setStrength(value);
+                  }
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="STRONG">Strong</SelectItem>
@@ -191,7 +211,14 @@ export default function BumOpportunityDetail() {
             </div>
             <div className="grid gap-2">
               <Label>New status</Label>
-              <Select value={updateStatus} onValueChange={(v) => setUpdateStatus(v as ClaimStatus)}>
+              <Select
+                value={updateStatus}
+                onValueChange={(value) => {
+                  if (isClaimStatus(value)) {
+                    setUpdateStatus(value);
+                  }
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(claimStatusConfig).map(([key, cfg]) => (
@@ -239,7 +266,7 @@ export default function BumOpportunityDetail() {
                       <span className="font-medium">{c.contact}</span>
                       <span className="text-muted-foreground"> @ {c.company} — {c.bumAlias}</span>
                     </div>
-                    <StatusBadge {...claimStatusConfig[c.status as ClaimStatus]} />
+                    <StatusBadge {...claimStatusConfig[c.status]} />
                   </div>
                 ))}
               </div>

@@ -77,7 +77,7 @@ export default function BumOpportunities() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-display font-bold text-lg">{o.title}</h3>
-                    <StatusBadge {...opportunityStatusConfig[o.status as keyof typeof opportunityStatusConfig]} />
+                    <StatusBadge {...opportunityStatusConfig[o.status]} />
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {o.client} • {o.commission}

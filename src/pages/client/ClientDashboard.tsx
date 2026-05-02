@@ -2,11 +2,13 @@ import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { mockStats, mockOpportunities, mockIntroClaims, opportunityStatusConfig, claimStatusConfig } from "@/data/mockData";
+import { mockStats, mockOpportunities, opportunityStatusConfig, claimStatusConfig } from "@/data/mockData";
+import { useIntroClaims } from "@/hooks/use-intro-claims";
 import { Target, Handshake, Calendar, AlertCircle } from "lucide-react";
 
 export default function ClientDashboard() {
   const s = mockStats.client;
+  const { introClaims } = useIntroClaims();
   return (
     <div>
       <PageHeader title="Welcome back, Sarah 👋" description="Here's what's happening with your opportunities" />
@@ -24,7 +26,7 @@ export default function ClientDashboard() {
           <CardContent>
             <div className="space-y-4">
               {mockOpportunities.filter(o => o.clientId === "c1").map(opp => {
-                const config = opportunityStatusConfig[opp.status as keyof typeof opportunityStatusConfig];
+                const config = opportunityStatusConfig[opp.status];
                 return (
                   <div key={opp.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div>
@@ -43,8 +45,8 @@ export default function ClientDashboard() {
           <CardHeader><CardTitle className="font-display">Recent Intros</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockIntroClaims.slice(0, 3).map(claim => {
-                const config = claimStatusConfig[claim.status as keyof typeof claimStatusConfig];
+              {introClaims.slice(0, 3).map(claim => {
+                const config = claimStatusConfig[claim.status];
                 return (
                   <div key={claim.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div>

@@ -14,7 +14,7 @@ export default function AdminOpportunities() {
 
       <div className="grid gap-4">
         {mockOpportunities.map(opp => {
-          const config = opportunityStatusConfig[opp.status as keyof typeof opportunityStatusConfig];
+          const config = opportunityStatusConfig[opp.status];
           return (
             <Card key={opp.id} className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="pt-6">
