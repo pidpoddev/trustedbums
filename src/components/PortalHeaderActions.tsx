@@ -1,4 +1,4 @@
-import { Show, UserButton } from "@clerk/react";
+import { SignedIn, UserButton } from "@clerk/clerk-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function PortalHeaderActions() {
@@ -10,9 +10,9 @@ export function PortalHeaderActions() {
         <p className="text-sm font-medium leading-none">{user?.name}</p>
         <p className="text-xs text-muted-foreground mt-1">{user?.email}</p>
       </div>
-      <Show when="signed-in">
+      <SignedIn>
         <UserButton />
-      </Show>
+      </SignedIn>
     </div>
   );
 }

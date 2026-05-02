@@ -41,14 +41,7 @@ jobs:
       - name: Test
         run: npm run test
 
-      - name: Validate Clerk publishable key
-        env:
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-        run: test -n "$VITE_CLERK_PUBLISHABLE_KEY"
-
       - name: Build
-        env:
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
         run: npm run build -- --base=/trustedbums/
 
       - name: Add SPA fallback

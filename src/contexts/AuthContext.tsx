@@ -1,4 +1,4 @@
-import { useAuth as useClerkAuth, useUser } from "@clerk/react";
+import { useAuth as useClerkAuth, useUser } from "@clerk/clerk-react";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import {
   getAuthorizationProfileByEmail,

@@ -3,6 +3,13 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
 import { Flame, ArrowRight, Users, Briefcase, Shield } from "lucide-react";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/clerk-react";
 
 const Index = () => {
   const { user } = useAuth();
@@ -20,11 +27,20 @@ const Index = () => {
             <span className="font-display font-bold text-xl">Trusted Bums</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to={portalPath}>
-              <Button variant="ghost" size="sm">
-                {user ? "Open Portal" : "Sign in"}
-              </Button>
-            </Link>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button variant="ghost" size="sm">Sign in</Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button size="sm">Sign up</Button>
+              </SignUpButton>
+            </SignedOut>
+            <SignedIn>
+              <Link to={portalPath}>
+                <Button variant="ghost" size="sm">Open Portal</Button>
+              </Link>
+              <UserButton />
+            </SignedIn>
           </div>
         </div>
       </header>
@@ -42,16 +58,25 @@ const Index = () => {
           Trusted Bums connects companies with verified connectors who make warm introductions. Transparent, auditable, and commission-based.
         </p>
         <div className="flex items-center justify-center gap-4 mt-8">
-          <Link to="/login">
-            <Button size="lg" className="text-lg px-8">
-              I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
-          <Link to="/login">
-            <Button size="lg" variant="outline" className="text-lg px-8">
-              I'm a Bum <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
+          <SignedOut>
+            <SignUpButton mode="modal">
+              <Button size="lg" className="text-lg px-8">
+                I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </SignUpButton>
+            <SignUpButton mode="modal">
+              <Button size="lg" variant="outline" className="text-lg px-8">
+                I'm a Bum <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </SignUpButton>
+          </SignedOut>
+          <SignedIn>
+            <Link to={portalPath}>
+              <Button size="lg" className="text-lg px-8">
+                Open Portal <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          </SignedIn>
         </div>
       </section>
 

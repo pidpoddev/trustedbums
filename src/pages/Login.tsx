@@ -1,4 +1,10 @@
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/clerk-react";
 import { ArrowRight, Flame, LogIn, UserPlus } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -41,9 +47,9 @@ export default function Login() {
             </div>
             <span className="font-display font-bold text-xl">Trusted Bums</span>
           </Link>
-          <Show when="signed-in">
+          <SignedIn>
             <UserButton />
-          </Show>
+          </SignedIn>
         </div>
       </header>
 
@@ -57,7 +63,7 @@ export default function Login() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Show when="signed-out">
+              <SignedOut>
                 <SignInButton mode="modal">
                   <Button className="w-full">
                     Sign in <ArrowRight className="ml-2 h-4 w-4" />
@@ -68,9 +74,9 @@ export default function Login() {
                     Create account <UserPlus className="ml-2 h-4 w-4" />
                   </Button>
                 </SignUpButton>
-              </Show>
+              </SignedOut>
 
-              <Show when="signed-in">
+              <SignedIn>
                 {isLoaded && user ? (
                   <>
                     <div className="rounded-md border bg-muted/40 p-4">
@@ -94,7 +100,7 @@ export default function Login() {
                     </p>
                   </div>
                 )}
-              </Show>
+              </SignedIn>
             </CardContent>
           </Card>
 
