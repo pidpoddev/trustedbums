@@ -20,12 +20,16 @@ import {
   Wallet,
   User,
   Flame,
+  Building2,
+  GraduationCap,
 } from "lucide-react";
 
 const navItems = [
   { title: "Dashboard", url: "/bum", icon: LayoutDashboard },
+  { title: "Clients", url: "/bum/clients", icon: Building2 },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
   { title: "My Claims", url: "/bum/claims", icon: Handshake },
+  { title: "Trainings", url: "/bum/trainings", icon: GraduationCap },
   { title: "Live Conversations", url: "/bum/live-conversations", icon: Calendar },
   { title: "Earnings", url: "/bum/earnings", icon: Wallet },
   { title: "Profile", url: "/bum/profile", icon: User },

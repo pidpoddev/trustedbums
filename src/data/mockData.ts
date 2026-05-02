@@ -1,9 +1,9 @@
 // Mock data for Trusted Bums UI
 
 export const mockClients = [
-  { id: "c1", name: "Sarah Chen", email: "sarah@acmecorp.com", company: "AcmeCorp", website: "acmecorp.com", status: "active", opportunities: 3, intros: 12, joinedAt: "2025-11-15" },
-  { id: "c2", name: "Marcus Johnson", email: "marcus@bluewave.io", company: "BlueWave Solutions", website: "bluewave.io", status: "active", opportunities: 1, intros: 4, joinedAt: "2025-12-01" },
-  { id: "c3", name: "Elena Rodriguez", email: "elena@novatech.co", company: "NovaTech", website: "novatech.co", status: "pending_agreement", opportunities: 0, intros: 0, joinedAt: "2026-01-20" },
+  { id: "c1", name: "Sarah Chen", email: "sarah@acmecorp.com", company: "AcmeCorp", website: "acmecorp.com", status: "active", opportunities: 3, intros: 12, joinedAt: "2025-11-15", industries: ["SaaS", "Enterprise"], regions: ["NA", "EMEA"], pitch: "AI-powered revenue intelligence platform helping enterprise sales teams close 30% faster.", icp: "VPs of Sales at 500+ employee SaaS companies." },
+  { id: "c2", name: "Marcus Johnson", email: "marcus@bluewave.io", company: "BlueWave Solutions", website: "bluewave.io", status: "active", opportunities: 1, intros: 4, joinedAt: "2025-12-01", industries: ["Healthcare", "Procurement"], regions: ["NA", "APAC"], pitch: "Procurement automation for hospital networks. Saves an average of $2M/year per system.", icp: "Heads of Procurement at multi-site hospital systems." },
+  { id: "c3", name: "Elena Rodriguez", email: "elena@novatech.co", company: "NovaTech", website: "novatech.co", status: "pending_agreement", opportunities: 0, intros: 0, joinedAt: "2026-01-20", industries: ["FinTech"], regions: ["NA"], pitch: "Embedded payments infrastructure for vertical SaaS.", icp: "CTOs and Heads of Product at vertical SaaS companies." },
 ];
 
 export const mockBums = [
@@ -13,9 +13,9 @@ export const mockBums = [
 ];
 
 export const mockOpportunities = [
-  { id: "o1", clientId: "c1", client: "AcmeCorp", title: "VP Sales - Enterprise SaaS", status: "OPEN", industries: ["SaaS", "Enterprise"], regions: ["NA", "EMEA"], claims: 5, meetings: 2, createdAt: "2026-01-10" },
-  { id: "o2", clientId: "c1", client: "AcmeCorp", title: "CTO - FinTech Startups", status: "OPEN", industries: ["FinTech"], regions: ["NA"], claims: 3, meetings: 1, createdAt: "2026-01-15" },
-  { id: "o3", clientId: "c2", client: "BlueWave Solutions", title: "Head of Procurement - Healthcare", status: "DRAFT", industries: ["Healthcare"], regions: ["NA", "APAC"], claims: 0, meetings: 0, createdAt: "2026-02-01" },
+  { id: "o1", clientId: "c1", client: "AcmeCorp", title: "VP Sales - Enterprise SaaS", status: "OPEN", industries: ["SaaS", "Enterprise"], regions: ["NA", "EMEA"], claims: 5, meetings: 2, createdAt: "2026-01-10", description: "Looking for warm intros to VP Sales / CRO at SaaS companies with 500+ employees actively evaluating revenue intelligence tools.", commission: "20% of Year 1 ACV" },
+  { id: "o2", clientId: "c1", client: "AcmeCorp", title: "CTO - FinTech Startups", status: "OPEN", industries: ["FinTech"], regions: ["NA"], claims: 3, meetings: 1, createdAt: "2026-01-15", description: "Seeking technical leaders at Series B+ FinTech startups exploring data infrastructure modernization.", commission: "15% of Year 1 ACV" },
+  { id: "o3", clientId: "c2", client: "BlueWave Solutions", title: "Head of Procurement - Healthcare", status: "DRAFT", industries: ["Healthcare"], regions: ["NA", "APAC"], claims: 0, meetings: 0, createdAt: "2026-02-01", description: "Warm intros to procurement leaders at multi-site hospital systems.", commission: "12% of Year 1 ACV" },
 ];
 
 export const mockIntroClaims = [
