@@ -1,5 +1,5 @@
-import PageHeader from "@/components/PageHeader";
-import StatCard from "@/components/StatCard";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
 import { Briefcase, Handshake, Wallet, TrendingUp } from "lucide-react";
 
 export default function BumDashboard() {

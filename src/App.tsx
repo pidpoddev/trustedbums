@@ -22,6 +22,13 @@ import ClientProfile from "./pages/client/ClientProfile";
 import ClientTrainings from "./pages/client/ClientTrainings";
 import ClientRequests from "./pages/client/ClientRequests";
 import ClientExports from "./pages/client/ClientExports";
+import BumLayout from "./layouts/BumLayout";
+import BumDashboard from "./pages/bum/BumDashboard";
+import BumOpportunities from "./pages/bum/BumOpportunities";
+import BumClaims from "./pages/bum/BumClaims";
+import BumLiveConversations from "./pages/bum/BumLiveConversations";
+import BumEarnings from "./pages/bum/BumEarnings";
+import BumProfile from "./pages/bum/BumProfile";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +62,16 @@ const App = () => (
             <Route path="trainings" element={<ClientTrainings />} />
             <Route path="requests" element={<ClientRequests />} />
             <Route path="exports" element={<ClientExports />} />
+          </Route>
+
+          {/* Bum Portal */}
+          <Route path="/bum" element={<BumLayout />}>
+            <Route index element={<BumDashboard />} />
+            <Route path="opportunities" element={<BumOpportunities />} />
+            <Route path="claims" element={<BumClaims />} />
+            <Route path="live-conversations" element={<BumLiveConversations />} />
+            <Route path="earnings" element={<BumEarnings />} />
+            <Route path="profile" element={<BumProfile />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
