@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { authorizationProfiles, getDefaultPathForRole, type AuthUser } from "@/data/authData";
+import { clerkSignInRedirectProps, clerkSignUpRedirectProps } from "@/lib/clerkRedirects";
 
 interface LocationState {
   from?: {
@@ -64,12 +65,12 @@ export default function Login() {
             </CardHeader>
             <CardContent className="space-y-4">
               <SignedOut>
-                <SignInButton mode="modal">
+                <SignInButton mode="modal" {...clerkSignInRedirectProps}>
                   <Button className="w-full">
                     Sign in <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </SignInButton>
-                <SignUpButton mode="modal">
+                <SignUpButton mode="modal" {...clerkSignUpRedirectProps}>
                   <Button className="w-full" variant="outline">
                     Create account <UserPlus className="ml-2 h-4 w-4" />
                   </Button>

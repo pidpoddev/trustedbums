@@ -72,7 +72,9 @@ VITE_CLERK_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 The app is wrapped with Clerk in `src/main.tsx`:
 
 ```tsx
-<ClerkProvider afterSignOutUrl="/">
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+<ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl={import.meta.env.BASE_URL}>
   <App />
 </ClerkProvider>
 ```
@@ -80,14 +82,16 @@ The app is wrapped with Clerk in `src/main.tsx`:
 Auth controls use Clerk's React components:
 
 ```tsx
-<Show when="signed-out">
-  <SignInButton />
-  <SignUpButton />
-</Show>
-<Show when="signed-in">
+<SignedOut>
+  <SignInButton mode="modal" />
+  <SignUpButton mode="modal" />
+</SignedOut>
+<SignedIn>
   <UserButton />
-</Show>
+</SignedIn>
 ```
+
+For GitHub Pages, keep modal-based sign-in/sign-up buttons and redirect back through the Vite base path. In the Clerk Dashboard, use email verification codes rather than email verification links for this app; email links can fail with `__clerk_status=client_mismatch` when opened from a different browser or device than the one that started sign-up.
 
 For the current setup steps, see the [Clerk React Quickstart](https://clerk.com/docs/react/getting-started/quickstart).
 

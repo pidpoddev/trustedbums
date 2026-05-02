@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
+import { clerkSignInRedirectProps, clerkSignUpRedirectProps } from "@/lib/clerkRedirects";
 import { Flame, ArrowRight, Users, Briefcase, Shield } from "lucide-react";
 import {
   SignedIn,
@@ -28,10 +29,10 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-3">
             <SignedOut>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" {...clerkSignInRedirectProps}>
                 <Button variant="ghost" size="sm">Sign in</Button>
               </SignInButton>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" {...clerkSignUpRedirectProps}>
                 <Button size="sm">Sign up</Button>
               </SignUpButton>
             </SignedOut>
@@ -59,12 +60,12 @@ const Index = () => {
         </p>
         <div className="flex items-center justify-center gap-4 mt-8">
           <SignedOut>
-            <SignUpButton mode="modal">
+            <SignUpButton mode="modal" {...clerkSignUpRedirectProps}>
               <Button size="lg" className="text-lg px-8">
                 I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </SignUpButton>
-            <SignUpButton mode="modal">
+            <SignUpButton mode="modal" {...clerkSignUpRedirectProps}>
               <Button size="lg" variant="outline" className="text-lg px-8">
                 I'm a Bum <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
