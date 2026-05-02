@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
 import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
-import { Flame, ArrowRight, Users, Briefcase, Shield } from "lucide-react";
+import { Flame, ArrowRight, Users, Briefcase, Shield, Handshake } from "lucide-react";
 import {
   SignedIn,
   SignedOut,
@@ -49,7 +49,8 @@ const Index = () => {
       {/* Hero */}
       <section className="container mx-auto px-6 py-24 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-6">
-          🤝 The marketplace for trusted introductions
+          <Handshake className="h-4 w-4" />
+          The marketplace for trusted introductions
         </div>
         <h1 className="text-5xl md:text-7xl font-display font-bold leading-tight max-w-4xl mx-auto">
           Turn Warm Intros into{" "}

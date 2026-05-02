@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Trusted Bums">
+  <rect width="1200" height="630" fill="#fff7ed"/>
+  <rect x="72" y="72" width="1056" height="486" rx="28" fill="#1c1917"/>
+  <circle cx="996" cy="151" r="68" fill="#f97316"/>
+  <circle cx="1025" cy="487" r="112" fill="#f97316" opacity=".16"/>
+  <circle cx="184" cy="502" r="96" fill="#f97316" opacity=".12"/>
+  <g transform="translate(132 132)">
+    <rect width="92" height="92" rx="20" fill="#f97316"/>
+    <path d="M51.2 13.5c1.9 11.9 11.2 17.5 15.9 26.8 5.6 11.2 2.4 25.6-8.1 33.3-11.4 8.2-28.3 5.4-36.4-6-7.7-10.9-5.2-24.8 2.2-34 1.9 8.6 6.9 14.5 13.7 16.7-2.6-14.4 4.1-26.2 12.7-36.8Z" fill="#1c1917"/>
+  </g>
+  <text x="132" y="295" font-family="Inter, Arial, sans-serif" font-size="82" font-weight="800" fill="#fff7ed">Trusted Bums</text>
+  <text x="136" y="366" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500" fill="#fed7aa">Verified warm introductions for revenue teams.</text>
+  <text x="136" y="443" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="700" letter-spacing="4" fill="#fdba74">CLIENTS | BUMS | ADMIN</text>
+</svg>
