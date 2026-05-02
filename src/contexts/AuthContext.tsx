@@ -1,7 +1,10 @@
 import { useAuth as useClerkAuth, useUser } from "@clerk/clerk-react";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import {
+  createPendingBumId,
+  createPendingClientId,
   getAuthorizationProfileByEmail,
+  getKnownClientForEmail,
   toAuthUser,
   type AuthUser,
   type UserRole,
@@ -71,14 +74,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    const metadata = clerkUser.publicMetadata as Record<string, unknown>;
+    const publicMetadata = clerkUser.publicMetadata as Record<string, unknown>;
+    const unsafeMetadata = clerkUser.unsafeMetadata as Record<string, unknown>;
     const profile = getAuthorizationProfileByEmail(email);
-    const metadataRole = readRole(metadata.role);
+    const knownClient = getKnownClientForEmail(email);
+    const metadataRole = readRole(publicMetadata.role) ?? readRole(unsafeMetadata.role);
+    const metadataCompanyName =
+      readString(publicMetadata.clientCompanyName) ??
+      readString(publicMetadata.companyName) ??
+      readString(unsafeMetadata.clientCompanyName) ??
+      readString(unsafeMetadata.companyName);
     const role = metadataRole ?? profile?.role;
-    const clientId = readString(metadata.clientId) ?? profile?.clientId;
-    const bumId = readString(metadata.bumId) ?? profile?.bumId;
+    const companyName = knownClient?.company ?? metadataCompanyName;
+    const clientId =
+      readString(publicMetadata.clientId) ??
+      readString(unsafeMetadata.clientId) ??
+      profile?.clientId ??
+      knownClient?.id ??
+      (role === "CLIENT" && companyName ? createPendingClientId(companyName) : undefined);
+    const bumId =
+      readString(publicMetadata.bumId) ??
+      readString(unsafeMetadata.bumId) ??
+      profile?.bumId ??
+      (role === "BUM" ? createPendingBumId(email) : undefined);
 
-    if (!role || (role === "CLIENT" && !clientId) || (role === "BUM" && !bumId)) {
+    if (!role || (role === "CLIENT" && (!clientId || !companyName)) || (role === "BUM" && !bumId)) {
       return {
         user: null,
         isLoaded: true,
@@ -103,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role,
       clientId,
       bumId,
+      companyName,
     };
 
     return {

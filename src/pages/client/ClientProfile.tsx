@@ -19,7 +19,7 @@ export default function ClientProfile() {
         <CardHeader><CardTitle className="font-display">Profile Details</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <div><Label>Company Name</Label><Input defaultValue={client?.company} /></div>
+            <div><Label>Company Name</Label><Input defaultValue={client?.company ?? user?.companyName} /></div>
             <div><Label>Website</Label><Input defaultValue={client?.website} /></div>
           </div>
           <div><Label>Positioning Statement</Label><Textarea defaultValue={client?.pitch} rows={3} /></div>

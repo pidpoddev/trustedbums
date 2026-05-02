@@ -1,3 +1,5 @@
+import { mockClients } from "@/data/mockData";
+
 export type UserRole = "ADMIN" | "CLIENT" | "BUM";
 
 export interface AuthUser {
@@ -7,6 +9,7 @@ export interface AuthUser {
   role: UserRole;
   clientId?: string;
   bumId?: string;
+  companyName?: string;
 }
 
 export interface AuthorizationProfile extends AuthUser {
@@ -89,6 +92,62 @@ export function getAuthorizationProfileByEmail(email?: string | null) {
   return authorizationProfiles.find(
     (profile) => profile.email.toLowerCase() === email.trim().toLowerCase(),
   );
+}
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+function getEmailDomain(email: string) {
+  return normalizeEmail(email).split("@")[1] ?? "";
+}
+
+function normalizeDomain(domain: string) {
+  return domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+}
+
+function slugify(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function getKnownClientForEmail(email?: string | null) {
+  if (!email) {
+    return undefined;
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const profile = authorizationProfiles.find(
+    (account) => account.role === "CLIENT" && account.email.toLowerCase() === normalizedEmail,
+  );
+
+  if (profile?.clientId) {
+    return mockClients.find((client) => client.id === profile.clientId);
+  }
+
+  const emailDomain = getEmailDomain(normalizedEmail);
+
+  if (!emailDomain) {
+    return undefined;
+  }
+
+  return mockClients.find((client) => {
+    const knownDomains = [getEmailDomain(client.email), normalizeDomain(client.website)].filter(Boolean);
+    return knownDomains.includes(emailDomain);
+  });
+}
+
+export function createPendingClientId(companyName: string) {
+  const slug = slugify(companyName);
+  return slug ? `pending-client-${slug}` : undefined;
+}
+
+export function createPendingBumId(email: string) {
+  const slug = slugify(email.split("@")[0] || email);
+  return slug ? `pending-bum-${slug}` : undefined;
 }
 
 export function getDefaultPathForRole(role: UserRole) {

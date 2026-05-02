@@ -2,17 +2,17 @@ import {
   SignedIn,
   SignedOut,
   SignInButton,
-  SignUpButton,
   UserButton,
 } from "@clerk/clerk-react";
 import { ArrowRight, Flame, LogIn, UserPlus } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { authorizationProfiles, getDefaultPathForRole, type AuthUser } from "@/data/authData";
-import { clerkSignInRedirectProps, clerkSignUpRedirectProps } from "@/lib/clerkRedirects";
+import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
 
 interface LocationState {
   from?: {
@@ -70,11 +70,11 @@ export default function Login() {
                     Sign in <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </SignInButton>
-                <SignUpButton mode="modal" {...clerkSignUpRedirectProps}>
+                <SignupIntentDialog>
                   <Button className="w-full" variant="outline">
                     Create account <UserPlus className="ml-2 h-4 w-4" />
                   </Button>
-                </SignUpButton>
+                </SignupIntentDialog>
               </SignedOut>
 
               <SignedIn>

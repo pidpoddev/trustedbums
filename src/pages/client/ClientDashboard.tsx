@@ -20,7 +20,7 @@ export default function ClientDashboard() {
     <div>
       <PageHeader
         title={`Welcome back, ${user?.name ?? "Client"} 👋`}
-        description={`Here's what's happening with ${client?.company ?? "your client workspace"}`}
+        description={`Here's what's happening with ${client?.company ?? user?.companyName ?? "your client workspace"}`}
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">

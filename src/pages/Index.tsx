@@ -1,14 +1,14 @@
 import { Link } from "react-router-dom";
+import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
-import { clerkSignInRedirectProps, clerkSignUpRedirectProps } from "@/lib/clerkRedirects";
+import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
 import { Flame, ArrowRight, Users, Briefcase, Shield } from "lucide-react";
 import {
   SignedIn,
   SignedOut,
   SignInButton,
-  SignUpButton,
   UserButton,
 } from "@clerk/clerk-react";
 
@@ -32,9 +32,9 @@ const Index = () => {
               <SignInButton mode="modal" {...clerkSignInRedirectProps}>
                 <Button variant="ghost" size="sm">Sign in</Button>
               </SignInButton>
-              <SignUpButton mode="modal" {...clerkSignUpRedirectProps}>
+              <SignupIntentDialog>
                 <Button size="sm">Sign up</Button>
-              </SignUpButton>
+              </SignupIntentDialog>
             </SignedOut>
             <SignedIn>
               <Link to={portalPath}>
@@ -60,16 +60,16 @@ const Index = () => {
         </p>
         <div className="flex items-center justify-center gap-4 mt-8">
           <SignedOut>
-            <SignUpButton mode="modal" {...clerkSignUpRedirectProps}>
+            <SignupIntentDialog initialRole="CLIENT">
               <Button size="lg" className="text-lg px-8">
                 I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-            </SignUpButton>
-            <SignUpButton mode="modal" {...clerkSignUpRedirectProps}>
+            </SignupIntentDialog>
+            <SignupIntentDialog initialRole="BUM">
               <Button size="lg" variant="outline" className="text-lg px-8">
                 I'm a Bum <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-            </SignUpButton>
+            </SignupIntentDialog>
           </SignedOut>
           <SignedIn>
             <Link to={portalPath}>

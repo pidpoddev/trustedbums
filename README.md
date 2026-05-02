@@ -84,12 +84,16 @@ Auth controls use Clerk's React components:
 ```tsx
 <SignedOut>
   <SignInButton mode="modal" />
-  <SignUpButton mode="modal" />
+  <SignupIntentDialog>
+    <Button>Create account</Button>
+  </SignupIntentDialog>
 </SignedOut>
 <SignedIn>
   <UserButton />
 </SignedIn>
 ```
+
+`SignupIntentDialog` collects whether the user is signing up as a Client or Bum before opening Clerk's embedded sign-up modal. Client sign-ups require a company name; known client email aliases and domains prefill the existing client workspace name.
 
 For GitHub Pages, keep modal-based sign-in/sign-up buttons and redirect back through the Vite base path. In the Clerk Dashboard, use email verification codes rather than email verification links for this app; email links can fail with `__clerk_status=client_mismatch` when opened from a different browser or device than the one that started sign-up.
 
