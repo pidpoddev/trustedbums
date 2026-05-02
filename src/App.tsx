@@ -29,6 +29,9 @@ import BumClaims from "./pages/bum/BumClaims";
 import BumLiveConversations from "./pages/bum/BumLiveConversations";
 import BumEarnings from "./pages/bum/BumEarnings";
 import BumProfile from "./pages/bum/BumProfile";
+import BumClients from "./pages/bum/BumClients";
+import BumTrainings from "./pages/bum/BumTrainings";
+import BumOpportunityDetail from "./pages/bum/BumOpportunityDetail";
 
 const queryClient = new QueryClient();
 
@@ -67,8 +70,11 @@ const App = () => (
           {/* Bum Portal */}
           <Route path="/bum" element={<BumLayout />}>
             <Route index element={<BumDashboard />} />
+            <Route path="clients" element={<BumClients />} />
             <Route path="opportunities" element={<BumOpportunities />} />
+            <Route path="opportunities/:id" element={<BumOpportunityDetail />} />
             <Route path="claims" element={<BumClaims />} />
+            <Route path="trainings" element={<BumTrainings />} />
             <Route path="live-conversations" element={<BumLiveConversations />} />
             <Route path="earnings" element={<BumEarnings />} />
             <Route path="profile" element={<BumProfile />} />
