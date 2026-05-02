@@ -16,10 +16,17 @@ export interface AuthorizationProfile extends AuthUser {
 export const authorizationProfiles: AuthorizationProfile[] = [
   {
     id: "admin-1",
+    email: "bums@trustedbums.com",
+    name: "Trusted Bums Admin",
+    role: "ADMIN",
+    description: "Primary administrator account for managing the Trusted Bums marketplace.",
+  },
+  {
+    id: "admin-2",
     email: "admin@trustedbums.com",
     name: "Marketplace Admin",
     role: "ADMIN",
-    description: "Can manage clients, bums, opportunities, payments, and payouts.",
+    description: "Demo administrator profile for local testing.",
   },
   {
     id: "client-c1-1",
