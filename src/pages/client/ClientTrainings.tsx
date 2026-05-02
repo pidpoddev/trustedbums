@@ -1,11 +1,14 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockTrainings } from "@/data/mockData";
+import { mockClients, mockTrainings } from "@/data/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 import { Plus, FileText, Upload } from "lucide-react";
 
 export default function ClientTrainings() {
-  const clientTrainings = mockTrainings.filter(t => t.scope === "CLIENT" && t.client === "AcmeCorp");
+  const { user } = useAuth();
+  const client = mockClients.find((mockClient) => mockClient.id === user?.clientId);
+  const clientTrainings = mockTrainings.filter(t => t.scope === "CLIENT" && t.client === client?.company);
 
   return (
     <div>

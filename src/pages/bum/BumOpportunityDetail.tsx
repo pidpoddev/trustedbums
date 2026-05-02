@@ -17,6 +17,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   mockOpportunities,
+  mockBums,
   opportunityStatusConfig,
   claimStatusConfig,
   type ClaimStatus,
@@ -25,6 +26,7 @@ import {
   isRelationshipStrength,
 } from "@/data/mockData";
 import { useIntroClaims } from "@/hooks/use-intro-claims";
+import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, Plus, Activity } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,7 +41,9 @@ interface ActivityEntry {
 export default function BumOpportunityDetail() {
   const { id } = useParams();
   const opp = mockOpportunities.find((o) => o.id === id);
+  const { user } = useAuth();
   const { introClaims, addIntroClaim, updateIntroClaimStatus } = useIntroClaims();
+  const bum = mockBums.find((mockBum) => mockBum.id === user?.bumId);
 
   // Recommendation form
   const [contact, setContact] = useState("");
@@ -85,6 +89,7 @@ export default function BumOpportunityDetail() {
     const claim = addIntroClaim({
       opportunityId: opp.id,
       opportunityTitle: opp.title,
+      bumAlias: bum?.alias ?? user?.name ?? "Trusted Bum",
       contact,
       company,
       strength,

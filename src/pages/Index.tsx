@@ -1,8 +1,13 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { getDefaultPathForRole } from "@/data/authData";
 import { Flame, ArrowRight, Users, Briefcase, Shield } from "lucide-react";
 
 const Index = () => {
+  const { user } = useAuth();
+  const portalPath = user ? getDefaultPathForRole(user.role) : "/login";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -15,11 +20,10 @@ const Index = () => {
             <span className="font-display font-bold text-xl">Trusted Bums</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/client">
-              <Button variant="ghost" size="sm">Client Portal</Button>
-            </Link>
-            <Link to="/bum">
-              <Button variant="ghost" size="sm">Bum Portal</Button>
+            <Link to={portalPath}>
+              <Button variant="ghost" size="sm">
+                {user ? "Open Portal" : "Sign in"}
+              </Button>
             </Link>
           </div>
         </div>
@@ -38,12 +42,12 @@ const Index = () => {
           Trusted Bums connects companies with verified connectors who make warm introductions. Transparent, auditable, and commission-based.
         </p>
         <div className="flex items-center justify-center gap-4 mt-8">
-          <Link to="/client">
+          <Link to="/login">
             <Button size="lg" className="text-lg px-8">
               I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
-          <Link to="/bum">
+          <Link to="/login">
             <Button size="lg" variant="outline" className="text-lg px-8">
               I'm a Bum <ArrowRight className="ml-2 h-5 w-5" />
             </Button>

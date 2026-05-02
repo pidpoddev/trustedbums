@@ -1,9 +1,12 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./layouts/AdminLayout";
 import ClientLayout from "./layouts/ClientLayout";
@@ -41,47 +44,56 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <Routes>
-          <Route path="/" element={<Index />} />
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
 
-          {/* Admin Portal */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="clients" element={<AdminClients />} />
-            <Route path="bums" element={<AdminBums />} />
-            <Route path="opportunities" element={<AdminOpportunities />} />
-            <Route path="credits" element={<AdminCredits />} />
-            <Route path="commission-plans" element={<AdminCommissionPlans />} />
-            <Route path="payments" element={<AdminPayments />} />
-            <Route path="payouts" element={<AdminPayouts />} />
-            <Route path="live-conversations" element={<AdminLiveConversations />} />
-          </Route>
+            {/* Admin Portal */}
+            <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="clients" element={<AdminClients />} />
+                <Route path="bums" element={<AdminBums />} />
+                <Route path="opportunities" element={<AdminOpportunities />} />
+                <Route path="credits" element={<AdminCredits />} />
+                <Route path="commission-plans" element={<AdminCommissionPlans />} />
+                <Route path="payments" element={<AdminPayments />} />
+                <Route path="payouts" element={<AdminPayouts />} />
+                <Route path="live-conversations" element={<AdminLiveConversations />} />
+              </Route>
+            </Route>
 
-          {/* Client Portal */}
-          <Route path="/client" element={<ClientLayout />}>
-            <Route index element={<ClientDashboard />} />
-            <Route path="agreements" element={<ClientAgreements />} />
-            <Route path="profile" element={<ClientProfile />} />
-            <Route path="trainings" element={<ClientTrainings />} />
-            <Route path="requests" element={<ClientRequests />} />
-            <Route path="exports" element={<ClientExports />} />
-          </Route>
+            {/* Client Portal */}
+            <Route element={<ProtectedRoute allowedRoles={["CLIENT"]} />}>
+              <Route path="/client" element={<ClientLayout />}>
+                <Route index element={<ClientDashboard />} />
+                <Route path="agreements" element={<ClientAgreements />} />
+                <Route path="profile" element={<ClientProfile />} />
+                <Route path="trainings" element={<ClientTrainings />} />
+                <Route path="requests" element={<ClientRequests />} />
+                <Route path="exports" element={<ClientExports />} />
+              </Route>
+            </Route>
 
-          {/* Bum Portal */}
-          <Route path="/bum" element={<BumLayout />}>
-            <Route index element={<BumDashboard />} />
-            <Route path="clients" element={<BumClients />} />
-            <Route path="opportunities" element={<BumOpportunities />} />
-            <Route path="opportunities/:id" element={<BumOpportunityDetail />} />
-            <Route path="claims" element={<BumClaims />} />
-            <Route path="trainings" element={<BumTrainings />} />
-            <Route path="live-conversations" element={<BumLiveConversations />} />
-            <Route path="earnings" element={<BumEarnings />} />
-            <Route path="profile" element={<BumProfile />} />
-          </Route>
+            {/* Bum Portal */}
+            <Route element={<ProtectedRoute allowedRoles={["BUM"]} />}>
+              <Route path="/bum" element={<BumLayout />}>
+                <Route index element={<BumDashboard />} />
+                <Route path="clients" element={<BumClients />} />
+                <Route path="opportunities" element={<BumOpportunities />} />
+                <Route path="opportunities/:id" element={<BumOpportunityDetail />} />
+                <Route path="claims" element={<BumClaims />} />
+                <Route path="trainings" element={<BumTrainings />} />
+                <Route path="live-conversations" element={<BumLiveConversations />} />
+                <Route path="earnings" element={<BumEarnings />} />
+                <Route path="profile" element={<BumProfile />} />
+              </Route>
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

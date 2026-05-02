@@ -1,4 +1,5 @@
 import { NavLink } from "@/components/NavLink";
+import { PortalHeaderActions } from "@/components/PortalHeaderActions";
 import { useLocation, Outlet } from "react-router-dom";
 import {
   Sidebar,
@@ -83,6 +84,7 @@ export default function BumLayout() {
             <span className="ml-4 text-sm text-muted-foreground">
               {navItems.find(i => location.pathname === i.url || (i.url !== "/bum" && location.pathname.startsWith(i.url)))?.title ?? "Bum"}
             </span>
+            <PortalHeaderActions />
           </header>
           <div className="p-6">
             <Outlet />

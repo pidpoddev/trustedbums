@@ -3,12 +3,11 @@ import { type ClaimStatus, type IntroClaim, mockIntroClaims } from "@/data/mockD
 
 const CLAIMS_STORAGE_KEY = "trustedbums:intro-claims";
 const STATUS_STORAGE_KEY = "trustedbums:intro-claim-statuses";
-const DEFAULT_BUM_ALIAS = "Verified Bum #482";
 const CLAIM_LIFETIME_DAYS = 45;
 
 type NewIntroClaim = Pick<
   IntroClaim,
-  "opportunityId" | "opportunityTitle" | "contact" | "company" | "strength"
+  "opportunityId" | "opportunityTitle" | "bumAlias" | "contact" | "company" | "strength"
 > & {
   note?: string;
 };
@@ -68,7 +67,6 @@ export function useIntroClaims() {
     const today = new Date();
     const nextClaim: IntroClaim = {
       id: `ic-${Date.now()}`,
-      bumAlias: DEFAULT_BUM_ALIAS,
       status: "PROPOSED",
       createdAt: toDateInputValue(today),
       expiresAt: toDateInputValue(addDays(today, CLAIM_LIFETIME_DAYS)),

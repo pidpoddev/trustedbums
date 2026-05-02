@@ -4,8 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { mockClients } from "@/data/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ClientProfile() {
+  const { user } = useAuth();
+  const client = mockClients.find((mockClient) => mockClient.id === user?.clientId);
+
   return (
     <div>
       <PageHeader title="Company Profile" description="Manage your company positioning for Bums" />
@@ -14,13 +19,13 @@ export default function ClientProfile() {
         <CardHeader><CardTitle className="font-display">Profile Details</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <div><Label>Company Name</Label><Input defaultValue="AcmeCorp" /></div>
-            <div><Label>Website</Label><Input defaultValue="acmecorp.com" /></div>
+            <div><Label>Company Name</Label><Input defaultValue={client?.company} /></div>
+            <div><Label>Website</Label><Input defaultValue={client?.website} /></div>
           </div>
-          <div><Label>Positioning Statement</Label><Textarea defaultValue="We help enterprise teams automate their sales pipeline with AI-powered insights." rows={3} /></div>
+          <div><Label>Positioning Statement</Label><Textarea defaultValue={client?.pitch} rows={3} /></div>
           <div className="grid gap-4 md:grid-cols-2">
-            <div><Label>Target Industries</Label><Input defaultValue="SaaS, Enterprise, FinTech" /></div>
-            <div><Label>Target Regions</Label><Input defaultValue="North America, EMEA" /></div>
+            <div><Label>Target Industries</Label><Input defaultValue={client?.industries.join(", ")} /></div>
+            <div><Label>Target Regions</Label><Input defaultValue={client?.regions.join(", ")} /></div>
           </div>
           <Button>Save Profile</Button>
         </CardContent>

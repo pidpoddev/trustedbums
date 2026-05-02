@@ -1,4 +1,5 @@
 import { NavLink } from "@/components/NavLink";
+import { PortalHeaderActions } from "@/components/PortalHeaderActions";
 import { useLocation, Outlet } from "react-router-dom";
 import {
   Sidebar,
@@ -79,6 +80,7 @@ export default function ClientLayout() {
             <span className="ml-4 text-sm text-muted-foreground">
               {navItems.find(i => location.pathname === i.url || (i.url !== "/client" && location.pathname.startsWith(i.url)))?.title ?? "Client"}
             </span>
+            <PortalHeaderActions />
           </header>
           <div className="p-6">
             <Outlet />

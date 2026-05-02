@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { mockClients } from "@/data/mockData";
+import { demoAccounts } from "@/data/authData";
 import { Plus } from "lucide-react";
 
 export default function AdminClients() {
@@ -13,37 +14,41 @@ export default function AdminClients() {
       </PageHeader>
 
       <div className="grid gap-4">
-        {mockClients.map(client => (
-          <Card key={client.id} className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-display font-bold text-primary">
-                    {client.company[0]}
+        {mockClients.map(client => {
+          const users = demoAccounts.filter((account) => account.role === "CLIENT" && account.clientId === client.id);
+
+          return (
+            <Card key={client.id} className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-display font-bold text-primary">
+                      {client.company[0]}
+                    </div>
+                    <div>
+                      <p className="font-medium">{client.company}</p>
+                      <p className="text-sm text-muted-foreground">{users.length} user{users.length === 1 ? "" : "s"} · Primary: {client.email}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{client.company}</p>
-                    <p className="text-sm text-muted-foreground">{client.name} · {client.email}</p>
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <p className="text-lg font-bold font-display">{client.opportunities}</p>
+                      <p className="text-xs text-muted-foreground">Opportunities</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold font-display">{client.intros}</p>
+                      <p className="text-xs text-muted-foreground">Intros</p>
+                    </div>
+                    <StatusBadge
+                      label={client.status === "active" ? "Active" : "Pending Agreement"}
+                      variant={client.status === "active" ? "success" : "warning"}
+                    />
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-lg font-bold font-display">{client.opportunities}</p>
-                    <p className="text-xs text-muted-foreground">Opportunities</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-bold font-display">{client.intros}</p>
-                    <p className="text-xs text-muted-foreground">Intros</p>
-                  </div>
-                  <StatusBadge
-                    label={client.status === "active" ? "Active" : "Pending Agreement"}
-                    variant={client.status === "active" ? "success" : "warning"}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
