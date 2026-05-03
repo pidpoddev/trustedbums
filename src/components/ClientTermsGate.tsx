@@ -1,0 +1,28 @@
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentTermsState } from "@/hooks/use-current-terms";
+
+export function ClientTermsGate() {
+  const { user } = useAuth();
+  const location = useLocation();
+  const { hasAcceptedCurrentTerms, isLoading, terms } = useCurrentTermsState();
+  const isTermsRoute = location.pathname === "/client/terms";
+
+  if (user?.role !== "CLIENT" || isTermsRoute) {
+    return <Outlet />;
+  }
+
+  if (isLoading || !terms) {
+    return (
+      <div className="rounded-md border bg-card p-6 text-sm text-muted-foreground">
+        Checking partner terms...
+      </div>
+    );
+  }
+
+  if (!hasAcceptedCurrentTerms) {
+    return <Navigate to="/client/terms" replace state={{ from: location.pathname }} />;
+  }
+
+  return <Outlet />;
+}

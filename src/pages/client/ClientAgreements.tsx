@@ -1,42 +1,63 @@
+import { Link } from "react-router-dom";
+import { CheckCircle, Download, FileText } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PartnerTermsContent } from "@/components/PartnerTermsContent";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock } from "lucide-react";
-
-const agreements = [
-  { type: "Client Agreement", version: "1.2", signed: true, signedAt: "2025-11-15T10:30:00Z" },
-  { type: "Data Processing Agreement", version: "1.0", signed: false, signedAt: null },
-];
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCurrentTermsState } from "@/hooks/use-current-terms";
+import { downloadPartnerTermsPdf } from "@/lib/pdf";
 
 export default function ClientAgreements() {
+  const { terms, acceptance, hasAcceptedCurrentTerms, isLoading } = useCurrentTermsState();
+
+  if (isLoading || !terms) {
+    return <div className="text-sm text-muted-foreground">Loading agreement records...</div>;
+  }
+
   return (
     <div>
-      <PageHeader title="Agreements" description="Review and sign required agreements" />
+      <PageHeader title="Agreements" description="Review partner terms, FAQ, and your current acceptance status.">
+        <Button variant="outline" onClick={() => downloadPartnerTermsPdf(terms)}>
+          <Download className="mr-2 h-4 w-4" />
+          Download PDF
+        </Button>
+      </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {agreements.map(a => (
-          <Card key={a.type} className={a.signed ? "" : "border-warning/50 shadow-warning/10 shadow-md"}>
-            <CardHeader>
-              <CardTitle className="font-display text-lg flex items-center gap-2">
-                {a.signed ? <CheckCircle className="h-5 w-5 text-success" /> : <Clock className="h-5 w-5 text-warning" />}
-                {a.type}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">Version {a.version}</p>
-            </CardHeader>
-            <CardContent>
-              {a.signed ? (
-                <p className="text-sm text-muted-foreground">
-                  Signed on {new Date(a.signedAt!).toLocaleDateString()}
-                </p>
+      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+        <Card className={hasAcceptedCurrentTerms ? "border-success/40" : "border-warning/50"}>
+          <CardHeader>
+            <CardTitle className="font-display flex items-center gap-2">
+              {hasAcceptedCurrentTerms ? (
+                <CheckCircle className="h-5 w-5 text-success" />
               ) : (
-                <div>
-                  <p className="text-sm mb-3">Please review and accept this agreement to continue.</p>
-                  <Button>Review & Sign</Button>
-                </div>
+                <FileText className="h-5 w-5 text-warning" />
               )}
-            </CardContent>
-          </Card>
-        ))}
+              Current Partner Terms
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="font-medium">{terms.title}</p>
+              <p className="text-sm text-muted-foreground">Version {terms.version}</p>
+            </div>
+            {hasAcceptedCurrentTerms ? (
+              <p className="text-sm text-muted-foreground">
+                Accepted {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "for this version"}.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">This terms version still needs acceptance.</p>
+            )}
+            <Button asChild className="w-full">
+              <Link to="/client/terms">Open terms screen</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="max-h-[72vh] overflow-y-auto pt-6">
+            <PartnerTermsContent terms={terms} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

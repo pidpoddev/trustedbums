@@ -2,9 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ClientTermsGate } from "@/components/ClientTermsGate";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -21,6 +22,8 @@ import AdminPayouts from "./pages/admin/AdminPayouts";
 import AdminLiveConversations from "./pages/admin/AdminLiveConversations";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientAgreements from "./pages/client/ClientAgreements";
+import ClientTerms from "./pages/client/ClientTerms";
+import ClientOpportunityNew from "./pages/client/ClientOpportunityNew";
 import ClientProfile from "./pages/client/ClientProfile";
 import ClientTrainings from "./pages/client/ClientTrainings";
 import ClientRequests from "./pages/client/ClientRequests";
@@ -67,12 +70,17 @@ const App = () => (
             {/* Client Portal */}
             <Route element={<ProtectedRoute allowedRoles={["CLIENT"]} />}>
               <Route path="/client" element={<ClientLayout />}>
-                <Route index element={<ClientDashboard />} />
-                <Route path="agreements" element={<ClientAgreements />} />
-                <Route path="profile" element={<ClientProfile />} />
-                <Route path="trainings" element={<ClientTrainings />} />
-                <Route path="requests" element={<ClientRequests />} />
-                <Route path="exports" element={<ClientExports />} />
+                <Route element={<ClientTermsGate />}>
+                  <Route index element={<Navigate to="/client/dashboard" replace />} />
+                  <Route path="dashboard" element={<ClientDashboard />} />
+                  <Route path="terms" element={<ClientTerms />} />
+                  <Route path="opportunities/new" element={<ClientOpportunityNew />} />
+                  <Route path="agreements" element={<ClientAgreements />} />
+                  <Route path="profile" element={<ClientProfile />} />
+                  <Route path="trainings" element={<ClientTrainings />} />
+                  <Route path="requests" element={<ClientRequests />} />
+                  <Route path="exports" element={<ClientExports />} />
+                </Route>
               </Route>
             </Route>
 

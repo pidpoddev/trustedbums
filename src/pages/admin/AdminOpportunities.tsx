@@ -1,54 +1,67 @@
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Button } from "@/components/ui/button";
-import { mockOpportunities, opportunityStatusConfig } from "@/data/mockData";
-import { Plus } from "lucide-react";
+import { listOpportunityRegistrations, type RegistrationStatus } from "@/lib/portalApi";
+
+function getStatusVariant(status: RegistrationStatus) {
+  if (status === "Accepted" || status === "Closed Won") {
+    return "success" as const;
+  }
+  if (status === "Disputed" || status === "Rejected" || status === "Closed Lost") {
+    return "destructive" as const;
+  }
+  if (status === "Needs Clarification" || status === "Draft") {
+    return "warning" as const;
+  }
+  return "info" as const;
+}
 
 export default function AdminOpportunities() {
+  const registrationsQuery = useQuery({
+    queryKey: ["admin-opportunities", "All"],
+    queryFn: () => listOpportunityRegistrations("All"),
+  });
+  const registrations = registrationsQuery.data ?? [];
+
   return (
     <div>
-      <PageHeader title="Opportunities" description="Create and manage introduction opportunities">
-        <Button><Plus className="h-4 w-4 mr-2" /> New Opportunity</Button>
-      </PageHeader>
+      <PageHeader title="Opportunities" description="Review registered client opportunities and commission terms." />
 
       <div className="grid gap-4">
-        {mockOpportunities.map(opp => {
-          const config = opportunityStatusConfig[opp.status];
-          return (
-            <Card key={opp.id} className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium font-display">{opp.title}</p>
-                      <StatusBadge label={config.label} variant={config.variant} />
-                    </div>
-                    <p className="text-sm text-muted-foreground">{opp.client}</p>
-                    <div className="flex gap-2 mt-2">
-                      {opp.industries.map(i => (
-                        <span key={i} className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{i}</span>
-                      ))}
-                      {opp.regions.map(r => (
-                        <span key={r} className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{r}</span>
-                      ))}
-                    </div>
+        {registrations.map((registration) => (
+          <Card key={registration.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between gap-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-medium font-display">{registration.target_account_name}</p>
+                    <StatusBadge label={registration.status} variant={getStatusVariant(registration.status)} />
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-center">
-                      <p className="text-lg font-bold font-display">{opp.claims}</p>
-                      <p className="text-xs text-muted-foreground">Claims</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold font-display">{opp.meetings}</p>
-                      <p className="text-xs text-muted-foreground">Meetings</p>
-                    </div>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {registration.companies?.name ?? "Company pending"} · {registration.commission_rate}% commission
+                  </p>
+                  <p className="mt-2 max-w-2xl text-sm">{registration.opportunity_description}</p>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                <div className="text-right">
+                  <p className="text-lg font-bold font-display">
+                    {registration.estimated_deal_value
+                      ? `$${Number(registration.estimated_deal_value).toLocaleString()}`
+                      : "TBD"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Estimated value</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {!registrations.length && (
+          <Card>
+            <CardContent className="pt-6 text-sm text-muted-foreground">
+              No opportunity registrations have been submitted yet.
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

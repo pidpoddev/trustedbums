@@ -1,8 +1,9 @@
-import { SignedIn, UserButton } from "@clerk/clerk-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 export function PortalHeaderActions() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   return (
     <div className="ml-auto flex items-center gap-3">
@@ -10,9 +11,10 @@ export function PortalHeaderActions() {
         <p className="text-sm font-medium leading-none">{user?.name}</p>
         <p className="text-xs text-muted-foreground mt-1">{user?.email}</p>
       </div>
-      <SignedIn>
-        <UserButton />
-      </SignedIn>
+      <Button variant="ghost" size="sm" onClick={signOut}>
+        <LogOut className="h-4 w-4" />
+        <span className="sr-only">Sign out</span>
+      </Button>
     </div>
   );
 }

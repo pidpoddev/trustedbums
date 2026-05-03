@@ -156,7 +156,7 @@ export function getDefaultPathForRole(role: UserRole) {
   }
 
   if (role === "CLIENT") {
-    return "/client";
+    return "/client/dashboard";
   }
 
   return "/bum";
