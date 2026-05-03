@@ -1,13 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+if (!supabaseUrl) {
+  throw new Error("VITE_SUPABASE_URL is missing");
+}
+
+if (!supabaseAnonKey) {
+  throw new Error("VITE_SUPABASE_ANON_KEY is missing");
+}
+
+export const isSupabaseConfigured = true;
 
 export const supabase = createClient(
-  supabaseUrl ?? "https://vaoqvtxqvbptyxddpoju.supabase.co",
-  supabaseAnonKey ?? "missing-supabase-anon-key",
+  supabaseUrl,
+  supabaseAnonKey,
   {
     auth: {
       autoRefreshToken: true,
