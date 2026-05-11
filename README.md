@@ -15,6 +15,7 @@ npm install
 Create `.env.local` for local development:
 
 ```sh
+VITE_CLERK_PUBLISHABLE_KEY=YOUR_CLERK_PUBLISHABLE_KEY
 VITE_SUPABASE_URL=https://vaoqvtxqvbptyxddpoju.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
@@ -31,9 +32,13 @@ The app is served from the Vite base path used by GitHub Pages:
 http://localhost:8080/trustedbums/
 ```
 
-## Supabase
+## Auth And Database
 
-The frontend uses `@supabase/supabase-js` from `src/lib/supabase.ts`. Do not expose service role keys in frontend code.
+Clerk owns authentication and sign-in/sign-up UI. Supabase is used as the database only.
+
+The frontend uses `@clerk/react` for auth and `@supabase/supabase-js` from `src/lib/supabase.ts` for data access. Do not expose service role keys in frontend code.
+
+Supabase database requests receive the current Clerk session token through the Supabase client `accessToken` option. Supabase RLS policies use `auth.jwt()->>'sub'` as the Clerk user ID.
 
 Supabase project URL:
 
@@ -59,7 +64,15 @@ The initial migration creates:
 - `opportunity_status_history`
 - `audit_events`
 
-It also enables RLS, creates profile provisioning for new Supabase auth users, and seeds active Partner Terms version `v1`.
+It also enables RLS for Clerk-authenticated requests and seeds active Partner Terms version `v1`.
+
+Supabase must be configured with Clerk as a third-party auth provider. For local Supabase CLI use, `supabase/config.toml` includes:
+
+```toml
+[auth.third_party.clerk]
+enabled = true
+domain = "gorgeous-kit-53.accounts.dev"
+```
 
 ## Portal Flow
 
@@ -77,7 +90,7 @@ GitHub Pages deployment is handled by `.github/workflows/deploy-pages.yml`. Conf
 VITE_SUPABASE_ANON_KEY
 ```
 
-Vercel deployments should define both `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in project environment variables.
+Vercel deployments should define `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` in project environment variables.
 
 ## Quality Checks
 
@@ -96,4 +109,5 @@ npm run build -- --base=/trustedbums/
 - React
 - shadcn/ui
 - Tailwind CSS
-- Supabase Auth and Database
+- Clerk Auth
+- Supabase Database

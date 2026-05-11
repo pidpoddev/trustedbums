@@ -1,11 +1,18 @@
+import {
+  Show,
+  SignInButton,
+  UserButton,
+} from "@clerk/react";
 import { Link } from "react-router-dom";
+import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
+import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
 import { Flame, ArrowRight, Users, Briefcase, Shield, Handshake } from "lucide-react";
 
 const Index = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const portalPath = user ? getDefaultPathForRole(user.role) : "/login";
 
   return (
@@ -20,23 +27,22 @@ const Index = () => {
             <span className="font-display font-bold text-xl">Trusted Bums</span>
           </div>
           <div className="flex items-center gap-3">
-            {user ? (
-              <>
+            <Show when="signed-out">
+              <SignInButton mode="modal" {...clerkSignInRedirectProps}>
+                <Button variant="ghost" size="sm">Sign in</Button>
+              </SignInButton>
+              <SignupIntentDialog>
+                <Button size="sm">Sign up</Button>
+              </SignupIntentDialog>
+            </Show>
+            <Show when="signed-in">
+              {user ? (
                 <Link to={portalPath}>
                   <Button variant="ghost" size="sm">Open Portal</Button>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={signOut}>Sign out</Button>
-              </>
-            ) : (
-              <>
-                <Link to="/login">
-                <Button variant="ghost" size="sm">Sign in</Button>
-                </Link>
-                <Link to="/login?mode=signup&role=CLIENT">
-                <Button size="sm">Sign up</Button>
-                </Link>
-              </>
-            )}
+              ) : null}
+              <UserButton />
+            </Show>
           </div>
         </div>
       </header>
@@ -55,26 +61,25 @@ const Index = () => {
           Trusted Bums connects companies with verified connectors who make warm introductions. Transparent, auditable, and commission-based.
         </p>
         <div className="flex items-center justify-center gap-4 mt-8">
-          {user ? (
+          <Show when="signed-out">
+            <SignupIntentDialog initialRole="CLIENT">
+              <Button size="lg" className="text-lg px-8">
+                I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </SignupIntentDialog>
+            <SignupIntentDialog initialRole="BUM">
+              <Button size="lg" variant="outline" className="text-lg px-8">
+                I'm a Bum <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </SignupIntentDialog>
+          </Show>
+          <Show when="signed-in">
             <Link to={portalPath}>
               <Button size="lg" className="text-lg px-8">
                 Open Portal <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-          ) : (
-            <>
-            <Link to="/login?mode=signup&role=CLIENT">
-              <Button size="lg" className="text-lg px-8">
-                I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link to="/login?mode=signup&role=BUM">
-              <Button size="lg" variant="outline" className="text-lg px-8">
-                I'm a Bum <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            </>
-          )}
+          </Show>
         </div>
       </section>
 

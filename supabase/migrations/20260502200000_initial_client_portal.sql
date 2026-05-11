@@ -8,7 +8,7 @@ create table if not exists public.companies (
 );
 
 create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
+  id text primary key,
   company_id uuid references public.companies(id) on delete set null,
   full_name text,
   email text,
@@ -33,7 +33,7 @@ create unique index if not exists terms_versions_one_active_idx
 
 create table if not exists public.terms_acceptances (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade,
+  user_id text not null,
   company_id uuid references public.companies(id) on delete set null,
   terms_version_id uuid references public.terms_versions(id) on delete restrict,
   accepted_at timestamptz not null default now(),
@@ -47,7 +47,7 @@ create unique index if not exists terms_acceptances_user_company_version_idx
 create table if not exists public.opportunity_registrations (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references public.companies(id) on delete set null,
-  created_by uuid references auth.users(id) on delete set null,
+  created_by text not null,
   target_account_name text not null,
   business_unit text,
   opportunity_description text,
@@ -69,20 +69,28 @@ create table if not exists public.opportunity_status_history (
   opportunity_id uuid references public.opportunity_registrations(id) on delete cascade,
   old_status text,
   new_status text,
-  changed_by uuid references auth.users(id) on delete set null,
+  changed_by text,
   created_at timestamptz not null default now()
 );
 
 create table if not exists public.audit_events (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references public.companies(id) on delete set null,
-  user_id uuid references auth.users(id) on delete set null,
+  user_id text,
   event_type text not null,
   entity_type text,
   entity_id uuid,
   event_data jsonb,
   created_at timestamptz not null default now()
 );
+
+create or replace function public.current_user_id()
+returns text
+language sql
+stable
+as $$
+  select nullif(auth.jwt()->>'sub', '')
+$$;
 
 create or replace function public.current_company_id()
 returns uuid
@@ -91,7 +99,7 @@ security definer
 set search_path = public
 stable
 as $$
-  select company_id from public.profiles where id = auth.uid()
+  select company_id from public.profiles where id = public.current_user_id()
 $$;
 
 create or replace function public.is_admin()
@@ -104,7 +112,7 @@ as $$
   select exists (
     select 1
     from public.profiles
-    where id = auth.uid()
+    where id = public.current_user_id()
       and (is_admin = true or upper(coalesce(role, '')) = 'ADMIN')
   )
 $$;
@@ -123,46 +131,6 @@ drop trigger if exists set_opportunity_registrations_updated_at on public.opport
 create trigger set_opportunity_registrations_updated_at
 before update on public.opportunity_registrations
 for each row execute function public.set_updated_at();
-
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  requested_role text;
-  requested_company text;
-  new_company_id uuid;
-begin
-  requested_role := upper(coalesce(new.raw_user_meta_data->>'role', ''));
-  requested_company := nullif(trim(coalesce(new.raw_user_meta_data->>'company_name', '')), '');
-
-  if requested_role = 'CLIENT' and requested_company is not null then
-    insert into public.companies (name)
-    values (requested_company)
-    returning id into new_company_id;
-  end if;
-
-  insert into public.profiles (id, company_id, full_name, email, role, is_admin)
-  values (
-    new.id,
-    new_company_id,
-    nullif(trim(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', '')), ''),
-    new.email,
-    requested_role,
-    requested_role = 'ADMIN' or lower(new.email) = 'bums@trustedbums.com'
-  )
-  on conflict (id) do nothing;
-
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-after insert on auth.users
-for each row execute function public.handle_new_user();
 
 alter table public.companies enable row level security;
 alter table public.profiles enable row level security;
@@ -195,20 +163,20 @@ drop policy if exists "Users can read own profile" on public.profiles;
 create policy "Users can read own profile"
 on public.profiles for select
 to authenticated
-using (id = auth.uid() or public.is_admin());
+using (id = public.current_user_id() or public.is_admin());
 
 drop policy if exists "Users can create own profile" on public.profiles;
 create policy "Users can create own profile"
 on public.profiles for insert
 to authenticated
-with check (id = auth.uid());
+with check (id = public.current_user_id());
 
 drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
 on public.profiles for update
 to authenticated
-using (id = auth.uid() or public.is_admin())
-with check (id = auth.uid() or public.is_admin());
+using (id = public.current_user_id() or public.is_admin())
+with check (id = public.current_user_id() or public.is_admin());
 
 drop policy if exists "Authenticated users can read terms" on public.terms_versions;
 create policy "Authenticated users can read terms"
@@ -233,14 +201,14 @@ drop policy if exists "Users can read company acceptances" on public.terms_accep
 create policy "Users can read company acceptances"
 on public.terms_acceptances for select
 to authenticated
-using (user_id = auth.uid() or company_id = public.current_company_id() or public.is_admin());
+using (user_id = public.current_user_id() or company_id = public.current_company_id() or public.is_admin());
 
 drop policy if exists "Users can accept terms for own company" on public.terms_acceptances;
 create policy "Users can accept terms for own company"
 on public.terms_acceptances for insert
 to authenticated
 with check (
-  user_id = auth.uid()
+  user_id = public.current_user_id()
   and (company_id = public.current_company_id() or company_id is null)
 );
 
@@ -248,14 +216,14 @@ drop policy if exists "Users can read own opportunity registrations" on public.o
 create policy "Users can read own opportunity registrations"
 on public.opportunity_registrations for select
 to authenticated
-using (created_by = auth.uid() or public.is_admin());
+using (created_by = public.current_user_id() or public.is_admin());
 
 drop policy if exists "Users can create own opportunity registrations" on public.opportunity_registrations;
 create policy "Users can create own opportunity registrations"
 on public.opportunity_registrations for insert
 to authenticated
 with check (
-  created_by = auth.uid()
+  created_by = public.current_user_id()
   and (company_id = public.current_company_id() or company_id is null)
 );
 
@@ -276,7 +244,7 @@ using (
     select 1
     from public.opportunity_registrations opportunity
     where opportunity.id = public.opportunity_status_history.opportunity_id
-      and opportunity.created_by = auth.uid()
+      and opportunity.created_by = public.current_user_id()
   )
 );
 
@@ -284,20 +252,20 @@ drop policy if exists "Users can create status history" on public.opportunity_st
 create policy "Users can create status history"
 on public.opportunity_status_history for insert
 to authenticated
-with check (changed_by = auth.uid() or public.is_admin());
+with check (changed_by = public.current_user_id() or public.is_admin());
 
 drop policy if exists "Users can read own audit events" on public.audit_events;
 create policy "Users can read own audit events"
 on public.audit_events for select
 to authenticated
-using (user_id = auth.uid() or company_id = public.current_company_id() or public.is_admin());
+using (user_id = public.current_user_id() or company_id = public.current_company_id() or public.is_admin());
 
 drop policy if exists "Users can create audit events" on public.audit_events;
 create policy "Users can create audit events"
 on public.audit_events for insert
 to authenticated
 with check (
-  user_id = auth.uid()
+  user_id = public.current_user_id()
   and (company_id = public.current_company_id() or company_id is null or public.is_admin())
 );
 

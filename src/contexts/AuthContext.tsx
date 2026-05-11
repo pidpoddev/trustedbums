@@ -1,15 +1,18 @@
-import type { Session } from "@supabase/supabase-js";
+import { useAuth as useClerkAuth, useUser } from "@clerk/react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  createPendingBumId,
+  getAuthorizationProfileByEmail,
+  getKnownClientForEmail,
+  toAuthUser,
   type AuthUser,
   type UserRole,
 } from "@/data/authData";
-import { getAuthUserFromSession } from "@/lib/portalApi";
-import { supabase } from "@/lib/supabase";
+import { ensureSupabaseProfileForAuthUser } from "@/lib/portalApi";
+import { setSupabaseAccessTokenProvider } from "@/lib/supabase";
 
 interface AuthContextValue {
   user: AuthUser | null;
-  session: Session | null;
   isLoaded: boolean;
   isSignedIn: boolean;
   isAuthenticated: boolean;
@@ -21,80 +24,172 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function readString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function readRole(value: unknown): UserRole | undefined {
+  return value === "ADMIN" || value === "CLIENT" || value === "BUM" ? value : undefined;
+}
+
+function getDisplayName(
+  clerkName: string | null | undefined,
+  firstName: string | null | undefined,
+  lastName: string | null | undefined,
+  profileName: string | undefined,
+  email: string,
+) {
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+  return clerkName || fullName || profileName || email;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [authorizationError, setAuthorizationError] = useState<string | null>(null);
+  const { isLoaded: isAuthLoaded, isSignedIn, getToken, signOut: clerkSignOut } = useClerkAuth();
+  const { isLoaded: isUserLoaded, user: clerkUser } = useUser();
+  const [dbUser, setDbUser] = useState<AuthUser | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [isDbProfileLoaded, setIsDbProfileLoaded] = useState(false);
 
-  const loadUser = async (nextSession: Session | null) => {
-    setSession(nextSession);
+  useEffect(() => {
+    setSupabaseAccessTokenProvider(() => getToken());
+    return () => setSupabaseAccessTokenProvider(null);
+  }, [getToken]);
 
-    if (!nextSession) {
-      setUser(null);
-      setAuthorizationError(null);
-      setIsLoaded(true);
-      return;
+  const baseUser = useMemo<AuthUser | null>(() => {
+    const isLoaded = isAuthLoaded && isUserLoaded;
+    const signedIn = Boolean(isSignedIn && clerkUser);
+    const email =
+      clerkUser?.primaryEmailAddress?.emailAddress ??
+      clerkUser?.emailAddresses[0]?.emailAddress ??
+      "";
+
+    if (!isLoaded || !signedIn || !clerkUser || !email) {
+      return null;
     }
 
-    try {
-      const authUser = await getAuthUserFromSession(nextSession);
-      setUser(authUser);
-      setAuthorizationError(
-        authUser
-          ? null
-          : "Your Supabase user is signed in but has not been assigned a Trusted Bums role.",
-      );
-    } catch (error) {
-      setUser(null);
-      setAuthorizationError(error instanceof Error ? error.message : "Unable to load your Trusted Bums profile.");
-    } finally {
-      setIsLoaded(true);
+    const publicMetadata = clerkUser.publicMetadata as Record<string, unknown>;
+    const unsafeMetadata = clerkUser.unsafeMetadata as Record<string, unknown>;
+    const profile = getAuthorizationProfileByEmail(email);
+    const knownClient = getKnownClientForEmail(email);
+    const metadataRole = readRole(publicMetadata.role) ?? readRole(unsafeMetadata.role);
+    const metadataCompanyName =
+      readString(publicMetadata.clientCompanyName) ??
+      readString(publicMetadata.companyName) ??
+      readString(unsafeMetadata.clientCompanyName) ??
+      readString(unsafeMetadata.companyName);
+    const role = metadataRole ?? profile?.role;
+    const companyName = knownClient?.company ?? metadataCompanyName;
+    const bumId =
+      readString(publicMetadata.bumId) ??
+      readString(unsafeMetadata.bumId) ??
+      profile?.bumId ??
+      (role === "BUM" ? createPendingBumId(email) : undefined);
+
+    if (!role || (role === "CLIENT" && !companyName) || (role === "BUM" && !bumId)) {
+      return null;
     }
-  };
+
+    const fallbackUser = profile ? toAuthUser(profile) : undefined;
+
+    return {
+      id: clerkUser.id,
+      email,
+      name: getDisplayName(
+        clerkUser.fullName,
+        clerkUser.firstName,
+        clerkUser.lastName,
+        fallbackUser?.name,
+        email,
+      ),
+      role,
+      clientId: fallbackUser?.clientId,
+      bumId,
+      companyName,
+    };
+  }, [clerkUser, isAuthLoaded, isSignedIn, isUserLoaded]);
 
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) {
-        void loadUser(data.session);
-      }
-    });
+    async function syncProfile() {
+      setDbError(null);
+      setDbUser(null);
+      setIsDbProfileLoaded(false);
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (mounted) {
-        void loadUser(nextSession);
+      if (!baseUser) {
+        setIsDbProfileLoaded(true);
+        return;
       }
-    });
+
+      try {
+        const profile = await ensureSupabaseProfileForAuthUser(baseUser);
+        if (!mounted) {
+          return;
+        }
+
+        setDbUser({
+          ...baseUser,
+          clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
+          companyName: profile.companies?.name ?? baseUser.companyName,
+        });
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        setDbUser(baseUser);
+        setDbError(error instanceof Error ? error.message : "Unable to connect this Clerk user to Supabase.");
+      } finally {
+        if (mounted) {
+          setIsDbProfileLoaded(true);
+        }
+      }
+    }
+
+    void syncProfile();
 
     return () => {
       mounted = false;
-      listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [baseUser]);
+
+  const isLoaded = isAuthLoaded && isUserLoaded && isDbProfileLoaded;
+  const authorizationError = useMemo(() => {
+    if (!isLoaded || !isSignedIn) {
+      return null;
+    }
+
+    if (!baseUser) {
+      return "Your Clerk user is signed in but has not been assigned a Trusted Bums role.";
+    }
+
+    return dbError;
+  }, [baseUser, dbError, isLoaded, isSignedIn]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      user,
-      session,
+      user: dbUser,
       isLoaded,
-      isSignedIn: Boolean(session),
-      isAuthenticated: Boolean(user),
+      isSignedIn: Boolean(isSignedIn && clerkUser),
+      isAuthenticated: Boolean(dbUser),
       authorizationError,
-      hasRole: (roles) => Boolean(user && roles.includes(user.role)),
+      hasRole: (roles) => Boolean(dbUser && roles.includes(dbUser.role)),
       refreshUser: async () => {
-        setIsLoaded(false);
-        const { data } = await supabase.auth.getSession();
-        await loadUser(data.session);
+        if (baseUser) {
+          const profile = await ensureSupabaseProfileForAuthUser(baseUser);
+          setDbUser({
+            ...baseUser,
+            clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
+            companyName: profile.companies?.name ?? baseUser.companyName,
+          });
+        }
       },
       signOut: async () => {
-        await supabase.auth.signOut();
-        setSession(null);
-        setUser(null);
+        await clerkSignOut();
+        setDbUser(null);
       },
     }),
-    [authorizationError, isLoaded, session, user],
+    [authorizationError, baseUser, clerkSignOut, clerkUser, dbUser, isLoaded, isSignedIn],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

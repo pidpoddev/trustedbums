@@ -1,7 +1,6 @@
-import type { Session } from "@supabase/supabase-js";
 import { FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION } from "@/data/partnerTerms";
 import { supabase } from "@/lib/supabase";
-import type { AuthUser, UserRole } from "@/data/authData";
+import type { AuthUser } from "@/data/authData";
 
 export type RegistrationStatus =
   | "Draft"
@@ -115,18 +114,6 @@ export interface AuditEvent {
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
 }
 
-function normalizeRole(role?: string | null): UserRole | undefined {
-  const upper = role?.toUpperCase();
-  if (upper === "ADMIN" || upper === "CLIENT" || upper === "BUM") {
-    return upper;
-  }
-  return undefined;
-}
-
-function readString(value: unknown) {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
 function toNullableString(value?: string) {
   return value?.trim() ? value.trim() : null;
 }
@@ -146,6 +133,21 @@ async function getProfileRecord(userId: string) {
 }
 
 async function ensureCompany(companyName: string) {
+  const { data: existing, error: existingError } = await supabase
+    .from("companies")
+    .select("*")
+    .eq("name", companyName)
+    .limit(1)
+    .maybeSingle<CompanyRecord>();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existing) {
+    return existing;
+  }
+
   const { data, error } = await supabase
     .from("companies")
     .insert({ name: companyName })
@@ -159,33 +161,25 @@ async function ensureCompany(companyName: string) {
   return data;
 }
 
-async function ensureProfileForSession(session: Session) {
-  const existing = await getProfileRecord(session.user.id);
-  if (existing) {
-    return existing;
-  }
-
-  const metadata = session.user.user_metadata ?? {};
-  const email = session.user.email ?? readString(metadata.email) ?? "";
-  const role = normalizeRole(readString(metadata.role)) ?? (email === "bums@trustedbums.com" ? "ADMIN" : undefined);
-  const companyName = readString(metadata.company_name);
-  const fullName = readString(metadata.full_name) ?? readString(metadata.name) ?? email;
-  let companyId: string | null = null;
-
-  if (role === "CLIENT" && companyName) {
-    companyId = (await ensureCompany(companyName)).id;
-  }
+export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
+  const existing = await getProfileRecord(user.id);
+  const companyId =
+    existing?.company_id ??
+    (user.role === "CLIENT" && user.companyName ? (await ensureCompany(user.companyName)).id : null);
 
   const { data, error } = await supabase
     .from("profiles")
-    .insert({
-      id: session.user.id,
-      company_id: companyId,
-      full_name: fullName,
-      email,
-      role,
-      is_admin: role === "ADMIN",
-    })
+    .upsert(
+      {
+        id: user.id,
+        company_id: companyId,
+        full_name: user.name,
+        email: user.email,
+        role: user.role,
+        is_admin: user.role === "ADMIN",
+      },
+      { onConflict: "id" },
+    )
     .select("*, companies(id, name)")
     .single<ProfileRecord>();
 
@@ -194,33 +188,6 @@ async function ensureProfileForSession(session: Session) {
   }
 
   return data;
-}
-
-export async function getAuthUserFromSession(session: Session | null): Promise<AuthUser | null> {
-  if (!session?.user) {
-    return null;
-  }
-
-  const profile = await ensureProfileForSession(session);
-  const role = profile.is_admin ? "ADMIN" : normalizeRole(profile.role);
-
-  if (!role) {
-    return null;
-  }
-
-  if (role === "CLIENT" && !profile.company_id) {
-    return null;
-  }
-
-  return {
-    id: session.user.id,
-    email: profile.email ?? session.user.email ?? "",
-    name: profile.full_name ?? profile.email ?? session.user.email ?? "Trusted Bums User",
-    role,
-    clientId: profile.company_id ?? undefined,
-    companyName: profile.companies?.name ?? undefined,
-    bumId: role === "BUM" ? session.user.id : undefined,
-  };
 }
 
 export async function getActiveTermsVersion() {

@@ -22,3 +22,7 @@ additional_redirect_urls = [
   "https://pidpoddev.github.io/trustedbums/login",
   "https://trustedbums.com/login"
 ]
+
+[auth.third_party.clerk]
+enabled = true
+domain = "gorgeous-kit-53.accounts.dev"
