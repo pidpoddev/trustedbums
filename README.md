@@ -2,7 +2,7 @@
 
 Trusted Bums is a Vite React app for managing warm introductions, client legal onboarding, opportunity registration, and admin audit workflows.
 
-Deployed app: https://pidpoddev.github.io/trustedbums/
+Deployed app: hosted at the site root.
 
 ## Local Development
 
@@ -26,10 +26,10 @@ Start the development server:
 npm run dev
 ```
 
-The app is served from the Vite base path used by GitHub Pages:
+The app is served from the site root:
 
 ```text
-http://localhost:8080/trustedbums/
+http://localhost:8080/
 ```
 
 ## Auth And Database
@@ -84,13 +84,19 @@ Admin management lives at `/admin` and includes companies, users, terms versions
 
 ## Deployment
 
-GitHub Pages deployment is handled by `.github/workflows/deploy-pages.yml`. Configure the repository secret:
+Hosted deployment is handled by `.github/workflows/deploy_dreamhost.yaml`. Configure these repository secrets:
 
 ```text
+VITE_CLERK_PUBLISHABLE_KEY
+VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
+DREAMHOST_SSH_KEY
+DREAMHOST_HOST
+DREAMHOST_USER
+DREAMHOST_TARGET
 ```
 
-Vercel deployments should define `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` in project environment variables.
+GitHub Pages deployment remains available in `.github/workflows/deploy-pages.yml`, but the Vite base is now `/` for root-hosted deployments. Vercel deployments should define `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` in project environment variables.
 
 ## Quality Checks
 
@@ -99,7 +105,7 @@ Run the same checks used before publishing:
 ```sh
 npm run lint
 npm run test
-npm run build -- --base=/trustedbums/
+npm run build -- --base=/
 ```
 
 ## Tech Stack

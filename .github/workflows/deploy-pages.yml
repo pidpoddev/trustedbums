@@ -42,7 +42,7 @@ jobs:
         run: npm run test
 
       - name: Build
-        run: npm run build -- --base=/trustedbums/
+        run: npm run build -- --base=/
         env:
           VITE_CLERK_PUBLISHABLE_KEY: pk_test_Z29yZ2VvdXMta2l0LTUzLmNsZXJrLmFjY291bnRzLmRldiQ
           VITE_SUPABASE_URL: https://vaoqvtxqvbptyxddpoju.supabase.co
