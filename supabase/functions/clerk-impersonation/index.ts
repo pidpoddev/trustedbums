@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import * as jose from "jsr:@panva/jose@6";
 
 type ImpersonationAction = "start" | "stop";
 
@@ -38,17 +39,11 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabasePublicKey = Deno.env.get("SB_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const clerkSecretKey = Deno.env.get("CLERK_SECRET_KEY");
+const clerkFrontendApiUrl = Deno.env.get("CLERK_FRONTEND_API_URL");
 
 if (!supabaseUrl || !supabasePublicKey || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
 }
-
-const supabaseAuth = createClient(supabaseUrl, supabasePublicKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: {
@@ -80,28 +75,59 @@ function getBearerToken(request: Request) {
   return token;
 }
 
+function decodeBase64Url(segment: string) {
+  const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
+  return atob(`${normalized}${padding}`);
+}
+
+function parseJwtPayload(token: string) {
+  const payloadSegment = token.split(".")[1] ?? "";
+
+  if (!payloadSegment) {
+    throw new Error("The current session token is malformed.");
+  }
+
+  return JSON.parse(decodeBase64Url(payloadSegment)) as ClaimsResponse & {
+    iss?: string;
+  };
+}
+
+function resolveClerkJwksUrl(issuer?: string) {
+  const candidate = issuer?.trim() || clerkFrontendApiUrl?.trim();
+
+  if (!candidate) {
+    throw new Error("Unable to determine the Clerk JWKS endpoint for this session.");
+  }
+
+  return new URL("/.well-known/jwks.json", candidate).toString();
+}
+
 async function getClaims(token: string) {
-  const { data, error } = await supabaseAuth.auth.getUser(token);
+  const payload = parseJwtPayload(token);
+  const jwksUrl = resolveClerkJwksUrl(payload.iss);
 
-  if (error || !data?.user?.id) {
-    throw new Error("Unable to validate the current session against Supabase Auth.");
+  const { payload: verifiedPayload } = await jose.jwtVerify(
+    token,
+    jose.createRemoteJWKSet(new URL(jwksUrl)),
+    payload.iss
+      ? {
+          issuer: payload.iss,
+        }
+      : undefined,
+  );
+
+  const claims = verifiedPayload as ClaimsResponse;
+  const currentUserId = claims.sub?.trim();
+
+  if (!currentUserId) {
+    throw new Error("The verified Clerk session did not include a user ID.");
   }
 
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as ClaimsResponse;
-
-    return {
-      claims: payload,
-      currentUserId: payload.sub?.trim() || data.user.id,
-    } satisfies ValidatedSession;
-  } catch {
-    return {
-      claims: {
-        sub: data.user.id,
-      },
-      currentUserId: data.user.id,
-    } satisfies ValidatedSession;
-  }
+  return {
+    claims,
+    currentUserId,
+  } satisfies ValidatedSession;
 }
 
 async function getProfile(id: string) {
