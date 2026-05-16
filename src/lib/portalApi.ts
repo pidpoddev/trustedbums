@@ -371,6 +371,36 @@ export async function listOpportunityRegistrations(status?: string) {
   return data ?? [];
 }
 
+export async function listMarketplaceOpportunities() {
+  const { data, error } = await supabase
+    .from("opportunity_registrations")
+    .select("*, companies(name)")
+    .eq("status", "Accepted")
+    .order("created_at", { ascending: false })
+    .returns<OpportunityRegistration[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function getMarketplaceOpportunity(id: string) {
+  const { data, error } = await supabase
+    .from("opportunity_registrations")
+    .select("*, companies(name)")
+    .eq("id", id)
+    .eq("status", "Accepted")
+    .maybeSingle<OpportunityRegistration>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function updateOpportunityRegistration(
   user: AuthUser,
   opportunity: OpportunityRegistration,

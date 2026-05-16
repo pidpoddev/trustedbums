@@ -1,8 +1,8 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,9 +16,6 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
-  mockOpportunities,
-  mockBums,
-  opportunityStatusConfig,
   claimStatusConfig,
   type ClaimStatus,
   type RelationshipStrength,
@@ -27,6 +24,7 @@ import {
 } from "@/data/mockData";
 import { useIntroClaims } from "@/hooks/use-intro-claims";
 import { useAuth } from "@/contexts/AuthContext";
+import { getMarketplaceOpportunity } from "@/lib/portalApi";
 import { ArrowLeft, Plus, Activity } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,10 +38,14 @@ interface ActivityEntry {
 
 export default function BumOpportunityDetail() {
   const { id } = useParams();
-  const opp = mockOpportunities.find((o) => o.id === id);
   const { user } = useAuth();
+  const opportunityQuery = useQuery({
+    queryKey: ["bum-marketplace-opportunity", id],
+    queryFn: () => getMarketplaceOpportunity(id!),
+    enabled: Boolean(id),
+  });
   const { introClaims, addIntroClaim, updateIntroClaimStatus } = useIntroClaims();
-  const bum = mockBums.find((mockBum) => mockBum.id === user?.bumId);
+  const opp = opportunityQuery.data;
 
   // Recommendation form
   const [contact, setContact] = useState("");
@@ -56,15 +58,11 @@ export default function BumOpportunityDetail() {
   const [updateStatus, setUpdateStatus] = useState<ClaimStatus>("SCHEDULED");
   const [updateNote, setUpdateNote] = useState("");
 
-  const [activity, setActivity] = useState<ActivityEntry[]>([
-    {
-      id: "a1",
-      contact: "Jennifer Park",
-      status: "MEETING_HELD",
-      note: "Initial call went well. They want a follow-up next week.",
-      at: "2026-02-15",
-    },
-  ]);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
+
+  if (opportunityQuery.isLoading) {
+    return <div className="text-sm text-muted-foreground">Loading live opportunity...</div>;
+  }
 
   if (!opp) {
     return (
@@ -88,8 +86,8 @@ export default function BumOpportunityDetail() {
     }
     const claim = addIntroClaim({
       opportunityId: opp.id,
-      opportunityTitle: opp.title,
-      bumAlias: bum?.alias ?? user?.name ?? "Trusted Bum",
+      opportunityTitle: opp.target_account_name,
+      bumAlias: user?.name ?? "Trusted Bum",
       contact,
       company,
       strength,
@@ -138,8 +136,11 @@ export default function BumOpportunityDetail() {
         <ArrowLeft className="mr-1 h-4 w-4" /> Back to opportunities
       </Link>
 
-      <PageHeader title={opp.title} description={`${opp.client} • ${opp.commission}`}>
-        <StatusBadge {...opportunityStatusConfig[opp.status]} />
+      <PageHeader
+        title={opp.target_account_name}
+        description={`${opp.companies?.name ?? "Trusted Bums client"} • ${opp.commission_rate}% commission`}
+      >
+        <StatusBadge label="Open" variant="success" />
       </PageHeader>
 
       <Card>
@@ -147,14 +148,28 @@ export default function BumOpportunityDetail() {
           <CardTitle>About this opportunity</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p>{opp.description}</p>
-          <div className="flex items-center gap-2 flex-wrap">
-            {opp.industries.map((i) => (
-              <Badge key={i} variant="secondary">{i}</Badge>
-            ))}
-            {opp.regions.map((r) => (
-              <Badge key={r} variant="outline">{r}</Badge>
-            ))}
+          <p>{opp.opportunity_description ?? "No opportunity description has been provided yet."}</p>
+          <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
+            <div>
+              <p className="font-medium text-foreground">Expected product / service</p>
+              <p>{opp.expected_product_service ?? "Not specified"}</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground">Estimated deal value</p>
+              <p>{opp.estimated_deal_value ? `$${Number(opp.estimated_deal_value).toLocaleString()}` : "Pending"}</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground">Timeline</p>
+              <p>{opp.expected_timeline ?? "Not specified"}</p>
+            </div>
+            <div>
+              <p className="font-medium text-foreground">Business unit</p>
+              <p>{opp.business_unit ?? "Not specified"}</p>
+            </div>
+            <div className="md:col-span-2">
+              <p className="font-medium text-foreground">Commission duration</p>
+              <p>{opp.commission_duration}</p>
+            </div>
           </div>
         </CardContent>
       </Card>
