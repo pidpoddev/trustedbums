@@ -54,7 +54,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Navigate to="/" replace />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route element={<ProtectedRoute allowedRoles={["ADMIN", "CLIENT", "BUM"]} />}>
+              <Route element={<ProtectedRoute allowedRoles={["CLIENT", "BUM"]} />}>
                 <Route path="/terms" element={<ClientTerms />} />
               </Route>
 

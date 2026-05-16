@@ -101,6 +101,83 @@ export const FALLBACK_TERMS_VERSION = {
   created_at: "2026-05-02T00:00:00.000Z",
 };
 
+export const BUM_TERMS_VERSION = "bum-v1";
+export const BUM_TERMS_TITLE = "Trusted Bums Connector Agreement";
+export const BUM_TERMS_BODY = `Trusted Bums allows approved connectors, introducers, and relationship owners to participate in the platform as "Bums." By using the Bum Portal, joining opportunities, or making introductions, you agree to the terms below.
+
+1. Role of a Bum
+
+A Bum helps create access, warm introductions, relationship context, or meeting opportunities between Trusted Bums clients and relevant target accounts. A Bum does not represent that they are acting as an employee, legal agent, broker-dealer, or exclusive representative of Trusted Bums unless separately agreed in writing.
+
+2. Accuracy and Good Faith
+
+You agree to act in good faith, provide accurate relationship information to the best of your knowledge, and avoid knowingly making misleading claims about your access, influence, or relationship strength.
+
+3. Confidentiality
+
+You may receive non-public information about clients, opportunities, products, pricing, target accounts, or strategic plans. You agree to keep that information confidential and use it only for legitimate participation in the Trusted Bums platform.
+
+4. Respectful Conduct
+
+You agree to communicate professionally, treat prospects and clients respectfully, and avoid harassment, spam, deceptive outreach, or behavior that could damage Trusted Bums or its clients.
+
+5. Platform Rules
+
+Trusted Bums may approve, reject, pause, or remove opportunities, claims, or accounts at its discretion. Participation in one opportunity does not guarantee participation in future opportunities.
+
+6. Eligibility for Earnings
+
+Any earnings, commissions, or payouts are subject to the underlying opportunity rules, client payments actually received, platform approval, dispute review, fraud prevention checks, and any tax or payout requirements requested by Trusted Bums.
+
+7. No Guaranteed Compensation
+
+Creating an account, reviewing opportunities, or proposing introductions does not guarantee approval, compensation, payouts, or continued access to the platform.
+
+8. Compliance
+
+You are responsible for complying with applicable laws, contractual restrictions, employer obligations, and non-disclosure obligations that may apply to your activities. You should not share information or make introductions you are not permitted to share or make.
+
+9. Termination
+
+Trusted Bums may suspend or terminate access for inactivity, misuse, misconduct, risk, compliance concerns, inaccurate information, or any other business reason. Termination does not guarantee or eliminate any payout unless separately determined by Trusted Bums under the applicable opportunity rules.
+
+10. Limitation of Liability
+
+Trusted Bums is not liable for indirect, incidental, special, punitive, or consequential damages arising from your use of the platform. Access is provided on an as-available basis.
+
+11. Updates
+
+Trusted Bums may update this Connector Agreement from time to time. Continued use of the platform after acceptance of updated terms constitutes agreement to the updated version.`;
+
+export const BUM_TERMS_FAQ_BODY = `Q: What is a Bum in Trusted Bums?
+A: A Bum is a connector or introduction partner who helps create access, context, or meetings between clients and target accounts.
+
+Q: Am I guaranteed payouts if I create an account?
+A: No. Payouts depend on approved participation, the underlying opportunity terms, and successful downstream commercial events or platform approvals.
+
+Q: Can I share confidential client information?
+A: No. You must protect non-public information and only use it for legitimate platform participation.
+
+Q: What if I am unsure whether I can make an introduction?
+A: If you are uncertain because of employer rules, contractual limits, or confidentiality restrictions, you should not proceed until you are confident you are allowed to do so.
+
+Q: Can Trusted Bums remove my access?
+A: Yes. Trusted Bums may suspend or terminate access for misuse, compliance concerns, inaccurate information, or other platform risk reasons.`;
+
+export const BUM_FALLBACK_TERMS_VERSION = {
+  id: "00000000-0000-0000-0000-000000000002",
+  version: BUM_TERMS_VERSION,
+  title: BUM_TERMS_TITLE,
+  body: BUM_TERMS_BODY,
+  faq_body: BUM_TERMS_FAQ_BODY,
+  is_active: true,
+  created_at: "2026-05-16T00:00:00.000Z",
+};
+
+export function getBumTermsAcceptanceStorageKey(userId: string, version: string) {
+  return `trusted-bums-bum-terms:${userId}:${version}`;
+}
+
 export function parseFaq(faqBody: string) {
   return faqBody
     .split(/\n\n(?=Q: )/g)

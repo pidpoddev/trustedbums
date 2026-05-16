@@ -8,7 +8,7 @@ export function ClientTermsGate() {
   const { hasAcceptedCurrentTerms, isLoading, terms } = useCurrentTermsState();
   const isTermsRoute = location.pathname === "/client/terms" || location.pathname === "/terms";
 
-  if (!user || isTermsRoute) {
+  if (!user || user.role === "ADMIN" || isTermsRoute) {
     return <Outlet />;
   }
 

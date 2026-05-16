@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
+import { getBumTermsAcceptanceStorageKey } from "@/data/partnerTerms";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { acceptPartnerTerms } from "@/lib/portalApi";
@@ -27,6 +28,7 @@ export default function ClientTerms() {
   const location = useLocation();
   const { toast } = useToast();
   const state = location.state as LocationState | null;
+  const isBumTerms = user?.role === "BUM";
 
   const acceptTerms = async () => {
     if (!user || !terms) {
@@ -35,13 +37,21 @@ export default function ClientTerms() {
 
     setIsAccepting(true);
     try {
-      await acceptPartnerTerms(user, terms, navigator.userAgent ?? null);
+      if (isBumTerms) {
+        const key = getBumTermsAcceptanceStorageKey(user.id, terms.version);
+        window.localStorage.setItem(key, "true");
+      } else {
+        await acceptPartnerTerms(user, terms, navigator.userAgent ?? null);
+      }
       await refetch();
-      toast({ title: "Partner terms accepted", description: "Your acceptance was recorded for this terms version." });
+      toast({
+        title: isBumTerms ? "Connector agreement accepted" : "Partner terms accepted",
+        description: "Your acceptance was recorded for this terms version.",
+      });
       navigate(state?.from ?? getDefaultPathForRole(user.role), { replace: true });
     } catch (error) {
       toast({
-        title: "Unable to accept terms",
+        title: isBumTerms ? "Unable to accept connector agreement" : "Unable to accept terms",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -57,8 +67,12 @@ export default function ClientTerms() {
   return (
     <div id="top">
       <PageHeader
-        title="Trusted Bums Terms & Legal Agreements"
-        description="Review and accept the current legal terms before continuing into the platform."
+        title={isBumTerms ? "Trusted Bums Connector Terms" : "Trusted Bums Terms & Legal Agreements"}
+        description={
+          isBumTerms
+            ? "Review and accept the current connector agreement before continuing into the Bum portal."
+            : "Review and accept the current client legal terms before continuing into the platform."
+        }
       />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
@@ -97,8 +111,9 @@ export default function ClientTerms() {
                       onCheckedChange={(value) => setChecked(Boolean(value))}
                     />
                     <Label htmlFor="partnerTerms" className="text-sm leading-6">
-                      I have read and agree to the Trusted Bums Partner Terms, including the commission,
-                      non-circumvention, confidentiality, and opportunity registration terms.
+                      {isBumTerms
+                        ? "I have read and agree to the Trusted Bums Connector Agreement, including the confidentiality, conduct, compliance, and payout eligibility terms."
+                        : "I have read and agree to the Trusted Bums Partner Terms, including the commission, non-circumvention, confidentiality, and opportunity registration terms."}
                     </Label>
                   </div>
                   <Button className="w-full" disabled={!checked || isAccepting} onClick={acceptTerms}>
@@ -111,7 +126,7 @@ export default function ClientTerms() {
                 <Button variant="outline" asChild>
                   <a href="#top">
                     <ScrollText className="mr-2 h-4 w-4" />
-                    View Partner Terms
+                    {isBumTerms ? "View Connector Agreement" : "View Partner Terms"}
                   </a>
                 </Button>
                 <Button variant="outline" asChild>

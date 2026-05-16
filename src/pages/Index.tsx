@@ -10,13 +10,36 @@ import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
 import { ArrowRight, Users, Briefcase, Handshake } from "lucide-react";
 
 const Index = () => {
-  const { user, isLoaded } = useAuth();
+  const { user, isLoaded, isSignedIn } = useAuth();
   const portalPath = user ? getDefaultPathForRole(user.role) : "/login";
   const showSignedOutActions = !isLoaded || !user;
   const showSignedInActions = Boolean(isLoaded && user);
 
   if (isLoaded && user) {
     return <Navigate to={portalPath} replace />;
+  }
+
+  if (isSignedIn && !isLoaded) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50">
+          <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+            <BrandLogo to="/" imageClassName="h-11" />
+            <div className="flex items-center gap-3">
+              <AccessibilityMenu />
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto flex min-h-[calc(100vh-4rem)] items-center justify-center px-6">
+          <div className="rounded-2xl border bg-card px-8 py-10 text-center">
+            <p className="font-display text-2xl font-bold">Preparing your portal</p>
+            <p className="mt-3 text-muted-foreground">
+              We&apos;re setting up your account and checking your legal agreements.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (

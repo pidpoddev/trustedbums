@@ -38,8 +38,14 @@ export function PartnerTermsContent({ terms, showFaq = true }: PartnerTermsConte
       {showFaq && (
         <section id="agreement-faq" className="space-y-3">
           <div>
-            <h3 className="font-display text-xl font-bold">Client Agreement FAQ</h3>
-            <p className="text-sm text-muted-foreground">Short answers to the questions clients usually ask first.</p>
+            <h3 className="font-display text-xl font-bold">
+              {terms.title.includes("Connector") ? "Connector Agreement FAQ" : "Client Agreement FAQ"}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {terms.title.includes("Connector")
+                ? "Short answers to the questions connectors usually ask first."
+                : "Short answers to the questions clients usually ask first."}
+            </p>
           </div>
           <Accordion type="single" collapsible className="rounded-md border px-4">
             {faqItems.map((item, index) => (
