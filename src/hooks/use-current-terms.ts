@@ -13,7 +13,7 @@ export function useCurrentTermsState() {
   const acceptanceQuery = useQuery({
     queryKey: ["terms-acceptance", user?.id, user?.clientId, termsQuery.data?.id],
     queryFn: () => getCurrentTermsAcceptance(user!.id, user?.clientId, termsQuery.data!.id),
-    enabled: Boolean(user?.id && termsQuery.data?.id && user.role === "CLIENT"),
+    enabled: Boolean(user?.id && termsQuery.data?.id),
     retry: false,
   });
 

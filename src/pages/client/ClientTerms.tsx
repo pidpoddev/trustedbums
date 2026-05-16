@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import { getDefaultPathForRole } from "@/data/authData";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { acceptPartnerTerms } from "@/lib/portalApi";
@@ -37,7 +38,7 @@ export default function ClientTerms() {
       await acceptPartnerTerms(user, terms, navigator.userAgent ?? null);
       await refetch();
       toast({ title: "Partner terms accepted", description: "Your acceptance was recorded for this terms version." });
-      navigate(state?.from ?? "/client/dashboard", { replace: true });
+      navigate(state?.from ?? getDefaultPathForRole(user.role), { replace: true });
     } catch (error) {
       toast({
         title: "Unable to accept terms",
@@ -56,8 +57,8 @@ export default function ClientTerms() {
   return (
     <div id="top">
       <PageHeader
-        title="Trusted Bums Partner Terms"
-        description="A lightweight click-through agreement for client portal access and opportunity registration."
+        title="Trusted Bums Terms & Legal Agreements"
+        description="Review and accept the current legal terms before continuing into the platform."
       />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
@@ -131,7 +132,7 @@ export default function ClientTerms() {
                 </Button>
                 {hasAcceptedCurrentTerms && (
                   <Button asChild>
-                    <Link to="/client/dashboard">Continue to Dashboard</Link>
+                    <Link to={user ? getDefaultPathForRole(user.role) : "/"}>Continue to Dashboard</Link>
                   </Button>
                 )}
               </div>

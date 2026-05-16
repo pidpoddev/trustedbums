@@ -6,9 +6,9 @@ export function ClientTermsGate() {
   const { user } = useAuth();
   const location = useLocation();
   const { hasAcceptedCurrentTerms, isLoading, terms } = useCurrentTermsState();
-  const isTermsRoute = location.pathname === "/client/terms";
+  const isTermsRoute = location.pathname === "/client/terms" || location.pathname === "/terms";
 
-  if (user?.role !== "CLIENT" || isTermsRoute) {
+  if (!user || isTermsRoute) {
     return <Outlet />;
   }
 
@@ -21,7 +21,7 @@ export function ClientTermsGate() {
   }
 
   if (!hasAcceptedCurrentTerms) {
-    return <Navigate to="/client/terms" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/terms" replace state={{ from: location.pathname }} />;
   }
 
   return <Outlet />;
