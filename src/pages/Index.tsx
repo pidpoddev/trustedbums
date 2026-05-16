@@ -134,7 +134,12 @@ const Index = () => {
             <Flame className="h-4 w-4 text-primary" />
             <span className="font-display font-medium">Trusted Bums</span>
           </div>
-          <p>© 2026 Trusted Bums. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <Link to="/privacy-policy" className="hover:text-foreground">
+              Privacy Policy
+            </Link>
+            <p>© 2026 Trusted Bums. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>
