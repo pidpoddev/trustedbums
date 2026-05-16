@@ -1,4 +1,4 @@
-import { useAuth as useClerkAuth, useSignIn } from "@clerk/react";
+import { useAuth as useClerkAuth, useClerk, useSignIn } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search, ShieldAlert, UserRoundCog } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -19,6 +19,7 @@ import { exitUserImpersonation, listProfiles, requestUserImpersonation } from "@
 
 export function ImpersonationControls() {
   const { getToken } = useClerkAuth();
+  const { signOut } = useClerk();
   const { signIn } = useSignIn();
   const { toast } = useToast();
   const { isImpersonating, user } = useAuth();
@@ -63,6 +64,8 @@ export function ImpersonationControls() {
     if (!signIn) {
       throw new Error("Clerk sign-in is still loading.");
     }
+
+    await signOut();
 
     const { error } = await signIn.ticket({
       ticket,
