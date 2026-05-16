@@ -4,7 +4,7 @@ import {
   UserButton,
 } from "@clerk/react";
 import { ArrowRight, Flame, LogIn, UserPlus } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,10 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
+
+  if (isLoaded && user) {
+    return <Navigate to={getDestination(user, state?.from?.pathname)} replace />;
+  }
 
   const continueToPortal = () => {
     if (user) {

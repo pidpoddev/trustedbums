@@ -3,7 +3,7 @@ import {
   SignInButton,
   UserButton,
 } from "@clerk/react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,8 +12,12 @@ import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
 import { Flame, ArrowRight, Users, Briefcase, Shield, Handshake } from "lucide-react";
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, isLoaded } = useAuth();
   const portalPath = user ? getDefaultPathForRole(user.role) : "/login";
+
+  if (isLoaded && user) {
+    return <Navigate to={portalPath} replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
