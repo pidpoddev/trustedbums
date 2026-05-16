@@ -44,9 +44,9 @@ jobs:
       - name: Build
         run: npm run build -- --base=/
         env:
-          VITE_CLERK_PUBLISHABLE_KEY: pk_test_Z29yZ2VvdXMta2l0LTUzLmNsZXJrLmFjY291bnRzLmRldiQ
-          VITE_SUPABASE_URL: https://vaoqvtxqvbptyxddpoju.supabase.co
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'missing-supabase-anon-key' }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Add SPA fallback
         run: cp dist/index.html dist/404.html

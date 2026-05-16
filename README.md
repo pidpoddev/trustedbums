@@ -74,6 +74,8 @@ enabled = true
 domain = "gorgeous-kit-53.accounts.dev"
 ```
 
+For production, configure the live Clerk instance in the Supabase dashboard using Clerk third-party auth. Do not reuse the development `.accounts.dev` domain in production.
+
 ## Portal Flow
 
 Client users must accept the current active Partner Terms at `/client/terms` before accessing client dashboard features. When a new active terms version is created, client users are redirected back to the terms page until they accept the latest version.
@@ -96,7 +98,34 @@ DREAMHOST_USER
 DREAMHOST_TARGET
 ```
 
+Use the production Clerk publishable key here. It should start with `pk_live_`.
+
 GitHub Pages deployment remains available in `.github/workflows/deploy-pages.yml`, but the Vite base is now `/` for root-hosted deployments. Vercel deployments should define `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` in project environment variables.
+
+## Production Checklist
+
+For production, keep DreamHost for static hosting and keep Supabase as the database/API layer.
+
+1. Create and activate a Clerk production instance.
+2. Add your production domain in Clerk and complete the DNS/certificate steps there.
+3. Replace development Clerk keys with production keys in your deployment secrets.
+4. In Supabase, add Clerk using Third-Party Auth for the production Clerk domain.
+5. Set these GitHub repository secrets before deploying from Actions:
+
+```text
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+DREAMHOST_SSH_KEY
+DREAMHOST_HOST
+DREAMHOST_USER
+DREAMHOST_TARGET
+```
+
+6. Push to `main` to trigger `.github/workflows/deploy_dreamhost.yaml`.
+
+Notes:
+The local `supabase/config.toml` file is for Supabase CLI and local development. Your live Supabase Clerk integration is configured in the Supabase dashboard, not by deploying that file to DreamHost.
 
 ## Quality Checks
 
