@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle, Download, Mail, MessageCircle, ScrollText } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PartnerTermsContent } from "@/components/PartnerTermsContent";
@@ -29,6 +29,7 @@ export default function ClientTerms() {
   const { toast } = useToast();
   const state = location.state as LocationState | null;
   const isBumTerms = user?.role === "BUM";
+  const dashboardPath = user ? state?.from ?? getDefaultPathForRole(user.role) : "/";
 
   const acceptTerms = async () => {
     if (!user || !terms) {
@@ -48,7 +49,7 @@ export default function ClientTerms() {
         title: isBumTerms ? "Connector agreement accepted" : "Partner terms accepted",
         description: "Your acceptance was recorded for this terms version.",
       });
-      navigate(state?.from ?? getDefaultPathForRole(user.role), { replace: true });
+      navigate(dashboardPath, { replace: true });
     } catch (error) {
       toast({
         title: isBumTerms ? "Unable to accept connector agreement" : "Unable to accept terms",
@@ -146,8 +147,8 @@ export default function ClientTerms() {
                   </a>
                 </Button>
                 {hasAcceptedCurrentTerms && (
-                  <Button asChild>
-                    <Link to={user ? getDefaultPathForRole(user.role) : "/"}>Continue to Dashboard</Link>
+                  <Button onClick={() => navigate(dashboardPath, { replace: true })}>
+                    Continue to Dashboard
                   </Button>
                 )}
               </div>
