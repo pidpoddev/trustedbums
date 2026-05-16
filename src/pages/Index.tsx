@@ -1,8 +1,4 @@
-import {
-  Show,
-  SignInButton,
-  UserButton,
-} from "@clerk/react";
+import { SignInButton, UserButton } from "@clerk/react";
 import { Link, Navigate } from "react-router-dom";
 import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
@@ -14,6 +10,8 @@ import { Flame, ArrowRight, Users, Briefcase, Handshake } from "lucide-react";
 const Index = () => {
   const { user, isLoaded } = useAuth();
   const portalPath = user ? getDefaultPathForRole(user.role) : "/login";
+  const showSignedOutActions = !isLoaded || !user;
+  const showSignedInActions = Boolean(isLoaded && user);
 
   if (isLoaded && user) {
     return <Navigate to={portalPath} replace />;
@@ -31,22 +29,26 @@ const Index = () => {
             <span className="font-display font-bold text-xl">Trusted Bums</span>
           </div>
           <div className="flex items-center gap-3">
-            <Show when="signed-out">
-              <SignInButton mode="modal" {...clerkSignInRedirectProps}>
-                <Button variant="ghost" size="sm">Sign in</Button>
-              </SignInButton>
-              <SignupIntentDialog>
-                <Button size="sm">Sign up</Button>
-              </SignupIntentDialog>
-            </Show>
-            <Show when="signed-in">
-              {user ? (
-                <Link to={portalPath}>
-                  <Button variant="ghost" size="sm">Open Portal</Button>
-                </Link>
-              ) : null}
-              <UserButton />
-            </Show>
+            {showSignedOutActions ? (
+              <>
+                <SignInButton mode="modal" {...clerkSignInRedirectProps}>
+                  <Button variant="ghost" size="sm">Sign in</Button>
+                </SignInButton>
+                <SignupIntentDialog>
+                  <Button size="sm">Sign up</Button>
+                </SignupIntentDialog>
+              </>
+            ) : null}
+            {showSignedInActions ? (
+              <>
+                {user ? (
+                  <Link to={portalPath}>
+                    <Button variant="ghost" size="sm">Open Portal</Button>
+                  </Link>
+                ) : null}
+                <UserButton />
+              </>
+            ) : null}
           </div>
         </div>
       </header>
@@ -65,25 +67,27 @@ const Index = () => {
           Trusted Bums connects companies with verified connectors who make warm introductions. Transparent, auditable, and commission-based.
         </p>
         <div className="flex items-center justify-center gap-4 mt-8">
-          <Show when="signed-out">
-            <SignupIntentDialog initialRole="CLIENT">
-              <Button size="lg" className="text-lg px-8">
-                I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </SignupIntentDialog>
-            <SignupIntentDialog initialRole="BUM">
-              <Button size="lg" variant="outline" className="text-lg px-8">
-                I'm a Bum <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </SignupIntentDialog>
-          </Show>
-          <Show when="signed-in">
+          {showSignedOutActions ? (
+            <>
+              <SignupIntentDialog initialRole="CLIENT">
+                <Button size="lg" className="text-lg px-8">
+                  I'm a Client <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </SignupIntentDialog>
+              <SignupIntentDialog initialRole="BUM">
+                <Button size="lg" variant="outline" className="text-lg px-8">
+                  I'm a Bum <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </SignupIntentDialog>
+            </>
+          ) : null}
+          {showSignedInActions ? (
             <Link to={portalPath}>
               <Button size="lg" className="text-lg px-8">
                 Open Portal <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-          </Show>
+          ) : null}
         </div>
       </section>
 

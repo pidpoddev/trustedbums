@@ -1,8 +1,4 @@
-import {
-  Show,
-  SignInButton,
-  UserButton,
-} from "@clerk/react";
+import { SignInButton, UserButton } from "@clerk/react";
 import { ArrowRight, Flame, LogIn, UserPlus } from "lucide-react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { SignupIntentDialog } from "@/components/SignupIntentDialog";
@@ -30,6 +26,8 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
+  const showSignedOutActions = !isLoaded || !user;
+  const showSignedInActions = Boolean(isLoaded && user);
 
   if (isLoaded && user) {
     return <Navigate to={getDestination(user, state?.from?.pathname)} replace />;
@@ -51,9 +49,9 @@ export default function Login() {
             </div>
             <span className="font-display font-bold text-xl">Trusted Bums</span>
           </Link>
-          <Show when="signed-in">
+          {showSignedInActions ? (
             <UserButton />
-          </Show>
+          ) : null}
         </div>
       </header>
 
@@ -67,49 +65,53 @@ export default function Login() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Show when="signed-out">
-                <SignInButton mode="modal" {...clerkSignInRedirectProps}>
-                  <Button className="w-full">
-                    Sign in <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </SignInButton>
-                <SignupIntentDialog>
-                  <Button className="w-full" variant="outline">
-                    Create account <UserPlus className="ml-2 h-4 w-4" />
-                  </Button>
-                </SignupIntentDialog>
-              </Show>
-
-              <Show when="signed-in">
-                {isLoaded && user ? (
-                  <>
-                    <div className="rounded-md border bg-muted/40 p-4">
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
-                      <StatusBadge
-                        label={user.role}
-                        variant={user.role === "ADMIN" ? "warning" : user.role === "CLIENT" ? "info" : "success"}
-                        className="mt-3"
-                      />
-                    </div>
-                    {authorizationError ? (
-                      <div className="rounded-md border border-warning/30 bg-warning/10 p-4 text-sm text-warning-foreground">
-                        {authorizationError}
-                      </div>
-                    ) : null}
-                    <Button className="w-full" onClick={continueToPortal}>
-                      Continue to portal <ArrowRight className="ml-2 h-4 w-4" />
+              {showSignedOutActions ? (
+                <>
+                  <SignInButton mode="modal" {...clerkSignInRedirectProps}>
+                    <Button className="w-full">
+                      Sign in <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                  </>
-                ) : (
-                  <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm">
-                    <p className="font-medium text-destructive">Authorization required</p>
-                    <p className="text-muted-foreground mt-1">
-                      {authorizationError ?? "This Clerk user does not have a Trusted Bums role yet."}
-                    </p>
-                  </div>
-                )}
-              </Show>
+                  </SignInButton>
+                  <SignupIntentDialog>
+                    <Button className="w-full" variant="outline">
+                      Create account <UserPlus className="ml-2 h-4 w-4" />
+                    </Button>
+                  </SignupIntentDialog>
+                </>
+              ) : null}
+
+              {showSignedInActions ? (
+                <>
+                  {isLoaded && user ? (
+                    <>
+                      <div className="rounded-md border bg-muted/40 p-4">
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
+                        <StatusBadge
+                          label={user.role}
+                          variant={user.role === "ADMIN" ? "warning" : user.role === "CLIENT" ? "info" : "success"}
+                          className="mt-3"
+                        />
+                      </div>
+                      {authorizationError ? (
+                        <div className="rounded-md border border-warning/30 bg-warning/10 p-4 text-sm text-warning-foreground">
+                          {authorizationError}
+                        </div>
+                      ) : null}
+                      <Button className="w-full" onClick={continueToPortal}>
+                        Continue to portal <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm">
+                      <p className="font-medium text-destructive">Authorization required</p>
+                      <p className="text-muted-foreground mt-1">
+                        {authorizationError ?? "This Clerk user does not have a Trusted Bums role yet."}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : null}
             </CardContent>
           </Card>
 
