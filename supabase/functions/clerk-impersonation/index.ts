@@ -10,6 +10,11 @@ interface ClaimsResponse {
   } | null;
 }
 
+interface ValidatedSession {
+  claims: ClaimsResponse;
+  currentUserId: string;
+}
+
 interface ProfileRow {
   id: string;
   email: string | null;
@@ -76,13 +81,27 @@ function getBearerToken(request: Request) {
 }
 
 async function getClaims(token: string) {
-  const { data, error } = await supabaseAuth.auth.getClaims(token);
+  const { data, error } = await supabaseAuth.auth.getUser(token);
 
-  if (error || !data?.claims) {
-    throw new Error("Unable to validate the current session.");
+  if (error || !data?.user?.id) {
+    throw new Error("Unable to validate the current session against Supabase Auth.");
   }
 
-  return data.claims as ClaimsResponse;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as ClaimsResponse;
+
+    return {
+      claims: payload,
+      currentUserId: payload.sub?.trim() || data.user.id,
+    } satisfies ValidatedSession;
+  } catch {
+    return {
+      claims: {
+        sub: data.user.id,
+      },
+      currentUserId: data.user.id,
+    } satisfies ValidatedSession;
+  }
 }
 
 async function getProfile(id: string) {
@@ -138,8 +157,9 @@ Deno.serve(async (request: Request) => {
 
   try {
     const token = getBearerToken(request);
-    const claims = await getClaims(token);
-    const currentUserId = claims.sub?.trim();
+    const session = await getClaims(token);
+    const claims = session.claims;
+    const currentUserId = session.currentUserId;
 
     if (!currentUserId) {
       return json(401, { error: "The current session does not include a user ID." });
