@@ -107,6 +107,22 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Contact */}
+      <section className="container mx-auto px-6 py-16">
+        <div className="rounded-2xl border bg-card p-8 md:p-10">
+          <div className="max-w-2xl">
+            <h2 className="font-display text-3xl font-bold">Contact Us</h2>
+            <p className="mt-3 text-muted-foreground">
+              Questions about the platform, partnerships, or getting started? Reach out and we can help point you in the right direction.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-4">
+              <Button size="lg">Get in Touch</Button>
+              <Button size="lg" variant="outline">Learn More</Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t mt-16">
         <div className="container mx-auto px-6 py-8 flex items-center justify-between text-sm text-muted-foreground">
