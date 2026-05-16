@@ -263,6 +263,11 @@ export async function createAuditEvent(
 }
 
 export async function acceptPartnerTerms(user: AuthUser, terms: TermsVersion, userAgent: string | null) {
+  const existingAcceptance = await getCurrentTermsAcceptance(user.id, user.clientId, terms.id);
+  if (existingAcceptance) {
+    return existingAcceptance;
+  }
+
   const { data, error } = await supabase
     .from("terms_acceptances")
     .insert({
@@ -276,13 +281,29 @@ export async function acceptPartnerTerms(user: AuthUser, terms: TermsVersion, us
     .single<TermsAcceptance>();
 
   if (error) {
+    const isDuplicateAcceptance =
+      error.code === "23505" ||
+      error.code === "409" ||
+      /duplicate key|already exists|unique/i.test(error.message);
+
+    if (isDuplicateAcceptance) {
+      const duplicateAcceptance = await getCurrentTermsAcceptance(user.id, user.clientId, terms.id);
+      if (duplicateAcceptance) {
+        return duplicateAcceptance;
+      }
+    }
+
     throw error;
   }
 
-  await createAuditEvent(user, "terms_accepted", "terms_versions", terms.id, {
-    version: terms.version,
-    user_agent: userAgent,
-  });
+  try {
+    await createAuditEvent(user, "terms_accepted", "terms_versions", terms.id, {
+      version: terms.version,
+      user_agent: userAgent,
+    });
+  } catch (auditError) {
+    console.error("Unable to record terms acceptance audit event", auditError);
+  }
 
   return data;
 }
