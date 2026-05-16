@@ -1,4 +1,4 @@
-import { FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION } from "@/data/partnerTerms";
+import { FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, type TermsFallbackVersion } from "@/data/partnerTerms";
 import { supabase } from "@/lib/supabase";
 import type { AuthUser } from "@/data/authData";
 
@@ -201,6 +201,21 @@ export async function getActiveTermsVersion() {
 
   if (error || !data) {
     return FALLBACK_TERMS_VERSION;
+  }
+
+  return data;
+}
+
+export async function getTermsVersionByVersion(version: string, fallbackTerms: TermsFallbackVersion) {
+  const { data, error } = await supabase
+    .from("terms_versions")
+    .select("*")
+    .eq("version", version)
+    .limit(1)
+    .maybeSingle<TermsVersion>();
+
+  if (error || !data) {
+    return fallbackTerms;
   }
 
   return data;

@@ -9,7 +9,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
-import { getBumTermsAcceptanceStorageKey } from "@/data/partnerTerms";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { acceptPartnerTerms } from "@/lib/portalApi";
@@ -59,12 +58,7 @@ export default function ClientTerms() {
 
     setIsAccepting(true);
     try {
-      if (isBumTerms) {
-        const key = getBumTermsAcceptanceStorageKey(user.id, terms.version);
-        window.localStorage.setItem(key, "true");
-      } else {
-        await acceptPartnerTerms(user, terms, navigator.userAgent ?? null);
-      }
+      await acceptPartnerTerms(user, terms, navigator.userAgent ?? null);
       await refetch();
       setShouldAutoContinue(true);
       toast({

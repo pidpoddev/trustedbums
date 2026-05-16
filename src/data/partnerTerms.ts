@@ -174,9 +174,7 @@ export const BUM_FALLBACK_TERMS_VERSION = {
   created_at: "2026-05-16T00:00:00.000Z",
 };
 
-export function getBumTermsAcceptanceStorageKey(userId: string, version: string) {
-  return `trusted-bums-bum-terms:${userId}:${version}`;
-}
+export type TermsFallbackVersion = typeof FALLBACK_TERMS_VERSION | typeof BUM_FALLBACK_TERMS_VERSION;
 
 export function parseFaq(faqBody: string) {
   return faqBody
