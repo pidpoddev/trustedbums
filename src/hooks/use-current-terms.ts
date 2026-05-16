@@ -7,7 +7,9 @@ import { BUM_FALLBACK_TERMS_VERSION, getBumTermsAcceptanceStorageKey } from "@/d
 export function useCurrentTermsState() {
   const { user } = useAuth();
   const [hasAcceptedBumTerms, setHasAcceptedBumTerms] = useState(false);
+  const [checkedBumUserId, setCheckedBumUserId] = useState<string | null>(null);
   const isBum = user?.role === "BUM";
+  const hasCheckedCurrentBumTerms = isBum && checkedBumUserId === user?.id;
 
   const termsQuery = useQuery({
     queryKey: ["active-terms-version"],
@@ -30,23 +32,26 @@ export function useCurrentTermsState() {
   useEffect(() => {
     if (!isBum || !user?.id) {
       setHasAcceptedBumTerms(false);
+      setCheckedBumUserId(null);
       return;
     }
 
     const key = getBumTermsAcceptanceStorageKey(user.id, BUM_FALLBACK_TERMS_VERSION.version);
     setHasAcceptedBumTerms(window.localStorage.getItem(key) === "true");
+    setCheckedBumUserId(user.id);
   }, [isBum, user?.id]);
 
   return {
     terms,
     acceptance: acceptanceQuery.data,
     hasAcceptedCurrentTerms: isBum ? hasAcceptedBumTerms : Boolean(acceptanceQuery.data),
-    isLoading: isBum ? false : termsQuery.isLoading || acceptanceQuery.isLoading,
+    isLoading: isBum ? !hasCheckedCurrentBumTerms : termsQuery.isLoading || acceptanceQuery.isLoading,
     error: termsQuery.error ?? acceptanceQuery.error,
     refetch: async () => {
       if (isBum && user?.id) {
         const key = getBumTermsAcceptanceStorageKey(user.id, BUM_FALLBACK_TERMS_VERSION.version);
         setHasAcceptedBumTerms(window.localStorage.getItem(key) === "true");
+        setCheckedBumUserId(user.id);
         return;
       }
 

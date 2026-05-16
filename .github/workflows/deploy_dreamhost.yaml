@@ -29,6 +29,9 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
+      - name: Include DreamHost SPA rewrite rules
+        run: cp public/.htaccess dist/.htaccess
+
       - name: Deploy to DreamHost via SSH
         uses: easingthemes/ssh-deploy@main
         env:
