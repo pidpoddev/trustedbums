@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
 import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
-import { Flame, ArrowRight, Users, Briefcase, Shield, Handshake } from "lucide-react";
+import { Flame, ArrowRight, Users, Briefcase, Handshake } from "lucide-react";
 
 const Index = () => {
   const { user, isLoaded } = useAuth();
@@ -89,7 +89,7 @@ const Index = () => {
 
       {/* Features */}
       <section className="container mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid gap-8 md:grid-cols-2">
           <div className="bg-card rounded-2xl p-8 border hover:shadow-lg transition-shadow">
             <div className="rounded-xl bg-primary/10 p-3 w-fit mb-4">
               <Briefcase className="h-6 w-6 text-primary" />
@@ -103,13 +103,6 @@ const Index = () => {
             </div>
             <h3 className="font-display font-bold text-xl mb-2">For Bums</h3>
             <p className="text-muted-foreground">Browse opportunities, claim intros, and earn commissions. Your identity stays protected until you choose to reveal.</p>
-          </div>
-          <div className="bg-card rounded-2xl p-8 border hover:shadow-lg transition-shadow">
-            <div className="rounded-xl bg-info/10 p-3 w-fit mb-4">
-              <Shield className="h-6 w-6 text-info" />
-            </div>
-            <h3 className="font-display font-bold text-xl mb-2">Trust & Transparency</h3>
-            <p className="text-muted-foreground">Every intro tracked, every meeting verified, every commission auditable. Disputes handled fairly with admin oversight.</p>
           </div>
         </div>
       </section>
