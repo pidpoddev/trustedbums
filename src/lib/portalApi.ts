@@ -1,5 +1,5 @@
 import { FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, type TermsFallbackVersion } from "@/data/partnerTerms";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import type { AuthUser } from "@/data/authData";
 
 export type RegistrationStatus =
@@ -135,6 +135,20 @@ export interface TrainingMaterialInput {
   technology?: string;
   resource_url?: string;
   is_published?: boolean;
+}
+
+interface ImpersonationFunctionProfile {
+  id: string;
+  email: string | null;
+  role: string | null;
+}
+
+export interface ImpersonationTicketResponse {
+  action: "start" | "stop";
+  ticket: string;
+  url?: string;
+  target?: ImpersonationFunctionProfile;
+  actorUserId?: string;
 }
 
 function toNullableString(value?: string) {
@@ -626,4 +640,43 @@ export async function createTrainingMaterial(user: AuthUser, input: TrainingMate
   });
 
   return data;
+}
+
+async function invokeImpersonationFunction(accessToken: string, body: Record<string, unknown>) {
+  const response = await fetch(`${supabaseUrl}/functions/v1/clerk-impersonation`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as
+    | ImpersonationTicketResponse
+    | { error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Unable to complete impersonation.");
+  }
+
+  if (!("ticket" in payload) || typeof payload.ticket !== "string" || !payload.ticket) {
+    throw new Error("The impersonation service returned an incomplete response.");
+  }
+
+  return payload;
+}
+
+export async function requestUserImpersonation(accessToken: string, targetUserId: string) {
+  return invokeImpersonationFunction(accessToken, {
+    action: "start",
+    targetUserId,
+  });
+}
+
+export async function exitUserImpersonation(accessToken: string) {
+  return invokeImpersonationFunction(accessToken, {
+    action: "stop",
+  });
 }

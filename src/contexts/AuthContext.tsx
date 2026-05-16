@@ -16,6 +16,8 @@ interface AuthContextValue {
   isLoaded: boolean;
   isSignedIn: boolean;
   isAuthenticated: boolean;
+  impersonatorUserId: string | null;
+  isImpersonating: boolean;
   authorizationError: string | null;
   hasRole: (roles: UserRole[]) => boolean;
   refreshUser: () => Promise<void>;
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [dbUser, setDbUser] = useState<AuthUser | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [isDbProfileLoaded, setIsDbProfileLoaded] = useState(false);
+  const impersonatorUserId = readString((session?.actor as Record<string, unknown> | null)?.sub) ?? null;
 
   useEffect(() => {
     setSupabaseAccessTokenProvider(async (mode) => {
@@ -183,6 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoaded,
       isSignedIn: Boolean(isSignedIn && clerkUser),
       isAuthenticated: Boolean(dbUser),
+      impersonatorUserId,
+      isImpersonating: Boolean(impersonatorUserId),
       authorizationError,
       hasRole: (roles) => Boolean(dbUser && roles.includes(dbUser.role)),
       refreshUser: async () => {
@@ -200,7 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setDbUser(null);
       },
     }),
-    [authorizationError, baseUser, clerkSignOut, clerkUser, dbUser, isLoaded, isSignedIn],
+    [authorizationError, baseUser, clerkSignOut, clerkUser, dbUser, impersonatorUserId, isLoaded, isSignedIn],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
