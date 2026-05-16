@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ClientTermsGate } from "@/components/ClientTermsGate";
+import { RoleDashboardRedirect } from "@/components/RoleDashboardRedirect";
 import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -54,6 +55,9 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Navigate to="/" replace />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route element={<ProtectedRoute allowedRoles={["ADMIN", "CLIENT", "BUM"]} />}>
+                <Route path="/dashboard" element={<RoleDashboardRedirect />} />
+              </Route>
               <Route element={<ProtectedRoute allowedRoles={["CLIENT", "BUM"]} />}>
                 <Route path="/terms" element={<ClientTerms />} />
               </Route>
