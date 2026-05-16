@@ -1,37 +1,165 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { createTrainingMaterial, listClientTrainingMaterials } from "@/lib/portalApi";
 import { Plus, FileText, Upload } from "lucide-react";
 
 export default function ClientTrainings() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    technology: "",
+    resource_url: "",
+    description: "",
+  });
+  const trainingsQuery = useQuery({
+    queryKey: ["client-training-materials", user?.clientId],
+    queryFn: () => listClientTrainingMaterials(user!),
+    enabled: Boolean(user?.clientId),
+  });
+  const createMutation = useMutation({
+    mutationFn: () => createTrainingMaterial(user!, form),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["client-training-materials", user?.clientId] });
+      await queryClient.invalidateQueries({ queryKey: ["bum-marketplace-trainings"] });
+      setForm({ title: "", technology: "", resource_url: "", description: "" });
+      setShowForm(false);
+      toast({
+        title: "Training added",
+        description: "Bums can now learn from this training in the shared library.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to save training",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div>
       <PageHeader title="Trainings & Assets" description="Upload materials that Bums can reference">
-        <Button><Plus className="h-4 w-4 mr-2" /> Upload Training</Button>
+        <Button onClick={() => setShowForm((current) => !current)}>
+          <Plus className="h-4 w-4 mr-2" /> Add Training
+        </Button>
       </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="hover:shadow-md transition-shadow">
+      {showForm && (
+        <Card className="mb-6">
           <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-secondary p-2">
-                <FileText className="h-5 w-5 text-secondary-foreground" />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="trainingTitle">Training title</Label>
+                <Input
+                  id="trainingTitle"
+                  value={form.title}
+                  onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+                  placeholder="Acme product overview"
+                />
               </div>
-              <div>
-                <p className="font-medium">No training materials uploaded yet</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Upload your first deck, FAQ, or one-pager to help Bums represent you accurately.
-                </p>
+              <div className="space-y-2">
+                <Label htmlFor="trainingTechnology">Technology / topic</Label>
+                <Input
+                  id="trainingTechnology"
+                  value={form.technology}
+                  onChange={(event) => setForm((current) => ({ ...current, technology: event.target.value }))}
+                  placeholder="Revenue intelligence"
+                />
               </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="trainingUrl">Training link</Label>
+                <Input
+                  id="trainingUrl"
+                  value={form.resource_url}
+                  onChange={(event) => setForm((current) => ({ ...current, resource_url: event.target.value }))}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="trainingDescription">Description</Label>
+                <Textarea
+                  id="trainingDescription"
+                  rows={4}
+                  value={form.description}
+                  onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+                  placeholder="What should Bums understand before they make introductions?"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button disabled={!form.title.trim() || createMutation.isPending} onClick={() => createMutation.mutate()}>
+                Save Training
+              </Button>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {(trainingsQuery.data ?? []).map((training) => (
+          <Card key={training.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-secondary p-2">
+                  <FileText className="h-5 w-5 text-secondary-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">{training.title}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{training.description ?? "No description provided."}</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {training.technology ?? "General"} · Updated {new Date(training.updated_at).toLocaleDateString()}
+                  </p>
+                  {training.resource_url ? (
+                    <a
+                      href={training.resource_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 inline-flex text-sm text-primary hover:underline"
+                    >
+                      Open training link
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+
+        {!trainingsQuery.isLoading && !(trainingsQuery.data ?? []).length && (
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-secondary p-2">
+                  <FileText className="h-5 w-5 text-secondary-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">No training materials uploaded yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Add product decks, FAQ links, or positioning notes so Bums can learn your technology before making introductions.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-dashed hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="pt-6 flex flex-col items-center justify-center h-full text-center py-12">
             <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="font-medium text-muted-foreground">Upload new training material</p>
-            <p className="text-sm text-muted-foreground mt-1">PDF, PPTX, or link</p>
+            <p className="font-medium text-muted-foreground">Training library is live</p>
+            <p className="text-sm text-muted-foreground mt-1">Add titles, descriptions, and links now. File uploads can come next.</p>
           </CardContent>
         </Card>
       </div>

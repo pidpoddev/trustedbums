@@ -114,6 +114,29 @@ export interface AuditEvent {
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
 }
 
+export interface TrainingMaterial {
+  id: string;
+  company_id: string;
+  created_by: string;
+  title: string;
+  description: string | null;
+  technology: string | null;
+  resource_url: string | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  companies?: Pick<CompanyRecord, "name"> | null;
+  profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
+}
+
+export interface TrainingMaterialInput {
+  title: string;
+  description?: string;
+  technology?: string;
+  resource_url?: string;
+  is_published?: boolean;
+}
+
 function toNullableString(value?: string) {
   return value?.trim() ? value.trim() : null;
 }
@@ -542,4 +565,65 @@ export async function listAuditEvents() {
   }
 
   return data ?? [];
+}
+
+export async function listClientTrainingMaterials(user: AuthUser) {
+  const { data, error } = await supabase
+    .from("training_materials")
+    .select("*, companies(name)")
+    .eq("company_id", user.clientId ?? "")
+    .order("updated_at", { ascending: false })
+    .returns<TrainingMaterial[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listMarketplaceTrainingMaterials() {
+  const { data, error } = await supabase
+    .from("training_materials")
+    .select("*, companies(name)")
+    .eq("is_published", true)
+    .order("updated_at", { ascending: false })
+    .returns<TrainingMaterial[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createTrainingMaterial(user: AuthUser, input: TrainingMaterialInput) {
+  if (!user.clientId) {
+    throw new Error("This client user is not linked to a company yet.");
+  }
+
+  const { data, error } = await supabase
+    .from("training_materials")
+    .insert({
+      company_id: user.clientId,
+      created_by: user.id,
+      title: input.title.trim(),
+      description: toNullableString(input.description),
+      technology: toNullableString(input.technology),
+      resource_url: toNullableString(input.resource_url),
+      is_published: input.is_published ?? true,
+    })
+    .select("*, companies(name)")
+    .single<TrainingMaterial>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "training_material_created", "training_materials", data.id, {
+    title: data.title,
+    company_id: data.company_id,
+  });
+
+  return data;
 }
