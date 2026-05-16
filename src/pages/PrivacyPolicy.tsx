@@ -1,6 +1,6 @@
-import { Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const sections = [
   {
@@ -50,12 +50,7 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-6">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="rounded-lg bg-primary p-1.5">
-              <Flame className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold">Trusted Bums</span>
-          </Link>
+          <BrandLogo to="/" imageClassName="h-11" />
           <div className="flex items-center gap-3">
             <AccessibilityMenu />
             <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">

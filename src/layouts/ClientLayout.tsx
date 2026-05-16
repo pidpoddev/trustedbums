@@ -1,3 +1,4 @@
+import { BrandLogo } from "@/components/BrandLogo";
 import { NavLink } from "@/components/NavLink";
 import { PortalHeaderActions } from "@/components/PortalHeaderActions";
 import { useLocation, Outlet } from "react-router-dom";
@@ -20,7 +21,6 @@ import {
   GraduationCap,
   MessageSquarePlus,
   Download,
-  Flame,
   PlusCircle,
 } from "lucide-react";
 
@@ -43,11 +43,8 @@ export default function ClientLayout() {
       <div className="min-h-screen flex w-full">
         <Sidebar>
           <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
-            <div className="rounded-lg bg-sidebar-primary p-1.5">
-              <Flame className="h-5 w-5 text-sidebar-primary-foreground" />
-            </div>
             <div>
-              <span className="font-display font-bold text-sidebar-foreground text-sm">Trusted Bums</span>
+              <BrandLogo to="/" theme="dark" imageClassName="h-10" />
               <span className="block text-[10px] text-sidebar-foreground/60 uppercase tracking-wider">Client</span>
             </div>
           </div>

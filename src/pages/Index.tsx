@@ -1,12 +1,13 @@
 import { SignInButton, UserButton } from "@clerk/react";
 import { Link, Navigate } from "react-router-dom";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
+import { BrandLogo } from "@/components/BrandLogo";
 import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
 import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
-import { Flame, ArrowRight, Users, Briefcase, Handshake } from "lucide-react";
+import { ArrowRight, Users, Briefcase, Handshake } from "lucide-react";
 
 const Index = () => {
   const { user, isLoaded } = useAuth();
@@ -23,12 +24,7 @@ const Index = () => {
       {/* Header */}
       <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-primary p-1.5">
-              <Flame className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-display font-bold text-xl">Trusted Bums</span>
-          </div>
+          <BrandLogo to="/" imageClassName="h-11" />
           <div className="flex items-center gap-3">
             <AccessibilityMenu />
             {showSignedOutActions ? (
@@ -132,10 +128,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t mt-16">
         <div className="container mx-auto px-6 py-8 flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-primary" />
-            <span className="font-display font-medium">Trusted Bums</span>
-          </div>
+          <BrandLogo to="/" imageClassName="h-9" />
           <div className="flex items-center gap-4">
             <Link to="/privacy-policy" className="hover:text-foreground">
               Privacy Policy
