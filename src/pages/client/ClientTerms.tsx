@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle, Download, Mail, MessageCircle, ScrollText } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -32,12 +32,21 @@ export default function ClientTerms() {
   const { terms, acceptance, hasAcceptedCurrentTerms, isLoading, refetch } = useCurrentTermsState();
   const [checked, setChecked] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [shouldAutoContinue, setShouldAutoContinue] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const state = location.state as LocationState | null;
   const isBumTerms = user?.role === "BUM";
   const dashboardPath = user ? resolveDashboardPath(user.role, state?.from) : "/";
+
+  useEffect(() => {
+    if (!shouldAutoContinue || !hasAcceptedCurrentTerms) {
+      return;
+    }
+
+    navigate(dashboardPath, { replace: true });
+  }, [dashboardPath, hasAcceptedCurrentTerms, navigate, shouldAutoContinue]);
 
   const acceptTerms = async () => {
     if (!user || !terms) {
@@ -53,11 +62,11 @@ export default function ClientTerms() {
         await acceptPartnerTerms(user, terms, navigator.userAgent ?? null);
       }
       await refetch();
+      setShouldAutoContinue(true);
       toast({
         title: isBumTerms ? "Connector agreement accepted" : "Partner terms accepted",
         description: "Your acceptance was recorded for this terms version.",
       });
-      navigate(dashboardPath, { replace: true });
     } catch (error) {
       toast({
         title: isBumTerms ? "Unable to accept connector agreement" : "Unable to accept terms",
@@ -154,11 +163,6 @@ export default function ClientTerms() {
                     Contact Trusted Bums
                   </a>
                 </Button>
-                {hasAcceptedCurrentTerms && (
-                  <Button onClick={() => navigate(dashboardPath, { replace: true })}>
-                    Continue to Dashboard
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>
