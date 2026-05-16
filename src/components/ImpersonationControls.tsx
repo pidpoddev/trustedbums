@@ -1,8 +1,7 @@
-import { useAuth as useClerkAuth, useClerk, useSignIn } from "@clerk/react";
+import { useAuth as useClerkAuth, useClerk } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search, ShieldAlert, UserRoundCog } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,10 +19,8 @@ import { exitUserImpersonation, listProfiles, requestUserImpersonation } from "@
 export function ImpersonationControls() {
   const { getToken } = useClerkAuth();
   const { signOut } = useClerk();
-  const { signIn } = useSignIn();
   const { toast } = useToast();
   const { isImpersonating, user } = useAuth();
-  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [startingUserId, setStartingUserId] = useState<string | null>(null);
@@ -60,37 +57,11 @@ export function ImpersonationControls() {
       .sort((left, right) => (left.email ?? left.id).localeCompare(right.email ?? right.id));
   }, [profilesQuery.data, search, user?.id]);
 
-  async function consumeTicket(ticket: string) {
-    if (!signIn) {
-      throw new Error("Clerk sign-in is still loading.");
-    }
-
-    await signOut();
-
-    const { error } = await signIn.ticket({
-      ticket,
-    });
-
-    if (error) {
-      throw new Error(error.message || "Clerk rejected the impersonation ticket.");
-    }
-
-    if (signIn.status !== "complete") {
-      throw new Error("Clerk did not complete the impersonation sign-in.");
-    }
-
-    await signIn.finalize({
-      navigate: async ({ decorateUrl }) => {
-        const url = decorateUrl("/dashboard");
-
-        if (url.startsWith("http")) {
-          window.location.href = url;
-          return;
-        }
-
-        navigate(url, { replace: true });
-      },
-    });
+  function buildLocalTicketUrl(ticket: string) {
+    const url = new URL(window.location.origin);
+    url.pathname = import.meta.env.BASE_URL || "/";
+    url.searchParams.set("__clerk_ticket", ticket);
+    return url.toString();
   }
 
   async function requireAccessToken() {
@@ -110,7 +81,13 @@ export function ImpersonationControls() {
       const accessToken = await requireAccessToken();
       const response = await requestUserImpersonation(accessToken, targetUserId);
       setDialogOpen(false);
-      await consumeTicket(response.ticket);
+
+      if (response.url) {
+        window.location.href = response.url;
+        return;
+      }
+
+      window.location.href = buildLocalTicketUrl(response.ticket);
     } catch (error) {
       toast({
         title: "Unable to impersonate user",
@@ -128,7 +105,9 @@ export function ImpersonationControls() {
     try {
       const accessToken = await requireAccessToken();
       const response = await exitUserImpersonation(accessToken);
-      await consumeTicket(response.ticket);
+      await signOut({
+        redirectUrl: buildLocalTicketUrl(response.ticket),
+      });
     } catch (error) {
       toast({
         title: "Unable to exit impersonation",

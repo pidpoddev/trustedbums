@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
+import { ClerkTicketHandler } from "@/components/ClerkTicketHandler";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ClientTermsGate } from "@/components/ClientTermsGate";
 import { RoleDashboardRedirect } from "@/components/RoleDashboardRedirect";
@@ -53,6 +54,7 @@ const App = () => (
         <BrowserRouter basename={import.meta.env.BASE_URL}>
           <AuthProvider>
             <AppErrorBoundary>
+              <ClerkTicketHandler />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Navigate to="/" replace />} />
