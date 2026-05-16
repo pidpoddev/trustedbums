@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { title: "Dashboard", url: "/bum", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
   { title: "Clients", url: "/bum/clients", icon: Building2 },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
   { title: "My Claims", url: "/bum/claims", icon: Handshake },
@@ -59,7 +59,7 @@ export default function BumLayout() {
                       <SidebarMenuButton asChild>
                         <NavLink
                           to={item.url}
-                          end={item.url === "/bum"}
+                          end={item.url === "/bum/dashboard"}
                           className="hover:bg-sidebar-accent/50"
                           activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                         >
@@ -79,7 +79,7 @@ export default function BumLayout() {
           <header className="h-14 border-b flex items-center px-4 bg-card">
             <SidebarTrigger />
             <span className="ml-4 text-sm text-muted-foreground">
-              {navItems.find(i => location.pathname === i.url || (i.url !== "/bum" && location.pathname.startsWith(i.url)))?.title ?? "Bum"}
+              {navItems.find((i) => location.pathname === i.url || location.pathname.startsWith(`${i.url}/`))?.title ?? "Bum"}
             </span>
             <PortalHeaderActions />
           </header>

@@ -96,7 +96,8 @@ const App = () => (
               <Route element={<ProtectedRoute allowedRoles={["BUM"]} />}>
                 <Route element={<ClientTermsGate />}>
                   <Route path="/bum" element={<BumLayout />}>
-                    <Route index element={<BumDashboard />} />
+                    <Route index element={<Navigate to="/bum/dashboard" replace />} />
+                    <Route path="dashboard" element={<BumDashboard />} />
                     <Route path="clients" element={<BumClients />} />
                     <Route path="opportunities" element={<BumOpportunities />} />
                     <Route path="opportunities/:id" element={<BumOpportunityDetail />} />

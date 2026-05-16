@@ -159,5 +159,5 @@ export function getDefaultPathForRole(role: UserRole) {
     return "/client/dashboard";
   }
 
-  return "/bum";
+  return "/bum/dashboard";
 }
