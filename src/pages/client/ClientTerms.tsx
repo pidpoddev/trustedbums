@@ -41,12 +41,16 @@ export default function ClientTerms() {
   const dashboardPath = user ? resolveDashboardPath(user.role, state?.from) : "/";
 
   useEffect(() => {
-    if (!shouldAutoContinue || !hasAcceptedCurrentTerms) {
+    if (!user || !hasAcceptedCurrentTerms) {
+      return;
+    }
+
+    if (!shouldAutoContinue && !isBumTerms) {
       return;
     }
 
     navigate(dashboardPath, { replace: true });
-  }, [dashboardPath, hasAcceptedCurrentTerms, navigate, shouldAutoContinue]);
+  }, [dashboardPath, hasAcceptedCurrentTerms, isBumTerms, navigate, shouldAutoContinue, user]);
 
   const acceptTerms = async () => {
     if (!user || !terms) {
