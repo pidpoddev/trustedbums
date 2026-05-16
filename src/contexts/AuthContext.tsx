@@ -51,7 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isDbProfileLoaded, setIsDbProfileLoaded] = useState(false);
 
   useEffect(() => {
-    setSupabaseAccessTokenProvider(() => getToken());
+    setSupabaseAccessTokenProvider(async () => {
+      const legacyTemplateToken = await getToken({ template: "supabase" }).catch(() => null);
+      if (legacyTemplateToken) {
+        return legacyTemplateToken;
+      }
+
+      const modernToken = await getToken().catch(() => null);
+      return modernToken ?? null;
+    });
     return () => setSupabaseAccessTokenProvider(null);
   }, [getToken]);
 
