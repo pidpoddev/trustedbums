@@ -19,6 +19,14 @@ interface LocationState {
   from?: string;
 }
 
+function resolveDashboardPath(role: "ADMIN" | "CLIENT" | "BUM", from?: string) {
+  if (from && from !== "/terms" && from !== "/login" && from !== "/client/terms") {
+    return from;
+  }
+
+  return getDefaultPathForRole(role);
+}
+
 export default function ClientTerms() {
   const { user } = useAuth();
   const { terms, acceptance, hasAcceptedCurrentTerms, isLoading, refetch } = useCurrentTermsState();
@@ -29,7 +37,7 @@ export default function ClientTerms() {
   const { toast } = useToast();
   const state = location.state as LocationState | null;
   const isBumTerms = user?.role === "BUM";
-  const dashboardPath = user ? state?.from ?? getDefaultPathForRole(user.role) : "/";
+  const dashboardPath = user ? resolveDashboardPath(user.role, state?.from) : "/";
 
   const acceptTerms = async () => {
     if (!user || !terms) {
