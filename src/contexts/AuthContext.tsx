@@ -1,4 +1,4 @@
-import { useAuth as useClerkAuth, useUser } from "@clerk/react";
+import { useAuth as useClerkAuth, useSession, useUser } from "@clerk/react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   createPendingBumId,
@@ -44,27 +44,30 @@ function getDisplayName(
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { isLoaded: isAuthLoaded, isSignedIn, getToken, signOut: clerkSignOut } = useClerkAuth();
+  const { isLoaded: isAuthLoaded, isSignedIn, signOut: clerkSignOut } = useClerkAuth();
+  const { isLoaded: isSessionLoaded, session } = useSession();
   const { isLoaded: isUserLoaded, user: clerkUser } = useUser();
   const [dbUser, setDbUser] = useState<AuthUser | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [isDbProfileLoaded, setIsDbProfileLoaded] = useState(false);
 
   useEffect(() => {
-    setSupabaseAccessTokenProvider(async () => {
-      const legacyTemplateToken = await getToken({ template: "supabase" }).catch(() => null);
-      if (legacyTemplateToken) {
-        return legacyTemplateToken;
+    setSupabaseAccessTokenProvider(async (mode) => {
+      if (!session) {
+        return null;
       }
 
-      const modernToken = await getToken().catch(() => null);
-      return modernToken ?? null;
+      if (mode === "legacy") {
+        return session.getToken({ template: "supabase" }).catch(() => null);
+      }
+
+      return session.getToken().catch(() => null);
     });
     return () => setSupabaseAccessTokenProvider(null);
-  }, [getToken]);
+  }, [session]);
 
   const baseUser = useMemo<AuthUser | null>(() => {
-    const isLoaded = isAuthLoaded && isUserLoaded;
+    const isLoaded = isAuthLoaded && isSessionLoaded && isUserLoaded;
     const signedIn = Boolean(isSignedIn && clerkUser);
     const email =
       clerkUser?.primaryEmailAddress?.emailAddress ??
@@ -114,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       bumId,
       companyName,
     };
-  }, [clerkUser, isAuthLoaded, isSignedIn, isUserLoaded]);
+  }, [clerkUser, isAuthLoaded, isSessionLoaded, isSignedIn, isUserLoaded]);
 
   useEffect(() => {
     let mounted = true;
@@ -124,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setDbUser(null);
       setIsDbProfileLoaded(false);
 
-      if (!baseUser) {
+      if (!baseUser || !session) {
         setIsDbProfileLoaded(true);
         return;
       }
@@ -159,9 +162,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [baseUser]);
+  }, [baseUser, session]);
 
-  const isLoaded = isAuthLoaded && isUserLoaded && isDbProfileLoaded;
+  const isLoaded = isAuthLoaded && isSessionLoaded && isUserLoaded && isDbProfileLoaded;
   const authorizationError = useMemo(() => {
     if (!isLoaded || !isSignedIn) {
       return null;
