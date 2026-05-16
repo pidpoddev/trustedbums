@@ -83,9 +83,6 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
       className="w-full sm:w-auto"
       onClick={() => {
         setSubmitted(true);
-        if (canContinue) {
-          setOpen(false);
-        }
       }}
     >
       Continue
