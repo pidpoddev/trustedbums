@@ -1,6 +1,7 @@
 import { SignInButton, UserButton } from "@clerk/react";
 import { ArrowRight, Flame, LogIn, UserPlus } from "lucide-react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,9 +50,12 @@ export default function Login() {
             </div>
             <span className="font-display font-bold text-xl">Trusted Bums</span>
           </Link>
+          <div className="flex items-center gap-3">
+            <AccessibilityMenu />
           {showSignedInActions ? (
             <UserButton />
           ) : null}
+          </div>
         </div>
       </header>
 

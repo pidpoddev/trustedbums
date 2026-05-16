@@ -106,6 +106,57 @@
     font-family: var(--font-body);
   }
 
+  html.ada-mode {
+    font-size: 118.75%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 6%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 6%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 6%;
+    --primary: 24 100% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 22%;
+    --accent: 204 100% 32%;
+    --accent-foreground: 0 0% 100%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 48 100% 38%;
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 24 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 16%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 24%;
+    --sidebar-ring: 48 100% 50%;
+    --warning: 30 100% 40%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 100% 35%;
+    --info-foreground: 0 0% 100%;
+  }
+
+  html.ada-mode body {
+    line-height: 1.65;
+    letter-spacing: 0.01em;
+  }
+
+  html.ada-mode :focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 4px;
+  }
+
+  html.ada-mode button,
+  html.ada-mode a,
+  html.ada-mode input,
+  html.ada-mode textarea,
+  html.ada-mode select {
+    min-height: 2.75rem;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
   }

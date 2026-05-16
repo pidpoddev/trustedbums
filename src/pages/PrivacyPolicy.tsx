@@ -1,5 +1,6 @@
 import { Flame } from "lucide-react";
 import { Link } from "react-router-dom";
+import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 
 const sections = [
   {
@@ -55,9 +56,12 @@ export default function PrivacyPolicy() {
             </div>
             <span className="font-display text-xl font-bold">Trusted Bums</span>
           </Link>
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-            Back to Home
-          </Link>
+          <div className="flex items-center gap-3">
+            <AccessibilityMenu />
+            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
+              Back to Home
+            </Link>
+          </div>
         </div>
       </header>
 

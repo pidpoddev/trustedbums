@@ -1,5 +1,6 @@
 import { SignInButton, UserButton } from "@clerk/react";
 import { Link, Navigate } from "react-router-dom";
+import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +30,7 @@ const Index = () => {
             <span className="font-display font-bold text-xl">Trusted Bums</span>
           </div>
           <div className="flex items-center gap-3">
+            <AccessibilityMenu />
             {showSignedOutActions ? (
               <>
                 <SignInButton mode="modal" {...clerkSignInRedirectProps}>
