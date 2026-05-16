@@ -1,15 +1,9 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockClients, mockTrainings } from "@/data/mockData";
-import { useAuth } from "@/contexts/AuthContext";
 import { Plus, FileText, Upload } from "lucide-react";
 
 export default function ClientTrainings() {
-  const { user } = useAuth();
-  const client = mockClients.find((mockClient) => mockClient.id === user?.clientId);
-  const clientTrainings = mockTrainings.filter(t => t.scope === "CLIENT" && t.client === client?.company);
-
   return (
     <div>
       <PageHeader title="Trainings & Assets" description="Upload materials that Bums can reference">
@@ -17,22 +11,21 @@ export default function ClientTrainings() {
       </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {clientTrainings.map(t => (
-          <Card key={t.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-secondary p-2">
-                  <FileText className="h-5 w-5 text-secondary-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium">{t.title}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{t.description}</p>
-                  <p className="text-xs text-muted-foreground mt-2">Updated {t.updatedAt}</p>
-                </div>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="rounded-lg bg-secondary p-2">
+                <FileText className="h-5 w-5 text-secondary-foreground" />
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <div>
+                <p className="font-medium">No training materials uploaded yet</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Upload your first deck, FAQ, or one-pager to help Bums represent you accurately.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="border-dashed hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="pt-6 flex flex-col items-center justify-center h-full text-center py-12">

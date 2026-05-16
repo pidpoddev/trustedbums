@@ -4,12 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { mockClients } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function ClientProfile() {
   const { user } = useAuth();
-  const client = mockClients.find((mockClient) => mockClient.id === user?.clientId);
 
   return (
     <div>
@@ -19,13 +17,13 @@ export default function ClientProfile() {
         <CardHeader><CardTitle className="font-display">Profile Details</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <div><Label>Company Name</Label><Input defaultValue={client?.company ?? user?.companyName} /></div>
-            <div><Label>Website</Label><Input defaultValue={client?.website} /></div>
+            <div><Label>Company Name</Label><Input defaultValue={user?.companyName ?? ""} /></div>
+            <div><Label>Website</Label><Input placeholder="https://yourcompany.com" /></div>
           </div>
-          <div><Label>Positioning Statement</Label><Textarea defaultValue={client?.pitch} rows={3} /></div>
+          <div><Label>Positioning Statement</Label><Textarea placeholder="How should Trusted Bums describe your company?" rows={3} /></div>
           <div className="grid gap-4 md:grid-cols-2">
-            <div><Label>Target Industries</Label><Input defaultValue={client?.industries.join(", ")} /></div>
-            <div><Label>Target Regions</Label><Input defaultValue={client?.regions.join(", ")} /></div>
+            <div><Label>Target Industries</Label><Input placeholder="SaaS, Healthcare, FinTech" /></div>
+            <div><Label>Target Regions</Label><Input placeholder="North America, EMEA" /></div>
           </div>
           <Button>Save Profile</Button>
         </CardContent>
