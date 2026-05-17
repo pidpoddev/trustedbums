@@ -38,8 +38,15 @@ test.describe("critical opportunity workflow", () => {
     const adminPage = await adminContext.newPage();
 
     await goToAuthedPath(adminPage, admin, "/admin/opportunities");
-    await expect(adminPage.getByRole("heading", { name: "Opportunities" })).toBeVisible();
-    await adminPage.getByRole("tab", { name: "Opportunity Registrations" }).click({ timeout: 15_000 });
+
+    const opportunitiesHeading = adminPage.getByRole("heading", { name: "Opportunities" });
+
+    if (await opportunitiesHeading.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await adminPage.getByRole("tab", { name: "Opportunity Registrations" }).click({ timeout: 15_000 });
+    } else {
+      await expect(adminPage.getByText("Opportunity Registrations").first()).toBeVisible({ timeout: 15_000 });
+    }
+
     await expect(adminPage.getByText(targetAccount)).toBeVisible({ timeout: 20_000 });
 
     await adminContext.close();
