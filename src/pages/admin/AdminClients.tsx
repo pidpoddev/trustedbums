@@ -56,7 +56,7 @@ export default function AdminClients() {
     const contacts = contactsQuery.data ?? [];
     const acceptances = acceptancesQuery.data ?? [];
 
-    return (companiesQuery.data ?? []).map((company) => {
+    const summaries = (companiesQuery.data ?? []).map((company) => {
       const users = profiles.filter((profile) => profile.company_id === company.id);
       const companyOpportunities = opportunities.filter((opportunity) => opportunity.company_id === company.id);
       const companyRecommendations = recommendations.filter((recommendation) => recommendation.company_id === company.id);
@@ -96,13 +96,15 @@ export default function AdminClients() {
         primaryContacts: companyContacts.filter((contact) => contact.is_primary).slice(0, 3),
         acceptedTerms: companyAcceptances,
       };
-    })
-      .filter((company) =>
-        company.relationship_stage === "CLIENT" ||
-        company.userCount > 0 ||
-        company.opportunityCount > 0 ||
-        company.acceptedTerms.length > 0,
-      )
+    });
+    const clientSummaries = summaries.filter((company) =>
+      company.relationship_stage === "CLIENT" ||
+      company.userCount > 0 ||
+      company.opportunityCount > 0 ||
+      company.acceptedTerms.length > 0,
+    );
+
+    return (clientSummaries.length ? clientSummaries : summaries)
       .sort((left, right) => right.opportunityCount - left.opportunityCount || left.name.localeCompare(right.name));
   }, [acceptancesQuery.data, companiesQuery.data, contactsQuery.data, opportunitiesQuery.data, profilesQuery.data, recommendationsQuery.data]);
 
