@@ -13,6 +13,7 @@ interface BumProfileCardProps {
       title: string;
       acceptedAt: string;
     }>;
+    lastLoggedInAt?: string | null;
   };
   showAdminMeta?: boolean;
 }
@@ -232,6 +233,11 @@ export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCar
                   ) : (
                     <Badge variant="outline">No accepted terms recorded</Badge>
                   )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">
+                    Last login {profile.lastLoggedInAt ? new Date(profile.lastLoggedInAt).toLocaleString() : "Never recorded"}
+                  </Badge>
                 </div>
               </div>
             ) : null}

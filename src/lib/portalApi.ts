@@ -61,6 +61,7 @@ export interface ProfileRecord {
   email: string | null;
   role: string | null;
   is_admin: boolean;
+  last_sign_in_at: string | null;
   created_at: string;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
 }
@@ -900,6 +901,7 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
         email: user.email,
         role: user.role,
         is_admin: user.role === "ADMIN",
+        last_sign_in_at: new Date().toISOString(),
       },
       { onConflict: "id" },
     )

@@ -69,6 +69,7 @@ export default function AdminBums() {
             ...bumProfile,
             hasAcceptedAgreement,
             acceptedTerms: acceptedTermsByUserId.get(profile.id) ?? [],
+            lastLoggedInAt: profilesById.get(profile.id)?.last_sign_in_at ?? null,
             profiles: bumProfile.profiles ?? {
               full_name: profilesById.get(profile.id)?.full_name ?? profile.full_name,
               email: profilesById.get(profile.id)?.email ?? profile.email,
@@ -86,6 +87,7 @@ export default function AdminBums() {
           },
           hasAcceptedAgreement,
           acceptedTerms: acceptedTermsByUserId.get(profile.id) ?? [],
+          lastLoggedInAt: profile.last_sign_in_at,
           is_visible_to_clients: false,
         };
       })

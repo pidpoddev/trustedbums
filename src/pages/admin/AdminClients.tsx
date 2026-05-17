@@ -102,6 +102,23 @@ export default function AdminClients() {
         ...company,
         userCount: users.length,
         primaryEmail: users[0]?.email ?? "No users yet",
+        latestUserLoginAt: users
+          .map((profile) => profile.last_sign_in_at)
+          .filter(Boolean)
+          .sort((left, right) => new Date(right!).getTime() - new Date(left!).getTime())[0] ?? null,
+        users: users
+          .map((profile) => ({
+            id: profile.id,
+            email: profile.email,
+            full_name: profile.full_name,
+            role: profile.role,
+            last_sign_in_at: profile.last_sign_in_at,
+          }))
+          .sort((left, right) => {
+            const rightTime = right.last_sign_in_at ? new Date(right.last_sign_in_at).getTime() : 0;
+            const leftTime = left.last_sign_in_at ? new Date(left.last_sign_in_at).getTime() : 0;
+            return rightTime - leftTime || (left.full_name ?? left.email ?? left.id).localeCompare(right.full_name ?? right.email ?? right.id);
+          }),
         opportunityCount: companyOpportunities.length,
         introCount: companyOpportunities.filter((opportunity) => opportunity.status === "Accepted").length,
         recommenderNames,
@@ -233,6 +250,9 @@ export default function AdminClients() {
                         <p className="text-sm text-muted-foreground">
                           {company.userCount} user{company.userCount === 1 ? "" : "s"} · Primary: {company.primaryEmail}
                         </p>
+                        <p className="text-xs text-muted-foreground">
+                          Last login: {company.latestUserLoginAt ? new Date(company.latestUserLoginAt).toLocaleString() : "Never recorded"}
+                        </p>
                       </div>
 
                       <div className="flex gap-2 flex-wrap text-xs">
@@ -258,6 +278,17 @@ export default function AdminClients() {
                               .join(", ")}
                           </p>
                         ) : null}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {company.users.length ? (
+                            company.users.map((profile) => (
+                              <Badge key={profile.id} variant="outline">
+                                {(profile.full_name ?? profile.email ?? profile.id)} · {profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleDateString() : "Never"}
+                              </Badge>
+                            ))
+                          ) : (
+                            <Badge variant="outline">No user profiles recorded</Badge>
+                          )}
+                        </div>
                         <div className="flex flex-wrap gap-2 pt-1">
                           {company.acceptedTerms.length ? (
                             company.acceptedTerms.map((terms) => (
