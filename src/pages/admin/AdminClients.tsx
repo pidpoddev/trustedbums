@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   listAdminProspectRecommendations,
   listCompanies,
@@ -18,6 +19,7 @@ import {
   listTermsAcceptances,
   type CompanyRelationshipStage,
 } from "@/lib/portalApi";
+import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 
 function stageVariant(stage: CompanyRelationshipStage) {
   if (stage === "CLIENT") {
@@ -44,6 +46,7 @@ const clientTypeFilters: { value: ClientTypeFilter; label: string }[] = [
 export default function AdminClients() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<ClientTypeFilter>("ALL");
+  const timeZone = useUserTimeZone();
   const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: listCompanies });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
   const opportunitiesQuery = useQuery({
@@ -251,7 +254,7 @@ export default function AdminClients() {
                           {company.userCount} user{company.userCount === 1 ? "" : "s"} · Primary: {company.primaryEmail}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Last login: {company.latestUserLoginAt ? new Date(company.latestUserLoginAt).toLocaleString() : "Never recorded"}
+                          Last login: {company.latestUserLoginAt ? formatDateTimeForTimeZone(company.latestUserLoginAt, timeZone) : "Never recorded"}
                         </p>
                       </div>
 
@@ -282,7 +285,7 @@ export default function AdminClients() {
                           {company.users.length ? (
                             company.users.map((profile) => (
                               <Badge key={profile.id} variant="outline">
-                                {(profile.full_name ?? profile.email ?? profile.id)} · {profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleDateString() : "Never"}
+                                {(profile.full_name ?? profile.email ?? profile.id)} · {profile.last_sign_in_at ? formatDateForTimeZone(profile.last_sign_in_at, timeZone) : "Never"}
                               </Badge>
                             ))
                           ) : (
@@ -293,7 +296,7 @@ export default function AdminClients() {
                           {company.acceptedTerms.length ? (
                             company.acceptedTerms.map((terms) => (
                               <Badge key={`${terms.version}-${terms.acceptedAt}-${terms.acceptedBy}`} variant="outline">
-                                {terms.version} by {terms.acceptedBy} on {new Date(terms.acceptedAt).toLocaleDateString()}
+                                {terms.version} by {terms.acceptedBy} on {formatDateForTimeZone(terms.acceptedAt, timeZone)}
                               </Badge>
                             ))
                           ) : (

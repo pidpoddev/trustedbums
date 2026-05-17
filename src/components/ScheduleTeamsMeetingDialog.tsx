@@ -15,7 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { scheduleTeamsMeeting, type CustomerTargetRecord, type ScheduleTeamsMeetingResponse } from "@/lib/portalApi";
+import {
+  formatDateTimeForTimeZone,
+  getBrowserTimeZone,
+  parseDateTimeLocalInTimeZoneToUtcIso,
+  toDateTimeLocalValueInTimeZone,
+} from "@/lib/timezone";
 
 interface ScheduleTeamsMeetingDialogProps {
   target: CustomerTargetRecord;
@@ -23,16 +30,13 @@ interface ScheduleTeamsMeetingDialogProps {
   onScheduled?: (response: ScheduleTeamsMeetingResponse) => void;
 }
 
-function toDatetimeLocalValue(date: Date) {
-  const offsetMs = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
-}
+function getDefaultStartTime(timeZone: string) {
+  const tomorrowDate = toDateTimeLocalValueInTimeZone(
+    new Date(Date.now() + 24 * 60 * 60 * 1000),
+    timeZone,
+  ).slice(0, 10);
 
-function getDefaultStartTime() {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  date.setHours(9, 0, 0, 0);
-  return toDatetimeLocalValue(date);
+  return `${tomorrowDate}T09:00`;
 }
 
 function splitEmails(value: string) {
@@ -48,8 +52,9 @@ export function ScheduleTeamsMeetingDialog({
   onScheduled,
 }: ScheduleTeamsMeetingDialogProps) {
   const { toast } = useToast();
+  const timeZone = useUserTimeZone();
   const [open, setOpen] = useState(false);
-  const [startTime, setStartTime] = useState(getDefaultStartTime);
+  const [startTime, setStartTime] = useState(() => getDefaultStartTime(timeZone));
   const [durationMinutes, setDurationMinutes] = useState("30");
   const [subject, setSubject] = useState("");
   const [attendeeEmails, setAttendeeEmails] = useState("");
@@ -58,6 +63,17 @@ export function ScheduleTeamsMeetingDialog({
   const targetName = target.target_companies?.name ?? target.target_account_name;
   const clientName = target.client_companies?.name ?? "Client";
   const defaultSubject = useMemo(() => `Trusted Bums intro: ${clientName} <> ${targetName}`, [clientName, targetName]);
+  const previewStartTime = useMemo(() => {
+    if (!startTime) {
+      return "";
+    }
+
+    try {
+      return formatDateTimeForTimeZone(parseDateTimeLocalInTimeZoneToUtcIso(startTime, timeZone), timeZone);
+    } catch {
+      return "";
+    }
+  }, [startTime, timeZone]);
 
   const scheduleMutation = useMutation({
     mutationFn: () =>
@@ -65,7 +81,7 @@ export function ScheduleTeamsMeetingDialog({
         customerTargetId: target.id,
         subject: subject.trim() || defaultSubject,
         description,
-        startTime: new Date(startTime).toISOString(),
+        startTime: parseDateTimeLocalInTimeZoneToUtcIso(startTime, timeZone),
         durationMinutes: Number(durationMinutes),
         attendeeEmails: splitEmails(attendeeEmails),
       }),
@@ -94,7 +110,16 @@ export function ScheduleTeamsMeetingDialog({
     : "Add the target contact email below so Microsoft can send the invite.";
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+
+        if (nextOpen) {
+          setStartTime(getDefaultStartTime(timeZone));
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button size="sm">
           <CalendarPlus className="mr-2 h-4 w-4" />
@@ -114,6 +139,10 @@ export function ScheduleTeamsMeetingDialog({
             {primaryContactLine}
           </div>
 
+          <div className="rounded-xl border bg-muted/20 p-3 text-sm text-muted-foreground">
+            Meeting preview: {previewStartTime || "Pick a start time"}.
+          </div>
+
           <div className="grid gap-4 md:grid-cols-[1fr_140px]">
             <div className="space-y-2">
               <Label htmlFor={`meeting-start-${target.id}`}>Start time</Label>
@@ -123,6 +152,9 @@ export function ScheduleTeamsMeetingDialog({
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
               />
+              <p className="text-xs text-muted-foreground">
+                Interpreted in {timeZone}. Browser detected: {getBrowserTimeZone()}.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor={`meeting-duration-${target.id}`}>Minutes</Label>

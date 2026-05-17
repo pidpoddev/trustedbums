@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createClaimInvoice,
   createCustomerPaymentReport,
@@ -19,6 +20,7 @@ import {
   listOpportunityClaims,
 } from "@/lib/portalApi";
 import { parsePaymentImportFile, type PaymentImportRow } from "@/lib/paymentImport";
+import { formatDateForTimeZone } from "@/lib/timezone";
 
 type ClientInvoiceTypeFilter = "ALL" | "OUTSTANDING" | "PAID" | "HIGH_VALUE";
 type ClientReportTypeFilter = "ALL" | "INVOICED" | "PENDING_INVOICE" | "HAS_EXCLUSIONS";
@@ -43,6 +45,7 @@ function money(value: number | null | undefined) {
 
 export default function ClientPayments() {
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [importInputKey, setImportInputKey] = useState(0);
@@ -560,7 +563,7 @@ export default function ClientPayments() {
                     <div>
                       <p className="font-medium">{report.customer_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {report.opportunity_registrations?.target_account_name ?? "Opportunity"} - paid {new Date(report.customer_payment_received_at).toLocaleDateString()}
+                        {report.opportunity_registrations?.target_account_name ?? "Opportunity"} - paid {formatDateForTimeZone(report.customer_payment_received_at, timeZone)}
                       </p>
                     </div>
                     <StatusBadge label={report.status.replaceAll("_", " ")} variant={report.status === "INVOICE_GENERATED" ? "success" : "info"} />

@@ -2,13 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { listBumPayouts } from "@/lib/portalApi";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
 function money(value: number | null | undefined) {
   return `$${Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
 export default function BumEarnings() {
+  const timeZone = useUserTimeZone();
   const payoutsQuery = useQuery({ queryKey: ["bum-payouts"], queryFn: listBumPayouts });
   const payouts = payoutsQuery.data ?? [];
   const approvedOrPaid = payouts.filter((payout) => payout.status === "APPROVED" || payout.status === "PAID");
@@ -63,7 +66,7 @@ export default function BumEarnings() {
                 />
               </div>
               <p className="mt-3 font-display text-xl font-bold">{money(payout.payout_amount)}</p>
-              {payout.paid_at ? <p className="text-xs text-muted-foreground">Paid {new Date(payout.paid_at).toLocaleString()}</p> : null}
+              {payout.paid_at ? <p className="text-xs text-muted-foreground">Paid {formatDateTimeForTimeZone(payout.paid_at, timeZone)}</p> : null}
             </div>
           ))}
           {!payoutsQuery.isLoading && !payouts.length ? (

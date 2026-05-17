@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { listMarketplaceTrainingMaterials } from "@/lib/portalApi";
+import { formatDateForTimeZone } from "@/lib/timezone";
 import { GraduationCap, Search, PlayCircle } from "lucide-react";
 
 type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY";
@@ -19,6 +21,7 @@ const trainingTypeFilters: { value: TrainingTypeFilter; label: string }[] = [
 ];
 
 export default function BumTrainings() {
+  const timeZone = useUserTimeZone();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TrainingTypeFilter>("ALL");
   const trainingsQuery = useQuery({
@@ -90,7 +93,7 @@ export default function BumTrainings() {
                   <p className="text-sm text-muted-foreground mt-1">{training.description ?? "No description provided."}</p>
                   <div className="flex items-center justify-between mt-4">
                     <span className="text-xs text-muted-foreground">
-                      Updated {new Date(training.updated_at).toLocaleDateString()}
+                      Updated {formatDateForTimeZone(training.updated_at, timeZone)}
                     </span>
                     {training.resource_url ? (
                       <a href={training.resource_url} target="_blank" rel="noreferrer">

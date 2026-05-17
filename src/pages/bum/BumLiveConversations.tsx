@@ -4,7 +4,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { ScheduleTeamsMeetingDialog } from "@/components/ScheduleTeamsMeetingDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { listCustomerTargets, listTeamsMeetings, type CustomerTargetStatus } from "@/lib/portalApi";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
 function targetVariant(status: CustomerTargetStatus) {
   if (status === "CLOSED_WON") {
@@ -25,6 +27,7 @@ function targetLabel(status: CustomerTargetStatus) {
 
 export default function BumLiveConversations() {
   const queryClient = useQueryClient();
+  const timeZone = useUserTimeZone();
   const targetsQuery = useQuery({
     queryKey: ["bum-customer-targets"],
     queryFn: () => listCustomerTargets(null),
@@ -66,7 +69,7 @@ export default function BumLiveConversations() {
                 <div>
                   <p className="font-medium font-display">{meeting.subject}</p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(meeting.start_time).toLocaleString()} ·{" "}
+                    {formatDateTimeForTimeZone(meeting.start_time, timeZone)} ·{" "}
                     {meeting.customer_targets?.target_companies?.name ??
                       meeting.customer_targets?.target_account_name ??
                       "Target account"}

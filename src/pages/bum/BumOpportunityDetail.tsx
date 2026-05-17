@@ -24,12 +24,14 @@ import {
   isRelationshipStrength,
 } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createOpportunityClaim,
   getMarketplaceOpportunity,
   listOpportunityClaims,
   updateOpportunityClaimStatus,
 } from "@/lib/portalApi";
+import { formatDateForTimeZone } from "@/lib/timezone";
 import { ArrowLeft, Plus, Activity } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +46,7 @@ interface ActivityEntry {
 export default function BumOpportunityDetail() {
   const { id } = useParams();
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const opportunityQuery = useQuery({
     queryKey: ["bum-marketplace-opportunity", id],
@@ -126,7 +129,7 @@ export default function BumOpportunityDetail() {
     contact: `${claim.contact_name} @ ${claim.contact_company}`,
     status: claim.status,
     note: claim.note || `Claim requested with ${claim.relationship_strength.toLowerCase()} relationship strength.`,
-    at: new Date(claim.updated_at ?? claim.created_at).toLocaleDateString(),
+    at: formatDateForTimeZone(claim.updated_at ?? claim.created_at, timeZone),
   }));
 
   const submitRecommendation = () => {

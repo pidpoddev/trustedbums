@@ -13,6 +13,7 @@ import {
 } from "@/data/authData";
 import { ensureSupabaseProfileForAuthUser } from "@/lib/portalApi";
 import { setSupabaseAccessTokenProvider } from "@/lib/supabase";
+import { getBrowserTimeZone } from "@/lib/timezone";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clerkUser?.primaryEmailAddress?.emailAddress ??
       clerkUser?.emailAddresses[0]?.emailAddress ??
       "";
+    const browserTimeZone = getBrowserTimeZone();
 
     if (!isLoaded || !signedIn || !clerkUser || !email) {
       return null;
@@ -129,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
       ),
       role,
+      timeZone: browserTimeZone,
       clientAccessRole: role === "CLIENT" ? metadataClientAccessRole ?? fallbackUser?.clientAccessRole ?? DEFAULT_CLIENT_ACCESS_ROLE : undefined,
       clientId: fallbackUser?.clientId,
       bumId,
@@ -157,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setDbUser({
           ...baseUser,
+          timeZone: profile.time_zone ?? baseUser.timeZone,
           clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
           companyName: profile.companies?.name ?? baseUser.companyName,
         });
@@ -215,6 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const profile = await ensureSupabaseProfileForAuthUser(baseUser);
           setDbUser({
             ...baseUser,
+            timeZone: profile.time_zone ?? baseUser.timeZone,
             clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
             companyName: profile.companies?.name ?? baseUser.companyName,
           });

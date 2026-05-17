@@ -11,8 +11,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { acceptPartnerTerms } from "@/lib/portalApi";
 import { downloadPartnerTermsPdf } from "@/lib/pdf";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
 interface LocationState {
   from?: string;
@@ -28,6 +30,7 @@ function resolveDashboardPath(role: "ADMIN" | "CLIENT" | "BUM", from?: string) {
 
 export default function ClientTerms() {
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const { terms, acceptance, hasAcceptedCurrentTerms, isLoading, refetch } = useCurrentTermsState();
   const [checked, setChecked] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -115,7 +118,7 @@ export default function ClientTerms() {
                 <div className="rounded-md bg-success/10 p-4 text-sm">
                   <p className="font-medium text-success">Current terms accepted</p>
                   <p className="text-muted-foreground mt-1">
-                    Accepted {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "for this version"}.
+                    Accepted {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "for this version"}.
                   </p>
                 </div>
               ) : (

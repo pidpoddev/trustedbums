@@ -1,5 +1,7 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import type { TermsVersion } from "@/lib/portalApi";
+import { formatDateForTimeZone } from "@/lib/timezone";
 import { parseFaq, splitTermsSections } from "@/data/partnerTerms";
 
 interface PartnerTermsContentProps {
@@ -8,6 +10,7 @@ interface PartnerTermsContentProps {
 }
 
 export function PartnerTermsContent({ terms, showFaq = true }: PartnerTermsContentProps) {
+  const timeZone = useUserTimeZone();
   const parsedTerms = splitTermsSections(terms.body);
   const faqItems = parseFaq(terms.faq_body ?? "");
 
@@ -18,7 +21,7 @@ export function PartnerTermsContent({ terms, showFaq = true }: PartnerTermsConte
           <p className="text-sm font-medium text-primary">Version {terms.version}</p>
           <h2 className="font-display text-2xl font-bold">{terms.title}</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Last updated {new Date(terms.created_at).toLocaleDateString()}
+            Last updated {formatDateForTimeZone(terms.created_at, timeZone)}
           </p>
         </div>
         <p className="text-sm leading-6 text-muted-foreground">{parsedTerms.overview}</p>

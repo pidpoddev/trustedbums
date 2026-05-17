@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { listClaimInvoices, listCustomerPaymentReports, updateClaimInvoiceStatus, type ClaimInvoiceRecord } from "@/lib/portalApi";
+import { formatDateForTimeZone } from "@/lib/timezone";
 import { Search } from "lucide-react";
 
 function money(value: number | null | undefined) {
@@ -35,6 +37,7 @@ const paymentReportTypeFilters: { value: PaymentReportTypeFilter; label: string 
 
 export default function AdminPayments() {
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [invoiceQuery, setInvoiceQuery] = useState("");
@@ -239,7 +242,7 @@ export default function AdminPayments() {
                     <td className="py-3 font-display font-bold">{money(report.gross_amount)}</td>
                     <td className="py-3 font-display font-bold text-primary">{money(report.commissionable_amount)}</td>
                     <td className="py-3"><StatusBadge label={report.source} variant={report.source === "ADMIN" ? "info" : "secondary"} /></td>
-                    <td className="py-3 text-muted-foreground">{new Date(report.customer_payment_received_at).toLocaleDateString()}</td>
+                    <td className="py-3 text-muted-foreground">{formatDateForTimeZone(report.customer_payment_received_at, timeZone)}</td>
                   </tr>
                 ))}
               </tbody>

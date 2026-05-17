@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
+import { UserTimeZoneCard } from "@/components/UserTimeZoneCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +11,12 @@ export default function ClientProfile() {
   const { user } = useAuth();
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader title="Company Profile" description="Manage your company positioning for Bums" />
+
+      <div className="max-w-2xl">
+        <UserTimeZoneCard description="Pick the time zone that should be used for meeting scheduling and timestamp display throughout the client portal." />
+      </div>
 
       <Card className="max-w-2xl">
         <CardHeader><CardTitle className="font-display">Profile Details</CardTitle></CardHeader>

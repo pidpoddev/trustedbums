@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, FileUp, Linkedin, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { UserTimeZoneCard } from "@/components/UserTimeZoneCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -244,6 +245,10 @@ export default function BumProfile() {
   return (
     <div className="space-y-6">
       <PageHeader title="Profile" description="Build the connector profile that admins and clients will review." />
+
+      <div className="max-w-2xl">
+        <UserTimeZoneCard description="Your time zone controls how meetings and timestamps appear throughout the Bum portal." />
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
         <Card>

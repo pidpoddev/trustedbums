@@ -24,6 +24,7 @@ import {
   CreditCard,
   DollarSign,
   Video,
+  User,
 } from "lucide-react";
 
 const navItems = [
@@ -36,6 +37,7 @@ const navItems = [
   { title: "Payments", url: "/admin/payments", icon: CreditCard },
   { title: "Payouts", url: "/admin/payouts", icon: DollarSign },
   { title: "Live Conversations", url: "/admin/live-conversations", icon: Video },
+  { title: "Profile", url: "/admin/profile", icon: User },
 ];
 
 export default function AdminLayout() {

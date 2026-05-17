@@ -18,11 +18,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createMeetingTranscript,
   listMeetingTranscripts,
   type MeetingTranscriptFilters,
 } from "@/lib/portalApi";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
 interface MeetingTranscriptsSectionProps {
   title?: string;
@@ -47,6 +49,7 @@ export function MeetingTranscriptsSection({
   allowAdd = false,
 }: MeetingTranscriptsSectionProps) {
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -167,7 +170,7 @@ export function MeetingTranscriptsSection({
                 <p className="text-xs text-muted-foreground">
                   {transcript.teams_meetings?.subject ?? transcript.opportunity_registrations?.target_account_name ?? "Teams meeting"}
                   {" · "}
-                  {new Date(transcript.captured_at ?? transcript.created_at).toLocaleString()}
+                  {formatDateTimeForTimeZone(transcript.captured_at ?? transcript.created_at, timeZone)}
                 </p>
               </div>
               <StatusBadge label={transcript.status} variant={transcript.status === "AVAILABLE" ? "success" : transcript.status === "FAILED" ? "destructive" : "warning"} />

@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIntroClaims } from "@/hooks/use-intro-claims";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   buildBumProfileInputFromPrompt,
   getBumProfileCompleteness,
@@ -26,6 +27,7 @@ import {
   upsertOwnBumProfile,
   type BumProfileInput,
 } from "@/lib/portalApi";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
 import {
   ArrowRight,
   Briefcase,
@@ -40,6 +42,7 @@ import {
 
 export default function BumDashboard() {
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [promptAnswers, setPromptAnswers] = useState<Partial<Record<BumProfilePromptKey, string>>>({});
@@ -263,7 +266,7 @@ export default function BumDashboard() {
                   {hasAcceptedCurrentTerms ? "Current terms accepted" : "New connector terms need review"}
                 </p>
                 <p className="mt-1 text-muted-foreground">
-                  {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "Acceptance pending"} · Version{" "}
+                  {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "Acceptance pending"} · Version{" "}
                   {terms?.version ?? "current"}
                 </p>
               </div>

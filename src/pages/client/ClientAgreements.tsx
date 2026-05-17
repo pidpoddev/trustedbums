@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { downloadPartnerTermsPdf } from "@/lib/pdf";
 import { listCompanyAgreements } from "@/lib/portalApi";
+import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 
 export default function ClientAgreements() {
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const { terms, acceptance, hasAcceptedCurrentTerms, isLoading } = useCurrentTermsState();
   const customAgreementsQuery = useQuery({
     queryKey: ["company-agreements", user?.clientId],
@@ -53,7 +56,7 @@ export default function ClientAgreements() {
               </div>
               {hasAcceptedCurrentTerms ? (
                 <p className="text-sm text-muted-foreground">
-                  Accepted {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "for this version"}.
+                  Accepted {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "for this version"}.
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground">This terms version still needs acceptance.</p>
@@ -77,7 +80,7 @@ export default function ClientAgreements() {
                   <div key={agreement.id} className="rounded-xl border p-3">
                     <p className="font-medium">{agreement.title}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {agreement.status} {agreement.effective_date ? `• Effective ${new Date(agreement.effective_date).toLocaleDateString()}` : ""}
+                      {agreement.status} {agreement.effective_date ? `• Effective ${formatDateForTimeZone(agreement.effective_date, timeZone)}` : ""}
                     </p>
                     {agreement.summary ? <p className="mt-2 text-sm text-muted-foreground">{agreement.summary}</p> : null}
                     {agreement.document_url ? (

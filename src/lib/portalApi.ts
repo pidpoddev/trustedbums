@@ -1,6 +1,7 @@
 import { FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, type TermsFallbackVersion } from "@/data/partnerTerms";
 import { getSupabaseAccessToken, supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import type { AuthUser } from "@/data/authData";
+import { normalizeTimeZone } from "@/lib/timezone";
 
 export type RegistrationStatus =
   | "Draft"
@@ -62,6 +63,7 @@ export interface ProfileRecord {
   role: string | null;
   is_admin: boolean;
   last_sign_in_at: string | null;
+  time_zone: string | null;
   created_at: string;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
 }
@@ -902,6 +904,7 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
         role: user.role,
         is_admin: user.role === "ADMIN",
         last_sign_in_at: new Date().toISOString(),
+        time_zone: normalizeTimeZone(user.timeZone),
       },
       { onConflict: "id" },
     )
@@ -926,6 +929,41 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
     if (businessDomain) {
       await upsertCompanyDomainBestEffort(data.company_id, businessDomain, true);
     }
+  }
+
+  return data;
+}
+
+export async function getOwnProfileSettings(userId: string) {
+  return getProfileRecord(userId);
+}
+
+export async function updateOwnProfileSettings(
+  user: AuthUser,
+  input: {
+    timeZone?: string;
+    fullName?: string;
+  },
+) {
+  const payload: Record<string, string | null> = {};
+
+  if (input.timeZone !== undefined) {
+    payload.time_zone = normalizeTimeZone(input.timeZone);
+  }
+
+  if (input.fullName !== undefined) {
+    payload.full_name = toNullableString(input.fullName);
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(payload)
+    .eq("id", user.id)
+    .select("*, companies(id, name)")
+    .single<ProfileRecord>();
+
+  if (error) {
+    throw error;
   }
 
   return data;

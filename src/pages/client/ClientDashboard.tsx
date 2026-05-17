@@ -7,16 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   listClaimInvoices,
   listCustomerPaymentReports,
   listCustomerTargets,
   listOpportunityRegistrations,
 } from "@/lib/portalApi";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
 import { Target, FileCheck, Clock, PlusCircle, ArrowRight, CreditCard, Download } from "lucide-react";
 
 export default function ClientDashboard() {
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const clientAccessRole = user?.role === "CLIENT" ? user.clientAccessRole ?? "CLIENT_ADMIN" : undefined;
   const isFinanceUser = clientAccessRole === "CLIENT_FINANCE";
   const canManagePayments = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_FINANCE";
@@ -133,7 +136,7 @@ export default function ClientDashboard() {
                     {hasAcceptedCurrentTerms ? "Current terms accepted" : "New partner terms need review"}
                   </p>
                   <p className="text-muted-foreground mt-1">
-                    {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "Acceptance pending"} · Version{" "}
+                    {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "Acceptance pending"} · Version{" "}
                     {terms?.version ?? "v1"}
                   </p>
                 </div>
@@ -237,7 +240,7 @@ export default function ClientDashboard() {
                   {hasAcceptedCurrentTerms ? "Current terms accepted" : "New partner terms need review"}
                 </p>
                 <p className="text-muted-foreground mt-1">
-                  {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "Acceptance pending"} · Version{" "}
+                  {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "Acceptance pending"} · Version{" "}
                   {terms?.version ?? "v1"}
                 </p>
               </div>

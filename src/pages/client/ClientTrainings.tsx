@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { createTrainingMaterial, listClientTrainingMaterials } from "@/lib/portalApi";
+import { formatDateForTimeZone } from "@/lib/timezone";
 import { Plus, FileText, Search, Upload } from "lucide-react";
 
 type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY" | "TECH_SPECIFIC";
@@ -23,6 +25,7 @@ const trainingTypeFilters: { value: TrainingTypeFilter; label: string }[] = [
 
 export default function ClientTrainings() {
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -180,7 +183,7 @@ export default function ClientTrainings() {
                   <p className="font-medium">{training.title}</p>
                   <p className="text-sm text-muted-foreground mt-1">{training.description ?? "No description provided."}</p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    {training.technology ?? "General"} · Updated {new Date(training.updated_at).toLocaleDateString()}
+                    {training.technology ?? "General"} · Updated {formatDateForTimeZone(training.updated_at, timeZone)}
                   </p>
                   {training.resource_url ? (
                     <a

@@ -2,7 +2,9 @@ import { ExternalLink, Link2, MapPin, ShieldCheck, Star, BriefcaseBusiness } fro
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import type { BumProfileRecord } from "@/lib/portalApi";
+import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 
 interface BumProfileCardProps {
   profile: Partial<BumProfileRecord> & {
@@ -91,6 +93,7 @@ function profileName(profile: BumProfileCardProps["profile"]) {
 }
 
 export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCardProps) {
+  const timeZone = useUserTimeZone();
   const acceptedTerms = profile.acceptedTerms ?? [];
 
   return (
@@ -217,7 +220,7 @@ export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCar
                   />
                   {profile.last_linkedin_imported_at ? (
                     <Badge variant="outline">
-                      Imported {new Date(profile.last_linkedin_imported_at).toLocaleDateString()}
+                      Imported {formatDateForTimeZone(profile.last_linkedin_imported_at, timeZone)}
                     </Badge>
                   ) : (
                     <Badge variant="outline">No LinkedIn import yet</Badge>
@@ -227,7 +230,7 @@ export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCar
                   {acceptedTerms.length ? (
                     acceptedTerms.map((terms) => (
                       <Badge key={`${terms.version}-${terms.acceptedAt}`} variant="outline">
-                        {terms.version} accepted {new Date(terms.acceptedAt).toLocaleDateString()}
+                        {terms.version} accepted {formatDateForTimeZone(terms.acceptedAt, timeZone)}
                       </Badge>
                     ))
                   ) : (
@@ -236,7 +239,7 @@ export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCar
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">
-                    Last login {profile.lastLoggedInAt ? new Date(profile.lastLoggedInAt).toLocaleString() : "Never recorded"}
+                    Last login {profile.lastLoggedInAt ? formatDateTimeForTimeZone(profile.lastLoggedInAt, timeZone) : "Never recorded"}
                   </Badge>
                 </div>
               </div>

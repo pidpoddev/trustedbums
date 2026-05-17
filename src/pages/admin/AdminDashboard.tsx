@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { PARTNER_FAQ_BODY, PARTNER_TERMS_BODY } from "@/data/partnerTerms";
 import {
   activateTermsVersion,
@@ -33,6 +34,7 @@ import {
   type RegistrationStatus,
   type TermsVersion,
 } from "@/lib/portalApi";
+import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 
 function csvEscape(value: unknown) {
   const text = String(value ?? "");
@@ -138,6 +140,7 @@ function OpportunityAdminRow({ opportunity }: { opportunity: OpportunityRegistra
 }
 
 export default function AdminDashboard() {
+  const timeZone = useUserTimeZone();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -354,7 +357,7 @@ export default function AdminDashboard() {
                         <TableCell>
                           <StatusBadge label={terms.is_active ? "Active" : "Inactive"} variant={terms.is_active ? "success" : "outline"} />
                         </TableCell>
-                        <TableCell>{new Date(terms.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>{formatDateForTimeZone(terms.created_at, timeZone)}</TableCell>
                         <TableCell>
                           {!terms.is_active && (
                             <Button size="sm" variant="outline" onClick={() => activateMutation.mutate(terms)}>
@@ -476,7 +479,7 @@ export default function AdminDashboard() {
                       <TableCell>{acceptance.companies?.name ?? "No company"}</TableCell>
                       <TableCell>{acceptance.profiles?.email ?? acceptance.user_id}</TableCell>
                       <TableCell>{acceptance.terms_versions?.version ?? acceptance.terms_version_id}</TableCell>
-                      <TableCell>{new Date(acceptance.accepted_at).toLocaleString()}</TableCell>
+                      <TableCell>{formatDateTimeForTimeZone(acceptance.accepted_at, timeZone)}</TableCell>
                       <TableCell className="max-w-[320px] truncate">{acceptance.user_agent}</TableCell>
                     </TableRow>
                   ))}
@@ -506,7 +509,7 @@ export default function AdminDashboard() {
                       <TableRow key={company.id}>
                         <TableCell className="font-medium">{company.name}</TableCell>
                         <TableCell>{company.website}</TableCell>
-                        <TableCell>{new Date(company.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>{formatDateForTimeZone(company.created_at, timeZone)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -563,7 +566,7 @@ export default function AdminDashboard() {
                 <TableBody>
                   {auditEvents.map((event) => (
                     <TableRow key={event.id}>
-                      <TableCell>{new Date(event.created_at).toLocaleString()}</TableCell>
+                      <TableCell>{formatDateTimeForTimeZone(event.created_at, timeZone)}</TableCell>
                       <TableCell className="font-medium">{event.event_type}</TableCell>
                       <TableCell>{event.companies?.name}</TableCell>
                       <TableCell>{event.profiles?.email ?? event.user_id}</TableCell>

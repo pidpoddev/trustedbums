@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createProspectRecommendation,
   listOwnProspectRecommendations,
@@ -18,6 +19,7 @@ import {
   type ProspectContactRecord,
   type ProspectInviteOwner,
 } from "@/lib/portalApi";
+import { formatDateForTimeZone } from "@/lib/timezone";
 
 const initialForm = {
   company_name: "",
@@ -37,6 +39,7 @@ function inviteOwnerLabel(value: ProspectInviteOwner) {
 
 export default function BumProspects() {
   const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initialForm);
@@ -271,7 +274,7 @@ export default function BumProspects() {
                   <div className="flex items-center gap-2">
                     <Handshake className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      Added {new Date(recommendation.created_at).toLocaleDateString()}
+                      Added {formatDateForTimeZone(recommendation.created_at, timeZone)}
                     </span>
                   </div>
                 </div>

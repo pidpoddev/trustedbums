@@ -6,14 +6,16 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { claimStatusConfig } from "@/data/mockData";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { listOpportunityClaims } from "@/lib/portalApi";
+import { formatDateForTimeZone } from "@/lib/timezone";
 
-function formatDate(value: string | null | undefined) {
+function formatDate(value: string | null | undefined, timeZone: string) {
   if (!value) {
     return "Not set";
   }
 
-  return new Date(value).toLocaleDateString(undefined, {
+  return formatDateForTimeZone(value, timeZone, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -21,6 +23,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 export default function BumClaims() {
+  const timeZone = useUserTimeZone();
   const claimsQuery = useQuery({
     queryKey: ["bum-my-claims"],
     queryFn: () => listOpportunityClaims(),
@@ -93,7 +96,7 @@ export default function BumClaims() {
                       <CalendarClock className="h-4 w-4" />
                       Claim expires
                     </p>
-                    <p className="mt-1">{formatDate(claim.expires_at)}</p>
+                    <p className="mt-1">{formatDate(claim.expires_at, timeZone)}</p>
                   </div>
                   <div className="rounded-xl border bg-muted/20 p-3">
                     <p className="flex items-center gap-2 font-medium text-foreground">
