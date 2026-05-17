@@ -1670,7 +1670,7 @@ export async function activateTermsVersion(user: AuthUser, terms: TermsVersion) 
 export async function listTermsAcceptances() {
   const { data, error } = await supabase
     .from("terms_acceptances")
-    .select("*, companies(name), profiles(full_name, email), terms_versions(version, title)")
+    .select("*, companies(name), terms_versions(version, title)")
     .order("accepted_at", { ascending: false })
     .returns<TermsAcceptance[]>();
 

@@ -17,6 +17,7 @@ export default function AdminBums() {
   const bumSummaries = useMemo(() => {
     const bumTermsId = (termsVersionsQuery.data ?? []).find((terms) => terms.version === BUM_TERMS_VERSION)?.id;
     const bumProfilesByUserId = new Map((bumProfilesQuery.data ?? []).map((profile) => [profile.user_id, profile]));
+    const profilesById = new Map((profilesQuery.data ?? []).map((profile) => [profile.id, profile]));
     const acceptedTermsByUserId = new Map<
       string,
       Array<{
@@ -54,9 +55,9 @@ export default function AdminBums() {
             hasAcceptedAgreement,
             acceptedTerms: acceptedTermsByUserId.get(profile.id) ?? [],
             profiles: bumProfile.profiles ?? {
-              full_name: profile.full_name,
-              email: profile.email,
-              created_at: profile.created_at,
+              full_name: profilesById.get(profile.id)?.full_name ?? profile.full_name,
+              email: profilesById.get(profile.id)?.email ?? profile.email,
+              created_at: profilesById.get(profile.id)?.created_at ?? profile.created_at,
             },
           };
         }

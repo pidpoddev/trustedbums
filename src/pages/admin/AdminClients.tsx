@@ -50,6 +50,7 @@ export default function AdminClients() {
 
   const companySummaries = useMemo(() => {
     const profiles = profilesQuery.data ?? [];
+    const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
     const opportunities = opportunitiesQuery.data ?? [];
     const recommendations = recommendationsQuery.data ?? [];
     const contacts = contactsQuery.data ?? [];
@@ -66,7 +67,10 @@ export default function AdminClients() {
           version: acceptance.terms_versions?.version ?? acceptance.terms_version_id,
           title: acceptance.terms_versions?.title ?? "Terms",
           acceptedAt: acceptance.accepted_at,
-          acceptedBy: acceptance.profiles?.full_name ?? acceptance.profiles?.email ?? acceptance.user_id,
+          acceptedBy:
+            profilesById.get(acceptance.user_id)?.full_name ??
+            profilesById.get(acceptance.user_id)?.email ??
+            acceptance.user_id,
         }))
         .sort((left, right) => right.acceptedAt.localeCompare(left.acceptedAt));
       const recommenderNames = Array.from(
