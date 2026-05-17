@@ -139,14 +139,56 @@ export async function signIn(page: Page, account: QaAccount) {
   await page.waitForLoadState("networkidle").catch(() => undefined);
 }
 
+async function getClerkDebugState(page: Page) {
+  return page
+    .evaluate(() => {
+      const clerk = (window as typeof window & {
+        Clerk?: {
+          loaded?: boolean;
+          user?: {
+            id?: string;
+            primaryEmailAddress?: { emailAddress?: string };
+            emailAddresses?: Array<{ emailAddress?: string }>;
+            publicMetadata?: Record<string, unknown>;
+            unsafeMetadata?: Record<string, unknown>;
+          } | null;
+        };
+      }).Clerk;
+      const user = clerk?.user;
+
+      return {
+        clerkLoaded: Boolean(clerk?.loaded),
+        clerkUserId: user?.id ?? null,
+        primaryEmail:
+          user?.primaryEmailAddress?.emailAddress ??
+          user?.emailAddresses?.[0]?.emailAddress ??
+          null,
+        publicMetadata: user?.publicMetadata ?? null,
+        unsafeMetadata: user?.unsafeMetadata ?? null,
+        visibleText: document.body.innerText.slice(0, 1_000),
+      };
+    })
+    .catch((error) => ({
+      clerkLoaded: false,
+      clerkUserId: null,
+      primaryEmail: null,
+      publicMetadata: null,
+      unsafeMetadata: null,
+      visibleText: `Unable to inspect Clerk state: ${error instanceof Error ? error.message : String(error)}`,
+    }));
+}
+
 export async function expectTrustedBumsSession(page: Page) {
   await page.goto("/dashboard");
   await page.waitForLoadState("networkidle").catch(() => undefined);
 
   if (page.url().replace(/\/$/, "") === `${process.env.QA_BASE_URL}`.replace(/\/$/, "")) {
+    const clerkState = await getClerkDebugState(page);
+
     throw new Error(
       [
         "Clerk sign-in completed, but Trusted Bums did not authorize this user.",
+        `Clerk state: ${JSON.stringify(clerkState)}`,
         "Check that this QA user has role metadata in Clerk publicMetadata or unsafeMetadata, not only organization membership/private metadata.",
         "Expected examples: {\"role\":\"ADMIN\"}, {\"role\":\"CLIENT\",\"clientCompanyName\":\"QA\",\"clientAccessRole\":\"CLIENT_ADMIN\"}, or {\"role\":\"BUM\",\"bumId\":\"qa-bum\"}.",
       ].join(" "),
