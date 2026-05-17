@@ -29,6 +29,17 @@ function approvalVariant(status: ClientPayProgramApprovalStatus) {
   return "warning" as const;
 }
 
+function commissionScheduleSummary(plan: {
+  year_1_rate: number;
+  year_2_rate: number;
+  year_3_rate: number;
+  year_4_rate: number;
+  year_5_rate: number;
+  year_6_plus_rate: number;
+}) {
+  return `Y1 ${plan.year_1_rate}% · Y2 ${plan.year_2_rate}% · Y3 ${plan.year_3_rate}% · Y4 ${plan.year_4_rate}% · Y5 ${plan.year_5_rate}% · Y6+ ${plan.year_6_plus_rate}%`;
+}
+
 export default function AdminCommissionPlans() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -131,12 +142,16 @@ export default function AdminCommissionPlans() {
                 <StatusBadge label={plan.status} variant="secondary" />
               </div>
               <p className="text-sm text-muted-foreground">
-                {plan.companies?.name ?? "Unknown client"} · {plan.commission_rate}% commission
+                {plan.companies?.name ?? "Unknown client"} · {commissionScheduleSummary(plan)}
                 {plan.commission_period_months ? ` · ${plan.commission_period_months} months` : ""}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
+                <div>
+                  <p className="font-medium text-foreground">Schedule start</p>
+                  <p>Starts when the first commission is paid to Trusted Bums.</p>
+                </div>
                 <div>
                   <p className="font-medium text-foreground">Commission basis</p>
                   <p>{plan.commission_basis ?? "Not specified"}</p>

@@ -38,7 +38,12 @@ const initialForm = {
 
 const initialRequestForm = {
   name: "",
-  commission_rate: "",
+  year_1_rate: "",
+  year_2_rate: "",
+  year_3_rate: "",
+  year_4_rate: "",
+  year_5_rate: "",
+  year_6_plus_rate: "",
   commission_period_months: "",
   commission_basis: "",
   payment_terms: "",
@@ -55,6 +60,17 @@ function approvalVariant(status: ClientPayProgramApprovalStatus) {
     return "destructive" as const;
   }
   return "warning" as const;
+}
+
+function commissionScheduleSummary(plan: {
+  year_1_rate: number;
+  year_2_rate: number;
+  year_3_rate: number;
+  year_4_rate: number;
+  year_5_rate: number;
+  year_6_plus_rate: number;
+}) {
+  return `Y1 ${plan.year_1_rate}% · Y2 ${plan.year_2_rate}% · Y3 ${plan.year_3_rate}% · Y4 ${plan.year_4_rate}% · Y5 ${plan.year_5_rate}% · Y6+ ${plan.year_6_plus_rate}%`;
 }
 
 export default function ClientOpportunityNew() {
@@ -160,7 +176,13 @@ export default function ClientOpportunityNew() {
     try {
       const plan = await createClientPayProgramRequest(user, {
         name: requestForm.name,
-        commission_rate: Number(requestForm.commission_rate || 0),
+        commission_rate: Number(requestForm.year_1_rate || 0),
+        year_1_rate: Number(requestForm.year_1_rate || 0),
+        year_2_rate: Number(requestForm.year_2_rate || 0),
+        year_3_rate: Number(requestForm.year_3_rate || 0),
+        year_4_rate: Number(requestForm.year_4_rate || 0),
+        year_5_rate: Number(requestForm.year_5_rate || 0),
+        year_6_plus_rate: Number(requestForm.year_6_plus_rate || 0),
         commission_period_months: requestForm.commission_period_months
           ? Number(requestForm.commission_period_months)
           : null,
@@ -453,13 +475,16 @@ export default function ClientOpportunityNew() {
                   <SelectContent>
                     {payPrograms.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.name} · {plan.commission_rate}% · {plan.approval_status.toLowerCase()}
+                        {plan.name} · {commissionScheduleSummary(plan)} · {plan.approval_status.toLowerCase()}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Clients only see commission plans assigned to their own company. Pending requests can be attached now and approved by Admin afterward.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  The commission schedule starts when the first commission is paid to Trusted Bums. Until then, the system treats payments as Year 1.
                 </p>
               </div>
             </div>
@@ -509,15 +534,80 @@ export default function ClientOpportunityNew() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="request-rate">Commission rate</Label>
+                <Label htmlFor="request-year-1-rate">Year 1 commission %</Label>
                 <Input
-                  id="request-rate"
+                  id="request-year-1-rate"
                   required
                   type="number"
                   min="0"
                   step="0.1"
-                  value={requestForm.commission_rate}
-                  onChange={(event) => updateRequestField("commission_rate", event.target.value)}
+                  value={requestForm.year_1_rate}
+                  onChange={(event) => updateRequestField("year_1_rate", event.target.value)}
+                  placeholder="25"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-year-2-rate">Year 2 commission %</Label>
+                <Input
+                  id="request-year-2-rate"
+                  required
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={requestForm.year_2_rate}
+                  onChange={(event) => updateRequestField("year_2_rate", event.target.value)}
+                  placeholder="20"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-year-3-rate">Year 3 commission %</Label>
+                <Input
+                  id="request-year-3-rate"
+                  required
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={requestForm.year_3_rate}
+                  onChange={(event) => updateRequestField("year_3_rate", event.target.value)}
+                  placeholder="10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-year-4-rate">Year 4 commission %</Label>
+                <Input
+                  id="request-year-4-rate"
+                  required
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={requestForm.year_4_rate}
+                  onChange={(event) => updateRequestField("year_4_rate", event.target.value)}
+                  placeholder="10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-year-5-rate">Year 5 commission %</Label>
+                <Input
+                  id="request-year-5-rate"
+                  required
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={requestForm.year_5_rate}
+                  onChange={(event) => updateRequestField("year_5_rate", event.target.value)}
+                  placeholder="10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-year-6-plus-rate">Year 6+ commission %</Label>
+                <Input
+                  id="request-year-6-plus-rate"
+                  required
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={requestForm.year_6_plus_rate}
+                  onChange={(event) => updateRequestField("year_6_plus_rate", event.target.value)}
                   placeholder="1"
                 />
               </div>
@@ -553,6 +643,10 @@ export default function ClientOpportunityNew() {
                 onChange={(event) => updateRequestField("request_reason", event.target.value)}
                 placeholder="Dell-sized account, lower blended rate, but a much larger expected deal value."
               />
+            </div>
+
+            <div className="rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
+              The commission schedule start date is the date the first commission is paid to Trusted Bums. That first paid commission locks the Year 1 start, and later payouts roll into Years 2, 3, 4, 5, and 6+ automatically from that date.
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
@@ -656,7 +750,7 @@ export default function ClientOpportunityNew() {
                         <SelectContent>
                           {payPrograms.map((plan) => (
                             <SelectItem key={plan.id} value={plan.id}>
-                              {plan.name} · {plan.commission_rate}% · {plan.approval_status.toLowerCase()}
+                              {plan.name} · {commissionScheduleSummary(plan)} · {plan.approval_status.toLowerCase()}
                             </SelectItem>
                           ))}
                         </SelectContent>

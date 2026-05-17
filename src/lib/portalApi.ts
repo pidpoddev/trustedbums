@@ -368,6 +368,7 @@ export interface OpportunityRegistration {
   company_id: string | null;
   created_by: string;
   pay_program_id: string | null;
+  commission_schedule_start_at: string | null;
   target_account_name: string;
   business_unit: string | null;
   opportunity_description: string | null;
@@ -429,6 +430,12 @@ export interface ClientPayProgramRecord {
   status: "ACTIVE" | "PAUSED" | "SUPERSEDED";
   approval_status: ClientPayProgramApprovalStatus;
   commission_rate: number;
+  year_1_rate: number;
+  year_2_rate: number;
+  year_3_rate: number;
+  year_4_rate: number;
+  year_5_rate: number;
+  year_6_plus_rate: number;
   commission_period_months: number | null;
   payment_terms: string | null;
   commission_basis: string | null;
@@ -448,6 +455,12 @@ export interface ClientPayProgramRecord {
 export interface ClientPayProgramRequestInput {
   name: string;
   commission_rate: number;
+  year_1_rate: number;
+  year_2_rate: number;
+  year_3_rate: number;
+  year_4_rate: number;
+  year_5_rate: number;
+  year_6_plus_rate: number;
   commission_period_months?: number | null;
   payment_terms?: string;
   commission_basis?: string;
@@ -507,7 +520,12 @@ export interface CustomerPaymentReportRecord {
   created_at: string;
   updated_at: string;
   opportunity_claims?: Pick<OpportunityClaimRecord, "id" | "contact_name" | "contact_company" | "bum_user_id"> | null;
-  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name" | "commission_rate"> | null;
+  opportunity_registrations?: Pick<
+    OpportunityRegistration,
+    "id" | "target_account_name" | "commission_rate" | "commission_schedule_start_at"
+  > & {
+    client_pay_programs?: ClientPayProgramRecord | null;
+  } | null;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
   profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
@@ -1190,8 +1208,8 @@ export async function createOpportunityRegistration(user: AuthUser, input: Oppor
       throw new Error("That commission plan is not assigned to your company.");
     }
 
-    commissionRate = Number(payProgram.commission_rate ?? commissionRate);
-    commissionDuration = buildProgramDurationText(payProgram);
+    commissionRate = Number(payProgram.year_1_rate ?? payProgram.commission_rate ?? commissionRate);
+    commissionDuration = buildProgramDisplayTerms(payProgram);
   }
 
   const { data, error } = await supabase
@@ -1285,8 +1303,8 @@ export async function updateOwnOpportunityRegistration(
       throw new Error("The selected commission plan is no longer available.");
     }
 
-    commissionRate = Number(payProgram.commission_rate ?? commissionRate);
-    commissionDuration = buildProgramDurationText(payProgram);
+    commissionRate = Number(payProgram.year_1_rate ?? payProgram.commission_rate ?? commissionRate);
+    commissionDuration = buildProgramDisplayTerms(payProgram);
   }
 
   const { data, error } = await supabase
@@ -1467,6 +1485,88 @@ function buildProgramDurationText(program: Pick<ClientPayProgramRecord, "commiss
   return parts.length ? parts.join(". ") : DEFAULT_COMMISSION_DURATION;
 }
 
+function buildTieredCommissionSummary(
+  program: Pick<
+    ClientPayProgramRecord,
+    "year_1_rate" | "year_2_rate" | "year_3_rate" | "year_4_rate" | "year_5_rate" | "year_6_plus_rate"
+  >,
+) {
+  return [
+    `Year 1: ${Number(program.year_1_rate).toLocaleString()}%`,
+    `Year 2: ${Number(program.year_2_rate).toLocaleString()}%`,
+    `Year 3: ${Number(program.year_3_rate).toLocaleString()}%`,
+    `Year 4: ${Number(program.year_4_rate).toLocaleString()}%`,
+    `Year 5: ${Number(program.year_5_rate).toLocaleString()}%`,
+    `Year 6+: ${Number(program.year_6_plus_rate).toLocaleString()}%`,
+  ].join(" · ");
+}
+
+function buildProgramDisplayTerms(
+  program: Pick<
+    ClientPayProgramRecord,
+    | "commission_period_months"
+    | "payment_terms"
+    | "commission_basis"
+    | "year_1_rate"
+    | "year_2_rate"
+    | "year_3_rate"
+    | "year_4_rate"
+    | "year_5_rate"
+    | "year_6_plus_rate"
+  >,
+) {
+  const parts = [
+    buildTieredCommissionSummary(program),
+    "Commission schedule starts when the first commission is paid to Trusted Bums.",
+    buildProgramDurationText(program),
+  ].filter(Boolean);
+
+  return parts.join(". ");
+}
+
+function resolveTieredCommissionRate(
+  program: Pick<
+    ClientPayProgramRecord,
+    "year_1_rate" | "year_2_rate" | "year_3_rate" | "year_4_rate" | "year_5_rate" | "year_6_plus_rate"
+  >,
+  scheduleStartAt: string | null | undefined,
+  customerPaymentReceivedAt: string | null | undefined,
+) {
+  if (!scheduleStartAt || !customerPaymentReceivedAt) {
+    return Number(program.year_1_rate);
+  }
+
+  const start = new Date(scheduleStartAt);
+  const payment = new Date(customerPaymentReceivedAt);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(payment.getTime()) || payment < start) {
+    return Number(program.year_1_rate);
+  }
+
+  const elapsedMonths =
+    (payment.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+    (payment.getUTCMonth() - start.getUTCMonth()) -
+    (payment.getUTCDate() < start.getUTCDate() ? 1 : 0);
+
+  if (elapsedMonths < 12) {
+    return Number(program.year_1_rate);
+  }
+  if (elapsedMonths < 24) {
+    return Number(program.year_2_rate);
+  }
+  if (elapsedMonths < 36) {
+    return Number(program.year_3_rate);
+  }
+  if (elapsedMonths < 48) {
+    return Number(program.year_4_rate);
+  }
+  if (elapsedMonths < 60) {
+    return Number(program.year_5_rate);
+  }
+
+  return Number(program.year_6_plus_rate);
+}
+
 export async function listClientPayPrograms(companyId?: string | null) {
   let query = supabase
     .from("client_pay_programs")
@@ -1527,6 +1627,12 @@ export async function createClientPayProgramRequest(user: AuthUser, input: Clien
       status: "ACTIVE",
       approval_status: "PENDING",
       commission_rate: input.commission_rate,
+      year_1_rate: input.year_1_rate,
+      year_2_rate: input.year_2_rate,
+      year_3_rate: input.year_3_rate,
+      year_4_rate: input.year_4_rate,
+      year_5_rate: input.year_5_rate,
+      year_6_plus_rate: input.year_6_plus_rate,
       commission_period_months: input.commission_period_months ?? null,
       payment_terms: toNullableString(input.payment_terms),
       commission_basis: toNullableString(input.commission_basis),
@@ -1546,6 +1652,7 @@ export async function createClientPayProgramRequest(user: AuthUser, input: Clien
     name: data.name,
     company_id: data.company_id,
     commission_rate: data.commission_rate,
+    commission_schedule: buildTieredCommissionSummary(data),
   });
 
   return data;
@@ -1719,7 +1826,7 @@ export async function createClaimInvoice(user: AuthUser, paymentReportId: string
 
   const { data: report, error: reportError } = await supabase
     .from("customer_payment_reports")
-    .select("*, opportunity_registrations(id, target_account_name, commission_rate)")
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, commission_schedule_start_at, client_pay_programs(*))")
     .eq("id", paymentReportId)
     .maybeSingle<CustomerPaymentReportRecord>();
 
@@ -1731,7 +1838,14 @@ export async function createClaimInvoice(user: AuthUser, paymentReportId: string
     throw new Error("That payment report is not available for invoicing.");
   }
 
-  const commissionRate = Number(report.opportunity_registrations.commission_rate ?? 0);
+  const program = report.opportunity_registrations.client_pay_programs;
+  const commissionRate = program
+    ? resolveTieredCommissionRate(
+        program,
+        report.opportunity_registrations.commission_schedule_start_at,
+        report.customer_payment_received_at,
+      )
+    : Number(report.opportunity_registrations.commission_rate ?? 0);
   const invoiceAmount = Number(((Number(report.commissionable_amount) * commissionRate) / 100).toFixed(2));
 
   const { data, error } = await supabase
@@ -1790,6 +1904,14 @@ export async function updateClaimInvoiceStatus(user: AuthUser, invoice: ClaimInv
 
   if (error) {
     throw error;
+  }
+
+  if (status === "PAID" && data.paid_at) {
+    await supabase
+      .from("opportunity_registrations")
+      .update({ commission_schedule_start_at: data.paid_at })
+      .eq("id", invoice.opportunity_registration_id)
+      .is("commission_schedule_start_at", null);
   }
 
   if (status === "PAID" && user.role === "ADMIN" && invoice.opportunity_claims?.bum_user_id) {
