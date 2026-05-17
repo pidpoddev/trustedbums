@@ -1,19 +1,30 @@
 import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { CheckCircle, FileUp, Send } from "lucide-react";
+import { CheckCircle, FileUp, Send, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { DEFAULT_COMMISSION_DURATION } from "@/data/partnerTerms";
-import { createOpportunityRegistration } from "@/lib/portalApi";
+import {
+  createClientPayProgramRequest,
+  createOpportunityRegistration,
+  listOwnOpportunityRegistrations,
+  listSelectableClientPayPrograms,
+  updateOwnOpportunityRegistration,
+  type ClientPayProgramApprovalStatus,
+  type OpportunityRegistration,
+} from "@/lib/portalApi";
 import { parseOpportunityImportFile, toOpportunityInput, type OpportunityImportRow } from "@/lib/opportunityImport";
 
 const initialForm = {
+  pay_program_id: "",
   target_account_name: "",
   business_unit: "",
   opportunity_description: "",
@@ -22,26 +33,67 @@ const initialForm = {
   expected_product_service: "",
   estimated_deal_value: "",
   expected_timeline: "",
-  commission_rate: "10",
-  commission_duration: DEFAULT_COMMISSION_DURATION,
   notes: "",
 };
+
+const initialRequestForm = {
+  name: "",
+  commission_rate: "",
+  commission_period_months: "",
+  commission_basis: "",
+  payment_terms: "",
+  exclusions: "",
+  notes: "",
+  request_reason: "",
+};
+
+function approvalVariant(status: ClientPayProgramApprovalStatus) {
+  if (status === "APPROVED") {
+    return "success" as const;
+  }
+  if (status === "DENIED") {
+    return "destructive" as const;
+  }
+  return "warning" as const;
+}
 
 export default function ClientOpportunityNew() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState(initialForm);
+  const [requestForm, setRequestForm] = useState(initialRequestForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [importRows, setImportRows] = useState<OpportunityImportRow[]>([]);
   const [importFileName, setImportFileName] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [editingOpportunityId, setEditingOpportunityId] = useState<string | null>(null);
+  const [editEstimatedDealValue, setEditEstimatedDealValue] = useState("");
+  const [editPayProgramId, setEditPayProgramId] = useState("");
+  const [editExpectedTimeline, setEditExpectedTimeline] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [isRequestingPlan, setIsRequestingPlan] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const updateField = (field: keyof typeof initialForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
+  const updateRequestField = (field: keyof typeof initialRequestForm, value: string) => {
+    setRequestForm((current) => ({ ...current, [field]: value }));
+  };
 
   const importPreviewRows = useMemo(() => importRows.slice(0, 5), [importRows]);
+  const payProgramsQuery = useQuery({
+    queryKey: ["client-pay-programs", user?.clientId],
+    queryFn: () => listSelectableClientPayPrograms(user!),
+    enabled: Boolean(user?.clientId),
+  });
+  const opportunitiesQuery = useQuery({
+    queryKey: ["client-opportunity-registrations", user?.clientId],
+    queryFn: () => listOwnOpportunityRegistrations(user!),
+    enabled: Boolean(user?.clientId),
+  });
 
   const loadImportFile = async (file: File | null) => {
     if (!file) {
@@ -98,6 +150,88 @@ export default function ClientOpportunityNew() {
     }
   };
 
+  const requestCommissionPlan = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user) {
+      return;
+    }
+
+    setIsRequestingPlan(true);
+    try {
+      const plan = await createClientPayProgramRequest(user, {
+        name: requestForm.name,
+        commission_rate: Number(requestForm.commission_rate || 0),
+        commission_period_months: requestForm.commission_period_months
+          ? Number(requestForm.commission_period_months)
+          : null,
+        commission_basis: requestForm.commission_basis,
+        payment_terms: requestForm.payment_terms,
+        exclusions: requestForm.exclusions,
+        notes: requestForm.notes,
+        request_reason: requestForm.request_reason,
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ["client-pay-programs", user?.clientId] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-commission-plans"] });
+      setRequestForm(initialRequestForm);
+      setForm((current) => ({ ...current, pay_program_id: plan.id }));
+      toast({
+        title: "Commission plan request submitted",
+        description: "The requested plan is now pending admin approval and has been attached to this opportunity draft.",
+      });
+    } catch (error) {
+      toast({
+        title: "Unable to request commission plan",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRequestingPlan(false);
+    }
+  };
+
+  const startEditing = (opportunity: OpportunityRegistration) => {
+    setEditingOpportunityId(opportunity.id);
+    setEditEstimatedDealValue(
+      opportunity.estimated_deal_value !== null && opportunity.estimated_deal_value !== undefined
+        ? String(opportunity.estimated_deal_value)
+        : "",
+    );
+    setEditPayProgramId(opportunity.pay_program_id ?? "");
+    setEditExpectedTimeline(opportunity.expected_timeline ?? "");
+    setEditNotes(opportunity.notes ?? "");
+  };
+
+  const saveOpportunityEdit = async () => {
+    if (!user || !editingOpportunityId) {
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      await updateOwnOpportunityRegistration(user, editingOpportunityId, {
+        estimated_deal_value: editEstimatedDealValue.trim() ? Number(editEstimatedDealValue) : null,
+        expected_timeline: editExpectedTimeline,
+        notes: editNotes,
+        pay_program_id: editPayProgramId || null,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
+      toast({
+        title: "Opportunity updated",
+        description: "Estimated value and commission plan were saved.",
+      });
+      setEditingOpportunityId(null);
+    } catch (error) {
+      toast({
+        title: "Unable to update opportunity",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const submitOpportunity = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!user) {
@@ -108,12 +242,13 @@ export default function ClientOpportunityNew() {
     try {
       const opportunity = await createOpportunityRegistration(user, {
         ...form,
+        pay_program_id: form.pay_program_id || null,
         estimated_deal_value: form.estimated_deal_value ? Number(form.estimated_deal_value) : null,
-        commission_rate: Number(form.commission_rate || 10),
         status: "Submitted",
       });
       setSubmittedId(opportunity.id);
       setForm(initialForm);
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       toast({
         title: "Opportunity submitted",
         description: "Trusted Bums admin has been notified for review.",
@@ -128,6 +263,9 @@ export default function ClientOpportunityNew() {
       setIsSubmitting(false);
     }
   };
+
+  const payPrograms = payProgramsQuery.data ?? [];
+  const opportunities = opportunitiesQuery.data ?? [];
 
   return (
     <div>
@@ -307,15 +445,22 @@ export default function ClientOpportunityNew() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="commissionRate">Commission rate</Label>
-                <Input
-                  id="commissionRate"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={form.commission_rate}
-                  onChange={(event) => updateField("commission_rate", event.target.value)}
-                />
+                <Label htmlFor="payProgram">Commission plan</Label>
+                <Select value={form.pay_program_id} onValueChange={(value) => updateField("pay_program_id", value)}>
+                  <SelectTrigger id="payProgram">
+                    <SelectValue placeholder="Select a commission plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {payPrograms.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id}>
+                        {plan.name} · {plan.commission_rate}% · {plan.approval_status.toLowerCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Clients only see commission plans assigned to their own company. Pending requests can be attached now and approved by Admin afterward.
+                </p>
               </div>
             </div>
 
@@ -329,26 +474,231 @@ export default function ClientOpportunityNew() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="duration">Commission duration</Label>
-              <Textarea
-                id="duration"
-                rows={3}
-                value={form.commission_duration}
-                onChange={(event) => updateField("commission_duration", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea id="notes" rows={4} value={form.notes} onChange={(event) => updateField("notes", event.target.value)} />
             </div>
 
             <div className="flex justify-end">
-              <Button disabled={isSubmitting}>
+              <Button disabled={isSubmitting || !form.pay_program_id}>
                 <Send className="mr-2 h-4 w-4" />
                 Submit Registration
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Request a new commission plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-5" onSubmit={requestCommissionPlan}>
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="request-name">Plan name</Label>
+                <Input
+                  id="request-name"
+                  required
+                  value={requestForm.name}
+                  onChange={(event) => updateRequestField("name", event.target.value)}
+                  placeholder="Dell Enterprise Program - 1%"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-rate">Commission rate</Label>
+                <Input
+                  id="request-rate"
+                  required
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={requestForm.commission_rate}
+                  onChange={(event) => updateRequestField("commission_rate", event.target.value)}
+                  placeholder="1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-period">Commission period (months)</Label>
+                <Input
+                  id="request-period"
+                  type="number"
+                  min="1"
+                  value={requestForm.commission_period_months}
+                  onChange={(event) => updateRequestField("commission_period_months", event.target.value)}
+                  placeholder="36"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-basis">Commission basis</Label>
+                <Input
+                  id="request-basis"
+                  value={requestForm.commission_basis}
+                  onChange={(event) => updateRequestField("commission_basis", event.target.value)}
+                  placeholder="1% of collected license revenue"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="request-why">Why do you need this plan?</Label>
+              <Textarea
+                id="request-why"
+                required
+                rows={3}
+                value={requestForm.request_reason}
+                onChange={(event) => updateRequestField("request_reason", event.target.value)}
+                placeholder="Dell-sized account, lower blended rate, but a much larger expected deal value."
+              />
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="request-payment-terms">Payment terms</Label>
+                <Textarea
+                  id="request-payment-terms"
+                  rows={3}
+                  value={requestForm.payment_terms}
+                  onChange={(event) => updateRequestField("payment_terms", event.target.value)}
+                  placeholder="Payable within 30 days after collection."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-exclusions">Exclusions</Label>
+                <Textarea
+                  id="request-exclusions"
+                  rows={3}
+                  value={requestForm.exclusions}
+                  onChange={(event) => updateRequestField("exclusions", event.target.value)}
+                  placeholder="Taxes, refunds, pass-through cloud costs."
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="request-notes">Internal notes</Label>
+              <Textarea
+                id="request-notes"
+                rows={3}
+                value={requestForm.notes}
+                onChange={(event) => updateRequestField("notes", event.target.value)}
+                placeholder="Anything Admin should know before approving or denying this plan."
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <Button type="submit" variant="outline" disabled={isRequestingPlan}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                {isRequestingPlan ? "Submitting request..." : "Request new plan"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="font-display">Registered opportunities</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {opportunities.map((opportunity) => (
+            <Card key={opportunity.id} className="border-border/70">
+              <CardContent className="pt-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-display text-lg font-bold">{opportunity.target_account_name}</p>
+                      <StatusBadge label={opportunity.status} variant="info" />
+                      {opportunity.client_pay_programs ? (
+                        <StatusBadge
+                          label={`${opportunity.client_pay_programs.name} · ${opportunity.client_pay_programs.approval_status.toLowerCase()}`}
+                          variant={approvalVariant(opportunity.client_pay_programs.approval_status)}
+                        />
+                      ) : null}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Estimated value:{" "}
+                      {opportunity.estimated_deal_value
+                        ? `$${Number(opportunity.estimated_deal_value).toLocaleString()}`
+                        : "Not set"}
+                      {" · "}
+                      Timeline: {opportunity.expected_timeline ?? "Not set"}
+                    </p>
+                    {opportunity.notes ? <p className="text-sm">{opportunity.notes}</p> : null}
+                  </div>
+                  <Button type="button" variant="outline" onClick={() => startEditing(opportunity)}>
+                    Edit
+                  </Button>
+                </div>
+
+                {editingOpportunityId === opportunity.id ? (
+                  <div className="mt-5 grid gap-4 rounded-xl border bg-muted/20 p-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor={`edit-value-${opportunity.id}`}>Estimated value</Label>
+                      <Input
+                        id={`edit-value-${opportunity.id}`}
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={editEstimatedDealValue}
+                        onChange={(event) => setEditEstimatedDealValue(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`edit-plan-${opportunity.id}`}>Commission plan</Label>
+                      <Select value={editPayProgramId} onValueChange={setEditPayProgramId}>
+                        <SelectTrigger id={`edit-plan-${opportunity.id}`}>
+                          <SelectValue placeholder="Select a plan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {payPrograms.map((plan) => (
+                            <SelectItem key={plan.id} value={plan.id}>
+                              {plan.name} · {plan.commission_rate}% · {plan.approval_status.toLowerCase()}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`edit-timeline-${opportunity.id}`}>Expected timeline</Label>
+                      <Input
+                        id={`edit-timeline-${opportunity.id}`}
+                        value={editExpectedTimeline}
+                        onChange={(event) => setEditExpectedTimeline(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor={`edit-notes-${opportunity.id}`}>Notes</Label>
+                      <Textarea
+                        id={`edit-notes-${opportunity.id}`}
+                        rows={3}
+                        value={editNotes}
+                        onChange={(event) => setEditNotes(event.target.value)}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 md:col-span-2">
+                      <Button type="button" variant="outline" onClick={() => setEditingOpportunityId(null)}>
+                        Cancel
+                      </Button>
+                      <Button type="button" onClick={() => void saveOpportunityEdit()} disabled={isSavingEdit || !editPayProgramId}>
+                        {isSavingEdit ? "Saving..." : "Save changes"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ))}
+
+          {!opportunities.length ? (
+            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              No opportunity registrations yet. Submit one above, then come back here any time to adjust estimated
+              value and commission plan.
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>

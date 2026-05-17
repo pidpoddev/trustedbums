@@ -388,6 +388,7 @@ export interface OpportunityRegistration {
 }
 
 export interface OpportunityInput {
+  pay_program_id?: string | null;
   target_account_name: string;
   business_unit?: string;
   opportunity_description?: string;
@@ -404,6 +405,7 @@ export interface OpportunityInput {
 
 export type CompanyAgreementType = "MASTER_SERVICES_AGREEMENT" | "SERVICE_ADDENDUM" | "OTHER";
 export type CompanyAgreementStatus = "DRAFT" | "ACTIVE" | "SUPERSEDED" | "TERMINATED";
+export type ClientPayProgramApprovalStatus = "APPROVED" | "PENDING" | "DENIED";
 
 export interface CompanyAgreementRecord {
   id: string;
@@ -425,14 +427,33 @@ export interface ClientPayProgramRecord {
   agreement_id: string | null;
   name: string;
   status: "ACTIVE" | "PAUSED" | "SUPERSEDED";
+  approval_status: ClientPayProgramApprovalStatus;
   commission_rate: number;
   commission_period_months: number | null;
   payment_terms: string | null;
   commission_basis: string | null;
   exclusions: string | null;
   notes: string | null;
+  requested_by: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  request_reason: string | null;
   created_at: string;
   updated_at: string;
+  companies?: Pick<CompanyRecord, "id" | "name"> | null;
+  requested_by_profile?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  reviewed_by_profile?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export interface ClientPayProgramRequestInput {
+  name: string;
+  commission_rate: number;
+  commission_period_months?: number | null;
+  payment_terms?: string;
+  commission_basis?: string;
+  exclusions?: string;
+  notes?: string;
+  request_reason?: string;
 }
 
 export type OpportunityClaimStatus = "PROPOSED" | "APPROVED" | "SCHEDULED" | "MEETING_HELD" | "EXPIRED" | "DISPUTED" | "CLOSED";
@@ -1147,11 +1168,38 @@ export async function acceptPartnerTerms(user: AuthUser, terms: TermsVersion, us
 
 export async function createOpportunityRegistration(user: AuthUser, input: OpportunityInput) {
   const status = input.status ?? "Submitted";
+  let commissionRate = input.commission_rate ?? 10;
+  let commissionDuration = input.commission_duration?.trim() || DEFAULT_COMMISSION_DURATION;
+
+  if (input.pay_program_id) {
+    const { data: payProgram, error: payProgramError } = await supabase
+      .from("client_pay_programs")
+      .select("*")
+      .eq("id", input.pay_program_id)
+      .maybeSingle<ClientPayProgramRecord>();
+
+    if (payProgramError) {
+      throw payProgramError;
+    }
+
+    if (!payProgram) {
+      throw new Error("The selected commission plan is no longer available.");
+    }
+
+    if (user.clientId && payProgram.company_id !== user.clientId) {
+      throw new Error("That commission plan is not assigned to your company.");
+    }
+
+    commissionRate = Number(payProgram.commission_rate ?? commissionRate);
+    commissionDuration = buildProgramDurationText(payProgram);
+  }
+
   const { data, error } = await supabase
     .from("opportunity_registrations")
     .insert({
       company_id: user.clientId ?? null,
       created_by: user.id,
+      pay_program_id: input.pay_program_id ?? null,
       target_account_name: input.target_account_name.trim(),
       business_unit: toNullableString(input.business_unit),
       opportunity_description: toNullableString(input.opportunity_description),
@@ -1160,8 +1208,8 @@ export async function createOpportunityRegistration(user: AuthUser, input: Oppor
       expected_product_service: toNullableString(input.expected_product_service),
       estimated_deal_value: input.estimated_deal_value ?? null,
       expected_timeline: toNullableString(input.expected_timeline),
-      commission_rate: input.commission_rate ?? 10,
-      commission_duration: input.commission_duration?.trim() || DEFAULT_COMMISSION_DURATION,
+      commission_rate: commissionRate,
+      commission_duration: commissionDuration,
       notes: toNullableString(input.notes),
       status,
     })
@@ -1184,6 +1232,89 @@ export async function createOpportunityRegistration(user: AuthUser, input: Oppor
   });
   await createAuditEvent(user, "admin_notification_queued", "opportunity_registrations", data.id, {
     message: "New opportunity registration submitted for admin review.",
+  });
+
+  return data;
+}
+
+export async function updateOwnOpportunityRegistration(
+  user: AuthUser,
+  opportunityId: string,
+  updates: {
+    estimated_deal_value?: number | null;
+    expected_timeline?: string;
+    notes?: string;
+    pay_program_id?: string | null;
+  },
+) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users can update their opportunities.");
+  }
+
+  const { data: opportunity, error: opportunityError } = await supabase
+    .from("opportunity_registrations")
+    .select("*")
+    .eq("id", opportunityId)
+    .eq("company_id", user.clientId)
+    .maybeSingle<OpportunityRegistration>();
+
+  if (opportunityError) {
+    throw opportunityError;
+  }
+
+  if (!opportunity) {
+    throw new Error("That opportunity could not be found.");
+  }
+
+  let commissionRate = opportunity.commission_rate;
+  let commissionDuration = opportunity.commission_duration;
+
+  if (updates.pay_program_id) {
+    const { data: payProgram, error: payProgramError } = await supabase
+      .from("client_pay_programs")
+      .select("*")
+      .eq("id", updates.pay_program_id)
+      .eq("company_id", user.clientId)
+      .maybeSingle<ClientPayProgramRecord>();
+
+    if (payProgramError) {
+      throw payProgramError;
+    }
+
+    if (!payProgram) {
+      throw new Error("The selected commission plan is no longer available.");
+    }
+
+    commissionRate = Number(payProgram.commission_rate ?? commissionRate);
+    commissionDuration = buildProgramDurationText(payProgram);
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_registrations")
+    .update({
+      estimated_deal_value:
+        updates.estimated_deal_value !== undefined ? updates.estimated_deal_value : opportunity.estimated_deal_value,
+      expected_timeline:
+        updates.expected_timeline !== undefined
+          ? toNullableString(updates.expected_timeline)
+          : opportunity.expected_timeline,
+      notes: updates.notes !== undefined ? toNullableString(updates.notes) : opportunity.notes,
+      pay_program_id: updates.pay_program_id !== undefined ? updates.pay_program_id : opportunity.pay_program_id,
+      commission_rate: commissionRate,
+      commission_duration: commissionDuration,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", opportunityId)
+    .select("*, companies(name), client_pay_programs(*)")
+    .single<OpportunityRegistration>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "client_opportunity_updated", "opportunity_registrations", data.id, {
+    estimated_deal_value: data.estimated_deal_value,
+    pay_program_id: data.pay_program_id,
   });
 
   return data;
@@ -1320,10 +1451,26 @@ export async function listCompanyAgreements(companyId: string) {
   return data ?? [];
 }
 
+function buildProgramDurationText(program: Pick<ClientPayProgramRecord, "commission_period_months" | "payment_terms" | "commission_basis">) {
+  const parts: string[] = [];
+
+  if (program.commission_period_months) {
+    parts.push(`For ${program.commission_period_months} months from introduced revenue recognition`);
+  }
+  if (program.commission_basis?.trim()) {
+    parts.push(program.commission_basis.trim());
+  }
+  if (program.payment_terms?.trim()) {
+    parts.push(program.payment_terms.trim());
+  }
+
+  return parts.length ? parts.join(". ") : DEFAULT_COMMISSION_DURATION;
+}
+
 export async function listClientPayPrograms(companyId?: string | null) {
   let query = supabase
     .from("client_pay_programs")
-    .select("*")
+    .select("*, companies(id, name), requested_by_profile:profiles!client_pay_programs_requested_by_fkey(id, full_name, email), reviewed_by_profile:profiles!client_pay_programs_reviewed_by_fkey(id, full_name, email)")
     .order("created_at", { ascending: false });
 
   if (companyId) {
@@ -1337,6 +1484,109 @@ export async function listClientPayPrograms(companyId?: string | null) {
   }
 
   return data ?? [];
+}
+
+export async function listSelectableClientPayPrograms(user: AuthUser) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users can load selectable commission plans.");
+  }
+
+  const programs = await listClientPayPrograms(user.clientId);
+  return programs.filter((program) => program.status === "ACTIVE" && program.approval_status !== "DENIED");
+}
+
+export async function listOwnOpportunityRegistrations(user: AuthUser) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users can load their opportunity registrations.");
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_registrations")
+    .select("*, companies(name), client_pay_programs(*)")
+    .eq("company_id", user.clientId)
+    .order("created_at", { ascending: false })
+    .returns<OpportunityRegistration[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createClientPayProgramRequest(user: AuthUser, input: ClientPayProgramRequestInput) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users can request commission plans.");
+  }
+
+  const { data, error } = await supabase
+    .from("client_pay_programs")
+    .insert({
+      company_id: user.clientId,
+      name: input.name.trim(),
+      status: "ACTIVE",
+      approval_status: "PENDING",
+      commission_rate: input.commission_rate,
+      commission_period_months: input.commission_period_months ?? null,
+      payment_terms: toNullableString(input.payment_terms),
+      commission_basis: toNullableString(input.commission_basis),
+      exclusions: toNullableString(input.exclusions),
+      notes: toNullableString(input.notes),
+      requested_by: user.id,
+      request_reason: toNullableString(input.request_reason),
+    })
+    .select("*, companies(id, name), requested_by_profile:profiles!client_pay_programs_requested_by_fkey(id, full_name, email), reviewed_by_profile:profiles!client_pay_programs_reviewed_by_fkey(id, full_name, email)")
+    .single<ClientPayProgramRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "commission_plan_requested", "client_pay_programs", data.id, {
+    name: data.name,
+    company_id: data.company_id,
+    commission_rate: data.commission_rate,
+  });
+
+  return data;
+}
+
+export async function reviewClientPayProgram(
+  user: AuthUser,
+  planId: string,
+  approvalStatus: ClientPayProgramApprovalStatus,
+  notes?: string,
+) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only Admins can review commission plan requests.");
+  }
+
+  const payload: Partial<ClientPayProgramRecord> = {
+    approval_status: approvalStatus,
+    reviewed_by: user.id,
+    reviewed_at: new Date().toISOString(),
+  };
+
+  if (notes !== undefined) {
+    payload.notes = toNullableString(notes);
+  }
+
+  const { data, error } = await supabase
+    .from("client_pay_programs")
+    .update(payload)
+    .eq("id", planId)
+    .select("*, companies(id, name), requested_by_profile:profiles!client_pay_programs_requested_by_fkey(id, full_name, email), reviewed_by_profile:profiles!client_pay_programs_reviewed_by_fkey(id, full_name, email)")
+    .single<ClientPayProgramRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "commission_plan_reviewed", "client_pay_programs", data.id, {
+    approval_status: approvalStatus,
+  });
+
+  return data;
 }
 
 export async function listOpportunityClaims(opportunityId?: string) {
