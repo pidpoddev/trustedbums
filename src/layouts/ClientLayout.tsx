@@ -24,6 +24,7 @@ import {
   PlusCircle,
   Users,
   Target,
+  CreditCard,
 } from "lucide-react";
 
 const navItems = [
@@ -36,6 +37,7 @@ const navItems = [
   { title: "Bums", url: "/client/bum-directory", icon: Users },
   { title: "Trainings", url: "/client/trainings", icon: GraduationCap },
   { title: "Requests", url: "/client/requests", icon: MessageSquarePlus },
+  { title: "Payments", url: "/client/payments", icon: CreditCard },
   { title: "Exports", url: "/client/exports", icon: Download },
 ];
 

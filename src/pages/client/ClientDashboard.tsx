@@ -134,6 +134,9 @@ export default function ClientDashboard() {
                 <Link to="/client/opportunities/new">Register formal opportunity</Link>
               </Button>
               <Button asChild variant="outline">
+                <Link to="/client/payments">Report customer payment</Link>
+              </Button>
+              <Button asChild variant="outline">
                 <Link to="/client/agreements">View acceptance records</Link>
               </Button>
               <Button asChild variant="outline">

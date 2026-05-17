@@ -334,7 +334,7 @@ export interface OpportunityClaimRecord {
   expires_at: string;
   created_at: string;
   updated_at: string;
-  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name"> | null;
+  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name" | "commission_rate" | "company_id"> | null;
   profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
 
@@ -345,6 +345,89 @@ export interface OpportunityClaimInput {
   contactEmail?: string;
   relationshipStrength: OpportunityClaimStrength;
   note?: string;
+}
+
+export type CustomerPaymentReportStatus = "REPORTED" | "INVOICE_GENERATED" | "DISPUTED" | "VOID";
+export type CustomerPaymentReportSource = "CLIENT" | "ADMIN";
+
+export interface CustomerPaymentReportRecord {
+  id: string;
+  opportunity_claim_id: string;
+  opportunity_registration_id: string;
+  company_id: string;
+  reported_by: string;
+  source: CustomerPaymentReportSource;
+  customer_name: string;
+  gross_amount: number;
+  commissionable_amount: number;
+  excluded_amount: number;
+  currency: string;
+  customer_payment_received_at: string;
+  notes: string | null;
+  status: CustomerPaymentReportStatus;
+  created_at: string;
+  updated_at: string;
+  opportunity_claims?: Pick<OpportunityClaimRecord, "id" | "contact_name" | "contact_company" | "bum_user_id"> | null;
+  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name" | "commission_rate"> | null;
+  companies?: Pick<CompanyRecord, "id" | "name"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export interface CustomerPaymentReportInput {
+  claimId: string;
+  customerName: string;
+  grossAmount: number;
+  commissionableAmount: number;
+  excludedAmount?: number;
+  customerPaymentReceivedAt: string;
+  notes?: string;
+}
+
+export type ClaimInvoiceStatus = "GENERATED" | "SENT" | "PAID" | "VOID";
+
+export interface ClaimInvoiceRecord {
+  id: string;
+  customer_payment_report_id: string;
+  opportunity_claim_id: string;
+  opportunity_registration_id: string;
+  company_id: string;
+  generated_by: string;
+  invoice_number: string;
+  invoice_amount: number;
+  commission_rate: number;
+  currency: string;
+  status: ClaimInvoiceStatus;
+  generated_at: string;
+  sent_at: string | null;
+  paid_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  customer_payment_reports?: Pick<CustomerPaymentReportRecord, "id" | "customer_name" | "commissionable_amount" | "customer_payment_received_at"> | null;
+  opportunity_claims?: Pick<OpportunityClaimRecord, "id" | "contact_name" | "contact_company" | "bum_user_id"> | null;
+  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name"> | null;
+  companies?: Pick<CompanyRecord, "id" | "name"> | null;
+}
+
+export type BumPayoutStatus = "PENDING_ALLOCATION" | "APPROVED" | "PAID" | "VOID";
+
+export interface BumPayoutRecord {
+  id: string;
+  claim_invoice_id: string;
+  opportunity_claim_id: string;
+  bum_user_id: string;
+  payout_amount: number;
+  currency: string;
+  status: BumPayoutStatus;
+  approved_by: string | null;
+  approved_at: string | null;
+  paid_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  claim_invoices?: Pick<ClaimInvoiceRecord, "id" | "invoice_number" | "invoice_amount" | "status"> | null;
+  opportunity_claims?: Pick<OpportunityClaimRecord, "id" | "contact_name" | "contact_company"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
 
 export interface AuditEvent {
@@ -544,6 +627,12 @@ function normalizeLinkedInCompanyUrl(value?: string | null) {
   }
 
   return `https://${withoutTrailingSlash.toLowerCase()}`;
+}
+
+function createInvoiceNumber() {
+  const compactDate = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  const randomSuffix = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `TB-${compactDate}-${randomSuffix}`;
 }
 
 async function getProfileRecord(userId: string) {
@@ -1090,7 +1179,7 @@ export async function listClientPayPrograms(companyId?: string | null) {
 export async function listOpportunityClaims(opportunityId?: string) {
   let query = supabase
     .from("opportunity_claims")
-    .select("*, opportunity_registrations(id, target_account_name), profiles(id, full_name, email)")
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id), profiles(id, full_name, email)")
     .order("created_at", { ascending: false });
 
   if (opportunityId) {
@@ -1104,6 +1193,234 @@ export async function listOpportunityClaims(opportunityId?: string) {
   }
 
   return data ?? [];
+}
+
+export async function listCustomerPaymentReports() {
+  const { data, error } = await supabase
+    .from("customer_payment_reports")
+    .select("*, opportunity_claims(id, contact_name, contact_company, bum_user_id), opportunity_registrations(id, target_account_name, commission_rate), companies(id, name), profiles(id, full_name, email)")
+    .order("created_at", { ascending: false })
+    .returns<CustomerPaymentReportRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createCustomerPaymentReport(user: AuthUser, input: CustomerPaymentReportInput) {
+  if (user.role !== "CLIENT" && user.role !== "ADMIN") {
+    throw new Error("Only Clients and Admins can report customer payments.");
+  }
+
+  const { data: claim, error: claimError } = await supabase
+    .from("opportunity_claims")
+    .select("id, opportunity_registration_id, company_id, contact_company")
+    .eq("id", input.claimId)
+    .maybeSingle<Pick<OpportunityClaimRecord, "id" | "opportunity_registration_id" | "company_id" | "contact_company">>();
+
+  if (claimError) {
+    throw claimError;
+  }
+
+  if (!claim?.company_id) {
+    throw new Error("That claim is not available for payment reporting.");
+  }
+
+  const { data, error } = await supabase
+    .from("customer_payment_reports")
+    .insert({
+      opportunity_claim_id: claim.id,
+      opportunity_registration_id: claim.opportunity_registration_id,
+      company_id: claim.company_id,
+      reported_by: user.id,
+      source: user.role === "ADMIN" ? "ADMIN" : "CLIENT",
+      customer_name: input.customerName.trim() || claim.contact_company,
+      gross_amount: input.grossAmount,
+      commissionable_amount: input.commissionableAmount,
+      excluded_amount: input.excludedAmount ?? Math.max(0, input.grossAmount - input.commissionableAmount),
+      customer_payment_received_at: input.customerPaymentReceivedAt,
+      notes: toNullableString(input.notes),
+      status: "REPORTED",
+    })
+    .select("*")
+    .single<CustomerPaymentReportRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "customer_payment_reported", "customer_payment_reports", data.id, {
+    opportunity_claim_id: claim.id,
+    gross_amount: data.gross_amount,
+    commissionable_amount: data.commissionable_amount,
+  });
+
+  return data;
+}
+
+export async function listClaimInvoices() {
+  const { data, error } = await supabase
+    .from("claim_invoices")
+    .select("*, customer_payment_reports(id, customer_name, commissionable_amount, customer_payment_received_at), opportunity_claims(id, contact_name, contact_company, bum_user_id), opportunity_registrations(id, target_account_name), companies(id, name)")
+    .order("created_at", { ascending: false })
+    .returns<ClaimInvoiceRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createClaimInvoice(user: AuthUser, paymentReportId: string) {
+  if (user.role !== "CLIENT" && user.role !== "ADMIN") {
+    throw new Error("Only Clients and Admins can generate claim invoices.");
+  }
+
+  const { data: report, error: reportError } = await supabase
+    .from("customer_payment_reports")
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate)")
+    .eq("id", paymentReportId)
+    .maybeSingle<CustomerPaymentReportRecord>();
+
+  if (reportError) {
+    throw reportError;
+  }
+
+  if (!report?.opportunity_registrations) {
+    throw new Error("That payment report is not available for invoicing.");
+  }
+
+  const commissionRate = Number(report.opportunity_registrations.commission_rate ?? 0);
+  const invoiceAmount = Number(((Number(report.commissionable_amount) * commissionRate) / 100).toFixed(2));
+
+  const { data, error } = await supabase
+    .from("claim_invoices")
+    .insert({
+      customer_payment_report_id: report.id,
+      opportunity_claim_id: report.opportunity_claim_id,
+      opportunity_registration_id: report.opportunity_registration_id,
+      company_id: report.company_id,
+      generated_by: user.id,
+      invoice_number: createInvoiceNumber(),
+      invoice_amount: invoiceAmount,
+      commission_rate: commissionRate,
+      currency: report.currency,
+      status: "GENERATED",
+      notes: "Generated from client-reported customer payment.",
+    })
+    .select("*")
+    .single<ClaimInvoiceRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await supabase
+    .from("customer_payment_reports")
+    .update({ status: "INVOICE_GENERATED" })
+    .eq("id", report.id);
+
+  await createAuditEvent(user, "claim_invoice_generated", "claim_invoices", data.id, {
+    customer_payment_report_id: report.id,
+    invoice_amount: data.invoice_amount,
+    commission_rate: data.commission_rate,
+  });
+
+  return data;
+}
+
+export async function updateClaimInvoiceStatus(user: AuthUser, invoice: ClaimInvoiceRecord, status: ClaimInvoiceStatus) {
+  const timestamp = new Date().toISOString();
+  const updates: Partial<Pick<ClaimInvoiceRecord, "status" | "sent_at" | "paid_at">> = { status };
+
+  if (status === "SENT" && !invoice.sent_at) {
+    updates.sent_at = timestamp;
+  }
+  if (status === "PAID") {
+    updates.paid_at = timestamp;
+  }
+
+  const { data, error } = await supabase
+    .from("claim_invoices")
+    .update(updates)
+    .eq("id", invoice.id)
+    .select("*")
+    .single<ClaimInvoiceRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  if (status === "PAID" && user.role === "ADMIN" && invoice.opportunity_claims?.bum_user_id) {
+    await supabase.from("bum_payouts").upsert(
+      {
+        claim_invoice_id: invoice.id,
+        opportunity_claim_id: invoice.opportunity_claim_id,
+        bum_user_id: invoice.opportunity_claims.bum_user_id,
+        payout_amount: 0,
+        currency: invoice.currency,
+        status: "PENDING_ALLOCATION",
+        notes: "Invoice paid. Admin must allocate the Bum payout amount.",
+      },
+      { onConflict: "claim_invoice_id,opportunity_claim_id" },
+    );
+  }
+
+  await createAuditEvent(user, "claim_invoice_status_changed", "claim_invoices", data.id, { status });
+
+  return data;
+}
+
+export async function listBumPayouts() {
+  const { data, error } = await supabase
+    .from("bum_payouts")
+    .select("*, claim_invoices(id, invoice_number, invoice_amount, status), opportunity_claims(id, contact_name, contact_company), profiles(id, full_name, email)")
+    .order("created_at", { ascending: false })
+    .returns<BumPayoutRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function updateBumPayout(user: AuthUser, payout: BumPayoutRecord, updates: Partial<Pick<BumPayoutRecord, "payout_amount" | "status" | "notes">>) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only Admins can update Bum payouts.");
+  }
+
+  const timestamp = new Date().toISOString();
+  const payload: Partial<BumPayoutRecord> = { ...updates };
+
+  if (updates.status === "APPROVED") {
+    payload.approved_by = user.id;
+    payload.approved_at = timestamp;
+  }
+  if (updates.status === "PAID") {
+    payload.paid_at = timestamp;
+  }
+
+  const { data, error } = await supabase
+    .from("bum_payouts")
+    .update(payload)
+    .eq("id", payout.id)
+    .select("*")
+    .single<BumPayoutRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "bum_payout_updated", "bum_payouts", data.id, {
+    payout_amount: data.payout_amount,
+    status: data.status,
+  });
+
+  return data;
 }
 
 export async function createOpportunityClaim(user: AuthUser, input: OpportunityClaimInput) {

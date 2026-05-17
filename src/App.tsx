@@ -34,6 +34,7 @@ import ClientBums from "./pages/client/ClientBums";
 import ClientTrainings from "./pages/client/ClientTrainings";
 import ClientRequests from "./pages/client/ClientRequests";
 import ClientExports from "./pages/client/ClientExports";
+import ClientPayments from "./pages/client/ClientPayments";
 import BumLayout from "./layouts/BumLayout";
 import BumDashboard from "./pages/bum/BumDashboard";
 import BumProspects from "./pages/bum/BumProspects";
@@ -100,6 +101,7 @@ const App = () => (
                       <Route path="bum-directory" element={<ClientBums />} />
                       <Route path="trainings" element={<ClientTrainings />} />
                       <Route path="requests" element={<ClientRequests />} />
+                      <Route path="payments" element={<ClientPayments />} />
                       <Route path="exports" element={<ClientExports />} />
                     </Route>
                   </Route>
