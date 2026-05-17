@@ -165,6 +165,30 @@ export interface ScheduleTeamsMeetingResponse {
   eventWebLink: string | null;
 }
 
+export type CustomerTargetResponseStrength = "warm" | "strong" | "advisor" | "unknown";
+
+export interface CustomerTargetResponseRecord {
+  id: string;
+  customer_target_id: string;
+  client_company_id: string;
+  bum_user_id: string;
+  contact_name: string;
+  contact_email: string | null;
+  relationship_strength: CustomerTargetResponseStrength;
+  note: string | null;
+  status: "PROPOSED" | "ACCEPTED" | "DECLINED" | "CONTACTED" | "MEETING_SET";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerTargetResponseInput {
+  customerTargetId: string;
+  contactName: string;
+  contactEmail?: string;
+  relationshipStrength: CustomerTargetResponseStrength;
+  note?: string;
+}
+
 export interface CustomerTargetInput {
   target_account_name: string;
   company_website?: string;
@@ -1250,6 +1274,53 @@ export async function listTeamsMeetings() {
   }
 
   return data ?? [];
+}
+
+export async function createCustomerTargetResponse(user: AuthUser, input: CustomerTargetResponseInput) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can respond to target account opportunities.");
+  }
+
+  const { data: target, error: targetError } = await supabase
+    .from("customer_targets")
+    .select("id, client_company_id")
+    .eq("id", input.customerTargetId)
+    .maybeSingle<Pick<CustomerTargetRecord, "id" | "client_company_id">>();
+
+  if (targetError) {
+    throw targetError;
+  }
+
+  if (!target) {
+    throw new Error("That target account is no longer available.");
+  }
+
+  const { data, error } = await supabase
+    .from("customer_target_responses")
+    .insert({
+      customer_target_id: target.id,
+      client_company_id: target.client_company_id,
+      bum_user_id: user.id,
+      contact_name: input.contactName.trim(),
+      contact_email: toNullableString(input.contactEmail),
+      relationship_strength: input.relationshipStrength,
+      note: toNullableString(input.note),
+      status: "PROPOSED",
+    })
+    .select("*")
+    .single<CustomerTargetResponseRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "customer_target_response_created", "customer_target_responses", data.id, {
+    customer_target_id: target.id,
+    contact_name: data.contact_name,
+    relationship_strength: data.relationship_strength,
+  });
+
+  return data;
 }
 
 export async function scheduleTeamsMeeting(input: ScheduleTeamsMeetingInput) {
