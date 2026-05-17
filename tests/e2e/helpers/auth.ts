@@ -139,6 +139,21 @@ export async function signIn(page: Page, account: QaAccount) {
   await page.waitForLoadState("networkidle").catch(() => undefined);
 }
 
+export async function expectTrustedBumsSession(page: Page) {
+  await page.goto("/dashboard");
+  await page.waitForLoadState("networkidle").catch(() => undefined);
+
+  if (page.url().replace(/\/$/, "") === `${process.env.QA_BASE_URL}`.replace(/\/$/, "")) {
+    throw new Error(
+      [
+        "Clerk sign-in completed, but Trusted Bums did not authorize this user.",
+        "Check that this QA user has role metadata in Clerk publicMetadata or unsafeMetadata, not only organization membership/private metadata.",
+        "Expected examples: {\"role\":\"ADMIN\"}, {\"role\":\"CLIENT\",\"clientCompanyName\":\"QA\",\"clientAccessRole\":\"CLIENT_ADMIN\"}, or {\"role\":\"BUM\",\"bumId\":\"qa-bum\"}.",
+      ].join(" "),
+    );
+  }
+}
+
 export async function acceptTermsIfPrompted(page: Page, destinationPath: string) {
   if (!page.url().includes("/terms")) {
     return;
@@ -159,6 +174,7 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
 
 export async function goToAuthedPath(page: Page, account: QaAccount, path: string) {
   await signIn(page, account);
+  await expectTrustedBumsSession(page);
   await page.goto(path);
   await acceptTermsIfPrompted(page, path);
 }
