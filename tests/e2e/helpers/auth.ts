@@ -236,9 +236,33 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
   }
 }
 
+async function goToPathAfterTerms(page: Page, path: string) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle").catch(() => undefined);
+
+    await page.waitForURL((url) => url.pathname.includes("/terms"), { timeout: 3_000 }).catch(() => undefined);
+    await acceptTermsIfPrompted(page, path);
+
+    await page.waitForTimeout(750);
+
+    if (!page.url().includes("/terms")) {
+      return;
+    }
+  }
+
+  throw new Error(
+    [
+      "Unable to reach requested path after accepting terms.",
+      `Requested path: ${path}`,
+      `Current URL: ${page.url()}`,
+      `Visible text: ${(await page.locator("body").innerText().catch(() => "")).slice(0, 1_000)}`,
+    ].join(" "),
+  );
+}
+
 export async function goToAuthedPath(page: Page, account: QaAccount, path: string) {
   await signIn(page, account);
   await expectTrustedBumsSession(page);
-  await page.goto(path);
-  await acceptTermsIfPrompted(page, path);
+  await goToPathAfterTerms(page, path);
 }
