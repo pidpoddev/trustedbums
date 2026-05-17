@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getQaAccount, goToAuthedPath, hasExternalQaTarget, signIn } from "./helpers/auth";
+import { getQaAccount, goToAuthedPath, hasExternalQaTarget } from "./helpers/auth";
 
 test.describe("critical opportunity workflow", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run critical workflow tests.");
@@ -36,8 +36,7 @@ test.describe("critical opportunity workflow", () => {
     const adminContext = await browser.newContext();
     const adminPage = await adminContext.newPage();
 
-    await signIn(adminPage, admin);
-    await adminPage.goto("/admin/opportunities");
+    await goToAuthedPath(adminPage, admin, "/admin/opportunities");
     await expect(adminPage.getByRole("heading", { name: "Opportunities" })).toBeVisible();
     await adminPage.getByRole("tab", { name: "Opportunity Registrations" }).click({ timeout: 15_000 });
     await expect(adminPage.getByText(targetAccount)).toBeVisible({ timeout: 20_000 });
