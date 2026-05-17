@@ -141,8 +141,12 @@ export interface TeamsMeetingRecord {
   attendees: string[];
   teams_join_url: string | null;
   microsoft_event_id: string | null;
+  microsoft_online_meeting_id: string | null;
   microsoft_event_web_link: string | null;
   status: "SCHEDULED" | "CANCELLED" | "COMPLETED";
+  transcript_sync_status: "PENDING" | "AVAILABLE" | "FAILED" | "SKIPPED";
+  transcript_sync_attempted_at: string | null;
+  transcript_sync_error: string | null;
   created_at: string;
   updated_at: string;
   customer_targets?: Pick<CustomerTargetRecord, "id" | "target_account_name" | "key_contact_name" | "key_contact_email"> & {

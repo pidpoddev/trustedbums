@@ -40,6 +40,7 @@ interface MicrosoftEventResponse {
   id?: string;
   webLink?: string;
   onlineMeeting?: {
+    id?: string;
     joinUrl?: string;
   } | null;
 }
@@ -294,6 +295,19 @@ async function createTeamsEvent(input: {
   return payload;
 }
 
+async function findOpportunityRegistrationId(target: CustomerTargetRow) {
+  const { data } = await supabaseAdmin
+    .from("opportunity_registrations")
+    .select("id")
+    .eq("company_id", target.client_company_id)
+    .ilike("target_account_name", target.target_account_name)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+
+  return data?.id ?? null;
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -368,6 +382,7 @@ Deno.serve(async (request: Request) => {
     });
 
     const teamsJoinUrl = microsoftEvent.onlineMeeting?.joinUrl ?? null;
+    const opportunityRegistrationId = await findOpportunityRegistrationId(target);
 
     const { data: meeting, error: insertError } = await supabaseAdmin
       .from("teams_meetings")
@@ -375,6 +390,7 @@ Deno.serve(async (request: Request) => {
         customer_target_id: target.id,
         client_company_id: target.client_company_id,
         target_company_id: target.target_company_id,
+        opportunity_registration_id: opportunityRegistrationId,
         scheduled_by: profile.id,
         subject,
         description,
@@ -383,6 +399,7 @@ Deno.serve(async (request: Request) => {
         attendees: attendeeEmails,
         teams_join_url: teamsJoinUrl,
         microsoft_event_id: microsoftEvent.id ?? null,
+        microsoft_online_meeting_id: microsoftEvent.onlineMeeting?.id ?? null,
         microsoft_event_web_link: microsoftEvent.webLink ?? null,
       })
       .select("*")
