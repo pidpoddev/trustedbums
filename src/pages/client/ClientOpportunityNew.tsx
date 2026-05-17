@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle, Send } from "lucide-react";
+import { CheckCircle, FileUp, Send } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { DEFAULT_COMMISSION_DURATION } from "@/data/partnerTerms";
 import { createOpportunityRegistration } from "@/lib/portalApi";
+import { parseOpportunityImportFile, toOpportunityInput, type OpportunityImportRow } from "@/lib/opportunityImport";
 
 const initialForm = {
   target_account_name: "",
@@ -32,9 +33,69 @@ export default function ClientOpportunityNew() {
   const [form, setForm] = useState(initialForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
+  const [importRows, setImportRows] = useState<OpportunityImportRow[]>([]);
+  const [importFileName, setImportFileName] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const updateField = (field: keyof typeof initialForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const importPreviewRows = useMemo(() => importRows.slice(0, 5), [importRows]);
+
+  const loadImportFile = async (file: File | null) => {
+    if (!file) {
+      setImportRows([]);
+      setImportFileName(null);
+      return;
+    }
+
+    try {
+      const rows = await parseOpportunityImportFile(file);
+      setImportRows(rows);
+      setImportFileName(file.name);
+      toast({
+        title: "Import file ready",
+        description: `${rows.length} ${rows.length === 1 ? "opportunity" : "opportunities"} parsed for review.`,
+      });
+    } catch (error) {
+      setImportRows([]);
+      setImportFileName(null);
+      toast({
+        title: "Unable to read import file",
+        description: error instanceof Error ? error.message : "Please check the CSV and try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const importOpportunities = async () => {
+    if (!user || !importRows.length) {
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      for (const row of importRows) {
+        await createOpportunityRegistration(user, toOpportunityInput(row));
+      }
+
+      toast({
+        title: "Opportunities imported",
+        description: `${importRows.length} ${importRows.length === 1 ? "opportunity was" : "opportunities were"} submitted from ${importFileName ?? "your CSV"}.`,
+      });
+      setImportRows([]);
+      setImportFileName(null);
+    } catch (error) {
+      toast({
+        title: "Unable to import opportunities",
+        description: error instanceof Error ? error.message : "Please fix the CSV and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const submitOpportunity = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -91,6 +152,91 @@ export default function ClientOpportunityNew() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2">
+            <FileUp className="h-5 w-5 text-primary" />
+            Import opportunity list
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">How this works</p>
+            <p className="mt-2">
+              Upload a CSV from your prospecting list and we’ll turn each valid row into a submitted opportunity
+              registration. Good header names include:
+            </p>
+            <p className="mt-2 font-mono text-xs break-all">
+              target_account_name, account_name, company_name, business_unit, expected_product_service,
+              estimated_deal_value, expected_timeline, client_contact, notes
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="opportunityImportFile">CSV file</Label>
+            <Input
+              id="opportunityImportFile"
+              type="file"
+              accept=".csv"
+              onChange={(event) => void loadImportFile(event.target.files?.[0] ?? null)}
+            />
+          </div>
+
+          {importFileName ? (
+            <div className="rounded-xl border p-4">
+              <p className="font-medium">{importFileName}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {importRows.length} {importRows.length === 1 ? "row" : "rows"} ready to import
+              </p>
+            </div>
+          ) : null}
+
+          {importPreviewRows.length ? (
+            <div className="rounded-xl border">
+              <div className="border-b px-4 py-3">
+                <p className="font-medium">Preview</p>
+                <p className="text-sm text-muted-foreground">Showing the first {importPreviewRows.length} rows.</p>
+              </div>
+              <div className="divide-y">
+                {importPreviewRows.map((row) => (
+                  <div key={`${row.rowNumber}-${row.target_account_name}`} className="grid gap-1 px-4 py-3 md:grid-cols-[1.2fr_1fr_0.8fr]">
+                    <div>
+                      <p className="font-medium">{row.target_account_name}</p>
+                      <p className="text-xs text-muted-foreground">CSV row {row.rowNumber}</p>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {row.expected_product_service ?? row.business_unit ?? "No product or business unit provided"}
+                    </div>
+                    <div className="text-sm text-muted-foreground md:text-right">
+                      {row.estimated_deal_value !== null && row.estimated_deal_value !== undefined
+                        ? `$${row.estimated_deal_value.toLocaleString()}`
+                        : "Deal value TBD"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Rows without a target account name are skipped automatically.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!importRows.length || isImporting}
+              onClick={() => void importOpportunities()}
+            >
+              <FileUp className="mr-2 h-4 w-4" />
+              {isImporting
+                ? "Importing..."
+                : `Import ${importRows.length} ${importRows.length === 1 ? "opportunity" : "opportunities"}`}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
