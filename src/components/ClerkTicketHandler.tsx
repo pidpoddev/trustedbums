@@ -1,7 +1,7 @@
 import { useAuth as useClerkAuth, useClerk, useSignIn } from "@clerk/react";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 export function ClerkTicketHandler() {
   const { isSignedIn } = useClerkAuth();
@@ -73,7 +73,11 @@ export function ClerkTicketHandler() {
   }, [currentTicketUrl, isSignedIn, navigate, signIn, signOut, ticket]);
 
   if (!ticket) {
-    return null;
+    if (isSignedIn) {
+      return <Navigate to="/dashboard" replace />;
+    }
+
+    return <Navigate to="/login" replace />;
   }
 
   return (

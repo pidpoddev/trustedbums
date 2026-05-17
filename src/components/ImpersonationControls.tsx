@@ -59,7 +59,7 @@ export function ImpersonationControls() {
 
   function buildLocalTicketUrl(ticket: string) {
     const url = new URL(window.location.origin);
-    url.pathname = import.meta.env.BASE_URL || "/";
+    url.pathname = `${import.meta.env.BASE_URL || "/"}sign-in`;
     url.searchParams.set("__clerk_ticket", ticket);
     return url.toString();
   }

@@ -46,13 +46,16 @@ function getDisplayName(
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { isLoaded: isAuthLoaded, isSignedIn, signOut: clerkSignOut } = useClerkAuth();
+  const { actor, isLoaded: isAuthLoaded, isSignedIn, signOut: clerkSignOut } = useClerkAuth();
   const { isLoaded: isSessionLoaded, session } = useSession();
   const { isLoaded: isUserLoaded, user: clerkUser } = useUser();
   const [dbUser, setDbUser] = useState<AuthUser | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [isDbProfileLoaded, setIsDbProfileLoaded] = useState(false);
-  const impersonatorUserId = readString((session?.actor as Record<string, unknown> | null)?.sub) ?? null;
+  const impersonatorUserId =
+    readString((actor as Record<string, unknown> | null)?.sub) ??
+    readString((session?.actor as Record<string, unknown> | null)?.sub) ??
+    null;
 
   useEffect(() => {
     setSupabaseAccessTokenProvider(async (mode) => {

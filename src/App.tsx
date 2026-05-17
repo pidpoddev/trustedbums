@@ -54,10 +54,10 @@ const App = () => (
         <BrowserRouter basename={import.meta.env.BASE_URL}>
           <AuthProvider>
             <AppErrorBoundary>
-              <ClerkTicketHandler />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="/sign-in" element={<ClerkTicketHandler />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route element={<ProtectedRoute allowedRoles={["ADMIN", "CLIENT", "BUM"]} />}>
                   <Route path="/dashboard" element={<RoleDashboardRedirect />} />
