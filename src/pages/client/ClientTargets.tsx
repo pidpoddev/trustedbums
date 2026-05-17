@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSection";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -290,6 +291,15 @@ export default function ClientTargets() {
                     {targetAccount.expected_timeline ?? "Timeline pending"}
                   </p>
                 </div>
+              </div>
+              <div className="mt-5">
+                <MeetingTranscriptsSection
+                  title="Transcripts"
+                  description="Teams transcripts and meeting notes attached to this target account."
+                  filters={{ customerTargetId: targetAccount.id }}
+                  companyId={targetAccount.client_company_id}
+                  allowAdd
+                />
               </div>
             </CardContent>
           </Card>

@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSection";
 import {
   claimStatusConfig,
   type ClaimStatus,
@@ -314,6 +315,11 @@ export default function BumOpportunityDetail() {
           </div>
         </CardContent>
       </Card>
+
+      <MeetingTranscriptsSection
+        filters={{ opportunityRegistrationId: opp.id }}
+        description="Teams transcripts and meeting notes that Client, Admin, and Bums can reference for this opportunity."
+      />
     </div>
   );
 }

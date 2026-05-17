@@ -131,6 +131,8 @@ export interface TeamsMeetingRecord {
   customer_target_id: string;
   client_company_id: string;
   target_company_id: string;
+  opportunity_registration_id: string | null;
+  opportunity_claim_id: string | null;
   scheduled_by: string;
   subject: string;
   description: string | null;
@@ -148,6 +150,55 @@ export interface TeamsMeetingRecord {
     target_companies?: Pick<CompanyRecord, "id" | "name" | "website"> | null;
   };
   profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export type MeetingTranscriptSource = "GRAPH" | "MANUAL" | "UPLOAD";
+export type MeetingTranscriptStatus = "PENDING" | "AVAILABLE" | "FAILED";
+
+export interface MeetingTranscriptRecord {
+  id: string;
+  teams_meeting_id: string | null;
+  customer_target_id: string | null;
+  opportunity_registration_id: string | null;
+  opportunity_claim_id: string | null;
+  company_id: string | null;
+  created_by: string | null;
+  source: MeetingTranscriptSource;
+  status: MeetingTranscriptStatus;
+  title: string;
+  transcript_text: string | null;
+  transcript_url: string | null;
+  content_type: string;
+  graph_transcript_id: string | null;
+  captured_at: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  teams_meetings?: Pick<TeamsMeetingRecord, "id" | "subject" | "start_time" | "teams_join_url"> | null;
+  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name"> | null;
+  customer_targets?: Pick<CustomerTargetRecord, "id" | "target_account_name"> | null;
+}
+
+export interface MeetingTranscriptInput {
+  opportunityRegistrationId?: string | null;
+  customerTargetId?: string | null;
+  teamsMeetingId?: string | null;
+  opportunityClaimId?: string | null;
+  companyId?: string | null;
+  title?: string;
+  transcriptText?: string;
+  transcriptUrl?: string;
+  source?: MeetingTranscriptSource;
+  status?: MeetingTranscriptStatus;
+  contentType?: string;
+  graphTranscriptId?: string;
+  capturedAt?: string;
+}
+
+export interface MeetingTranscriptFilters {
+  opportunityRegistrationId?: string;
+  customerTargetId?: string;
+  teamsMeetingId?: string;
 }
 
 export interface ScheduleTeamsMeetingInput {
@@ -1867,6 +1918,98 @@ export async function listTeamsMeetings() {
   }
 
   return data ?? [];
+}
+
+export async function listMeetingTranscripts(filters: MeetingTranscriptFilters = {}) {
+  let query = supabase
+    .from("meeting_transcripts")
+    .select("*, teams_meetings(id, subject, start_time, teams_join_url), opportunity_registrations(id, target_account_name), customer_targets(id, target_account_name)")
+    .order("created_at", { ascending: false });
+
+  if (filters.opportunityRegistrationId) {
+    query = query.eq("opportunity_registration_id", filters.opportunityRegistrationId);
+  }
+  if (filters.customerTargetId) {
+    query = query.eq("customer_target_id", filters.customerTargetId);
+  }
+  if (filters.teamsMeetingId) {
+    query = query.eq("teams_meeting_id", filters.teamsMeetingId);
+  }
+
+  const { data, error } = await query.returns<MeetingTranscriptRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createMeetingTranscript(user: AuthUser, input: MeetingTranscriptInput) {
+  if (user.role !== "ADMIN" && user.role !== "CLIENT") {
+    throw new Error("Only Clients and Admins can add meeting transcripts.");
+  }
+
+  let companyId = input.companyId ?? null;
+
+  if (!companyId && input.opportunityRegistrationId) {
+    const { data, error } = await supabase
+      .from("opportunity_registrations")
+      .select("company_id")
+      .eq("id", input.opportunityRegistrationId)
+      .maybeSingle<Pick<OpportunityRegistration, "company_id">>();
+
+    if (error) {
+      throw error;
+    }
+    companyId = data?.company_id ?? null;
+  }
+
+  if (!companyId && input.customerTargetId) {
+    const { data, error } = await supabase
+      .from("customer_targets")
+      .select("client_company_id")
+      .eq("id", input.customerTargetId)
+      .maybeSingle<Pick<CustomerTargetRecord, "client_company_id">>();
+
+    if (error) {
+      throw error;
+    }
+    companyId = data?.client_company_id ?? null;
+  }
+
+  const { data, error } = await supabase
+    .from("meeting_transcripts")
+    .insert({
+      teams_meeting_id: input.teamsMeetingId ?? null,
+      customer_target_id: input.customerTargetId ?? null,
+      opportunity_registration_id: input.opportunityRegistrationId ?? null,
+      opportunity_claim_id: input.opportunityClaimId ?? null,
+      company_id: companyId,
+      created_by: user.id,
+      source: input.source ?? "MANUAL",
+      status: input.status ?? "AVAILABLE",
+      title: input.title?.trim() || "Teams meeting transcript",
+      transcript_text: toNullableString(input.transcriptText),
+      transcript_url: toNullableString(input.transcriptUrl),
+      content_type: input.contentType ?? "text/plain",
+      graph_transcript_id: toNullableString(input.graphTranscriptId),
+      captured_at: input.capturedAt ?? new Date().toISOString(),
+    })
+    .select("*")
+    .single<MeetingTranscriptRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "meeting_transcript_created", "meeting_transcripts", data.id, {
+    opportunity_registration_id: data.opportunity_registration_id,
+    customer_target_id: data.customer_target_id,
+    source: data.source,
+  });
+
+  return data;
 }
 
 export async function createCustomerTargetResponse(user: AuthUser, input: CustomerTargetResponseInput) {

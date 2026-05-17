@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScheduleTeamsMeetingDialog } from "@/components/ScheduleTeamsMeetingDialog";
+import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSection";
 import {
   listCustomerTargets,
   listOpportunityRegistrations,
@@ -113,6 +114,15 @@ export default function AdminOpportunities() {
                       </div>
                     </div>
                   </div>
+                  <div className="mt-5">
+                    <MeetingTranscriptsSection
+                      title="Transcripts"
+                      description="Teams transcripts and meeting notes attached to this target account."
+                      filters={{ customerTargetId: targetAccount.id }}
+                      companyId={targetAccount.client_company_id}
+                      allowAdd
+                    />
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -155,6 +165,15 @@ export default function AdminOpportunities() {
                         </p>
                         <p className="text-xs text-muted-foreground">Estimated value</p>
                       </div>
+                    </div>
+                    <div className="mt-5">
+                      <MeetingTranscriptsSection
+                        title="Transcripts"
+                        description="Teams transcripts and meeting notes attached to this opportunity."
+                        filters={{ opportunityRegistrationId: registration.id }}
+                        companyId={registration.company_id}
+                        allowAdd
+                      />
                     </div>
                   </CardContent>
                 </Card>
