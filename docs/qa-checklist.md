@@ -49,6 +49,7 @@ Use the `E2E Smoke` workflow from GitHub Actions to validate staging or producti
 Required repository secrets:
 
 - `CLERK_SECRET_KEY`
+- `VITE_CLERK_PUBLISHABLE_KEY`
 - `QA_ADMIN_EMAIL`
 - `QA_CLIENT_ADMIN_EMAIL`
 - `QA_CLIENT_FINANCE_EMAIL`

@@ -1,4 +1,4 @@
-import { clerk } from "@clerk/testing/playwright";
+import { clerk, clerkSetup } from "@clerk/testing/playwright";
 import { type Page } from "@playwright/test";
 
 export interface QaAccount {
@@ -21,11 +21,19 @@ export function hasExternalQaTarget() {
   return Boolean(process.env.QA_BASE_URL);
 }
 
+let clerkSetupPromise: Promise<void> | null = null;
+
+async function ensureClerkTestingSetup() {
+  clerkSetupPromise ??= clerkSetup({ dotenv: false });
+  await clerkSetupPromise;
+}
+
 export async function signIn(page: Page, account: QaAccount) {
   await page.goto("/");
   await page.waitForFunction(() => Boolean(window.Clerk?.loaded), undefined, { timeout: 20_000 });
 
   if (process.env.CLERK_SECRET_KEY) {
+    await ensureClerkTestingSetup();
     await clerk.signIn({ page, emailAddress: account.email });
     await page.waitForLoadState("networkidle").catch(() => undefined);
     await waitForClerkSession(page);
