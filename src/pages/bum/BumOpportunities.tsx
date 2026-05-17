@@ -35,6 +35,7 @@ const responseFormInitial = {
 
 type ValueFilter = "ALL" | "UNDER_50K" | "50K_250K" | "250K_PLUS" | "UNKNOWN";
 type TermFilter = "ALL" | "SHORT" | "MEDIUM" | "LONG" | "UNKNOWN";
+type OpportunityTypeFilter = "ALL" | "TARGET_ACCOUNT" | "OPPORTUNITY";
 
 const valueFilters: { value: ValueFilter; label: string }[] = [
   { value: "ALL", label: "All values" },
@@ -50,6 +51,12 @@ const termFilters: { value: TermFilter; label: string }[] = [
   { value: "MEDIUM", label: "Quarterly / medium" },
   { value: "LONG", label: "Annual / long" },
   { value: "UNKNOWN", label: "Term pending" },
+];
+
+const typeFilters: { value: OpportunityTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All opportunity types" },
+  { value: "TARGET_ACCOUNT", label: "Client targets" },
+  { value: "OPPORTUNITY", label: "Formal opportunities" },
 ];
 
 function valueMatchesFilter(value: number | null, filter: ValueFilter) {
@@ -77,6 +84,7 @@ export default function BumOpportunities() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [heartedOnly, setHeartedOnly] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<OpportunityTypeFilter>("ALL");
   const [industry, setIndustry] = useState("ALL");
   const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
   const [termFilter, setTermFilter] = useState<TermFilter>("ALL");
@@ -159,6 +167,7 @@ export default function BumOpportunities() {
   });
 
   const filtered = opportunities.filter((opportunity) => {
+    const matchesType = typeFilter === "ALL" || typeFilter === "OPPORTUNITY";
     const matchesQuery = `${opportunity.target_account_name} ${opportunity.companies?.name ?? ""} ${opportunity.opportunity_description ?? ""} ${opportunity.expected_product_service ?? ""}`
       .toLowerCase()
       .includes(query.toLowerCase());
@@ -166,9 +175,10 @@ export default function BumOpportunities() {
     const matchesIndustry = industry === "ALL" || opportunity.expected_product_service === industry;
     const matchesValue = valueMatchesFilter(opportunity.estimated_deal_value ? Number(opportunity.estimated_deal_value) : null, valueFilter);
     const matchesTerm = termMatchesFilter(`${opportunity.expected_timeline ?? ""} ${opportunity.commission_duration ?? ""}`.trim(), termFilter);
-    return matchesQuery && matchesHeart && matchesIndustry && matchesValue && matchesTerm;
+    return matchesType && matchesQuery && matchesHeart && matchesIndustry && matchesValue && matchesTerm;
   });
   const filteredTargets = targets.filter((target) => {
+    const matchesType = typeFilter === "ALL" || typeFilter === "TARGET_ACCOUNT";
     const matchesQuery = `${target.target_companies?.name ?? target.target_account_name} ${target.client_companies?.name ?? ""} ${target.expected_product_service ?? ""} ${target.notes ?? ""}`
       .toLowerCase()
       .includes(query.toLowerCase());
@@ -176,7 +186,7 @@ export default function BumOpportunities() {
     const matchesIndustry = industry === "ALL" || target.expected_product_service === industry;
     const matchesValue = valueMatchesFilter(target.estimated_deal_value ? Number(target.estimated_deal_value) : null, valueFilter);
     const matchesTerm = termMatchesFilter(target.expected_timeline, termFilter);
-    return matchesQuery && matchesHeart && matchesIndustry && matchesValue && matchesTerm;
+    return matchesType && matchesQuery && matchesHeart && matchesIndustry && matchesValue && matchesTerm;
   });
 
   return (
@@ -186,8 +196,8 @@ export default function BumOpportunities() {
         description="Browse live client opportunities, add people you know, and try to claim the opportunity."
       />
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="relative flex-1">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto]">
+        <div className="relative min-w-0 xl:col-span-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search opportunities…"
@@ -196,34 +206,39 @@ export default function BumOpportunities() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={heartedOnly ? "default" : "outline"}
-            size="sm"
-            onClick={() => setHeartedOnly((current) => !current)}
-          >
-            <Heart className={cn("mr-2 h-4 w-4", heartedOnly && "fill-current")} />
-            Hearted
-          </Button>
-          <Button variant={industry === "ALL" ? "default" : "outline"} size="sm" onClick={() => setIndustry("ALL")}>
-            All industries
-          </Button>
-          {allIndustries.map((item) => (
-            <Button
-              key={item}
-              variant={industry === item ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIndustry(item)}
-            >
-              {item}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Anticipated contract value</Label>
+          <Label>Type</Label>
+          <Select value={typeFilter} onValueChange={(value: OpportunityTypeFilter) => setTypeFilter(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {typeFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Category</Label>
+          <Select value={industry} onValueChange={setIndustry}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All categories</SelectItem>
+              {allIndustries.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Anticipated value</Label>
           <Select value={valueFilter} onValueChange={(value: ValueFilter) => setValueFilter(value)}>
             <SelectTrigger>
               <SelectValue />
@@ -238,7 +253,7 @@ export default function BumOpportunities() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Contract term / timing</Label>
+          <Label>Term / timing</Label>
           <Select value={termFilter} onValueChange={(value: TermFilter) => setTermFilter(value)}>
             <SelectTrigger>
               <SelectValue />
@@ -251,6 +266,16 @@ export default function BumOpportunities() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="flex items-end">
+          <Button
+            variant={heartedOnly ? "default" : "outline"}
+            className="w-full xl:w-auto"
+            onClick={() => setHeartedOnly((current) => !current)}
+          >
+            <Heart className={cn("mr-2 h-4 w-4", heartedOnly && "fill-current")} />
+            Hearted
+          </Button>
         </div>
       </div>
 

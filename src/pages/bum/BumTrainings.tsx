@@ -4,24 +4,37 @@ import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { listMarketplaceTrainingMaterials } from "@/lib/portalApi";
 import { GraduationCap, Search, PlayCircle } from "lucide-react";
 
+type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY";
+
+const trainingTypeFilters: { value: TrainingTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All training types" },
+  { value: "LINKED_RESOURCE", label: "Linked resources" },
+  { value: "REFERENCE_ONLY", label: "Reference notes only" },
+];
+
 export default function BumTrainings() {
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState<"ALL" | "CLIENT">("ALL");
+  const [typeFilter, setTypeFilter] = useState<TrainingTypeFilter>("ALL");
   const trainingsQuery = useQuery({
     queryKey: ["bum-marketplace-trainings"],
     queryFn: listMarketplaceTrainingMaterials,
   });
 
   const filtered = (trainingsQuery.data ?? []).filter((training) => {
+    const matchesType =
+      typeFilter === "ALL" ||
+      (typeFilter === "LINKED_RESOURCE" && Boolean(training.resource_url)) ||
+      (typeFilter === "REFERENCE_ONLY" && !training.resource_url);
     const matchesQuery = `${training.title} ${training.description ?? ""} ${training.companies?.name ?? ""} ${training.technology ?? ""}`
       .toLowerCase()
       .includes(query.toLowerCase());
-    const matchesScope = scope === "ALL" || scope === "CLIENT";
-    return matchesQuery && matchesScope;
+    return matchesType && matchesQuery;
   });
 
   return (
@@ -31,8 +44,8 @@ export default function BumTrainings() {
         description="Learn about our partners' technologies before making intros."
       />
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)]">
+        <div className="relative min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search trainings…"
@@ -41,17 +54,20 @@ export default function BumTrainings() {
             className="pl-9"
           />
         </div>
-        <div className="flex gap-2">
-          {(["ALL", "CLIENT"] as const).map((s) => (
-            <Button
-              key={s}
-              variant={scope === s ? "default" : "outline"}
-              size="sm"
-              onClick={() => setScope(s)}
-            >
-              {s === "ALL" ? "All" : "Client Trainings"}
-            </Button>
-          ))}
+        <div className="space-y-2">
+          <Label>Type</Label>
+          <Select value={typeFilter} onValueChange={(value: TrainingTypeFilter) => setTypeFilter(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {trainingTypeFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

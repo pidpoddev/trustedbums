@@ -29,6 +29,7 @@ interface MarketplaceClientSummary {
 
 type ValueFilter = "ALL" | "UNDER_50K" | "50K_250K" | "250K_PLUS" | "UNKNOWN";
 type TermFilter = "ALL" | "SHORT" | "MEDIUM" | "LONG" | "UNKNOWN";
+type ClientTypeFilter = "ALL" | "OPEN_OPPORTUNITIES" | "TARGET_ONLY" | "FULL_PIPELINE";
 
 const valueFilters: { value: ValueFilter; label: string }[] = [
   { value: "ALL", label: "All values" },
@@ -44,6 +45,13 @@ const termFilters: { value: TermFilter; label: string }[] = [
   { value: "MEDIUM", label: "Quarterly / medium" },
   { value: "LONG", label: "Annual / long" },
   { value: "UNKNOWN", label: "Term pending" },
+];
+
+const clientTypeFilters: { value: ClientTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All client types" },
+  { value: "OPEN_OPPORTUNITIES", label: "With open opportunities" },
+  { value: "TARGET_ONLY", label: "Target-account only" },
+  { value: "FULL_PIPELINE", label: "Full pipeline" },
 ];
 
 function valueMatchesFilter(value: number | null, filter: ValueFilter) {
@@ -71,6 +79,7 @@ export default function BumClients() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [heartedOnly, setHeartedOnly] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<ClientTypeFilter>("ALL");
   const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
   const [termFilter, setTermFilter] = useState<TermFilter>("ALL");
   const opportunitiesQuery = useQuery({
@@ -201,6 +210,11 @@ export default function BumClients() {
   const [industry, setIndustry] = useState<string>("ALL");
 
   const filtered = marketplaceClients.filter((client) => {
+    const matchesType =
+      typeFilter === "ALL" ||
+      (typeFilter === "OPEN_OPPORTUNITIES" && client.openCount > 0) ||
+      (typeFilter === "TARGET_ONLY" && client.openCount === 0 && client.targetCount > 0) ||
+      (typeFilter === "FULL_PIPELINE" && client.openCount > 0 && client.targetCount > 0);
     const matchesQuery = `${client.company} ${client.pitch} ${client.industries.join(" ")}`
       .toLowerCase()
       .includes(query.toLowerCase());
@@ -208,7 +222,7 @@ export default function BumClients() {
     const matchesHeart = !heartedOnly || savedClientIds.has(client.id);
     const matchesValue = valueMatchesFilter(client.maxDealValue, valueFilter);
     const matchesTerm = termMatchesFilter(client.termHints, termFilter);
-    return matchesQuery && matchesIndustry && matchesHeart && matchesValue && matchesTerm;
+    return matchesType && matchesQuery && matchesIndustry && matchesHeart && matchesValue && matchesTerm;
   });
 
   return (
@@ -218,8 +232,8 @@ export default function BumClients() {
         description="Search live client companies, target-account pipelines, and formal marketplace opportunities."
       />
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="relative flex-1">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto]">
+        <div className="relative min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by company, pitch, or ICP…"
@@ -228,38 +242,39 @@ export default function BumClients() {
             className="pl-9"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant={heartedOnly ? "default" : "outline"}
-            size="sm"
-            onClick={() => setHeartedOnly((current) => !current)}
-          >
-            <Heart className={cn("mr-2 h-4 w-4", heartedOnly && "fill-current")} />
-            Hearted
-          </Button>
-          <Button
-            variant={industry === "ALL" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setIndustry("ALL")}
-          >
-            All industries
-          </Button>
-          {allIndustries.map((i) => (
-            <Button
-              key={i}
-              variant={industry === i ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIndustry(i)}
-            >
-              {i}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Anticipated contract value</Label>
+          <Label>Type</Label>
+          <Select value={typeFilter} onValueChange={(value: ClientTypeFilter) => setTypeFilter(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {clientTypeFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Category</Label>
+          <Select value={industry} onValueChange={setIndustry}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All categories</SelectItem>
+              {allIndustries.map((i) => (
+                <SelectItem key={i} value={i}>
+                  {i}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Anticipated value</Label>
           <Select value={valueFilter} onValueChange={(value: ValueFilter) => setValueFilter(value)}>
             <SelectTrigger>
               <SelectValue />
@@ -274,7 +289,7 @@ export default function BumClients() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Contract term / timing</Label>
+          <Label>Term / timing</Label>
           <Select value={termFilter} onValueChange={(value: TermFilter) => setTermFilter(value)}>
             <SelectTrigger>
               <SelectValue />
@@ -287,6 +302,16 @@ export default function BumClients() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="flex items-end">
+          <Button
+            variant={heartedOnly ? "default" : "outline"}
+            className="w-full xl:w-auto"
+            onClick={() => setHeartedOnly((current) => !current)}
+          >
+            <Heart className={cn("mr-2 h-4 w-4", heartedOnly && "fill-current")} />
+            Hearted
+          </Button>
         </div>
       </div>
 
