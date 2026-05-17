@@ -10,6 +10,7 @@ import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   listClaimInvoices,
+  listClientReverseOpportunities,
   listCustomerPaymentReports,
   listCustomerTargets,
   listOpportunityRegistrations,
@@ -44,8 +45,14 @@ export default function ClientDashboard() {
     queryFn: () => listClaimInvoices(user!),
     enabled: Boolean(user?.clientId) && isFinanceUser,
   });
+  const reverseOpportunitiesQuery = useQuery({
+    queryKey: ["client-reverse-opportunities", user?.clientId],
+    queryFn: () => listClientReverseOpportunities(user!),
+    enabled: Boolean(user?.clientId) && !isFinanceUser,
+  });
   const opportunities = opportunitiesQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
+  const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
   const paymentReports = reportsQuery.data ?? [];
   const invoices = invoicesQuery.data ?? [];
   const activeCount = opportunities.filter((opportunity) =>
@@ -190,6 +197,7 @@ export default function ClientDashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Target Accounts" value={targets.length} icon={Target} />
+        <StatCard title="Inbound Requests" value={reverseOpportunities.length} icon={Clock} />
         <StatCard title="Active Opportunities" value={activeCount} icon={Target} />
         <StatCard title="Accepted" value={acceptedCount} icon={FileCheck} />
         <StatCard title="Target Prospects" value={targetProspectCount} icon={Clock} />
@@ -258,6 +266,9 @@ export default function ClientDashboard() {
               <CardTitle className="font-display">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
+              <Button asChild variant="outline">
+                <Link to="/client/requests">Review inbound requests</Link>
+              </Button>
               <Button asChild>
                 <Link to="/client/targets">Add target account</Link>
               </Button>

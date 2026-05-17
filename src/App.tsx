@@ -41,6 +41,7 @@ import ClientPayments from "./pages/client/ClientPayments";
 import BumLayout from "./layouts/BumLayout";
 import BumDashboard from "./pages/bum/BumDashboard";
 import BumProspects from "./pages/bum/BumProspects";
+import BumReverseOpportunities from "./pages/bum/BumReverseOpportunities";
 import BumOpportunities from "./pages/bum/BumOpportunities";
 import BumClaims from "./pages/bum/BumClaims";
 import BumLiveConversations from "./pages/bum/BumLiveConversations";
@@ -123,6 +124,7 @@ const App = () => (
                       <Route path="dashboard" element={<BumDashboard />} />
                       <Route path="terms" element={<ClientTerms />} />
                       <Route path="prospects" element={<BumProspects />} />
+                      <Route path="reverse-opportunities" element={<BumReverseOpportunities />} />
                       <Route path="clients" element={<BumClients />} />
                       <Route path="opportunities" element={<BumOpportunities />} />
                       <Route path="opportunities/:id" element={<BumOpportunityDetail />} />

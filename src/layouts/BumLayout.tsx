@@ -25,11 +25,13 @@ import {
   GraduationCap,
   PlusCircle,
   FileCheck,
+  Sparkles,
 } from "lucide-react";
 
 const navItems = [
   { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
   { title: "Prospects", url: "/bum/prospects", icon: PlusCircle },
+  { title: "Reverse Opportunities", url: "/bum/reverse-opportunities", icon: Sparkles },
   { title: "Clients", url: "/bum/clients", icon: Building2 },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
   { title: "My Claims", url: "/bum/claims", icon: Handshake },

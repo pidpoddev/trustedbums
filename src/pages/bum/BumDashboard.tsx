@@ -25,6 +25,7 @@ import {
   listOwnProspectRecommendations,
   listMarketplaceOpportunities,
   upsertOwnBumProfile,
+  listOwnReverseOpportunities,
   type BumProfileInput,
 } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
@@ -59,6 +60,11 @@ export default function BumDashboard() {
   const profileQuery = useQuery({
     queryKey: ["bum-profile", user?.id],
     queryFn: () => getOwnBumProfile(user!.id),
+    enabled: Boolean(user?.id),
+  });
+  const reverseOpportunitiesQuery = useQuery({
+    queryKey: ["bum-reverse-opportunities", user?.id],
+    queryFn: () => listOwnReverseOpportunities(user!.id),
     enabled: Boolean(user?.id),
   });
   const { introClaims } = useIntroClaims();
@@ -227,6 +233,7 @@ export default function BumDashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Prospected Clients" value={prospectsQuery.data?.length ?? 0} icon={Building2} />
+        <StatCard title="Reverse Opportunities" value={reverseOpportunitiesQuery.data?.length ?? 0} icon={Sparkles} />
         <StatCard title="Open Opportunities" value={opportunitiesQuery.data?.length ?? 0} icon={Briefcase} />
         <StatCard title="Active Claims" value={myClaims.length} icon={Handshake} />
         <StatCard title="Pending Earnings" value="$0" icon={TrendingUp} />
@@ -293,8 +300,12 @@ export default function BumDashboard() {
                 <span className="text-muted-foreground">Marketplace opportunities</span>
                 <span className="font-medium">{opportunitiesQuery.data?.length ?? 0}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Reverse opportunities</span>
+                <span className="font-medium">{reverseOpportunitiesQuery.data?.length ?? 0}</span>
+              </div>
               <Button asChild variant="outline" className="w-full">
-                <Link to="/bum/prospects">Open Prospects</Link>
+                <Link to="/bum/reverse-opportunities">Open Reverse Opportunities</Link>
               </Button>
             </CardContent>
           </Card>

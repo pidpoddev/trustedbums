@@ -106,6 +106,64 @@ export interface ProspectInput {
   notes?: string;
 }
 
+export type ReverseOpportunityClientMode = "EXISTING_CLIENT" | "PROSPECT_CLIENT";
+export type ReverseOpportunityStatus =
+  | "SUBMITTED"
+  | "OUTREACH_READY"
+  | "CLIENT_CONTACTED"
+  | "CLIENT_INTERESTED"
+  | "CONVERTED"
+  | "CLOSED_LOST";
+
+export interface ReverseOpportunityRecord {
+  id: string;
+  bum_user_id: string;
+  vendor_company_id: string;
+  client_mode: ReverseOpportunityClientMode;
+  status: ReverseOpportunityStatus;
+  vendor_contact_name: string | null;
+  vendor_contact_title: string | null;
+  vendor_contact_email: string | null;
+  vendor_contact_linkedin_url: string | null;
+  customer_company_name: string;
+  customer_company_website: string | null;
+  customer_contact_name: string | null;
+  customer_contact_title: string | null;
+  customer_contact_email: string | null;
+  customer_need_summary: string;
+  expected_product_service: string | null;
+  estimated_deal_value: number | null;
+  expected_timeline: string | null;
+  notes: string | null;
+  converted_opportunity_registration_id: string | null;
+  created_at: string;
+  updated_at: string;
+  companies?: Pick<CompanyRecord, "id" | "name" | "website" | "relationship_stage" | "linkedin_company_url"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export interface ReverseOpportunityInput {
+  client_mode: ReverseOpportunityClientMode;
+  vendor_company_id?: string;
+  prospect_client_name?: string;
+  prospect_client_website?: string;
+  prospect_client_linkedin_url?: string;
+  vendor_contact_name?: string;
+  vendor_contact_title?: string;
+  vendor_contact_email?: string;
+  vendor_contact_linkedin_url?: string;
+  customer_company_name: string;
+  customer_company_website?: string;
+  customer_contact_name?: string;
+  customer_contact_title?: string;
+  customer_contact_email?: string;
+  customer_need_summary: string;
+  expected_product_service?: string;
+  estimated_deal_value?: number | null;
+  expected_timeline?: string;
+  notes?: string;
+}
+
 export interface CustomerTargetRecord {
   id: string;
   client_company_id: string;
@@ -1903,6 +1961,154 @@ export async function listProspectContacts() {
   }
 
   return data ?? [];
+}
+
+export async function createReverseOpportunity(user: AuthUser, input: ReverseOpportunityInput) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can submit reverse opportunities.");
+  }
+
+  let vendorCompany: CompanyRecord | null = null;
+  let clientMode = input.client_mode;
+
+  if (input.client_mode === "EXISTING_CLIENT") {
+    if (!input.vendor_company_id) {
+      throw new Error("Choose an existing client company.");
+    }
+
+    vendorCompany = await getCompanyById(input.vendor_company_id);
+
+    if (!vendorCompany) {
+      throw new Error("We could not find that client company.");
+    }
+  } else {
+    if (!input.prospect_client_name?.trim()) {
+      throw new Error("Add the prospect client company name.");
+    }
+
+    vendorCompany = await ensureCompany({
+      companyName: input.prospect_client_name,
+      companyWebsite: input.prospect_client_website,
+      linkedinCompanyUrl: input.prospect_client_linkedin_url,
+      email: input.vendor_contact_email,
+      relationshipStage: "PROSPECT",
+    });
+  }
+
+  if (vendorCompany.relationship_stage === "CLIENT") {
+    clientMode = "EXISTING_CLIENT";
+  }
+
+  const { data, error } = await supabase
+    .from("reverse_opportunities")
+    .insert({
+      bum_user_id: user.id,
+      vendor_company_id: vendorCompany.id,
+      client_mode: clientMode,
+      status: "SUBMITTED",
+      vendor_contact_name: toNullableString(input.vendor_contact_name),
+      vendor_contact_title: toNullableString(input.vendor_contact_title),
+      vendor_contact_email: toNullableString(input.vendor_contact_email),
+      vendor_contact_linkedin_url: toNullableString(input.vendor_contact_linkedin_url),
+      customer_company_name: input.customer_company_name.trim(),
+      customer_company_website: toNullableString(input.customer_company_website),
+      customer_contact_name: toNullableString(input.customer_contact_name),
+      customer_contact_title: toNullableString(input.customer_contact_title),
+      customer_contact_email: toNullableString(input.customer_contact_email),
+      customer_need_summary: input.customer_need_summary.trim(),
+      expected_product_service: toNullableString(input.expected_product_service),
+      estimated_deal_value: input.estimated_deal_value ?? null,
+      expected_timeline: toNullableString(input.expected_timeline),
+      notes: toNullableString(input.notes),
+    })
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .single<ReverseOpportunityRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "reverse_opportunity_created", "reverse_opportunities", data.id, {
+    vendor_company_id: data.vendor_company_id,
+    customer_company_name: data.customer_company_name,
+    status: data.status,
+  });
+  await createAuditEvent(user, "admin_notification_queued", "reverse_opportunities", data.id, {
+    message: "New reverse opportunity submitted for admin review.",
+  });
+
+  return data;
+}
+
+export async function listOwnReverseOpportunities(userId: string) {
+  const { data, error } = await supabase
+    .from("reverse_opportunities")
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .eq("bum_user_id", userId)
+    .order("created_at", { ascending: false })
+    .returns<ReverseOpportunityRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listAdminReverseOpportunities() {
+  const { data, error } = await supabase
+    .from("reverse_opportunities")
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .order("created_at", { ascending: false })
+    .returns<ReverseOpportunityRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listClientReverseOpportunities(user: AuthUser) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users linked to a company can read reverse opportunities.");
+  }
+
+  const { data, error } = await supabase
+    .from("reverse_opportunities")
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .eq("vendor_company_id", user.clientId)
+    .order("created_at", { ascending: false })
+    .returns<ReverseOpportunityRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function updateReverseOpportunityStatus(
+  user: AuthUser,
+  reverseOpportunityId: string,
+  status: ReverseOpportunityStatus,
+) {
+  const { data, error } = await supabase
+    .from("reverse_opportunities")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", reverseOpportunityId)
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .single<ReverseOpportunityRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "reverse_opportunity_status_changed", "reverse_opportunities", data.id, {
+    status,
+  });
+
+  return data;
 }
 
 export async function createCustomerTarget(user: AuthUser, input: CustomerTargetInput) {

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Search, Target } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, Search, Sparkles, Target, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -10,11 +10,16 @@ import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSectio
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   listCustomerTargets,
+  listAdminReverseOpportunities,
   listOpportunityRegistrations,
+  updateReverseOpportunityStatus,
   type CustomerTargetStatus,
   type RegistrationStatus,
+  type ReverseOpportunityStatus,
 } from "@/lib/portalApi";
 
 function registrationVariant(status: RegistrationStatus) {
@@ -49,6 +54,7 @@ function targetLabel(status: CustomerTargetStatus) {
 
 type TargetTypeFilter = "ALL" | "EARLY_PIPELINE" | "INTRO_ACTIVE" | "CLOSED";
 type RegistrationTypeFilter = "ALL" | "OPEN" | "NEEDS_ATTENTION" | "CLOSED";
+type ReverseOpportunityTypeFilter = "ALL" | "NEW" | "ACTIVE" | "CONVERTED" | "CLOSED";
 
 const targetTypeFilters: { value: TargetTypeFilter; label: string }[] = [
   { value: "ALL", label: "All target account types" },
@@ -64,12 +70,37 @@ const registrationTypeFilters: { value: RegistrationTypeFilter; label: string }[
   { value: "CLOSED", label: "Closed" },
 ];
 
+const reverseOpportunityTypeFilters: { value: ReverseOpportunityTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All reverse opportunities" },
+  { value: "NEW", label: "New" },
+  { value: "ACTIVE", label: "Active outreach" },
+  { value: "CONVERTED", label: "Converted" },
+  { value: "CLOSED", label: "Closed lost" },
+];
+
+function reverseOpportunityVariant(status: ReverseOpportunityStatus) {
+  if (status === "CLIENT_INTERESTED" || status === "CONVERTED") {
+    return "success" as const;
+  }
+  if (status === "CLOSED_LOST") {
+    return "destructive" as const;
+  }
+  if (status === "OUTREACH_READY" || status === "CLIENT_CONTACTED") {
+    return "info" as const;
+  }
+  return "warning" as const;
+}
+
 export default function AdminOpportunities() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [targetQuery, setTargetQuery] = useState("");
   const [registrationQuery, setRegistrationQuery] = useState("");
   const [targetTypeFilter, setTargetTypeFilter] = useState<TargetTypeFilter>("ALL");
   const [registrationTypeFilter, setRegistrationTypeFilter] = useState<RegistrationTypeFilter>("ALL");
+  const [reverseOpportunityQuery, setReverseOpportunityQuery] = useState("");
+  const [reverseOpportunityTypeFilter, setReverseOpportunityTypeFilter] = useState<ReverseOpportunityTypeFilter>("ALL");
   const registrationsQuery = useQuery({
     queryKey: ["admin-opportunities", "All"],
     queryFn: () => listOpportunityRegistrations("All"),
@@ -78,9 +109,39 @@ export default function AdminOpportunities() {
     queryKey: ["admin-customer-targets"],
     queryFn: () => listCustomerTargets(null),
   });
+  const reverseOpportunitiesQuery = useQuery({
+    queryKey: ["admin-reverse-opportunities"],
+    queryFn: listAdminReverseOpportunities,
+  });
+  const reverseStatusMutation = useMutation({
+    mutationFn: async ({
+      reverseOpportunityId,
+      status,
+    }: {
+      reverseOpportunityId: string;
+      status: ReverseOpportunityStatus;
+    }) => updateReverseOpportunityStatus(user!, reverseOpportunityId, status),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-reverse-opportunities"] });
+      await queryClient.invalidateQueries({ queryKey: ["client-reverse-opportunities"] });
+      await queryClient.invalidateQueries({ queryKey: ["bum-reverse-opportunities"] });
+      toast({
+        title: "Reverse opportunity updated",
+        description: "The demand-sourced workflow status was saved.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update reverse opportunity",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const registrations = registrationsQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
+  const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
   const filteredTargets = useMemo(() => {
     return targets.filter((targetAccount) => {
       const matchesType =
@@ -131,6 +192,31 @@ export default function AdminOpportunities() {
       return matchesType && matchesQuery;
     });
   }, [registrationQuery, registrationTypeFilter, registrations]);
+  const filteredReverseOpportunities = useMemo(() => {
+    return reverseOpportunities.filter((opportunity) => {
+      const matchesType =
+        reverseOpportunityTypeFilter === "ALL" ||
+        (reverseOpportunityTypeFilter === "NEW" && opportunity.status === "SUBMITTED") ||
+        (reverseOpportunityTypeFilter === "ACTIVE" &&
+          ["OUTREACH_READY", "CLIENT_CONTACTED", "CLIENT_INTERESTED"].includes(opportunity.status)) ||
+        (reverseOpportunityTypeFilter === "CONVERTED" && opportunity.status === "CONVERTED") ||
+        (reverseOpportunityTypeFilter === "CLOSED" && opportunity.status === "CLOSED_LOST");
+
+      const matchesQuery = [
+        opportunity.companies?.name,
+        opportunity.customer_company_name,
+        opportunity.customer_need_summary,
+        opportunity.expected_product_service,
+        opportunity.vendor_contact_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(reverseOpportunityQuery.toLowerCase());
+
+      return matchesType && matchesQuery;
+    });
+  }, [reverseOpportunities, reverseOpportunityQuery, reverseOpportunityTypeFilter]);
 
   return (
     <div>
@@ -143,6 +229,7 @@ export default function AdminOpportunities() {
         <TabsList className="flex h-auto flex-wrap justify-start">
           <TabsTrigger value="targets">Target Accounts</TabsTrigger>
           <TabsTrigger value="registrations">Opportunity Registrations</TabsTrigger>
+          <TabsTrigger value="reverse-opportunities">Reverse Opportunities</TabsTrigger>
         </TabsList>
 
         <TabsContent value="targets">
@@ -315,6 +402,120 @@ export default function AdminOpportunities() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="reverse-opportunities">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)] mb-6">
+            <div className="relative min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search vendors, customers, needs, or contacts…"
+                value={reverseOpportunityQuery}
+                onChange={(event) => setReverseOpportunityQuery(event.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select
+                value={reverseOpportunityTypeFilter}
+                onValueChange={(value: ReverseOpportunityTypeFilter) => setReverseOpportunityTypeFilter(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {reverseOpportunityTypeFilters.map((filter) => (
+                    <SelectItem key={filter.value} value={filter.value}>
+                      {filter.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            {filteredReverseOpportunities.map((opportunity) => (
+              <Card key={opportunity.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <p className="font-medium font-display">
+                          {opportunity.companies?.name ?? "Vendor"} for {opportunity.customer_company_name}
+                        </p>
+                        <StatusBadge
+                          label={opportunity.status.replaceAll("_", " ")}
+                          variant={reverseOpportunityVariant(opportunity.status)}
+                        />
+                        <StatusBadge
+                          label={opportunity.client_mode === "EXISTING_CLIENT" ? "Existing client" : "Prospect client"}
+                          variant="secondary"
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground max-w-3xl">{opportunity.customer_need_summary}</p>
+                      <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+                        <p className="inline-flex items-center gap-2">
+                          <Building2 className="h-4 w-4" />
+                          Customer: {opportunity.customer_company_name}
+                        </p>
+                        <p className="inline-flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Vendor contact: {opportunity.vendor_contact_name ?? "Pending"}
+                          {opportunity.vendor_contact_title ? ` · ${opportunity.vendor_contact_title}` : ""}
+                        </p>
+                      </div>
+                      {opportunity.notes ? <p className="text-sm">{opportunity.notes}</p> : null}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold font-display">
+                        {opportunity.estimated_deal_value
+                          ? `$${Number(opportunity.estimated_deal_value).toLocaleString()}`
+                          : "TBD"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {opportunity.expected_product_service ?? "Solution fit pending"}
+                      </p>
+                      <div className="mt-3">
+                        <Select
+                          value={opportunity.status}
+                          onValueChange={(value: ReverseOpportunityStatus) =>
+                            reverseStatusMutation.mutate({
+                              reverseOpportunityId: opportunity.id,
+                              status: value,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="min-w-[210px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="SUBMITTED">Submitted</SelectItem>
+                            <SelectItem value="OUTREACH_READY">Outreach Ready</SelectItem>
+                            <SelectItem value="CLIENT_CONTACTED">Client Contacted</SelectItem>
+                            <SelectItem value="CLIENT_INTERESTED">Client Interested</SelectItem>
+                            <SelectItem value="CONVERTED">Converted</SelectItem>
+                            <SelectItem value="CLOSED_LOST">Closed Lost</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {!filteredReverseOpportunities.length && (
+              <Card>
+                <CardContent className="pt-6 text-sm text-muted-foreground">
+                  {reverseOpportunities.length
+                    ? "No reverse opportunities match your current filters."
+                    : "No reverse opportunities have been submitted yet."}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

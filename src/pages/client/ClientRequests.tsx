@@ -1,46 +1,98 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Building2, MessageSquarePlus, Search, Sparkles, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, MessageSquarePlus, Search } from "lucide-react";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
+import { listClientReverseOpportunities, type ReverseOpportunityStatus } from "@/lib/portalApi";
+import { formatDateForTimeZone } from "@/lib/timezone";
 
-const mockRequests = [
-  { id: "r1", title: "Need intros to Head of IT at hospital systems", status: "submitted", createdAt: "2026-02-10" },
-  { id: "r2", title: "Looking for CIO contacts in retail banking", status: "converted", createdAt: "2026-01-28" },
-];
-
-type RequestTypeFilter = "ALL" | "SUBMITTED" | "CONVERTED";
+type RequestTypeFilter = "ALL" | "NEW" | "ACTIVE" | "CONVERTED" | "CLOSED";
 
 const requestTypeFilters: { value: RequestTypeFilter; label: string }[] = [
   { value: "ALL", label: "All requests" },
-  { value: "SUBMITTED", label: "Submitted" },
+  { value: "NEW", label: "New" },
+  { value: "ACTIVE", label: "Active outreach" },
   { value: "CONVERTED", label: "Converted" },
+  { value: "CLOSED", label: "Closed lost" },
 ];
 
+function statusVariant(status: ReverseOpportunityStatus) {
+  if (status === "CLIENT_INTERESTED" || status === "CONVERTED") {
+    return "success" as const;
+  }
+
+  if (status === "CLOSED_LOST") {
+    return "destructive" as const;
+  }
+
+  if (status === "OUTREACH_READY" || status === "CLIENT_CONTACTED") {
+    return "info" as const;
+  }
+
+  return "warning" as const;
+}
+
+function matchesTypeFilter(status: ReverseOpportunityStatus, typeFilter: RequestTypeFilter) {
+  if (typeFilter === "ALL") {
+    return true;
+  }
+
+  if (typeFilter === "NEW") {
+    return status === "SUBMITTED";
+  }
+
+  if (typeFilter === "ACTIVE") {
+    return status === "OUTREACH_READY" || status === "CLIENT_CONTACTED" || status === "CLIENT_INTERESTED";
+  }
+
+  if (typeFilter === "CONVERTED") {
+    return status === "CONVERTED";
+  }
+
+  return status === "CLOSED_LOST";
+}
+
 export default function ClientRequests() {
+  const { user } = useAuth();
+  const timeZone = useUserTimeZone();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<RequestTypeFilter>("ALL");
+  const requestsQuery = useQuery({
+    queryKey: ["client-reverse-opportunities", user?.clientId],
+    queryFn: () => listClientReverseOpportunities(user!),
+    enabled: Boolean(user?.clientId),
+  });
+
   const filteredRequests = useMemo(() => {
-    return mockRequests.filter((request) => {
-      const matchesType =
-        typeFilter === "ALL" ||
-        (typeFilter === "SUBMITTED" && request.status === "submitted") ||
-        (typeFilter === "CONVERTED" && request.status === "converted");
+    return (requestsQuery.data ?? []).filter((request) => {
+      const matchesQuery = [
+        request.customer_company_name,
+        request.customer_need_summary,
+        request.expected_product_service,
+        request.vendor_contact_name,
+        request.customer_contact_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase());
 
-      const matchesQuery = request.title.toLowerCase().includes(query.toLowerCase());
-
-      return matchesType && matchesQuery;
+      return matchesTypeFilter(request.status, typeFilter) && matchesQuery;
     });
-  }, [query, typeFilter]);
+  }, [query, requestsQuery.data, typeFilter]);
 
   return (
     <div>
-      <PageHeader title="Intro Requests" description="Use requests for one-off help, while keeping your ongoing account list in Target Accounts.">
-        <Button><Plus className="h-4 w-4 mr-2" /> New Request</Button>
-      </PageHeader>
+      <PageHeader
+        title="Inbound Requests"
+        description="Demand-sourced opportunities that Bums have submitted against your company."
+      />
 
       <Card className="mb-6">
         <CardContent className="pt-6">
@@ -50,7 +102,7 @@ export default function ClientRequests() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search intro requests"
+                placeholder="Search inbound requests, customers, or needs"
                 className="pl-9"
               />
             </div>
@@ -74,20 +126,43 @@ export default function ClientRequests() {
       </Card>
 
       <div className="grid gap-4 mb-8">
-        {filteredRequests.map((r) => (
-          <Card key={r.id}>
+        {filteredRequests.map((request) => (
+          <Card key={request.id}>
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <MessageSquarePlus className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{r.title}</p>
-                    <p className="text-xs text-muted-foreground">Submitted {r.createdAt}</p>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-display text-lg font-bold">{request.customer_company_name}</p>
+                    <StatusBadge label={request.status.replaceAll("_", " ")} variant={statusVariant(request.status)} />
+                    <StatusBadge
+                      label={request.client_mode === "EXISTING_CLIENT" ? "Existing client" : "Prospect-converted"}
+                      variant="secondary"
+                    />
                   </div>
+                  <p className="text-sm text-muted-foreground max-w-3xl">{request.customer_need_summary}</p>
+                  <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+                    <p className="inline-flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      {request.expected_product_service ?? "Solution fit pending"}
+                    </p>
+                    <p className="inline-flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      {request.estimated_deal_value ? `$${Number(request.estimated_deal_value).toLocaleString()} expected` : "Value pending"}
+                    </p>
+                    <p className="inline-flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Decision-maker: {request.vendor_contact_name ?? "Pending"}{request.vendor_contact_title ? ` · ${request.vendor_contact_title}` : ""}
+                    </p>
+                    <p className="inline-flex items-center gap-2">
+                      <MessageSquarePlus className="h-4 w-4" />
+                      End customer contact: {request.customer_contact_name ?? "Not provided"}
+                    </p>
+                  </div>
+                  {request.notes ? <p className="text-sm">{request.notes}</p> : null}
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${r.status === "converted" ? "bg-success/10 text-success" : "bg-secondary text-secondary-foreground"}`}>
-                  {r.status === "converted" ? "Converted to Opportunity" : "Submitted"}
-                </span>
+                <div className="text-sm text-muted-foreground">
+                  Submitted {formatDateForTimeZone(request.created_at, timeZone)}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -96,7 +171,9 @@ export default function ClientRequests() {
         {!filteredRequests.length ? (
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground">
-              No intro requests match your current filters.
+              {requestsQuery.data?.length
+                ? "No inbound requests match your current filters."
+                : "No Bum-submitted reverse opportunities are targeting your company yet."}
             </CardContent>
           </Card>
         ) : null}
