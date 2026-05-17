@@ -1,7 +1,7 @@
 export const DEFAULT_COMMISSION_DURATION =
   "For so long as Client receives revenue from the Introduced Account or substantially related opportunity";
 
-export const ACTIVE_TERMS_VERSION = "v1";
+export const ACTIVE_TERMS_VERSION = "v2";
 export const ACTIVE_TERMS_TITLE = "Trusted Bums Partner Terms";
 
 export const PARTNER_TERMS_BODY = `Trusted Bums provides business development support, strategic introductions, relationship facilitation, account access, and related services. By using the Client Portal, requesting introductions, registering opportunities, or accepting support from Trusted Bums, Client agrees that Trusted Bums’ introductions, account access, and relationship support create commercial value and may result in commission obligations as described below.
@@ -26,11 +26,13 @@ Commissionable revenue excludes taxes, refunds, credits, chargebacks, and amount
 
 5. Commission Rate and Period
 
-Unless a separate written opportunity agreement states otherwise, the default commission rate is ten percent (10%) of commissionable revenue. Commission obligations continue for so long as Client receives revenue from the Introduced Account or substantially related opportunity, unless the parties agree to a different duration in writing.
+The binding commission economics for a registered opportunity are the commission plan assigned to that Client and opportunity through the Trusted Bums platform, unless the parties sign a separate written agreement that expressly overrides that plan. The assigned commission plan controls the applicable commission percentages, tier schedule, duration, payment timing, exclusions, and related commercial mechanics for that opportunity.
+
+If the assigned commission plan uses year-based commission tiers, the commission schedule starts on the date the first commission is paid to Trusted Bums for that opportunity. Later commissions are then calculated according to the applicable year of that schedule.
 
 6. Payment and Reporting
 
-Client will provide reasonable reporting sufficient to calculate commissions owed. Commissions are payable within fourteen (14) days after Client receives the applicable customer payment.
+Client will provide reasonable reporting sufficient to calculate commissions owed under the assigned commission plan. Unless the assigned commission plan or a separate signed agreement states otherwise, commissions are payable within fourteen (14) days after Client receives the applicable customer payment.
 
 7. Non-Circumvention
 
@@ -62,7 +64,7 @@ These terms are governed by the laws of the State of Delaware unless a separate 
 
 14. Custom Terms
 
-The parties may agree to custom commission rates, durations, account-specific terms, or enterprise agreements in writing. If custom written terms conflict with these Partner Terms, the custom written terms control for that specific opportunity.`;
+The parties may agree to custom commission plans, account-specific terms, enterprise schedules, or other written overrides. If an approved assigned commission plan or separate signed agreement conflicts with these Partner Terms, the approved assigned commission plan or separate signed agreement controls for that specific opportunity.`;
 
 export const PARTNER_FAQ_BODY = `Q: Why does Trusted Bums receive commissions?
 A: Trusted Bums creates value by helping clients access strategic accounts, build credibility, navigate relationships, and increase the likelihood of commercial success. When that support leads to revenue, Trusted Bums participates in the upside.
@@ -83,7 +85,7 @@ Q: Does Trusted Bums guarantee deals?
 A: No. Trusted Bums helps create access and improve opportunity quality, but customers make their own buying decisions.
 
 Q: Can we negotiate custom terms?
-A: Yes. Strategic accounts, enterprise clients, or unusual opportunities can use custom written terms.
+A: Yes. Strategic accounts, enterprise clients, or unusual opportunities can use approved custom commission plans or separate written terms.
 
 Q: What revenue is commissionable?
 A: Revenue actually received by Client from an introduced or substantially related opportunity is commissionable, excluding taxes, refunds, credits, chargebacks, and uncollected amounts.
