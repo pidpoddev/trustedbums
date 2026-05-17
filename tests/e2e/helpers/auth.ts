@@ -237,7 +237,7 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
 }
 
 const routeLinkNames: Record<string, RegExp> = {
-  "/client/payments": /^Payments$/,
+  "/client/payments": /^(Payments|Open Payments|Go to Payments|Import monthly payments)$/,
   "/client/exports": /^Exports$/,
   "/client/opportunities/new": /^Register Opportunity$/,
   "/client/targets": /^Target Accounts$/,

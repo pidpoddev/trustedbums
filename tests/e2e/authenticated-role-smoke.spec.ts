@@ -32,7 +32,7 @@ test.describe("authenticated role smoke", () => {
     test.skip(!finance, "Set QA_CLIENT_FINANCE_EMAIL.");
 
     await goToAuthedPath(page, finance, "/client/payments");
-    await expect(page.getByRole("heading", { name: "Customer Payments" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Customer Payments", exact: true })).toBeVisible();
 
     await page.goto("/client/exports");
     await expect(page.getByRole("heading", { name: "Exports & Integrations" })).toBeVisible();
