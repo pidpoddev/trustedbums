@@ -95,6 +95,7 @@ export default function BumProfile() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<BumProfileFormState>(defaultForm);
   const [hasHydratedForm, setHasHydratedForm] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [linkedInFiles, setLinkedInFiles] = useState<LinkedInExportSelection>({});
   const [importNotes, setImportNotes] = useState<string[]>([]);
   const [isImporting, setIsImporting] = useState(false);
@@ -107,12 +108,28 @@ export default function BumProfile() {
   });
 
   useEffect(() => {
+    setForm(defaultForm);
+    setHasHydratedForm(false);
+    setIsDirty(false);
+    setLinkedInFiles({});
+    setImportNotes([]);
+    setPendingLinkedInImportedAt(null);
+  }, [user?.id]);
+
+  useEffect(() => {
     if (profileQuery.isSuccess && !hasHydratedForm) {
-      setForm(toFormState(profileQuery.data));
-      setPendingLinkedInImportedAt(profileQuery.data?.last_linkedin_imported_at ?? null);
+      if (!isDirty) {
+        setForm(toFormState(profileQuery.data));
+        setPendingLinkedInImportedAt(profileQuery.data?.last_linkedin_imported_at ?? null);
+      }
       setHasHydratedForm(true);
     }
-  }, [hasHydratedForm, profileQuery.data, profileQuery.isSuccess]);
+  }, [hasHydratedForm, isDirty, profileQuery.data, profileQuery.isSuccess]);
+
+  function updateForm(updater: (current: BumProfileFormState) => BumProfileFormState) {
+    setIsDirty(true);
+    setForm(updater);
+  }
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -136,6 +153,7 @@ export default function BumProfile() {
         last_linkedin_imported_at: pendingLinkedInImportedAt,
       }),
     onSuccess: async (profile) => {
+      setIsDirty(false);
       setPendingLinkedInImportedAt(profile.last_linkedin_imported_at ?? null);
       await queryClient.invalidateQueries({ queryKey: ["bum-profile", user?.id] });
       await queryClient.invalidateQueries({ queryKey: ["admin-bum-profiles"] });
@@ -162,6 +180,7 @@ export default function BumProfile() {
       const importedAt = result.patch.last_linkedin_imported_at ?? new Date().toISOString();
       setImportNotes(result.notes);
       setPendingLinkedInImportedAt(importedAt);
+      setIsDirty(true);
       setForm((current) => ({
         ...current,
         headline: result.patch.headline ?? current.headline,
@@ -243,7 +262,7 @@ export default function BumProfile() {
                 <Input
                   id="headline"
                   value={form.headline}
-                  onChange={(event) => setForm((current) => ({ ...current, headline: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, headline: event.target.value }))}
                   placeholder="Healthcare connector with 15 years selling enterprise software"
                 />
               </div>
@@ -252,7 +271,7 @@ export default function BumProfile() {
                 <Input
                   id="linkedinUrl"
                   value={form.linkedin_url}
-                  onChange={(event) => setForm((current) => ({ ...current, linkedin_url: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, linkedin_url: event.target.value }))}
                   placeholder="https://www.linkedin.com/in/your-name"
                 />
               </div>
@@ -264,7 +283,7 @@ export default function BumProfile() {
                 id="bio"
                 rows={4}
                 value={form.bio}
-                onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))}
+                onChange={(event) => updateForm((current) => ({ ...current, bio: event.target.value }))}
                 placeholder="What should clients know about your background, network, and style?"
               />
             </div>
@@ -277,7 +296,7 @@ export default function BumProfile() {
                   type="number"
                   min="0"
                   value={form.years_experience}
-                  onChange={(event) => setForm((current) => ({ ...current, years_experience: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, years_experience: event.target.value }))}
                   placeholder="15"
                 />
               </div>
@@ -286,7 +305,7 @@ export default function BumProfile() {
                 <Select
                   value={form.availability_status}
                   onValueChange={(value: BumProfileFormState["availability_status"]) =>
-                    setForm((current) => ({ ...current, availability_status: value }))
+                    updateForm((current) => ({ ...current, availability_status: value }))
                   }
                 >
                   <SelectTrigger>
@@ -304,7 +323,7 @@ export default function BumProfile() {
                 <Input
                   id="homeRegion"
                   value={form.home_region}
-                  onChange={(event) => setForm((current) => ({ ...current, home_region: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, home_region: event.target.value }))}
                   placeholder="North America"
                 />
               </div>
@@ -317,7 +336,7 @@ export default function BumProfile() {
                   id="industries"
                   rows={5}
                   value={form.industries}
-                  onChange={(event) => setForm((current) => ({ ...current, industries: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, industries: event.target.value }))}
                   placeholder={"Healthcare\nCybersecurity\nSaaS"}
                 />
               </div>
@@ -327,7 +346,7 @@ export default function BumProfile() {
                   id="regions"
                   rows={5}
                   value={form.regions}
-                  onChange={(event) => setForm((current) => ({ ...current, regions: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, regions: event.target.value }))}
                   placeholder={"North America\nEMEA"}
                 />
               </div>
@@ -337,7 +356,7 @@ export default function BumProfile() {
                   id="productsSold"
                   rows={5}
                   value={form.products_sold}
-                  onChange={(event) => setForm((current) => ({ ...current, products_sold: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, products_sold: event.target.value }))}
                   placeholder={"Revenue intelligence\nManaged services"}
                 />
               </div>
@@ -347,7 +366,7 @@ export default function BumProfile() {
                   id="buyerPersonas"
                   rows={5}
                   value={form.buyer_personas}
-                  onChange={(event) => setForm((current) => ({ ...current, buyer_personas: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, buyer_personas: event.target.value }))}
                   placeholder={"CIO\nVP Sales\nHead of Procurement"}
                 />
               </div>
@@ -357,7 +376,7 @@ export default function BumProfile() {
                   id="workedWithCompanies"
                   rows={6}
                   value={form.worked_with_companies}
-                  onChange={(event) => setForm((current) => ({ ...current, worked_with_companies: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, worked_with_companies: event.target.value }))}
                   placeholder={"Acme Corp\nBlueWave Solutions"}
                 />
               </div>
@@ -367,7 +386,7 @@ export default function BumProfile() {
                   id="relationshipCompanies"
                   rows={6}
                   value={form.relationship_companies}
-                  onChange={(event) => setForm((current) => ({ ...current, relationship_companies: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, relationship_companies: event.target.value }))}
                   placeholder={"Mayo Clinic\nDatadog"}
                 />
               </div>
@@ -377,7 +396,7 @@ export default function BumProfile() {
                   id="skills"
                   rows={5}
                   value={form.skills}
-                  onChange={(event) => setForm((current) => ({ ...current, skills: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, skills: event.target.value }))}
                   placeholder={"Enterprise sales\nChannel partnerships"}
                 />
               </div>
@@ -387,7 +406,7 @@ export default function BumProfile() {
                   id="certifications"
                   rows={5}
                   value={form.certifications}
-                  onChange={(event) => setForm((current) => ({ ...current, certifications: event.target.value }))}
+                  onChange={(event) => updateForm((current) => ({ ...current, certifications: event.target.value }))}
                   placeholder={"AWS Certified Cloud Practitioner"}
                 />
               </div>
@@ -399,7 +418,7 @@ export default function BumProfile() {
                 id="notableWins"
                 rows={5}
                 value={form.notable_wins}
-                onChange={(event) => setForm((current) => ({ ...current, notable_wins: event.target.value }))}
+                onChange={(event) => updateForm((current) => ({ ...current, notable_wins: event.target.value }))}
                 placeholder="Describe major accounts, deals, launches, or introductions you are comfortable sharing."
               />
             </div>
@@ -409,7 +428,7 @@ export default function BumProfile() {
                 id="visibleToClients"
                 checked={form.is_visible_to_clients}
                 onCheckedChange={(checked) =>
-                  setForm((current) => ({ ...current, is_visible_to_clients: checked === true }))
+                  updateForm((current) => ({ ...current, is_visible_to_clients: checked === true }))
                 }
               />
               <div className="space-y-1">
