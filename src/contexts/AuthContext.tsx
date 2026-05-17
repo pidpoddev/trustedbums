@@ -87,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const publicMetadata = clerkUser.publicMetadata as Record<string, unknown>;
     const unsafeMetadata = clerkUser.unsafeMetadata as Record<string, unknown>;
     const profile = getAuthorizationProfileByEmail(email);
+    const fallbackUser = profile ? toAuthUser(profile) : undefined;
     const knownClient = getKnownClientForEmail(email);
     const metadataRole = readRole(publicMetadata.role) ?? readRole(unsafeMetadata.role);
     const metadataCompanyName =
@@ -95,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       readString(unsafeMetadata.clientCompanyName) ??
       readString(unsafeMetadata.companyName);
     const role = metadataRole ?? profile?.role;
-    const companyName = knownClient?.company ?? metadataCompanyName;
+    const companyName = knownClient?.company ?? metadataCompanyName ?? fallbackUser?.companyName;
     const bumId =
       readString(publicMetadata.bumId) ??
       readString(unsafeMetadata.bumId) ??
@@ -105,8 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!role || (role === "CLIENT" && !companyName) || (role === "BUM" && !bumId)) {
       return null;
     }
-
-    const fallbackUser = profile ? toAuthUser(profile) : undefined;
 
     return {
       id: clerkUser.id,

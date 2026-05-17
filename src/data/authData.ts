@@ -56,6 +56,14 @@ export const authorizationProfiles: AuthorizationProfile[] = [
     description: "BlueWave user scoped to BlueWave data only.",
   },
   {
+    id: "client-blackcurrant-1",
+    email: "akshay@blackcurrant.ai",
+    name: "Akshay Thakur",
+    role: "CLIENT",
+    companyName: "BlackCurrant",
+    description: "BlackCurrant CEO with access to the BlackCurrant client target account workspace.",
+  },
+  {
     id: "bum-b1",
     email: "jake@email.com",
     name: "Jake Thompson",
@@ -81,6 +89,7 @@ export function toAuthUser(account: AuthorizationProfile): AuthUser {
     role: account.role,
     clientId: account.clientId,
     bumId: account.bumId,
+    companyName: account.companyName,
   };
 }
 
