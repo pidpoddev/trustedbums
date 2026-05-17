@@ -34,6 +34,13 @@ export const authorizationProfiles: AuthorizationProfile[] = [
     description: "Demo administrator profile for local testing.",
   },
   {
+    id: "user_3DpqskhX2597aERJ5kqHh4nTW13",
+    email: "qa_admin@qa.com",
+    name: "QA Admin",
+    role: "ADMIN",
+    description: "Production QA administrator account for smoke testing.",
+  },
+  {
     id: "client-c1-1",
     email: "sarah@acmecorp.com",
     name: "Sarah Chen",
@@ -67,6 +74,33 @@ export const authorizationProfiles: AuthorizationProfile[] = [
     description: "BlackCurrant CEO with access to the BlackCurrant client target account workspace.",
   },
   {
+    id: "user_3Dpr9RqyE3mLxFUO6vM18M0GEKf",
+    email: "qa_client_admin@qa.com",
+    name: "QA ClientAdmin",
+    role: "CLIENT",
+    clientAccessRole: "CLIENT_ADMIN",
+    companyName: "QA",
+    description: "Production QA client admin account for smoke testing.",
+  },
+  {
+    id: "user_3DprHljZmDSARzEIy2dK42a5vzp",
+    email: "qa_finance@qa.com",
+    name: "QA Finance",
+    role: "CLIENT",
+    clientAccessRole: "CLIENT_FINANCE",
+    companyName: "QA",
+    description: "Production QA client finance account for smoke testing.",
+  },
+  {
+    id: "user_3DprQtmOZg8G7VAV2tqg4IVU50J",
+    email: "qa_clientmember@qa.com",
+    name: "QA ClientMember",
+    role: "CLIENT",
+    clientAccessRole: "CLIENT_MEMBER",
+    companyName: "QA",
+    description: "Production QA client member account for smoke testing.",
+  },
+  {
     id: "bum-b1",
     email: "jake@email.com",
     name: "Jake Thompson",
@@ -81,6 +115,14 @@ export const authorizationProfiles: AuthorizationProfile[] = [
     role: "BUM",
     bumId: "b2",
     description: "Trusted Bum account tied to one account and payout identity.",
+  },
+  {
+    id: "user_3DprZp8fmnY0yNXfMd16Md9n127",
+    email: "qa_bum@qabum.com",
+    name: "QA Bum",
+    role: "BUM",
+    bumId: "qa-bum",
+    description: "Production QA Bum account for smoke testing.",
   },
 ];
 
