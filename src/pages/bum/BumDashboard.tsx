@@ -20,11 +20,12 @@ import {
 } from "@/lib/bumProfileCompleteness";
 import {
   getOwnBumProfile,
+  listOwnProspectRecommendations,
   listMarketplaceOpportunities,
   upsertOwnBumProfile,
   type BumProfileInput,
 } from "@/lib/portalApi";
-import { Briefcase, ClipboardList, Handshake, Sparkles, Wallet, TrendingUp } from "lucide-react";
+import { Briefcase, Building2, ClipboardList, Handshake, Sparkles, Wallet, TrendingUp } from "lucide-react";
 
 export default function BumDashboard() {
   const { user } = useAuth();
@@ -34,6 +35,11 @@ export default function BumDashboard() {
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
     queryFn: listMarketplaceOpportunities,
+  });
+  const prospectsQuery = useQuery({
+    queryKey: ["bum-prospects", user?.id],
+    queryFn: () => listOwnProspectRecommendations(user!.id),
+    enabled: Boolean(user?.id),
   });
   const profileQuery = useQuery({
     queryKey: ["bum-profile", user?.id],
@@ -205,13 +211,50 @@ export default function BumDashboard() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Prospected Clients" value={prospectsQuery.data?.length ?? 0} icon={Building2} />
         <StatCard title="Open Opportunities" value={opportunitiesQuery.data?.length ?? 0} icon={Briefcase} />
         <StatCard title="Active Claims" value={myClaims.length} icon={Handshake} />
         <StatCard title="Pending Earnings" value="$0" icon={TrendingUp} />
         <StatCard title="Lifetime Payouts" value="$0" icon={Wallet} />
       </div>
-      <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground">
-        Bum portal is coming online — more modules ship next.
+
+      <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+        <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">
+          <CardHeader>
+            <CardTitle className="font-display">Bring in a new client prospect</CardTitle>
+            <CardDescription>
+              Add a company, attach the key contact, and tell admin whether you want to invite them personally or want Trusted Bums to handle it.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm text-muted-foreground">
+              We will dedupe by business domain and keep overlap visible when multiple Bums know the same company.
+            </div>
+            <Button asChild>
+              <Link to="/bum/prospects">Add Prospected Client</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display">Prospect activity</CardTitle>
+            <CardDescription>Quick snapshot of the sourcing pipeline you are building.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Prospects submitted</span>
+              <span className="font-medium">{prospectsQuery.data?.length ?? 0}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Marketplace opportunities</span>
+              <span className="font-medium">{opportunitiesQuery.data?.length ?? 0}</span>
+            </div>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/bum/prospects">Open Prospects</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

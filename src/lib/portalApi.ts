@@ -1,5 +1,5 @@
 import { FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, type TermsFallbackVersion } from "@/data/partnerTerms";
-import { supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
+import { getSupabaseAccessToken, supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import type { AuthUser } from "@/data/authData";
 
 export type RegistrationStatus =
@@ -23,10 +23,34 @@ export const REGISTRATION_STATUSES: RegistrationStatus[] = [
   "Needs Clarification",
 ];
 
+export type CompanyRelationshipStage = "PROSPECT" | "INVITED" | "CLIENT" | "INACTIVE";
+export type ProspectInviteOwner = "BUM" | "TRUSTED_BUMS";
+export type ProspectRecommendationStatus = "PROSPECT" | "INVITED" | "CLIENT" | "CLOSED_LOST";
+export type CustomerTargetStatus =
+  | "PROSPECT"
+  | "QUALIFYING"
+  | "INTRO_REQUESTED"
+  | "INTRO_IN_PROGRESS"
+  | "MEETING_SET"
+  | "OPEN_OPPORTUNITY"
+  | "CLOSED_WON"
+  | "CLOSED_LOST";
+export type CustomerTargetPriority = "LOW" | "MEDIUM" | "HIGH";
+
 export interface CompanyRecord {
   id: string;
   name: string;
   website: string | null;
+  relationship_stage: CompanyRelationshipStage;
+  linkedin_company_url: string | null;
+  created_at: string;
+}
+
+export interface CompanyDomainRecord {
+  id: string;
+  company_id: string;
+  domain: string;
+  is_primary: boolean;
   created_at: string;
 }
 
@@ -39,6 +63,122 @@ export interface ProfileRecord {
   is_admin: boolean;
   created_at: string;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
+}
+
+export interface ProspectRecommendationRecord {
+  id: string;
+  company_id: string;
+  bum_user_id: string;
+  invite_owner: ProspectInviteOwner;
+  status: ProspectRecommendationStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  companies?: Pick<CompanyRecord, "id" | "name" | "website" | "relationship_stage" | "linkedin_company_url"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export interface ProspectContactRecord {
+  id: string;
+  company_id: string;
+  recommendation_id: string | null;
+  full_name: string;
+  title: string | null;
+  email: string | null;
+  linkedin_url: string | null;
+  is_primary: boolean;
+  created_at: string;
+  prospect_recommendations?: Pick<ProspectRecommendationRecord, "id" | "bum_user_id"> | null;
+}
+
+export interface ProspectInput {
+  company_name: string;
+  company_website?: string;
+  linkedin_company_url?: string;
+  key_contact_name: string;
+  key_contact_title?: string;
+  key_contact_email?: string;
+  key_contact_linkedin_url?: string;
+  invite_owner: ProspectInviteOwner;
+  notes?: string;
+}
+
+export interface CustomerTargetRecord {
+  id: string;
+  client_company_id: string;
+  target_company_id: string;
+  created_by: string;
+  status: CustomerTargetStatus;
+  priority: CustomerTargetPriority;
+  target_account_name: string;
+  business_unit: string | null;
+  key_contact_name: string | null;
+  key_contact_title: string | null;
+  key_contact_email: string | null;
+  expected_product_service: string | null;
+  estimated_deal_value: number | null;
+  expected_timeline: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  client_companies?: Pick<CompanyRecord, "id" | "name"> | null;
+  target_companies?: Pick<CompanyRecord, "id" | "name" | "website" | "linkedin_company_url"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export interface TeamsMeetingRecord {
+  id: string;
+  customer_target_id: string;
+  client_company_id: string;
+  target_company_id: string;
+  scheduled_by: string;
+  subject: string;
+  description: string | null;
+  start_time: string;
+  end_time: string;
+  attendees: string[];
+  teams_join_url: string | null;
+  microsoft_event_id: string | null;
+  microsoft_event_web_link: string | null;
+  status: "SCHEDULED" | "CANCELLED" | "COMPLETED";
+  created_at: string;
+  updated_at: string;
+  customer_targets?: Pick<CustomerTargetRecord, "id" | "target_account_name" | "key_contact_name" | "key_contact_email"> & {
+    client_companies?: Pick<CompanyRecord, "id" | "name"> | null;
+    target_companies?: Pick<CompanyRecord, "id" | "name" | "website"> | null;
+  };
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export interface ScheduleTeamsMeetingInput {
+  customerTargetId: string;
+  subject?: string;
+  description?: string;
+  startTime: string;
+  durationMinutes: number;
+  attendeeEmails: string[];
+}
+
+export interface ScheduleTeamsMeetingResponse {
+  meeting: TeamsMeetingRecord;
+  teamsJoinUrl: string | null;
+  eventWebLink: string | null;
+}
+
+export interface CustomerTargetInput {
+  target_account_name: string;
+  company_website?: string;
+  linkedin_company_url?: string;
+  business_unit?: string;
+  key_contact_name?: string;
+  key_contact_title?: string;
+  key_contact_email?: string;
+  expected_product_service?: string;
+  estimated_deal_value?: number | null;
+  expected_timeline?: string;
+  notes?: string;
+  priority?: CustomerTargetPriority;
+  status?: CustomerTargetStatus;
 }
 
 export interface TermsVersion {
@@ -200,6 +340,28 @@ export interface ImpersonationTicketResponse {
   actorUserId?: string;
 }
 
+const SHARED_EMAIL_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+  "msn.com",
+  "yahoo.com",
+  "ymail.com",
+  "rocketmail.com",
+  "icloud.com",
+  "me.com",
+  "mac.com",
+  "aol.com",
+  "proton.me",
+  "protonmail.com",
+  "pm.me",
+  "gmx.com",
+  "mail.com",
+  "zoho.com",
+]);
+
 function toNullableString(value?: string) {
   return value?.trim() ? value.trim() : null;
 }
@@ -212,6 +374,70 @@ function toUniqueTrimmedArray(values?: string[]) {
         .filter(Boolean),
     ),
   );
+}
+
+function normalizeCompanyName(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function normalizeDomain(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim().toLowerCase();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const withoutProtocol = trimmed.replace(/^https?:\/\//, "");
+  const withoutPath = withoutProtocol.split("/")[0] ?? "";
+  const withoutWww = withoutPath.replace(/^www\./, "");
+  const withoutPort = withoutWww.split(":")[0] ?? "";
+  const normalized = withoutPort.replace(/\.$/, "");
+
+  return normalized || null;
+}
+
+function getEmailDomain(email?: string | null) {
+  if (!email) {
+    return null;
+  }
+
+  const [, domain = ""] = email.trim().toLowerCase().split("@");
+  return normalizeDomain(domain);
+}
+
+export function isSharedEmailDomain(domain?: string | null) {
+  return Boolean(domain && SHARED_EMAIL_DOMAINS.has(domain));
+}
+
+function getBusinessDomainFromEmail(email?: string | null) {
+  const domain = getEmailDomain(email);
+  return domain && !isSharedEmailDomain(domain) ? domain : null;
+}
+
+function normalizeLinkedInCompanyUrl(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const withoutProtocol = trimmed.replace(/^https?:\/\//i, "");
+  const withoutQuery = withoutProtocol.split(/[?#]/)[0] ?? "";
+  const withoutTrailingSlash = withoutQuery.replace(/\/+$/, "");
+
+  if (!withoutTrailingSlash) {
+    return null;
+  }
+
+  return `https://${withoutTrailingSlash.toLowerCase()}`;
 }
 
 async function getProfileRecord(userId: string) {
@@ -228,27 +454,43 @@ async function getProfileRecord(userId: string) {
   return data;
 }
 
-async function ensureCompany(companyName: string) {
-  const { data: existing, error: existingError } = await supabase
+async function getCompanyByDomain(domain: string) {
+  const { data, error } = await supabase
+    .from("company_domains")
+    .select("company_id, companies(*)")
+    .eq("domain", domain)
+    .limit(1)
+    .maybeSingle<{ company_id: string; companies?: CompanyRecord | null }>();
+
+  if (error) {
+    throw error;
+  }
+
+  if (data?.companies) {
+    return data.companies;
+  }
+
+  const { data: websiteMatch, error: websiteError } = await supabase
     .from("companies")
     .select("*")
-    .eq("name", companyName)
+    .eq("website", domain)
     .limit(1)
     .maybeSingle<CompanyRecord>();
 
-  if (existingError) {
-    throw existingError;
+  if (websiteError) {
+    throw websiteError;
   }
 
-  if (existing) {
-    return existing;
-  }
+  return websiteMatch;
+}
 
+async function getCompanyByLinkedInUrl(linkedinUrl: string) {
   const { data, error } = await supabase
     .from("companies")
-    .insert({ name: companyName })
     .select("*")
-    .single<CompanyRecord>();
+    .eq("linkedin_company_url", linkedinUrl)
+    .limit(1)
+    .maybeSingle<CompanyRecord>();
 
   if (error) {
     throw error;
@@ -257,11 +499,136 @@ async function ensureCompany(companyName: string) {
   return data;
 }
 
+async function getCompanyById(companyId: string) {
+  const { data, error } = await supabase
+    .from("companies")
+    .select("*")
+    .eq("id", companyId)
+    .limit(1)
+    .maybeSingle<CompanyRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function getCompanyByName(companyName: string) {
+  const normalizedName = normalizeCompanyName(companyName);
+  const { data, error } = await supabase
+    .from("companies")
+    .select("*")
+    .ilike("name", companyName.trim())
+    .returns<CompanyRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).find((company) => normalizeCompanyName(company.name) === normalizedName) ?? null;
+}
+
+async function upsertCompanyDomain(companyId: string, domain: string, isPrimary = false) {
+  const { error } = await supabase.from("company_domains").upsert(
+    {
+      company_id: companyId,
+      domain,
+      is_primary: isPrimary,
+    },
+    { onConflict: "domain" },
+  );
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function findExistingCompanyMatch(input: {
+  companyName: string;
+  companyWebsite?: string | null;
+  linkedinCompanyUrl?: string | null;
+  email?: string | null;
+}) {
+  const businessEmailDomain = getBusinessDomainFromEmail(input.email);
+  const websiteDomain = normalizeDomain(input.companyWebsite);
+  const linkedinUrl = normalizeLinkedInCompanyUrl(input.linkedinCompanyUrl);
+
+  if (websiteDomain) {
+    const company = await getCompanyByDomain(websiteDomain);
+    if (company) {
+      return company;
+    }
+  }
+
+  if (businessEmailDomain) {
+    const company = await getCompanyByDomain(businessEmailDomain);
+    if (company) {
+      return company;
+    }
+  }
+
+  if (linkedinUrl) {
+    const company = await getCompanyByLinkedInUrl(linkedinUrl);
+    if (company) {
+      return company;
+    }
+  }
+
+  return getCompanyByName(input.companyName);
+}
+
+async function ensureCompany(input: {
+  companyName: string;
+  companyWebsite?: string | null;
+  linkedinCompanyUrl?: string | null;
+  email?: string | null;
+  relationshipStage?: CompanyRelationshipStage;
+}) {
+  const existing = await findExistingCompanyMatch(input);
+  const websiteDomain = normalizeDomain(input.companyWebsite);
+  const linkedinUrl = normalizeLinkedInCompanyUrl(input.linkedinCompanyUrl);
+  const requestedStage = input.relationshipStage ?? "CLIENT";
+
+  if (existing) {
+    return existing;
+  }
+
+  const { data, error } = await supabase
+    .from("companies")
+    .insert({
+      name: input.companyName.trim(),
+      website: websiteDomain,
+      linkedin_company_url: linkedinUrl,
+      relationship_stage: requestedStage,
+    })
+    .select("*")
+    .single<CompanyRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  if (websiteDomain) {
+    await upsertCompanyDomain(data.id, websiteDomain, true);
+  }
+
+  return data;
+}
+
 export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
   const existing = await getProfileRecord(user.id);
-  const companyId =
-    existing?.company_id ??
-    (user.role === "CLIENT" && user.companyName ? (await ensureCompany(user.companyName)).id : null);
+  const company =
+    existing?.company_id
+      ? await getCompanyById(existing.company_id)
+      : user.role === "CLIENT" && user.companyName
+        ? await ensureCompany({
+            companyName: user.companyName,
+            email: user.email,
+            relationshipStage: "CLIENT",
+          })
+        : null;
+  const companyId = existing?.company_id ?? company?.id ?? null;
 
   const { data, error } = await supabase
     .from("profiles")
@@ -281,6 +648,22 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
 
   if (error) {
     throw error;
+  }
+
+  if (user.role === "CLIENT" && data.company_id) {
+    const { error: companyUpdateError } = await supabase
+      .from("companies")
+      .update({ relationship_stage: "CLIENT" })
+      .eq("id", data.company_id);
+
+    if (companyUpdateError) {
+      throw companyUpdateError;
+    }
+
+    const businessDomain = getBusinessDomainFromEmail(user.email);
+    if (businessDomain) {
+      await upsertCompanyDomain(data.company_id, businessDomain, true);
+    }
   }
 
   return data;
@@ -623,6 +1006,282 @@ export async function listProfiles() {
   }
 
   return data ?? [];
+}
+
+export async function createProspectRecommendation(user: AuthUser, input: ProspectInput) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can recommend prospects.");
+  }
+
+  const company = await ensureCompany({
+    companyName: input.company_name,
+    companyWebsite: input.company_website,
+    linkedinCompanyUrl: input.linkedin_company_url,
+    email: input.key_contact_email,
+    relationshipStage: "PROSPECT",
+  });
+
+  const companyStage: CompanyRelationshipStage =
+    company.relationship_stage === "CLIENT" ? "CLIENT" : "PROSPECT";
+
+  if (company.relationship_stage !== companyStage) {
+    const { error: companyStageError } = await supabase
+      .from("companies")
+      .update({ relationship_stage: companyStage })
+      .eq("id", company.id);
+
+    if (companyStageError) {
+      throw companyStageError;
+    }
+  }
+
+  const { data: recommendation, error: recommendationError } = await supabase
+    .from("prospect_recommendations")
+    .upsert(
+      {
+        company_id: company.id,
+        bum_user_id: user.id,
+        invite_owner: input.invite_owner,
+        status: companyStage === "CLIENT" ? "CLIENT" : "PROSPECT",
+        notes: toNullableString(input.notes),
+      },
+      { onConflict: "company_id,bum_user_id" },
+    )
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .single<ProspectRecommendationRecord>();
+
+  if (recommendationError) {
+    throw recommendationError;
+  }
+
+  const existingPrimaryContactQuery = await supabase
+    .from("prospect_contacts")
+    .select("*")
+    .eq("recommendation_id", recommendation.id)
+    .eq("is_primary", true)
+    .limit(1)
+    .maybeSingle<ProspectContactRecord>();
+
+  if (existingPrimaryContactQuery.error) {
+    throw existingPrimaryContactQuery.error;
+  }
+
+  if (existingPrimaryContactQuery.data) {
+    const { error } = await supabase
+      .from("prospect_contacts")
+      .update({
+        full_name: input.key_contact_name.trim(),
+        title: toNullableString(input.key_contact_title),
+        email: toNullableString(input.key_contact_email),
+        linkedin_url: normalizeLinkedInCompanyUrl(input.key_contact_linkedin_url),
+      })
+      .eq("id", existingPrimaryContactQuery.data.id);
+
+    if (error) {
+      throw error;
+    }
+  } else {
+    const { error } = await supabase.from("prospect_contacts").insert({
+      company_id: company.id,
+      recommendation_id: recommendation.id,
+      full_name: input.key_contact_name.trim(),
+      title: toNullableString(input.key_contact_title),
+      email: toNullableString(input.key_contact_email),
+      linkedin_url: normalizeLinkedInCompanyUrl(input.key_contact_linkedin_url),
+      is_primary: true,
+    });
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  const { error: auditError } = await supabase.from("audit_events").insert({
+    company_id: company.id,
+    user_id: user.id,
+    event_type: "prospect_recommended",
+    entity_type: "prospect_recommendations",
+    entity_id: recommendation.id,
+    event_data: {
+      invite_owner: input.invite_owner,
+      company_name: company.name,
+    },
+  });
+
+  if (auditError) {
+    throw auditError;
+  }
+
+  return recommendation;
+}
+
+export async function listOwnProspectRecommendations(userId: string) {
+  const { data, error } = await supabase
+    .from("prospect_recommendations")
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .eq("bum_user_id", userId)
+    .order("created_at", { ascending: false })
+    .returns<ProspectRecommendationRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listAdminProspectRecommendations() {
+  const { data, error } = await supabase
+    .from("prospect_recommendations")
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .order("created_at", { ascending: false })
+    .returns<ProspectRecommendationRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listProspectContacts() {
+  const { data, error } = await supabase
+    .from("prospect_contacts")
+    .select("*, prospect_recommendations(id, bum_user_id)")
+    .order("created_at", { ascending: false })
+    .returns<ProspectContactRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createCustomerTarget(user: AuthUser, input: CustomerTargetInput) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users linked to a company can create target accounts.");
+  }
+
+  const targetCompany = await ensureCompany({
+    companyName: input.target_account_name,
+    companyWebsite: input.company_website,
+    linkedinCompanyUrl: input.linkedin_company_url,
+    email: input.key_contact_email,
+    relationshipStage: "INACTIVE",
+  });
+
+  const { data, error } = await supabase
+    .from("customer_targets")
+    .upsert(
+      {
+        client_company_id: user.clientId,
+        target_company_id: targetCompany.id,
+        created_by: user.id,
+        status: input.status ?? "PROSPECT",
+        priority: input.priority ?? "MEDIUM",
+        target_account_name: input.target_account_name.trim(),
+        business_unit: toNullableString(input.business_unit),
+        key_contact_name: toNullableString(input.key_contact_name),
+        key_contact_title: toNullableString(input.key_contact_title),
+        key_contact_email: toNullableString(input.key_contact_email),
+        expected_product_service: toNullableString(input.expected_product_service),
+        estimated_deal_value: input.estimated_deal_value ?? null,
+        expected_timeline: toNullableString(input.expected_timeline),
+        notes: toNullableString(input.notes),
+      },
+      { onConflict: "client_company_id,target_company_id" },
+    )
+    .select("*, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url), profiles(id, full_name, email)")
+    .single<CustomerTargetRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  const { error: auditError } = await supabase.from("audit_events").insert({
+    company_id: user.clientId,
+    user_id: user.id,
+    event_type: "customer_target_created",
+    entity_type: "customer_targets",
+    entity_id: data.id,
+    event_data: {
+      target_company_id: targetCompany.id,
+      target_account_name: input.target_account_name.trim(),
+      status: data.status,
+    },
+  });
+
+  if (auditError) {
+    throw auditError;
+  }
+
+  return data;
+}
+
+export async function listCustomerTargets(user?: Pick<AuthUser, "role" | "clientId"> | null) {
+  let query = supabase
+    .from("customer_targets")
+    .select("*, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url), profiles(id, full_name, email)")
+    .order("created_at", { ascending: false });
+
+  if (user?.role === "CLIENT" && user.clientId) {
+    query = query.eq("client_company_id", user.clientId);
+  }
+
+  const { data, error } = await query.returns<CustomerTargetRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listTeamsMeetings() {
+  const { data, error } = await supabase
+    .from("teams_meetings")
+    .select("*, customer_targets(id, target_account_name, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website)), profiles(id, full_name, email)")
+    .order("start_time", { ascending: true })
+    .returns<TeamsMeetingRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function scheduleTeamsMeeting(input: ScheduleTeamsMeetingInput) {
+  const accessToken = await getSupabaseAccessToken();
+
+  if (!accessToken) {
+    throw new Error("Sign in before scheduling a Teams meeting.");
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/schedule-teams-meeting`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(input),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as
+    | ScheduleTeamsMeetingResponse
+    | { error?: string };
+
+  if (!response.ok) {
+    throw new Error("error" in payload && payload.error ? payload.error : "Unable to schedule the Teams meeting.");
+  }
+
+  if (!("meeting" in payload)) {
+    throw new Error("The Teams scheduler returned an incomplete response.");
+  }
+
+  return payload;
 }
 
 export async function listAuditEvents() {

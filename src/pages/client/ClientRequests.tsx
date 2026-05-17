@@ -11,7 +11,7 @@ const mockRequests = [
 export default function ClientRequests() {
   return (
     <div>
-      <PageHeader title="Intro Requests" description="Submit requests that Admin can convert into opportunities">
+      <PageHeader title="Intro Requests" description="Use requests for one-off help, while keeping your ongoing account list in Target Accounts.">
         <Button><Plus className="h-4 w-4 mr-2" /> New Request</Button>
       </PageHeader>
 

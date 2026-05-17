@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FilePlus, ShieldCheck } from "lucide-react";
+import { Building2, Download, FilePlus, ShieldCheck, Target } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,9 @@ import {
   activateTermsVersion,
   createTermsVersion,
   listAuditEvents,
+  listAdminProspectRecommendations,
   listCompanies,
+  listCustomerTargets,
   listOpportunityRegistrations,
   listProfiles,
   listTermsAcceptances,
@@ -152,6 +155,14 @@ export default function AdminDashboard() {
   const acceptancesQuery = useQuery({ queryKey: ["admin-terms-acceptances"], queryFn: listTermsAcceptances });
   const termsQuery = useQuery({ queryKey: ["admin-terms-versions"], queryFn: listTermsVersions });
   const auditQuery = useQuery({ queryKey: ["admin-audit-events"], queryFn: listAuditEvents });
+  const clientProspectsQuery = useQuery({
+    queryKey: ["admin-prospect-recommendations"],
+    queryFn: listAdminProspectRecommendations,
+  });
+  const customerTargetsQuery = useQuery({
+    queryKey: ["admin-customer-targets"],
+    queryFn: () => listCustomerTargets(null),
+  });
   const opportunitiesQuery = useQuery({
     queryKey: ["admin-opportunities", statusFilter],
     queryFn: () => listOpportunityRegistrations(statusFilter),
@@ -193,6 +204,8 @@ export default function AdminDashboard() {
   const companies = companiesQuery.data ?? [];
   const profiles = profilesQuery.data ?? [];
   const acceptances = acceptancesQuery.data ?? [];
+  const clientProspects = clientProspectsQuery.data ?? [];
+  const customerTargets = customerTargetsQuery.data ?? [];
   const opportunities = opportunitiesQuery.data ?? [];
   const termsVersions = termsQuery.data ?? [];
   const auditEvents = auditQuery.data ?? [];
@@ -204,8 +217,45 @@ export default function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Companies" value={companies.length} icon={ShieldCheck} />
         <StatCard title="Users" value={profiles.length} icon={ShieldCheck} />
-        <StatCard title="Terms Acceptances" value={acceptances.length} icon={ShieldCheck} />
-        <StatCard title="Registrations" value={opportunities.length} icon={ShieldCheck} />
+        <StatCard title="Client Prospects" value={clientProspects.length} icon={Building2} />
+        <StatCard title="Target Accounts" value={customerTargets.length} icon={Target} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr] mb-8">
+        <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">
+          <CardHeader>
+            <CardTitle className="font-display">Marketplace pipelines</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <div>
+              Keep both funnels visible from here: companies Trusted Bums wants to win as clients, and the customer target accounts your clients want to sell into.
+            </div>
+            <div className="flex gap-2">
+              <Button asChild variant="outline">
+                <Link to="/admin/clients">Client prospect overlap</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/admin/opportunities">Target account pipeline</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display">Other metrics</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Terms Acceptances</span>
+              <span className="font-medium">{acceptances.length}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Registrations</span>
+              <span className="font-medium">{opportunities.length}</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="opportunities" className="space-y-6">

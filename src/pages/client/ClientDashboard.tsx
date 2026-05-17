@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
-import { listOpportunityRegistrations, type RegistrationStatus } from "@/lib/portalApi";
+import { listCustomerTargets, listOpportunityRegistrations, type RegistrationStatus } from "@/lib/portalApi";
 import { Target, FileCheck, Clock, PlusCircle, ArrowRight } from "lucide-react";
 
 function getStatusVariant(status: RegistrationStatus) {
@@ -31,12 +31,20 @@ export default function ClientDashboard() {
     queryFn: () => listOpportunityRegistrations(),
     enabled: Boolean(user?.id),
   });
+  const targetsQuery = useQuery({
+    queryKey: ["client-targets", user?.clientId],
+    queryFn: () => listCustomerTargets(user),
+    enabled: Boolean(user?.clientId),
+  });
   const opportunities = opportunitiesQuery.data ?? [];
+  const targets = targetsQuery.data ?? [];
   const activeCount = opportunities.filter((opportunity) =>
     ["Submitted", "Accepted", "Needs Clarification"].includes(opportunity.status),
   ).length;
   const acceptedCount = opportunities.filter((opportunity) => opportunity.status === "Accepted").length;
-  const pendingCount = opportunities.filter((opportunity) => opportunity.status === "Submitted").length;
+  const targetProspectCount = targets.filter((target) =>
+    ["PROSPECT", "QUALIFYING", "INTRO_REQUESTED", "INTRO_IN_PROGRESS"].includes(target.status),
+  ).length;
 
   return (
     <div>
@@ -45,48 +53,48 @@ export default function ClientDashboard() {
         description={`Manage terms and account registrations for ${user?.companyName ?? "your client workspace"}.`}
       >
         <Button asChild>
-          <Link to="/client/opportunities/new">
+          <Link to="/client/targets">
             <PlusCircle className="mr-2 h-4 w-4" />
-            Register Opportunity
+            Add Target Account
           </Link>
         </Button>
       </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <StatCard title="Target Accounts" value={targets.length} icon={Target} />
         <StatCard title="Active Opportunities" value={activeCount} icon={Target} />
         <StatCard title="Accepted" value={acceptedCount} icon={FileCheck} />
-        <StatCard title="Pending Review" value={pendingCount} icon={Clock} />
-        <StatCard title="Terms Version" value={terms?.version ?? "v1"} icon={FileCheck} />
+        <StatCard title="Target Prospects" value={targetProspectCount} icon={Clock} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">Opportunity Registrations</CardTitle>
+            <CardTitle className="font-display">Target Accounts</CardTitle>
           </CardHeader>
           <CardContent>
-            {opportunities.length ? (
+            {targets.length ? (
               <div className="space-y-4">
-                {opportunities.slice(0, 6).map((opportunity) => (
-                  <div key={opportunity.id} className="flex items-center justify-between gap-4 border-b py-3 last:border-0">
+                {targets.slice(0, 6).map((targetAccount) => (
+                  <div key={targetAccount.id} className="flex items-center justify-between gap-4 border-b py-3 last:border-0">
                     <div>
-                      <p className="font-medium">{opportunity.target_account_name}</p>
+                      <p className="font-medium">{targetAccount.target_companies?.name ?? targetAccount.target_account_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {opportunity.expected_product_service || "Opportunity"} · {opportunity.commission_rate}% commission
+                        {targetAccount.expected_product_service || "Target account"} · {targetAccount.priority} priority
                       </p>
                     </div>
-                    <StatusBadge label={opportunity.status} variant={getStatusVariant(opportunity.status)} />
+                    <StatusBadge label={targetAccount.status.replaceAll("_", " ")} variant="info" />
                   </div>
                 ))}
               </div>
             ) : (
               <div className="rounded-md border border-dashed p-6 text-center">
-                <p className="font-medium">No registered opportunities yet</p>
+                <p className="font-medium">No target accounts yet</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Register the target account before Trusted Bums starts opening doors.
+                  Add the customer companies you want to sell into before turning them into formal opportunity registrations.
                 </p>
                 <Button asChild className="mt-4">
-                  <Link to="/client/opportunities/new">Register Opportunity</Link>
+                  <Link to="/client/targets">Add Target Account</Link>
                 </Button>
               </div>
             )}
@@ -120,7 +128,10 @@ export default function ClientDashboard() {
             </CardHeader>
             <CardContent className="grid gap-2">
               <Button asChild>
-                <Link to="/client/opportunities/new">Register new opportunity</Link>
+                <Link to="/client/targets">Add target account</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/client/opportunities/new">Register formal opportunity</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link to="/client/agreements">View acceptance records</Link>

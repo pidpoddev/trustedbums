@@ -23,10 +23,12 @@ import {
   Download,
   PlusCircle,
   Users,
+  Target,
 } from "lucide-react";
 
 const navItems = [
   { title: "Dashboard", url: "/client/dashboard", icon: LayoutDashboard },
+  { title: "Target Accounts", url: "/client/targets", icon: Target },
   { title: "Register Opportunity", url: "/client/opportunities/new", icon: PlusCircle },
   { title: "Partner Terms", url: "/client/terms", icon: FileCheck },
   { title: "Agreements", url: "/client/agreements", icon: FileCheck },

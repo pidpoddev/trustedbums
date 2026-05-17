@@ -23,10 +23,12 @@ import {
   User,
   Building2,
   GraduationCap,
+  PlusCircle,
 } from "lucide-react";
 
 const navItems = [
   { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
+  { title: "Prospects", url: "/bum/prospects", icon: PlusCircle },
   { title: "Clients", url: "/bum/clients", icon: Building2 },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
   { title: "My Claims", url: "/bum/claims", icon: Handshake },

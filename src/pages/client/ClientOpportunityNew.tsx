@@ -72,7 +72,7 @@ export default function ClientOpportunityNew() {
     <div>
       <PageHeader
         title="Register Opportunity"
-        description="Document account access, deal context, and commission terms before the work begins."
+        description="Use this after a target account becomes a real deal pursuit and you need a formal registration with commission terms."
       />
 
       {submittedId && (

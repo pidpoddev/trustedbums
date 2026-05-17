@@ -28,6 +28,7 @@ import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientAgreements from "./pages/client/ClientAgreements";
 import ClientTerms from "./pages/client/ClientTerms";
 import ClientOpportunityNew from "./pages/client/ClientOpportunityNew";
+import ClientTargets from "./pages/client/ClientTargets";
 import ClientProfile from "./pages/client/ClientProfile";
 import ClientBums from "./pages/client/ClientBums";
 import ClientTrainings from "./pages/client/ClientTrainings";
@@ -35,6 +36,7 @@ import ClientRequests from "./pages/client/ClientRequests";
 import ClientExports from "./pages/client/ClientExports";
 import BumLayout from "./layouts/BumLayout";
 import BumDashboard from "./pages/bum/BumDashboard";
+import BumProspects from "./pages/bum/BumProspects";
 import BumOpportunities from "./pages/bum/BumOpportunities";
 import BumClaims from "./pages/bum/BumClaims";
 import BumLiveConversations from "./pages/bum/BumLiveConversations";
@@ -90,6 +92,7 @@ const App = () => (
                     <Route path="/client" element={<ClientLayout />}>
                       <Route index element={<Navigate to="/client/dashboard" replace />} />
                       <Route path="dashboard" element={<ClientDashboard />} />
+                      <Route path="targets" element={<ClientTargets />} />
                       <Route path="terms" element={<Navigate to="/terms" replace />} />
                       <Route path="opportunities/new" element={<ClientOpportunityNew />} />
                       <Route path="agreements" element={<ClientAgreements />} />
@@ -108,6 +111,7 @@ const App = () => (
                     <Route path="/bum" element={<BumLayout />}>
                       <Route index element={<Navigate to="/bum/dashboard" replace />} />
                       <Route path="dashboard" element={<BumDashboard />} />
+                      <Route path="prospects" element={<BumProspects />} />
                       <Route path="clients" element={<BumClients />} />
                       <Route path="opportunities" element={<BumOpportunities />} />
                       <Route path="opportunities/:id" element={<BumOpportunityDetail />} />
