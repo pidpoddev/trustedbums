@@ -50,7 +50,7 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-6">
-          <BrandLogo to="/" imageClassName="h-11" />
+          <BrandLogo to="/" imageClassName="h-12" />
           <div className="flex items-center gap-3">
             <AccessibilityMenu />
             <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">

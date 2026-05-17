@@ -45,7 +45,7 @@ export default function Login() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <BrandLogo to="/" imageClassName="h-11" />
+          <BrandLogo to="/" imageClassName="h-12" />
           <div className="flex items-center gap-3">
             <AccessibilityMenu />
           {showSignedInActions ? (

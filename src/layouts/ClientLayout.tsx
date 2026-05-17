@@ -65,7 +65,7 @@ export default function ClientLayout() {
         <Sidebar>
           <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
             <div>
-              <BrandLogo to="/" theme="dark" imageClassName="h-10" />
+              <BrandLogo to="/" theme="dark" imageClassName="h-12" />
               <span className="block text-[10px] text-sidebar-foreground/60 uppercase tracking-wider">
                 {user?.role === "CLIENT" ? `Client • ${getClientAccessLabel(user.clientAccessRole)}` : "Client"}
               </span>
