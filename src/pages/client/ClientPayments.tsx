@@ -40,8 +40,16 @@ export default function ClientPayments() {
   const [notes, setNotes] = useState("");
 
   const claimsQuery = useQuery({ queryKey: ["client-opportunity-claims"], queryFn: () => listOpportunityClaims() });
-  const reportsQuery = useQuery({ queryKey: ["customer-payment-reports"], queryFn: listCustomerPaymentReports });
-  const invoicesQuery = useQuery({ queryKey: ["claim-invoices"], queryFn: listClaimInvoices });
+  const reportsQuery = useQuery({
+    queryKey: ["customer-payment-reports", user?.id],
+    queryFn: () => listCustomerPaymentReports(user!),
+    enabled: Boolean(user?.id),
+  });
+  const invoicesQuery = useQuery({
+    queryKey: ["claim-invoices", user?.id],
+    queryFn: () => listClaimInvoices(user!),
+    enabled: Boolean(user?.id),
+  });
 
   const claims = useMemo(
     () => (claimsQuery.data ?? []).filter((claim) => ["APPROVED", "SCHEDULED", "MEETING_HELD", "CLOSED"].includes(claim.status)),

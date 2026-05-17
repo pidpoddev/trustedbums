@@ -1250,7 +1250,24 @@ export async function listOpportunityClaims(opportunityId?: string) {
   return data ?? [];
 }
 
-export async function listCustomerPaymentReports() {
+function assertClientFinanceAccess(user: AuthUser, action: string) {
+  if (user.role === "ADMIN") {
+    return;
+  }
+
+  if (
+    user.role !== "CLIENT" ||
+    (user.clientAccessRole !== "CLIENT_ADMIN" && user.clientAccessRole !== "CLIENT_FINANCE")
+  ) {
+    throw new Error(action);
+  }
+}
+
+export async function listCustomerPaymentReports(user?: AuthUser) {
+  if (user) {
+    assertClientFinanceAccess(user, "You do not have access to customer payment reporting.");
+  }
+
   const { data, error } = await supabase
     .from("customer_payment_reports")
     .select("*, opportunity_claims(id, contact_name, contact_company, bum_user_id), opportunity_registrations(id, target_account_name, commission_rate), companies(id, name), profiles(id, full_name, email)")
@@ -1268,6 +1285,8 @@ export async function createCustomerPaymentReport(user: AuthUser, input: Custome
   if (user.role !== "CLIENT" && user.role !== "ADMIN") {
     throw new Error("Only Clients and Admins can report customer payments.");
   }
+
+  assertClientFinanceAccess(user, "You do not have permission to report customer payments.");
 
   const { data: claim, error: claimError } = await supabase
     .from("opportunity_claims")
@@ -1315,7 +1334,11 @@ export async function createCustomerPaymentReport(user: AuthUser, input: Custome
   return data;
 }
 
-export async function listClaimInvoices() {
+export async function listClaimInvoices(user?: AuthUser) {
+  if (user) {
+    assertClientFinanceAccess(user, "You do not have access to generated claim invoices.");
+  }
+
   const { data, error } = await supabase
     .from("claim_invoices")
     .select("*, customer_payment_reports(id, customer_name, commissionable_amount, customer_payment_received_at), opportunity_claims(id, contact_name, contact_company, bum_user_id), opportunity_registrations(id, target_account_name), companies(id, name)")
@@ -1333,6 +1356,8 @@ export async function createClaimInvoice(user: AuthUser, paymentReportId: string
   if (user.role !== "CLIENT" && user.role !== "ADMIN") {
     throw new Error("Only Clients and Admins can generate claim invoices.");
   }
+
+  assertClientFinanceAccess(user, "You do not have permission to generate claim invoices.");
 
   const { data: report, error: reportError } = await supabase
     .from("customer_payment_reports")

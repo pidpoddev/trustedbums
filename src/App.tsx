@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { ClerkTicketHandler } from "@/components/ClerkTicketHandler";
+import { ClientAccessRoute } from "@/components/ClientAccessRoute";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ClientTermsGate } from "@/components/ClientTermsGate";
 import { RoleDashboardRedirect } from "@/components/RoleDashboardRedirect";
@@ -93,16 +94,20 @@ const App = () => (
                     <Route path="/client" element={<ClientLayout />}>
                       <Route index element={<Navigate to="/client/dashboard" replace />} />
                       <Route path="dashboard" element={<ClientDashboard />} />
-                      <Route path="targets" element={<ClientTargets />} />
                       <Route path="terms" element={<Navigate to="/terms" replace />} />
-                      <Route path="opportunities/new" element={<ClientOpportunityNew />} />
                       <Route path="agreements" element={<ClientAgreements />} />
                       <Route path="profile" element={<ClientProfile />} />
-                      <Route path="bum-directory" element={<ClientBums />} />
-                      <Route path="trainings" element={<ClientTrainings />} />
-                      <Route path="requests" element={<ClientRequests />} />
-                      <Route path="payments" element={<ClientPayments />} />
-                      <Route path="exports" element={<ClientExports />} />
+                      <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN", "CLIENT_MEMBER"]} />}>
+                        <Route path="targets" element={<ClientTargets />} />
+                        <Route path="opportunities/new" element={<ClientOpportunityNew />} />
+                        <Route path="bum-directory" element={<ClientBums />} />
+                        <Route path="trainings" element={<ClientTrainings />} />
+                        <Route path="requests" element={<ClientRequests />} />
+                      </Route>
+                      <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN", "CLIENT_FINANCE"]} />}>
+                        <Route path="payments" element={<ClientPayments />} />
+                        <Route path="exports" element={<ClientExports />} />
+                      </Route>
                     </Route>
                   </Route>
                 </Route>

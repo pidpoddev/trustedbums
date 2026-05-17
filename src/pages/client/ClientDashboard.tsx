@@ -7,37 +7,44 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
-import { listCustomerTargets, listOpportunityRegistrations, type RegistrationStatus } from "@/lib/portalApi";
-import { Target, FileCheck, Clock, PlusCircle, ArrowRight } from "lucide-react";
-
-function getStatusVariant(status: RegistrationStatus) {
-  if (status === "Accepted" || status === "Closed Won") {
-    return "success" as const;
-  }
-  if (status === "Disputed" || status === "Rejected" || status === "Closed Lost") {
-    return "destructive" as const;
-  }
-  if (status === "Needs Clarification" || status === "Draft") {
-    return "warning" as const;
-  }
-  return "info" as const;
-}
+import {
+  listClaimInvoices,
+  listCustomerPaymentReports,
+  listCustomerTargets,
+  listOpportunityRegistrations,
+} from "@/lib/portalApi";
+import { Target, FileCheck, Clock, PlusCircle, ArrowRight, CreditCard, Download } from "lucide-react";
 
 export default function ClientDashboard() {
   const { user } = useAuth();
+  const clientAccessRole = user?.role === "CLIENT" ? user.clientAccessRole ?? "CLIENT_ADMIN" : undefined;
+  const isFinanceUser = clientAccessRole === "CLIENT_FINANCE";
+  const canManagePayments = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_FINANCE";
   const { terms, acceptance } = useCurrentTermsState();
   const opportunitiesQuery = useQuery({
     queryKey: ["client-opportunity-registrations", user?.id],
     queryFn: () => listOpportunityRegistrations(),
-    enabled: Boolean(user?.id),
+    enabled: Boolean(user?.id) && !isFinanceUser,
   });
   const targetsQuery = useQuery({
     queryKey: ["client-targets", user?.clientId],
     queryFn: () => listCustomerTargets(user),
-    enabled: Boolean(user?.clientId),
+    enabled: Boolean(user?.clientId) && !isFinanceUser,
+  });
+  const reportsQuery = useQuery({
+    queryKey: ["customer-payment-reports", user?.clientId],
+    queryFn: () => listCustomerPaymentReports(user!),
+    enabled: Boolean(user?.clientId) && isFinanceUser,
+  });
+  const invoicesQuery = useQuery({
+    queryKey: ["claim-invoices", user?.clientId],
+    queryFn: () => listClaimInvoices(user!),
+    enabled: Boolean(user?.clientId) && isFinanceUser,
   });
   const opportunities = opportunitiesQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
+  const paymentReports = reportsQuery.data ?? [];
+  const invoices = invoicesQuery.data ?? [];
   const activeCount = opportunities.filter((opportunity) =>
     ["Submitted", "Accepted", "Needs Clarification"].includes(opportunity.status),
   ).length;
@@ -45,6 +52,121 @@ export default function ClientDashboard() {
   const targetProspectCount = targets.filter((target) =>
     ["PROSPECT", "QUALIFYING", "INTRO_REQUESTED", "INTRO_IN_PROGRESS"].includes(target.status),
   ).length;
+  const totalCommissionableRevenue = paymentReports.reduce(
+    (sum, report) => sum + Number(report.commissionable_amount ?? 0),
+    0,
+  );
+  const generatedInvoiceAmount = invoices.reduce(
+    (sum, invoice) => sum + Number(invoice.invoice_amount ?? 0),
+    0,
+  );
+
+  if (isFinanceUser) {
+    return (
+      <div>
+        <PageHeader
+          title={`Welcome back, ${user?.name ?? "Finance"}`}
+          description={`Review imported payments and generated invoices for ${user?.companyName ?? "your client workspace"}.`}
+        >
+          <Button asChild>
+            <Link to="/client/payments">
+              <CreditCard className="mr-2 h-4 w-4" />
+              Open Payments
+            </Link>
+          </Button>
+        </PageHeader>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <StatCard title="Reported Payments" value={paymentReports.length} icon={CreditCard} />
+          <StatCard title="Generated Invoices" value={invoices.length} icon={FileCheck} />
+          <StatCard title="Commissionable Revenue" value={`$${totalCommissionableRevenue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Target} />
+          <StatCard title="Invoice Value" value={`$${generatedInvoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Download} />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display">Recent generated invoices</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {invoices.length ? (
+                <div className="space-y-4">
+                  {invoices.slice(0, 6).map((invoice) => (
+                    <div key={invoice.id} className="flex items-center justify-between gap-4 border-b py-3 last:border-0">
+                      <div>
+                        <p className="font-medium">{invoice.invoice_number}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {invoice.customer_payment_reports?.customer_name ?? "Customer"} · {invoice.opportunity_registrations?.target_account_name ?? "Opportunity"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">
+                          ${Number(invoice.invoice_amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        </p>
+                        <StatusBadge label={invoice.status} variant={invoice.status === "PAID" ? "success" : "info"} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-md border border-dashed p-6 text-center">
+                  <p className="font-medium">No invoices generated yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Import your first customer payment report to generate invoices for AP.
+                  </p>
+                  <Button asChild className="mt-4">
+                    <Link to="/client/payments">Go to Payments</Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-display">Partner Terms</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="rounded-md bg-success/10 p-4 text-sm">
+                  <p className="font-medium text-success">Current terms accepted</p>
+                  <p className="text-muted-foreground mt-1">
+                    {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "Acceptance recorded"} · Version{" "}
+                    {terms?.version ?? "v1"}
+                  </p>
+                </div>
+                <Button asChild variant="outline" className="w-full">
+                  <Link to="/client/terms">
+                    Review terms <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-display">Finance Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-2">
+                <Button asChild>
+                  <Link to="/client/payments">Import monthly payments</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/client/exports">Open exports & integrations</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/client/agreements">View acceptance records</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <a href="mailto:bums@trustedbums.com?subject=Trusted%20Bums%20Finance%20Question">Email Trusted Bums Finance</a>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -133,9 +255,11 @@ export default function ClientDashboard() {
               <Button asChild variant="outline">
                 <Link to="/client/opportunities/new">Register formal opportunity</Link>
               </Button>
-              <Button asChild variant="outline">
-                <Link to="/client/payments">Report customer payment</Link>
-              </Button>
+              {canManagePayments ? (
+                <Button asChild variant="outline">
+                  <Link to="/client/payments">Report customer payment</Link>
+                </Button>
+              ) : null}
               <Button asChild variant="outline">
                 <Link to="/client/agreements">View acceptance records</Link>
               </Button>

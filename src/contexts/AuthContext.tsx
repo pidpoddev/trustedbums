@@ -1,11 +1,14 @@
 import { useAuth as useClerkAuth, useSession, useUser } from "@clerk/react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  DEFAULT_CLIENT_ACCESS_ROLE,
   createPendingBumId,
   getAuthorizationProfileByEmail,
   getKnownClientForEmail,
+  readClientAccessRole,
   toAuthUser,
   type AuthUser,
+  type ClientAccessRole,
   type UserRole,
 } from "@/data/authData";
 import { ensureSupabaseProfileForAuthUser } from "@/lib/portalApi";
@@ -20,6 +23,7 @@ interface AuthContextValue {
   isImpersonating: boolean;
   authorizationError: string | null;
   hasRole: (roles: UserRole[]) => boolean;
+  hasClientAccessRole: (roles: ClientAccessRole[]) => boolean;
   refreshUser: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -95,6 +99,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       readString(publicMetadata.companyName) ??
       readString(unsafeMetadata.clientCompanyName) ??
       readString(unsafeMetadata.companyName);
+    const metadataClientAccessRole =
+      readClientAccessRole(publicMetadata.clientAccessRole) ??
+      readClientAccessRole(publicMetadata.clientRole) ??
+      readClientAccessRole(publicMetadata.clientPortalRole) ??
+      readClientAccessRole(unsafeMetadata.clientAccessRole) ??
+      readClientAccessRole(unsafeMetadata.clientRole) ??
+      readClientAccessRole(unsafeMetadata.clientPortalRole);
     const role = metadataRole ?? profile?.role;
     const companyName = knownClient?.company ?? metadataCompanyName ?? fallbackUser?.companyName;
     const bumId =
@@ -118,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
       ),
       role,
+      clientAccessRole: role === "CLIENT" ? metadataClientAccessRole ?? fallbackUser?.clientAccessRole ?? DEFAULT_CLIENT_ACCESS_ROLE : undefined,
       clientId: fallbackUser?.clientId,
       bumId,
       companyName,
@@ -192,6 +204,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isImpersonating: Boolean(impersonatorUserId),
       authorizationError,
       hasRole: (roles) => Boolean(dbUser && roles.includes(dbUser.role)),
+      hasClientAccessRole: (roles) =>
+        Boolean(
+          dbUser?.role === "CLIENT" &&
+            dbUser.clientAccessRole &&
+            roles.includes(dbUser.clientAccessRole),
+        ),
       refreshUser: async () => {
         if (baseUser) {
           const profile = await ensureSupabaseProfileForAuthUser(baseUser);

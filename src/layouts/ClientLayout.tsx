@@ -1,6 +1,8 @@
 import { BrandLogo } from "@/components/BrandLogo";
 import { NavLink } from "@/components/NavLink";
 import { PortalHeaderActions } from "@/components/PortalHeaderActions";
+import { getClientAccessLabel, type ClientAccessRole } from "@/data/authData";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, Outlet } from "react-router-dom";
 import {
   Sidebar,
@@ -27,22 +29,35 @@ import {
   CreditCard,
 } from "lucide-react";
 
-const navItems = [
+const navItems: Array<{
+  title: string;
+  url: string;
+  icon: typeof LayoutDashboard;
+  allowedAccessRoles?: ClientAccessRole[];
+}> = [
   { title: "Dashboard", url: "/client/dashboard", icon: LayoutDashboard },
-  { title: "Target Accounts", url: "/client/targets", icon: Target },
-  { title: "Register Opportunity", url: "/client/opportunities/new", icon: PlusCircle },
+  { title: "Target Accounts", url: "/client/targets", icon: Target, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
+  { title: "Register Opportunity", url: "/client/opportunities/new", icon: PlusCircle, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Partner Terms", url: "/client/terms", icon: FileCheck },
   { title: "Agreements", url: "/client/agreements", icon: FileCheck },
   { title: "Profile", url: "/client/profile", icon: User },
-  { title: "Bums", url: "/client/bum-directory", icon: Users },
-  { title: "Trainings", url: "/client/trainings", icon: GraduationCap },
-  { title: "Requests", url: "/client/requests", icon: MessageSquarePlus },
-  { title: "Payments", url: "/client/payments", icon: CreditCard },
-  { title: "Exports", url: "/client/exports", icon: Download },
+  { title: "Bums", url: "/client/bum-directory", icon: Users, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
+  { title: "Trainings", url: "/client/trainings", icon: GraduationCap, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
+  { title: "Requests", url: "/client/requests", icon: MessageSquarePlus, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
+  { title: "Payments", url: "/client/payments", icon: CreditCard, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
+  { title: "Exports", url: "/client/exports", icon: Download, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
 ];
 
 export default function ClientLayout() {
   const location = useLocation();
+  const { user } = useAuth();
+  const visibleNavItems = navItems.filter(
+    (item) =>
+      !item.allowedAccessRoles ||
+      (user?.role === "CLIENT" &&
+        user.clientAccessRole &&
+        item.allowedAccessRoles.includes(user.clientAccessRole)),
+  );
 
   return (
     <SidebarProvider>
@@ -51,7 +66,9 @@ export default function ClientLayout() {
           <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
             <div>
               <BrandLogo to="/" theme="dark" imageClassName="h-10" />
-              <span className="block text-[10px] text-sidebar-foreground/60 uppercase tracking-wider">Client</span>
+              <span className="block text-[10px] text-sidebar-foreground/60 uppercase tracking-wider">
+                {user?.role === "CLIENT" ? `Client • ${getClientAccessLabel(user.clientAccessRole)}` : "Client"}
+              </span>
             </div>
           </div>
           <SidebarContent>
@@ -59,7 +76,7 @@ export default function ClientLayout() {
               <SidebarGroupLabel>Navigation</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navItems.map((item) => (
+                  {visibleNavItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <NavLink
@@ -84,7 +101,7 @@ export default function ClientLayout() {
           <header className="h-14 border-b flex items-center px-4 bg-card">
             <SidebarTrigger />
             <span className="ml-4 text-sm text-muted-foreground">
-              {navItems.find(i => location.pathname === i.url || (i.url !== "/client" && location.pathname.startsWith(i.url)))?.title ?? "Client"}
+              {visibleNavItems.find(i => location.pathname === i.url || (i.url !== "/client" && location.pathname.startsWith(i.url)))?.title ?? "Client"}
             </span>
             <PortalHeaderActions />
           </header>

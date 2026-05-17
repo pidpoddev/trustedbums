@@ -1,12 +1,14 @@
 import { mockClients } from "@/data/mockData";
 
 export type UserRole = "ADMIN" | "CLIENT" | "BUM";
+export type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_MEMBER";
 
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  clientAccessRole?: ClientAccessRole;
   clientId?: string;
   bumId?: string;
   companyName?: string;
@@ -44,8 +46,9 @@ export const authorizationProfiles: AuthorizationProfile[] = [
     email: "revops@acmecorp.com",
     name: "Acme RevOps",
     role: "CLIENT",
+    clientAccessRole: "CLIENT_FINANCE",
     clientId: "c1",
-    description: "Second AcmeCorp user sharing the same client workspace.",
+    description: "AcmeCorp finance user with access to payment and export workflows.",
   },
   {
     id: "client-c2-1",
@@ -87,10 +90,47 @@ export function toAuthUser(account: AuthorizationProfile): AuthUser {
     email: account.email,
     name: account.name,
     role: account.role,
+    clientAccessRole: account.clientAccessRole,
     clientId: account.clientId,
     bumId: account.bumId,
     companyName: account.companyName,
   };
+}
+
+export const DEFAULT_CLIENT_ACCESS_ROLE: ClientAccessRole = "CLIENT_ADMIN";
+
+export function readClientAccessRole(value: unknown): ClientAccessRole | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toUpperCase().replace(/[^A-Z]+/g, "_");
+
+  if (normalized === "CLIENT_ADMIN" || normalized === "ADMIN") {
+    return "CLIENT_ADMIN";
+  }
+
+  if (normalized === "CLIENT_FINANCE" || normalized === "FINANCE") {
+    return "CLIENT_FINANCE";
+  }
+
+  if (normalized === "CLIENT_MEMBER" || normalized === "MEMBER") {
+    return "CLIENT_MEMBER";
+  }
+
+  return undefined;
+}
+
+export function getClientAccessLabel(role?: ClientAccessRole) {
+  if (role === "CLIENT_FINANCE") {
+    return "Finance";
+  }
+
+  if (role === "CLIENT_MEMBER") {
+    return "Member";
+  }
+
+  return "Client Admin";
 }
 
 export function getAuthorizationProfileByEmail(email?: string | null) {
