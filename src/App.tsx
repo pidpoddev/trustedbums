@@ -12,6 +12,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AdminLayout from "./layouts/AdminLayout";
@@ -62,7 +63,7 @@ const App = () => (
             <AppErrorBoundary>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/sign-in" element={<ClerkTicketHandler />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route element={<ProtectedRoute allowedRoles={["ADMIN", "CLIENT", "BUM"]} />}>
