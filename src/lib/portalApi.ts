@@ -407,6 +407,7 @@ export interface OpportunityInput {
 export type CompanyAgreementType = "MASTER_SERVICES_AGREEMENT" | "SERVICE_ADDENDUM" | "OTHER";
 export type CompanyAgreementStatus = "DRAFT" | "ACTIVE" | "SUPERSEDED" | "TERMINATED";
 export type ClientPayProgramApprovalStatus = "APPROVED" | "PENDING" | "DENIED";
+export const DEFAULT_BUM_COMMISSION_POOL_PERCENT = 50;
 
 export interface CompanyAgreementRecord {
   id: string;
@@ -477,6 +478,8 @@ export interface OpportunityClaimRecord {
   opportunity_registration_id: string;
   company_id: string | null;
   bum_user_id: string;
+  bum_share_percent: number;
+  share_manually_set: boolean;
   contact_name: string;
   contact_company: string;
   contact_email: string | null;
@@ -486,7 +489,13 @@ export interface OpportunityClaimRecord {
   expires_at: string;
   created_at: string;
   updated_at: string;
-  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name" | "commission_rate" | "company_id"> | null;
+  meeting_locked?: boolean;
+  opportunity_registrations?: Pick<
+    OpportunityRegistration,
+    "id" | "target_account_name" | "commission_rate" | "company_id"
+  > & {
+    client_pay_programs?: ClientPayProgramRecord | null;
+  } | null;
   profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
 
@@ -574,6 +583,7 @@ export interface BumPayoutRecord {
   opportunity_claim_id: string;
   bum_user_id: string;
   payout_amount: number;
+  share_percent: number;
   currency: string;
   status: BumPayoutStatus;
   approved_by: string | null;
@@ -582,8 +592,8 @@ export interface BumPayoutRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  claim_invoices?: Pick<ClaimInvoiceRecord, "id" | "invoice_number" | "invoice_amount" | "status"> | null;
-  opportunity_claims?: Pick<OpportunityClaimRecord, "id" | "contact_name" | "contact_company"> | null;
+  claim_invoices?: Pick<ClaimInvoiceRecord, "id" | "invoice_number" | "invoice_amount" | "status" | "commission_rate"> | null;
+  opportunity_claims?: Pick<OpportunityClaimRecord, "id" | "contact_name" | "contact_company" | "bum_share_percent"> | null;
   profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
 
@@ -1485,6 +1495,39 @@ function buildProgramDurationText(program: Pick<ClientPayProgramRecord, "commiss
   return parts.length ? parts.join(". ") : DEFAULT_COMMISSION_DURATION;
 }
 
+export function calculateTopLineSharePercent(commissionRate: number | null | undefined, bumSharePercent: number | null | undefined) {
+  return Number((((Number(commissionRate ?? 0) * Number(bumSharePercent ?? 0)) / 100)).toFixed(4));
+}
+
+export function buildTopLineShareSchedule(
+  program: Pick<
+    ClientPayProgramRecord,
+    "year_1_rate" | "year_2_rate" | "year_3_rate" | "year_4_rate" | "year_5_rate" | "year_6_plus_rate"
+  > | null | undefined,
+  bumSharePercent: number | null | undefined,
+) {
+  if (!program) {
+    return [] as Array<{ label: string; topLinePercent: number }>;
+  }
+
+  return [
+    { label: "Year 1", topLinePercent: calculateTopLineSharePercent(program.year_1_rate, bumSharePercent) },
+    { label: "Year 2", topLinePercent: calculateTopLineSharePercent(program.year_2_rate, bumSharePercent) },
+    { label: "Year 3", topLinePercent: calculateTopLineSharePercent(program.year_3_rate, bumSharePercent) },
+    { label: "Year 4", topLinePercent: calculateTopLineSharePercent(program.year_4_rate, bumSharePercent) },
+    { label: "Year 5", topLinePercent: calculateTopLineSharePercent(program.year_5_rate, bumSharePercent) },
+    { label: "Year 6+", topLinePercent: calculateTopLineSharePercent(program.year_6_plus_rate, bumSharePercent) },
+  ];
+}
+
+export function deriveDefaultBumSharePercent(activeClaimCount: number) {
+  if (activeClaimCount <= 1) {
+    return DEFAULT_BUM_COMMISSION_POOL_PERCENT;
+  }
+
+  return Number((DEFAULT_BUM_COMMISSION_POOL_PERCENT / activeClaimCount).toFixed(4));
+}
+
 function buildTieredCommissionSummary(
   program: Pick<
     ClientPayProgramRecord,
@@ -1699,7 +1742,7 @@ export async function reviewClientPayProgram(
 export async function listOpportunityClaims(opportunityId?: string) {
   let query = supabase
     .from("opportunity_claims")
-    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id), profiles(id, full_name, email)")
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, client_pay_programs(*)), profiles(id, full_name, email)")
     .order("created_at", { ascending: false });
 
   if (opportunityId) {
@@ -1712,7 +1755,50 @@ export async function listOpportunityClaims(opportunityId?: string) {
     throw error;
   }
 
-  return data ?? [];
+  const claims = data ?? [];
+
+  const lockedOpportunityIds = new Set<string>();
+  const opportunityIds = [...new Set(claims.map((claim) => claim.opportunity_registration_id).filter(Boolean))];
+
+  if (opportunityIds.length) {
+    const [{ data: transcriptRows, error: transcriptError }, { data: meetingRows, error: meetingError }] =
+      await Promise.all([
+        supabase
+          .from("meeting_transcripts")
+          .select("opportunity_registration_id")
+          .in("opportunity_registration_id", opportunityIds)
+          .limit(opportunityIds.length),
+        supabase
+          .from("teams_meetings")
+          .select("opportunity_registration_id")
+          .in("opportunity_registration_id", opportunityIds)
+          .neq("status", "CANCELLED")
+          .limit(opportunityIds.length),
+      ]);
+
+    if (transcriptError) {
+      throw transcriptError;
+    }
+    if (meetingError) {
+      throw meetingError;
+    }
+
+    for (const row of transcriptRows ?? []) {
+      if (row.opportunity_registration_id) {
+        lockedOpportunityIds.add(row.opportunity_registration_id);
+      }
+    }
+    for (const row of meetingRows ?? []) {
+      if (row.opportunity_registration_id) {
+        lockedOpportunityIds.add(row.opportunity_registration_id);
+      }
+    }
+  }
+
+  return claims.map((claim) => ({
+    ...claim,
+    meeting_locked: lockedOpportunityIds.has(claim.opportunity_registration_id),
+  }));
 }
 
 function assertClientFinanceAccess(user: AuthUser, action: string) {
@@ -1915,15 +2001,28 @@ export async function updateClaimInvoiceStatus(user: AuthUser, invoice: ClaimInv
   }
 
   if (status === "PAID" && user.role === "ADMIN" && invoice.opportunity_claims?.bum_user_id) {
+    const { data: claimShare, error: claimShareError } = await supabase
+      .from("opportunity_claims")
+      .select("bum_share_percent")
+      .eq("id", invoice.opportunity_claim_id)
+      .maybeSingle<Pick<OpportunityClaimRecord, "bum_share_percent">>();
+
+    if (claimShareError) {
+      throw claimShareError;
+    }
+
+    const sharePercent = Number(claimShare?.bum_share_percent ?? DEFAULT_BUM_COMMISSION_POOL_PERCENT);
+    const payoutAmount = Number(((Number(invoice.invoice_amount ?? 0) * sharePercent) / 100).toFixed(2));
     await supabase.from("bum_payouts").upsert(
       {
         claim_invoice_id: invoice.id,
         opportunity_claim_id: invoice.opportunity_claim_id,
         bum_user_id: invoice.opportunity_claims.bum_user_id,
-        payout_amount: 0,
+        payout_amount: payoutAmount,
+        share_percent: sharePercent,
         currency: invoice.currency,
         status: "PENDING_ALLOCATION",
-        notes: "Invoice paid. Admin must allocate the Bum payout amount.",
+        notes: "Invoice paid. Payout amount was derived from the claim's Bum share percentage.",
       },
       { onConflict: "claim_invoice_id,opportunity_claim_id" },
     );
@@ -1937,7 +2036,7 @@ export async function updateClaimInvoiceStatus(user: AuthUser, invoice: ClaimInv
 export async function listBumPayouts() {
   const { data, error } = await supabase
     .from("bum_payouts")
-    .select("*, claim_invoices(id, invoice_number, invoice_amount, status), opportunity_claims(id, contact_name, contact_company), profiles(id, full_name, email)")
+    .select("*, claim_invoices(id, invoice_number, invoice_amount, commission_rate, status), opportunity_claims(id, contact_name, contact_company, bum_share_percent), profiles(id, full_name, email)")
     .order("created_at", { ascending: false })
     .returns<BumPayoutRecord[]>();
 
@@ -1983,6 +2082,140 @@ export async function updateBumPayout(user: AuthUser, payout: BumPayoutRecord, u
   return data;
 }
 
+const ACTIVE_CLAIM_STATUSES: OpportunityClaimStatus[] = [
+  "PROPOSED",
+  "APPROVED",
+  "SCHEDULED",
+  "MEETING_HELD",
+];
+
+async function hasLoggedMeetingForOpportunity(opportunityId: string) {
+  const [{ data: transcript }, { data: meeting }] = await Promise.all([
+    supabase
+      .from("meeting_transcripts")
+      .select("id")
+      .eq("opportunity_registration_id", opportunityId)
+      .limit(1)
+      .maybeSingle<{ id: string }>(),
+    supabase
+      .from("teams_meetings")
+      .select("id")
+      .eq("opportunity_registration_id", opportunityId)
+      .neq("status", "CANCELLED")
+      .limit(1)
+      .maybeSingle<{ id: string }>(),
+  ]);
+
+  return Boolean(transcript?.id || meeting?.id);
+}
+
+async function rebalanceOpportunityClaimShares(opportunityId: string) {
+  const isLocked = await hasLoggedMeetingForOpportunity(opportunityId);
+  if (isLocked) {
+    return;
+  }
+
+  const { data: claims, error } = await supabase
+    .from("opportunity_claims")
+    .select("id, status, bum_share_percent, share_manually_set")
+    .eq("opportunity_registration_id", opportunityId)
+    .returns<Array<Pick<OpportunityClaimRecord, "id" | "status" | "bum_share_percent" | "share_manually_set">>>();
+
+  if (error) {
+    throw error;
+  }
+
+  const activeClaims = (claims ?? []).filter((claim) => ACTIVE_CLAIM_STATUSES.includes(claim.status));
+  const manualClaims = activeClaims.filter((claim) => claim.share_manually_set);
+  const autoClaims = activeClaims.filter((claim) => !claim.share_manually_set);
+  const manualTotal = manualClaims.reduce((sum, claim) => sum + Number(claim.bum_share_percent ?? 0), 0);
+  const remainingPool = Math.max(0, DEFAULT_BUM_COMMISSION_POOL_PERCENT - manualTotal);
+  const autoShare = autoClaims.length ? Number((remainingPool / autoClaims.length).toFixed(4)) : 0;
+
+  const updates = await Promise.all(
+    autoClaims.map((claim) =>
+      supabase
+        .from("opportunity_claims")
+        .update({ bum_share_percent: autoShare })
+        .eq("id", claim.id),
+    ),
+  );
+
+  for (const result of updates) {
+    if (result.error) {
+      throw result.error;
+    }
+  }
+}
+
+export async function updateOpportunityClaimShare(user: AuthUser, claimId: string, bumSharePercent: number) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only Admins can change Bum share percentages.");
+  }
+
+  if (bumSharePercent < 0 || bumSharePercent > 100) {
+    throw new Error("Bum share percent must be between 0 and 100.");
+  }
+
+  const { data: claim, error: claimError } = await supabase
+    .from("opportunity_claims")
+    .select("id, opportunity_registration_id, status, bum_share_percent, share_manually_set")
+    .eq("id", claimId)
+    .maybeSingle<Pick<OpportunityClaimRecord, "id" | "opportunity_registration_id" | "status" | "bum_share_percent" | "share_manually_set">>();
+
+  if (claimError) {
+    throw claimError;
+  }
+
+  if (!claim) {
+    throw new Error("That opportunity claim could not be found.");
+  }
+
+  const isLocked = await hasLoggedMeetingForOpportunity(claim.opportunity_registration_id);
+  if (isLocked) {
+    throw new Error("Bum share can no longer be changed after a meeting is logged for this opportunity.");
+  }
+
+  const { data: siblingClaims, error: siblingError } = await supabase
+    .from("opportunity_claims")
+    .select("id, status, bum_share_percent, share_manually_set")
+    .eq("opportunity_registration_id", claim.opportunity_registration_id)
+    .returns<Array<Pick<OpportunityClaimRecord, "id" | "status" | "bum_share_percent" | "share_manually_set">>>();
+
+  if (siblingError) {
+    throw siblingError;
+  }
+
+  const activeSiblingClaims = (siblingClaims ?? []).filter(
+    (item) => item.id !== claim.id && ACTIVE_CLAIM_STATUSES.includes(item.status),
+  );
+  const manualSiblingTotal = activeSiblingClaims
+    .filter((item) => item.share_manually_set)
+    .reduce((sum, item) => sum + Number(item.bum_share_percent ?? 0), 0);
+
+  if (manualSiblingTotal + bumSharePercent > DEFAULT_BUM_COMMISSION_POOL_PERCENT) {
+    throw new Error("The total Bum share for active claims cannot exceed 50% of the Trusted Bums commission.");
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_claims")
+    .update({ bum_share_percent: bumSharePercent, share_manually_set: true })
+    .eq("id", claimId)
+    .select("*")
+    .single<OpportunityClaimRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await rebalanceOpportunityClaimShares(claim.opportunity_registration_id);
+  await createAuditEvent(user, "opportunity_claim_share_updated", "opportunity_claims", data.id, {
+    bum_share_percent: bumSharePercent,
+  });
+
+  return data;
+}
+
 export async function createOpportunityClaim(user: AuthUser, input: OpportunityClaimInput) {
   if (user.role !== "BUM") {
     throw new Error("Only Bums can request opportunity claims.");
@@ -2009,6 +2242,8 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
       opportunity_registration_id: opportunity.id,
       company_id: opportunity.company_id,
       bum_user_id: user.id,
+      bum_share_percent: DEFAULT_BUM_COMMISSION_POOL_PERCENT,
+      share_manually_set: false,
       contact_name: input.contactName.trim(),
       contact_company: input.contactCompany.trim(),
       contact_email: toNullableString(input.contactEmail),
@@ -2022,6 +2257,8 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
   if (error) {
     throw error;
   }
+
+  await rebalanceOpportunityClaimShares(opportunity.id);
 
   await createAuditEvent(user, "opportunity_claim_created", "opportunity_claims", data.id, {
     opportunity_registration_id: opportunity.id,
@@ -2049,6 +2286,8 @@ export async function updateOpportunityClaimStatus(user: AuthUser, claimId: stri
   if (error) {
     throw error;
   }
+
+  await rebalanceOpportunityClaimShares(data.opportunity_registration_id);
 
   await createAuditEvent(user, "opportunity_claim_status_changed", "opportunity_claims", data.id, {
     status,

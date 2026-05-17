@@ -26,7 +26,11 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
+  buildTopLineShareSchedule,
+  calculateTopLineSharePercent,
   createOpportunityClaim,
+  DEFAULT_BUM_COMMISSION_POOL_PERCENT,
+  deriveDefaultBumSharePercent,
   getMarketplaceOpportunity,
   listOpportunityClaims,
   updateOpportunityClaimStatus,
@@ -60,6 +64,15 @@ export default function BumOpportunityDetail() {
   });
   const opp = opportunityQuery.data;
   const claims = claimsQuery.data ?? [];
+  const myClaims = claims.filter((claim) => claim.bum_user_id === user?.id);
+  const defaultSoloSchedule = buildTopLineShareSchedule(
+    opp?.client_pay_programs,
+    DEFAULT_BUM_COMMISSION_POOL_PERCENT,
+  );
+  const defaultSplitSchedule = buildTopLineShareSchedule(
+    opp?.client_pay_programs,
+    deriveDefaultBumSharePercent(2),
+  );
 
   const [contact, setContact] = useState("");
   const [company, setCompany] = useState("");
@@ -195,9 +208,72 @@ export default function BumOpportunityDetail() {
                 <p className="mt-1">{opp.client_pay_programs.payment_terms}</p>
               </div>
             ) : null}
+            <div className="md:col-span-2 rounded-xl border bg-primary/5 p-3 text-sm">
+              <p className="font-medium text-foreground">Default Bum economics</p>
+              <p className="mt-1 text-muted-foreground">
+                Solo Bum default: {DEFAULT_BUM_COMMISSION_POOL_PERCENT}% of the Trusted Bums commission.
+                If two Bums split the opportunity by default, each starts at {deriveDefaultBumSharePercent(2)}% of the Trusted Bums commission.
+                Admin can adjust the Bum share until a meeting is logged against the opportunity.
+              </p>
+              {defaultSoloSchedule.length ? (
+                <p className="mt-2 text-muted-foreground">
+                  Top-line equivalent:
+                  {" "}
+                  solo {defaultSoloSchedule.map((item) => `${item.label} ${item.topLinePercent}%`).join(", ")}
+                  {" · "}
+                  split {defaultSplitSchedule.map((item) => `${item.label} ${item.topLinePercent}%`).join(", ")}
+                </p>
+              ) : (
+                <p className="mt-2 text-muted-foreground">
+                  Top-line equivalent at the current opportunity rate:
+                  {" "}
+                  solo {calculateTopLineSharePercent(opp.commission_rate, DEFAULT_BUM_COMMISSION_POOL_PERCENT)}%
+                  {" · "}
+                  split {calculateTopLineSharePercent(opp.commission_rate, deriveDefaultBumSharePercent(2))}% each
+                </p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {myClaims.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Your current share</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {myClaims.map((claim) => {
+              const shareSchedule = buildTopLineShareSchedule(
+                claim.opportunity_registrations?.client_pay_programs ?? opp.client_pay_programs,
+                claim.bum_share_percent,
+              );
+              const fallbackTopLine = calculateTopLineSharePercent(
+                claim.opportunity_registrations?.commission_rate ?? opp.commission_rate,
+                claim.bum_share_percent,
+              );
+
+              return (
+                <div key={claim.id} className="rounded-xl border p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium">{claim.contact_name} @ {claim.contact_company}</p>
+                    <StatusBadge
+                      label={`${Number(claim.bum_share_percent ?? 0).toLocaleString()}% of TB commission`}
+                      variant="info"
+                    />
+                    {claim.meeting_locked ? <StatusBadge label="Share locked" variant="secondary" /> : null}
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {shareSchedule.length
+                      ? shareSchedule.map((item) => `${item.label}: ${item.topLinePercent}% top line`).join(" · ")
+                      : `Current top-line equivalent: ${fallbackTopLine}%`}
+                  </p>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

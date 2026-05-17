@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { listBumPayouts, updateBumPayout, type BumPayoutRecord } from "@/lib/portalApi";
+import { calculateTopLineSharePercent, listBumPayouts, updateBumPayout, type BumPayoutRecord } from "@/lib/portalApi";
 
 function money(value: number | null | undefined) {
   return `$${Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -29,11 +29,9 @@ function PayoutRow({ payout }: { payout: BumPayoutRecord }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [amount, setAmount] = useState(String(payout.payout_amount || ""));
   const updateMutation = useMutation({
     mutationFn: (status: "APPROVED" | "PAID") =>
       updateBumPayout(user!, payout, {
-        payout_amount: Number(amount || payout.payout_amount || 0),
         status,
       }),
     onSuccess: async () => {
@@ -57,8 +55,11 @@ function PayoutRow({ payout }: { payout: BumPayoutRecord }) {
         <p className="text-xs text-muted-foreground">{payout.claim_invoices?.invoice_number}</p>
       </td>
       <td className="py-3">{money(payout.claim_invoices?.invoice_amount)}</td>
-      <td className="py-3 min-w-[140px]">
-        <Input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Set amount" />
+      <td className="py-3 min-w-[220px]">
+        <p className="font-medium">{money(payout.payout_amount)}</p>
+        <p className="text-xs text-muted-foreground">
+          {Number(payout.share_percent ?? 0).toLocaleString()}% of TB commission · {calculateTopLineSharePercent(payout.claim_invoices?.commission_rate, payout.share_percent).toLocaleString()}% top line
+        </p>
       </td>
       <td className="py-3">
         <StatusBadge

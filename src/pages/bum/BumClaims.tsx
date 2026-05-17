@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { claimStatusConfig } from "@/data/mockData";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { listOpportunityClaims } from "@/lib/portalApi";
+import {
+  buildTopLineShareSchedule,
+  calculateTopLineSharePercent,
+  listOpportunityClaims,
+} from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
 
 function formatDate(value: string | null | undefined, timeZone: string) {
@@ -70,6 +74,14 @@ export default function BumClaims() {
         {claims.map((claim) => {
           const statusConfig = claimStatusConfig[claim.status];
           const opportunityName = claim.opportunity_registrations?.target_account_name ?? claim.contact_company;
+          const shareSchedule = buildTopLineShareSchedule(
+            claim.opportunity_registrations?.client_pay_programs,
+            claim.bum_share_percent,
+          );
+          const fallbackTopLine = calculateTopLineSharePercent(
+            claim.opportunity_registrations?.commission_rate,
+            claim.bum_share_percent,
+          );
 
           return (
             <Card key={claim.id}>
@@ -104,6 +116,17 @@ export default function BumClaims() {
                       Contact email
                     </p>
                     <p className="mt-1 break-all">{claim.contact_email ?? "Not provided"}</p>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-3 md:col-span-3">
+                    <p className="font-medium text-foreground">Your share</p>
+                    <p className="mt-1">
+                      {Number(claim.bum_share_percent ?? 0).toLocaleString()}% of the Trusted Bums commission
+                    </p>
+                    <p className="mt-1 text-xs">
+                      {shareSchedule.length
+                        ? shareSchedule.map((item) => `${item.label}: ${item.topLinePercent}% top line`).join(" · ")
+                        : `Current top-line equivalent: ${fallbackTopLine}%`}
+                    </p>
                   </div>
                 </div>
 

@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { listBumPayouts } from "@/lib/portalApi";
+import { calculateTopLineSharePercent, listBumPayouts } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
 function money(value: number | null | undefined) {
@@ -66,6 +66,11 @@ export default function BumEarnings() {
                 />
               </div>
               <p className="mt-3 font-display text-xl font-bold">{money(payout.payout_amount)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {Number(payout.share_percent ?? 0).toLocaleString()}% of Trusted Bums commission
+                {" · "}
+                {calculateTopLineSharePercent(payout.claim_invoices?.commission_rate, payout.share_percent).toLocaleString()}% of top-line revenue at this invoice rate
+              </p>
               {payout.paid_at ? <p className="text-xs text-muted-foreground">Paid {formatDateTimeForTimeZone(payout.paid_at, timeZone)}</p> : null}
             </div>
           ))}
