@@ -1,14 +1,29 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BUM_TERMS_VERSION } from "@/data/partnerTerms";
 import { listAdminBumProfiles, listProfiles, listTermsAcceptances, listTermsVersions } from "@/lib/portalApi";
 
+type BumTypeFilter = "ALL" | "VISIBLE_TO_CLIENTS" | "AGREEMENT_ACCEPTED" | "PROFILE_READY" | "HIDDEN";
+
+const bumTypeFilters: { value: BumTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All Bum types" },
+  { value: "VISIBLE_TO_CLIENTS", label: "Visible to clients" },
+  { value: "AGREEMENT_ACCEPTED", label: "Agreement accepted" },
+  { value: "PROFILE_READY", label: "Profile ready" },
+  { value: "HIDDEN", label: "Hidden from clients" },
+];
+
 export default function AdminBums() {
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<BumTypeFilter>("ALL");
   const bumProfilesQuery = useQuery({ queryKey: ["admin-bum-profiles"], queryFn: listAdminBumProfiles });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
   const termsVersionsQuery = useQuery({ queryKey: ["admin-terms-versions"], queryFn: listTermsVersions });
@@ -85,12 +100,72 @@ export default function AdminBums() {
     bumProfilesQuery.isLoading || profilesQuery.isLoading || termsVersionsQuery.isLoading || acceptancesQuery.isLoading;
   const hasError =
     bumProfilesQuery.isError || profilesQuery.isError || termsVersionsQuery.isError || acceptancesQuery.isError;
+  const filteredBums = useMemo(() => {
+    return bumSummaries.filter((bum) => {
+      const matchesType =
+        typeFilter === "ALL" ||
+        (typeFilter === "VISIBLE_TO_CLIENTS" && Boolean(bum.is_visible_to_clients)) ||
+        (typeFilter === "AGREEMENT_ACCEPTED" && Boolean(bum.hasAcceptedAgreement)) ||
+        (typeFilter === "PROFILE_READY" &&
+          Boolean(
+            bum.headline ||
+              bum.bio ||
+              bum.industries?.length ||
+              bum.relationship_companies?.length ||
+              bum.worked_with_companies?.length,
+          )) ||
+        (typeFilter === "HIDDEN" && !bum.is_visible_to_clients);
+
+      const matchesQuery = [
+        bum.profiles?.full_name,
+        bum.profiles?.email,
+        bum.headline,
+        bum.bio,
+        ...(bum.industries ?? []),
+        ...(bum.relationship_companies ?? []),
+        ...(bum.worked_with_companies ?? []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase());
+
+      return matchesType && matchesQuery;
+    });
+  }, [bumSummaries, query, typeFilter]);
 
   return (
     <div>
       <PageHeader title="Bums" description="Review connector background, coverage, and agreement status">
         <Button><Plus className="h-4 w-4 mr-2" /> Invite Bum</Button>
       </PageHeader>
+
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)] mb-6">
+        <div className="relative min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search Bums, emails, industries, or relationship companies…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Type</Label>
+          <Select value={typeFilter} onValueChange={(value: BumTypeFilter) => setTypeFilter(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {bumTypeFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <div className="grid gap-4">
         {isLoading ? (
@@ -109,15 +184,15 @@ export default function AdminBums() {
           </Card>
         ) : null}
 
-        {!isLoading && !hasError && !bumSummaries.length ? (
+        {!isLoading && !hasError && !filteredBums.length ? (
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground">
-              No synced bum users exist yet.
+              {bumSummaries.length ? "No Bum profiles match your current filters." : "No synced bum users exist yet."}
             </CardContent>
           </Card>
         ) : null}
 
-        {!isLoading && !hasError ? bumSummaries.map((bum) => (
+        {!isLoading && !hasError ? filteredBums.map((bum) => (
           <BumProfileCard key={bum.user_id} profile={bum} showAdminMeta />
         )) : null}
       </div>

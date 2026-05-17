@@ -1,11 +1,15 @@
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Target } from "lucide-react";
+import { Building2, Search, Target } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScheduleTeamsMeetingDialog } from "@/components/ScheduleTeamsMeetingDialog";
 import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSection";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   listCustomerTargets,
   listOpportunityRegistrations,
@@ -43,8 +47,29 @@ function targetLabel(status: CustomerTargetStatus) {
   return status.replaceAll("_", " ");
 }
 
+type TargetTypeFilter = "ALL" | "EARLY_PIPELINE" | "INTRO_ACTIVE" | "CLOSED";
+type RegistrationTypeFilter = "ALL" | "OPEN" | "NEEDS_ATTENTION" | "CLOSED";
+
+const targetTypeFilters: { value: TargetTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All target account types" },
+  { value: "EARLY_PIPELINE", label: "Early pipeline" },
+  { value: "INTRO_ACTIVE", label: "Intro active" },
+  { value: "CLOSED", label: "Closed" },
+];
+
+const registrationTypeFilters: { value: RegistrationTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All registration types" },
+  { value: "OPEN", label: "Open" },
+  { value: "NEEDS_ATTENTION", label: "Needs attention" },
+  { value: "CLOSED", label: "Closed" },
+];
+
 export default function AdminOpportunities() {
   const queryClient = useQueryClient();
+  const [targetQuery, setTargetQuery] = useState("");
+  const [registrationQuery, setRegistrationQuery] = useState("");
+  const [targetTypeFilter, setTargetTypeFilter] = useState<TargetTypeFilter>("ALL");
+  const [registrationTypeFilter, setRegistrationTypeFilter] = useState<RegistrationTypeFilter>("ALL");
   const registrationsQuery = useQuery({
     queryKey: ["admin-opportunities", "All"],
     queryFn: () => listOpportunityRegistrations("All"),
@@ -56,6 +81,56 @@ export default function AdminOpportunities() {
 
   const registrations = registrationsQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
+  const filteredTargets = useMemo(() => {
+    return targets.filter((targetAccount) => {
+      const matchesType =
+        targetTypeFilter === "ALL" ||
+        (targetTypeFilter === "EARLY_PIPELINE" &&
+          ["PROSPECT", "QUALIFYING"].includes(targetAccount.status)) ||
+        (targetTypeFilter === "INTRO_ACTIVE" &&
+          ["INTRO_REQUESTED", "INTRO_IN_PROGRESS", "MEETING_SET", "OPEN_OPPORTUNITY"].includes(targetAccount.status)) ||
+        (targetTypeFilter === "CLOSED" && ["CLOSED_WON", "CLOSED_LOST"].includes(targetAccount.status));
+
+      const matchesQuery = [
+        targetAccount.target_companies?.name ?? targetAccount.target_account_name,
+        targetAccount.client_companies?.name,
+        targetAccount.expected_product_service,
+        targetAccount.notes,
+        targetAccount.key_contact_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(targetQuery.toLowerCase());
+
+      return matchesType && matchesQuery;
+    });
+  }, [targetQuery, targetTypeFilter, targets]);
+  const filteredRegistrations = useMemo(() => {
+    return registrations.filter((registration) => {
+      const matchesType =
+        registrationTypeFilter === "ALL" ||
+        (registrationTypeFilter === "OPEN" &&
+          ["Submitted", "Accepted"].includes(registration.status)) ||
+        (registrationTypeFilter === "NEEDS_ATTENTION" &&
+          ["Needs Clarification", "Disputed", "Draft"].includes(registration.status)) ||
+        (registrationTypeFilter === "CLOSED" &&
+          ["Closed Won", "Closed Lost", "Rejected"].includes(registration.status));
+
+      const matchesQuery = [
+        registration.target_account_name,
+        registration.companies?.name,
+        registration.opportunity_description,
+        registration.expected_product_service,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(registrationQuery.toLowerCase());
+
+      return matchesType && matchesQuery;
+    });
+  }, [registrationQuery, registrationTypeFilter, registrations]);
 
   return (
     <div>
@@ -71,8 +146,34 @@ export default function AdminOpportunities() {
         </TabsList>
 
         <TabsContent value="targets">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)] mb-6">
+            <div className="relative min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search target accounts, clients, contacts, or notes…"
+                value={targetQuery}
+                onChange={(event) => setTargetQuery(event.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={targetTypeFilter} onValueChange={(value: TargetTypeFilter) => setTargetTypeFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {targetTypeFilters.map((filter) => (
+                    <SelectItem key={filter.value} value={filter.value}>
+                      {filter.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="grid gap-4">
-            {targets.map((targetAccount) => (
+            {filteredTargets.map((targetAccount) => (
               <Card key={targetAccount.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -126,10 +227,10 @@ export default function AdminOpportunities() {
                 </CardContent>
               </Card>
             ))}
-            {!targets.length && (
+            {!filteredTargets.length && (
               <Card>
                 <CardContent className="pt-6 text-sm text-muted-foreground">
-                  No customer target accounts have been submitted yet.
+                  {targets.length ? "No target accounts match your current filters." : "No customer target accounts have been submitted yet."}
                 </CardContent>
               </Card>
             )}
@@ -137,12 +238,41 @@ export default function AdminOpportunities() {
         </TabsContent>
 
         <TabsContent value="registrations">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)] mb-6">
+            <div className="relative min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search opportunities, companies, or descriptions…"
+                value={registrationQuery}
+                onChange={(event) => setRegistrationQuery(event.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select
+                value={registrationTypeFilter}
+                onValueChange={(value: RegistrationTypeFilter) => setRegistrationTypeFilter(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {registrationTypeFilters.map((filter) => (
+                    <SelectItem key={filter.value} value={filter.value}>
+                      {filter.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle className="font-display">Opportunity Registrations</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              {registrations.map((registration) => (
+              {filteredRegistrations.map((registration) => (
                 <Card key={registration.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between gap-6">
@@ -178,9 +308,9 @@ export default function AdminOpportunities() {
                   </CardContent>
                 </Card>
               ))}
-              {!registrations.length && (
+              {!filteredRegistrations.length && (
                 <div className="text-sm text-muted-foreground">
-                  No opportunity registrations have been submitted yet.
+                  {registrations.length ? "No opportunity registrations match your current filters." : "No opportunity registrations have been submitted yet."}
                 </div>
               )}
             </CardContent>

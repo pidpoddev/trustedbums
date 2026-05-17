@@ -1,11 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link2, Plus, Users } from "lucide-react";
+import { Link2, Plus, Search, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   listAdminProspectRecommendations,
   listCompanies,
@@ -28,7 +31,19 @@ function stageVariant(stage: CompanyRelationshipStage) {
   return "info" as const;
 }
 
+type ClientTypeFilter = "ALL" | "ACTIVE_CLIENT" | "HAS_OPPORTUNITIES" | "BUM_CONNECTED" | "INACTIVE";
+
+const clientTypeFilters: { value: ClientTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All client types" },
+  { value: "ACTIVE_CLIENT", label: "Active clients" },
+  { value: "HAS_OPPORTUNITIES", label: "With opportunities" },
+  { value: "BUM_CONNECTED", label: "With Bum connections" },
+  { value: "INACTIVE", label: "Inactive" },
+];
+
 export default function AdminClients() {
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<ClientTypeFilter>("ALL");
   const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: listCompanies });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
   const opportunitiesQuery = useQuery({
@@ -122,12 +137,61 @@ export default function AdminClients() {
     recommendationsQuery.isError ||
     acceptancesQuery.isError ||
     contactsQuery.isError;
+  const filteredCompanies = useMemo(() => {
+    return companySummaries.filter((company) => {
+      const matchesType =
+        typeFilter === "ALL" ||
+        (typeFilter === "ACTIVE_CLIENT" && company.relationship_stage === "CLIENT") ||
+        (typeFilter === "HAS_OPPORTUNITIES" && company.opportunityCount > 0) ||
+        (typeFilter === "BUM_CONNECTED" && company.recommenderNames.length > 0) ||
+        (typeFilter === "INACTIVE" && company.relationship_stage === "INACTIVE");
+
+      const matchesQuery = [
+        company.name,
+        company.primaryEmail,
+        company.recommenderNames.join(" "),
+        company.primaryContacts.map((contact) => contact.full_name).join(" "),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase());
+
+      return matchesType && matchesQuery;
+    });
+  }, [companySummaries, query, typeFilter]);
 
   return (
     <div>
       <PageHeader title="Clients" description="Manage companies, prospect overlap, and who owns the path into each account.">
         <Button><Plus className="h-4 w-4 mr-2" /> Add Client</Button>
       </PageHeader>
+
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)] mb-6">
+        <div className="relative min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search clients, emails, Bums, or contacts…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Type</Label>
+          <Select value={typeFilter} onValueChange={(value: ClientTypeFilter) => setTypeFilter(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {clientTypeFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <div className="grid gap-4">
         {isLoading ? (
@@ -146,7 +210,7 @@ export default function AdminClients() {
           </Card>
         ) : null}
 
-        {!isLoading && !hasError ? companySummaries.map((company) => {
+        {!isLoading && !hasError ? filteredCompanies.map((company) => {
           return (
             <Card key={company.id} className="hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
@@ -228,10 +292,10 @@ export default function AdminClients() {
             </Card>
           );
         }) : null}
-        {!isLoading && !hasError && !companySummaries.length && (
+        {!isLoading && !hasError && !filteredCompanies.length && (
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground">
-              No live client companies are available yet.
+              {companySummaries.length ? "No clients match your current filters." : "No live client companies are available yet."}
             </CardContent>
           </Card>
         )}
