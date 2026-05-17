@@ -106,6 +106,28 @@
     font-family: var(--font-body);
   }
 
+  html.colorblind-mode {
+    --primary: 221 83% 46%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 35% 93%;
+    --secondary-foreground: 221 45% 22%;
+    --muted: 210 20% 93%;
+    --muted-foreground: 220 12% 32%;
+    --accent: 46 100% 46%;
+    --accent-foreground: 220 20% 10%;
+    --ring: 221 83% 46%;
+    --sidebar-primary: 221 83% 56%;
+    --sidebar-ring: 46 100% 46%;
+    --success: 195 100% 34%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 100% 44%;
+    --warning-foreground: 0 0% 100%;
+    --info: 255 66% 50%;
+    --info-foreground: 0 0% 100%;
+    --destructive: 330 72% 42%;
+    --destructive-foreground: 0 0% 100%;
+  }
+
   html.ada-mode {
     font-size: 118.75%;
     --background: 0 0% 100%;
@@ -137,6 +159,28 @@
     --warning-foreground: 0 0% 100%;
     --info: 210 100% 35%;
     --info-foreground: 0 0% 100%;
+  }
+
+  html.ada-mode.colorblind-mode {
+    --primary: 221 100% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 35% 94%;
+    --secondary-foreground: 221 40% 16%;
+    --muted: 210 16% 92%;
+    --muted-foreground: 0 0% 18%;
+    --accent: 48 100% 36%;
+    --accent-foreground: 0 0% 8%;
+    --ring: 221 100% 32%;
+    --sidebar-primary: 221 100% 52%;
+    --sidebar-ring: 48 100% 42%;
+    --success: 190 100% 28%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 100% 36%;
+    --warning-foreground: 0 0% 100%;
+    --info: 250 100% 34%;
+    --info-foreground: 0 0% 100%;
+    --destructive: 330 82% 30%;
+    --destructive-foreground: 0 0% 100%;
   }
 
   html.ada-mode body {
