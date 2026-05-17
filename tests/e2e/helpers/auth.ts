@@ -209,14 +209,30 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
 
   const acceptButton = page.getByRole("button", { name: /accept.*continue/i });
 
-  if (await acceptButton.isVisible({ timeout: 2_000 }).catch(() => false)) {
-    await page.getByRole("checkbox").first().click();
+  if (await acceptButton.isVisible({ timeout: 15_000 }).catch(() => false)) {
+    const checkbox = page.getByRole("checkbox").first();
+    await checkbox.click({ timeout: 5_000 });
     await acceptButton.click();
     await page.waitForLoadState("networkidle").catch(() => undefined);
+
+    await page
+      .waitForURL((url) => !url.pathname.includes("/terms"), { timeout: 15_000 })
+      .catch(() => undefined);
   }
 
   if (page.url().includes("/terms")) {
     await page.goto(destinationPath);
+    await page.waitForLoadState("networkidle").catch(() => undefined);
+  }
+
+  if (page.url().includes("/terms")) {
+    throw new Error(
+      [
+        "Unable to accept current terms during E2E sign-in.",
+        `Current URL: ${page.url()}`,
+        `Visible text: ${(await page.locator("body").innerText().catch(() => "")).slice(0, 1_000)}`,
+      ].join(" "),
+    );
   }
 }
 
