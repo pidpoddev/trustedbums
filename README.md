@@ -9,7 +9,7 @@ Deployed app: hosted at the site root.
 Install dependencies:
 
 ```sh
-npm install
+pnpm install
 ```
 
 Create `.env.local` for local development:
@@ -23,7 +23,7 @@ VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 Start the development server:
 
 ```sh
-npm run dev
+pnpm run dev
 ```
 
 The app is served from the site root:
@@ -132,10 +132,11 @@ The local `supabase/config.toml` file is for Supabase CLI and local development.
 Run the same checks used before publishing:
 
 ```sh
-npm run lint
-npm run test
-npm run build -- --base=/
+pnpm run qa
+pnpm run test:e2e
 ```
+
+For authenticated deployed smoke tests, copy `.env.qa.example` to `.env.qa`, fill the dedicated QA account credentials, export the variables, and run `pnpm run test:e2e`.
 
 ## Tech Stack
 

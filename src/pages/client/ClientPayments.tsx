@@ -299,8 +299,7 @@ export default function ClientPayments() {
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {row.matchedClaim?.opportunity_registrations?.target_account_name ??
-                                row.matchKey ||
-                                "No account match"}
+                                (row.matchKey || "No account match")}
                               {row.reference ? ` - ref ${row.reference}` : ""}
                             </p>
                           </div>
