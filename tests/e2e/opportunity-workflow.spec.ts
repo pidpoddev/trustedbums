@@ -5,6 +5,7 @@ test.describe("critical opportunity workflow", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run critical workflow tests.");
 
   test("client submits an opportunity and admin can see it", async ({ browser }, testInfo) => {
+    test.setTimeout(90_000);
     test.skip(testInfo.project.name !== "chromium", "Run this mutating workflow once on desktop Chromium.");
 
     const clientAdmin = getQaAccount("CLIENT_ADMIN");

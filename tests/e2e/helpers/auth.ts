@@ -32,6 +32,21 @@ export async function signIn(page: Page, account: QaAccount) {
   await page.goto("/");
   await page.waitForFunction(() => Boolean(window.Clerk?.loaded), undefined, { timeout: 20_000 });
 
+  const currentSessionEmail = await page
+    .evaluate(() => {
+      const clerk = window.Clerk;
+      return (
+        clerk?.user?.primaryEmailAddress?.emailAddress ??
+        clerk?.user?.emailAddresses?.[0]?.emailAddress ??
+        null
+      );
+    })
+    .catch(() => null);
+
+  if (currentSessionEmail?.toLowerCase() === account.email.toLowerCase()) {
+    return;
+  }
+
   if (process.env.CLERK_SECRET_KEY) {
     await ensureClerkTestingSetup();
     await clerk.signIn({ page, emailAddress: account.email });
