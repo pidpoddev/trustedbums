@@ -101,6 +101,15 @@ export const authorizationProfiles: AuthorizationProfile[] = [
     description: "Production QA client member account for smoke testing.",
   },
   {
+    id: "user_3DpXqbTvpn4nxc9xNBjG0PN3V6s",
+    email: "admin@k2view.com",
+    name: "K2view Admin",
+    role: "CLIENT",
+    clientAccessRole: "CLIENT_ADMIN",
+    companyName: "K2view",
+    description: "K2view organization creator with access to the K2view client workspace.",
+  },
+  {
     id: "bum-b1",
     email: "jake@email.com",
     name: "Jake Thompson",
