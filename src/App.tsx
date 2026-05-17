@@ -94,7 +94,7 @@ const App = () => (
                     <Route path="/client" element={<ClientLayout />}>
                       <Route index element={<Navigate to="/client/dashboard" replace />} />
                       <Route path="dashboard" element={<ClientDashboard />} />
-                      <Route path="terms" element={<Navigate to="/terms" replace />} />
+                      <Route path="terms" element={<ClientTerms />} />
                       <Route path="agreements" element={<ClientAgreements />} />
                       <Route path="profile" element={<ClientProfile />} />
                       <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN", "CLIENT_MEMBER"]} />}>
@@ -118,6 +118,7 @@ const App = () => (
                     <Route path="/bum" element={<BumLayout />}>
                       <Route index element={<Navigate to="/bum/dashboard" replace />} />
                       <Route path="dashboard" element={<BumDashboard />} />
+                      <Route path="terms" element={<ClientTerms />} />
                       <Route path="prospects" element={<BumProspects />} />
                       <Route path="clients" element={<BumClients />} />
                       <Route path="opportunities" element={<BumOpportunities />} />

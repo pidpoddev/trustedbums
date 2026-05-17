@@ -20,7 +20,7 @@ export default function ClientDashboard() {
   const clientAccessRole = user?.role === "CLIENT" ? user.clientAccessRole ?? "CLIENT_ADMIN" : undefined;
   const isFinanceUser = clientAccessRole === "CLIENT_FINANCE";
   const canManagePayments = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_FINANCE";
-  const { terms, acceptance } = useCurrentTermsState();
+  const { terms, acceptance, hasAcceptedCurrentTerms } = useCurrentTermsState();
   const opportunitiesQuery = useQuery({
     queryKey: ["client-opportunity-registrations", user?.id],
     queryFn: () => listOpportunityRegistrations(),
@@ -128,16 +128,19 @@ export default function ClientDashboard() {
                 <CardTitle className="font-display">Partner Terms</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="rounded-md bg-success/10 p-4 text-sm">
-                  <p className="font-medium text-success">Current terms accepted</p>
+                <div className={hasAcceptedCurrentTerms ? "rounded-md bg-success/10 p-4 text-sm" : "rounded-md bg-warning/10 p-4 text-sm"}>
+                  <p className={hasAcceptedCurrentTerms ? "font-medium text-success" : "font-medium text-warning"}>
+                    {hasAcceptedCurrentTerms ? "Current terms accepted" : "New partner terms need review"}
+                  </p>
                   <p className="text-muted-foreground mt-1">
-                    {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "Acceptance recorded"} · Version{" "}
+                    {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "Acceptance pending"} · Version{" "}
                     {terms?.version ?? "v1"}
                   </p>
                 </div>
-                <Button asChild variant="outline" className="w-full">
+                <Button asChild variant={hasAcceptedCurrentTerms ? "outline" : "default"} className="w-full">
                   <Link to="/client/terms">
-                    Review terms <ArrowRight className="ml-2 h-4 w-4" />
+                    {hasAcceptedCurrentTerms ? "Review terms" : "Review and accept terms"}{" "}
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </CardContent>
@@ -229,16 +232,19 @@ export default function ClientDashboard() {
               <CardTitle className="font-display">Partner Terms</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="rounded-md bg-success/10 p-4 text-sm">
-                <p className="font-medium text-success">Current terms accepted</p>
+              <div className={hasAcceptedCurrentTerms ? "rounded-md bg-success/10 p-4 text-sm" : "rounded-md bg-warning/10 p-4 text-sm"}>
+                <p className={hasAcceptedCurrentTerms ? "font-medium text-success" : "font-medium text-warning"}>
+                  {hasAcceptedCurrentTerms ? "Current terms accepted" : "New partner terms need review"}
+                </p>
                 <p className="text-muted-foreground mt-1">
-                  {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "Acceptance recorded"} · Version{" "}
+                  {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "Acceptance pending"} · Version{" "}
                   {terms?.version ?? "v1"}
                 </p>
               </div>
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant={hasAcceptedCurrentTerms ? "outline" : "default"} className="w-full">
                 <Link to="/client/terms">
-                  Review terms <ArrowRight className="ml-2 h-4 w-4" />
+                  {hasAcceptedCurrentTerms ? "Review terms" : "Review and accept terms"}{" "}
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </CardContent>

@@ -19,7 +19,7 @@ interface LocationState {
 }
 
 function resolveDashboardPath(role: "ADMIN" | "CLIENT" | "BUM", from?: string) {
-  if (from && from !== "/terms" && from !== "/login" && from !== "/client/terms") {
+  if (from && from !== "/terms" && from !== "/login" && from !== "/client/terms" && from !== "/bum/terms") {
     return from;
   }
 
@@ -44,7 +44,7 @@ export default function ClientTerms() {
       return;
     }
 
-    if (!shouldAutoContinue && !isBumTerms) {
+    if (!shouldAutoContinue) {
       return;
     }
 

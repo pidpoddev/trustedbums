@@ -24,6 +24,7 @@ import {
   Building2,
   GraduationCap,
   PlusCircle,
+  FileCheck,
 } from "lucide-react";
 
 const navItems = [
@@ -35,6 +36,7 @@ const navItems = [
   { title: "Trainings", url: "/bum/trainings", icon: GraduationCap },
   { title: "Live Conversations", url: "/bum/live-conversations", icon: Calendar },
   { title: "Earnings", url: "/bum/earnings", icon: Wallet },
+  { title: "Connector Terms", url: "/bum/terms", icon: FileCheck },
   { title: "Profile", url: "/bum/profile", icon: User },
 ];
 

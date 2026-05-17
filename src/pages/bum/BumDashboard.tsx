@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIntroClaims } from "@/hooks/use-intro-claims";
+import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { useToast } from "@/hooks/use-toast";
 import {
   buildBumProfileInputFromPrompt,
@@ -25,7 +26,17 @@ import {
   upsertOwnBumProfile,
   type BumProfileInput,
 } from "@/lib/portalApi";
-import { Briefcase, Building2, ClipboardList, Handshake, Sparkles, Wallet, TrendingUp } from "lucide-react";
+import {
+  ArrowRight,
+  Briefcase,
+  Building2,
+  ClipboardList,
+  FileCheck,
+  Handshake,
+  Sparkles,
+  Wallet,
+  TrendingUp,
+} from "lucide-react";
 
 export default function BumDashboard() {
   const { user } = useAuth();
@@ -41,6 +52,7 @@ export default function BumDashboard() {
     queryFn: () => listOwnProspectRecommendations(user!.id),
     enabled: Boolean(user?.id),
   });
+  const { terms, acceptance, hasAcceptedCurrentTerms } = useCurrentTermsState();
   const profileQuery = useQuery({
     queryKey: ["bum-profile", user?.id],
     queryFn: () => getOwnBumProfile(user!.id),
@@ -236,25 +248,54 @@ export default function BumDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display">Prospect activity</CardTitle>
-            <CardDescription>Quick snapshot of the sourcing pipeline you are building.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Prospects submitted</span>
-              <span className="font-medium">{prospectsQuery.data?.length ?? 0}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Marketplace opportunities</span>
-              <span className="font-medium">{opportunitiesQuery.data?.length ?? 0}</span>
-            </div>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/bum/prospects">Open Prospects</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display flex items-center gap-2">
+                <FileCheck className="h-5 w-5 text-primary" />
+                Connector Terms
+              </CardTitle>
+              <CardDescription>Your current Trusted Bums connector agreement status.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className={hasAcceptedCurrentTerms ? "rounded-md bg-success/10 p-4" : "rounded-md bg-warning/10 p-4"}>
+                <p className={hasAcceptedCurrentTerms ? "font-medium text-success" : "font-medium text-warning"}>
+                  {hasAcceptedCurrentTerms ? "Current terms accepted" : "New connector terms need review"}
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "Acceptance pending"} · Version{" "}
+                  {terms?.version ?? "current"}
+                </p>
+              </div>
+              <Button asChild variant={hasAcceptedCurrentTerms ? "outline" : "default"} className="w-full">
+                <Link to="/bum/terms">
+                  {hasAcceptedCurrentTerms ? "Review connector terms" : "Review and accept terms"}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display">Prospect activity</CardTitle>
+              <CardDescription>Quick snapshot of the sourcing pipeline you are building.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Prospects submitted</span>
+                <span className="font-medium">{prospectsQuery.data?.length ?? 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Marketplace opportunities</span>
+                <span className="font-medium">{opportunitiesQuery.data?.length ?? 0}</span>
+              </div>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/bum/prospects">Open Prospects</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
