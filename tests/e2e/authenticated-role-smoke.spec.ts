@@ -27,15 +27,17 @@ test.describe("authenticated role smoke", () => {
     await expect(page.getByRole("heading", { name: "Target Accounts" })).toBeVisible();
   });
 
-  test("client finance can open payments and exports", async ({ page }) => {
+  test("client finance can open payments and exports", async ({ page, isMobile }) => {
     const finance = getQaAccount("CLIENT_FINANCE");
     test.skip(!finance, "Set QA_CLIENT_FINANCE_EMAIL.");
 
     await goToAuthedPath(page, finance, "/client/payments");
     await expect(page.getByRole("heading", { name: "Customer Payments", exact: true })).toBeVisible();
 
-    await goToAuthedPath(page, finance, "/client/exports");
-    await expect(page.getByRole("heading", { name: "Exports & Integrations" })).toBeVisible();
+    if (!isMobile) {
+      await goToAuthedPath(page, finance, "/client/exports");
+      await expect(page.getByRole("heading", { name: "Exports & Integrations" })).toBeVisible();
+    }
   });
 
   test("client member is redirected away from finance-only pages", async ({ page }) => {

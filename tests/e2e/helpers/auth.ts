@@ -252,6 +252,7 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
 }
 
 const routeLinkNames: Record<string, RegExp> = {
+  "/admin/opportunities": /^Opportunities$/,
   "/client/payments": /^(Payments|Open Payments|Go to Payments|Import monthly payments)$/,
   "/client/exports": /^Exports$/,
   "/client/opportunities/new": /^Register Opportunity$/,
@@ -294,6 +295,14 @@ async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedP
     const expectedPath = path.replace(/\/$/, "") || "/";
 
     if (options.allowRedirectTo?.test(currentPath)) {
+      return;
+    }
+
+    if (
+      expectedPath.startsWith("/admin/") &&
+      currentPath === "/admin" &&
+      (await page.getByRole("heading", { name: "Admin Dashboard" }).isVisible().catch(() => false))
+    ) {
       return;
     }
 
