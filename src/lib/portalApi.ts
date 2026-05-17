@@ -2261,6 +2261,8 @@ export async function getOwnBumProfile(userId: string) {
 }
 
 export async function upsertOwnBumProfile(user: AuthUser, input: BumProfileInput) {
+  await ensureSupabaseProfileForAuthUser(user);
+
   const payload: Record<string, unknown> = {
     user_id: user.id,
     updated_at: new Date().toISOString(),
