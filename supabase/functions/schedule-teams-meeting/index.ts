@@ -45,6 +45,17 @@ interface MicrosoftEventResponse {
   } | null;
 }
 
+interface GraphCollection<T> {
+  value?: T[];
+  error?: {
+    message?: string;
+  };
+}
+
+interface GraphOnlineMeeting {
+  id?: string;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -192,6 +203,10 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#039;");
 }
 
+function escapeODataString(value: string) {
+  return value.replace(/'/g, "''");
+}
+
 function buildMeetingBody(target: CustomerTargetRow, description: string | null) {
   const targetName = target.target_companies?.name ?? target.target_account_name;
   const clientName = target.client_companies?.name ?? "the client";
@@ -295,6 +310,63 @@ async function createTeamsEvent(input: {
   return payload;
 }
 
+async function graphGetJson<T>(url: string, accessToken: string) {
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  const payload = (await response.json().catch(() => ({}))) as T & { error?: { message?: string } };
+
+  if (!response.ok) {
+    throw new Error(payload.error?.message || "Microsoft Graph request failed.");
+  }
+
+  return payload;
+}
+
+async function resolveOnlineMeetingId(teamsJoinUrl: string | null, accessToken: string) {
+  if (!teamsJoinUrl) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    $filter: `JoinWebUrl eq '${escapeODataString(teamsJoinUrl)}'`,
+  });
+  const payload = await graphGetJson<GraphCollection<GraphOnlineMeeting>>(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings?${params.toString()}`,
+    accessToken,
+  );
+
+  return payload.value?.[0]?.id ?? null;
+}
+
+async function configureOnlineMeetingOptions(onlineMeetingId: string, accessToken: string) {
+  const response = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings/${encodeURIComponent(onlineMeetingId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        allowTranscription: true,
+        lobbyBypassSettings: {
+          isDialInBypassEnabled: true,
+          scope: "everyone",
+        },
+        recordAutomatically: true,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+    throw new Error(payload.error?.message || "Microsoft Graph could not update the Teams meeting options.");
+  }
+}
+
 async function findOpportunityRegistrationId(target: CustomerTargetRow) {
   const { data } = await supabaseAdmin
     .from("opportunity_registrations")
@@ -382,6 +454,26 @@ Deno.serve(async (request: Request) => {
     });
 
     const teamsJoinUrl = microsoftEvent.onlineMeeting?.joinUrl ?? null;
+    let microsoftOnlineMeetingId = microsoftEvent.onlineMeeting?.id ?? null;
+    let meetingOptionsConfigured = false;
+    let meetingOptionsWarning: string | null = null;
+
+    try {
+      microsoftOnlineMeetingId = microsoftOnlineMeetingId ?? (await resolveOnlineMeetingId(teamsJoinUrl, accessToken));
+
+      if (!microsoftOnlineMeetingId) {
+        throw new Error("Microsoft Graph did not return an online meeting ID for meeting option updates.");
+      }
+
+      await configureOnlineMeetingOptions(microsoftOnlineMeetingId, accessToken);
+      meetingOptionsConfigured = true;
+    } catch (error) {
+      meetingOptionsWarning =
+        error instanceof Error
+          ? error.message
+          : "Microsoft Graph could not enable auto-recording, transcription, and lobby bypass.";
+    }
+
     const opportunityRegistrationId = await findOpportunityRegistrationId(target);
 
     const { data: meeting, error: insertError } = await supabaseAdmin
@@ -399,7 +491,7 @@ Deno.serve(async (request: Request) => {
         attendees: attendeeEmails,
         teams_join_url: teamsJoinUrl,
         microsoft_event_id: microsoftEvent.id ?? null,
-        microsoft_online_meeting_id: microsoftEvent.onlineMeeting?.id ?? null,
+        microsoft_online_meeting_id: microsoftOnlineMeetingId,
         microsoft_event_web_link: microsoftEvent.webLink ?? null,
       })
       .select("*")
@@ -415,6 +507,8 @@ Deno.serve(async (request: Request) => {
       meeting,
       teamsJoinUrl,
       eventWebLink: microsoftEvent.webLink ?? null,
+      meetingOptionsConfigured,
+      meetingOptionsWarning,
     });
   } catch (error) {
     return json(400, {

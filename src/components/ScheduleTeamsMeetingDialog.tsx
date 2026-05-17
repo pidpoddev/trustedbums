@@ -72,7 +72,10 @@ export function ScheduleTeamsMeetingDialog({
     onSuccess: (response) => {
       toast({
         title: "Teams call scheduled",
-        description: "Microsoft created the calendar invite from bums@trustedbums.com.",
+        description: response.meetingOptionsWarning
+          ? `Invite created, but Teams options need attention: ${response.meetingOptionsWarning}`
+          : "Microsoft created the calendar invite from bums@trustedbums.com with lobby bypass and automatic recording/transcription enabled.",
+        variant: response.meetingOptionsWarning ? "destructive" : "default",
       });
       setOpen(false);
       onScheduled?.(response);

@@ -218,6 +218,8 @@ export interface ScheduleTeamsMeetingResponse {
   meeting: TeamsMeetingRecord;
   teamsJoinUrl: string | null;
   eventWebLink: string | null;
+  meetingOptionsConfigured?: boolean;
+  meetingOptionsWarning?: string | null;
 }
 
 export type CustomerTargetResponseStrength = "warm" | "strong" | "advisor" | "unknown";
