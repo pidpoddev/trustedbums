@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getQaAccount, goToAuthedPath, hasExternalQaTarget } from "./helpers/auth";
+import { getQaAccount, goToAuthedPath, goToAuthedPathAllowingRedirect, hasExternalQaTarget } from "./helpers/auth";
 
 test.describe("authenticated role smoke", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run authenticated role smoke tests.");
@@ -42,7 +42,7 @@ test.describe("authenticated role smoke", () => {
     const member = getQaAccount("CLIENT_MEMBER");
     test.skip(!member, "Set QA_CLIENT_MEMBER_EMAIL.");
 
-    await goToAuthedPath(page, member, "/client/payments");
+    await goToAuthedPathAllowingRedirect(page, member, "/client/payments", /\/client\/dashboard$/);
 
     await expect(page).toHaveURL(/\/client\/dashboard\/?$/);
     await expect(page.getByRole("heading", { name: /Welcome back/i })).toBeVisible();

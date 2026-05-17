@@ -236,7 +236,36 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
   }
 }
 
-async function goToPathAfterTerms(page: Page, path: string) {
+const routeLinkNames: Record<string, RegExp> = {
+  "/client/payments": /^Payments$/,
+  "/client/exports": /^Exports$/,
+  "/client/opportunities/new": /^Register Opportunity$/,
+  "/client/targets": /^Target Accounts$/,
+};
+
+interface GoToAuthedPathOptions {
+  allowRedirectTo?: RegExp;
+}
+
+async function clickRouteLinkIfVisible(page: Page, path: string) {
+  const linkName = routeLinkNames[path];
+
+  if (!linkName) {
+    return false;
+  }
+
+  const link = page.getByRole("link", { name: linkName }).first();
+
+  if (!(await link.isVisible({ timeout: 2_000 }).catch(() => false))) {
+    return false;
+  }
+
+  await link.click();
+  await page.waitForLoadState("networkidle").catch(() => undefined);
+  return true;
+}
+
+async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedPathOptions = {}) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await page.goto(path);
     await page.waitForLoadState("networkidle").catch(() => undefined);
@@ -249,7 +278,22 @@ async function goToPathAfterTerms(page: Page, path: string) {
     const currentPath = new URL(page.url()).pathname.replace(/\/$/, "") || "/";
     const expectedPath = path.replace(/\/$/, "") || "/";
 
+    if (options.allowRedirectTo?.test(currentPath)) {
+      return;
+    }
+
     if (expectedPath !== "/dashboard" && currentPath !== expectedPath) {
+      if (await clickRouteLinkIfVisible(page, path)) {
+        await page.waitForURL((url) => url.pathname === expectedPath, { timeout: 5_000 }).catch(() => undefined);
+        await acceptTermsIfPrompted(page, path);
+
+        const clickedPath = new URL(page.url()).pathname.replace(/\/$/, "") || "/";
+
+        if (clickedPath === expectedPath) {
+          return;
+        }
+      }
+
       continue;
     }
 
@@ -272,4 +316,15 @@ export async function goToAuthedPath(page: Page, account: QaAccount, path: strin
   await signIn(page, account);
   await expectTrustedBumsSession(page);
   await goToPathAfterTerms(page, path);
+}
+
+export async function goToAuthedPathAllowingRedirect(
+  page: Page,
+  account: QaAccount,
+  path: string,
+  allowRedirectTo: RegExp,
+) {
+  await signIn(page, account);
+  await expectTrustedBumsSession(page);
+  await goToPathAfterTerms(page, path, { allowRedirectTo });
 }
