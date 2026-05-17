@@ -1,21 +1,33 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { createTrainingMaterial, listClientTrainingMaterials } from "@/lib/portalApi";
-import { Plus, FileText, Upload } from "lucide-react";
+import { Plus, FileText, Search, Upload } from "lucide-react";
+
+type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY" | "TECH_SPECIFIC";
+
+const trainingTypeFilters: { value: TrainingTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All training types" },
+  { value: "LINKED_RESOURCE", label: "Linked resources" },
+  { value: "REFERENCE_ONLY", label: "Reference notes only" },
+  { value: "TECH_SPECIFIC", label: "Technology-specific" },
+];
 
 export default function ClientTrainings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TrainingTypeFilter>("ALL");
   const [form, setForm] = useState({
     title: "",
     technology: "",
@@ -47,6 +59,24 @@ export default function ClientTrainings() {
       });
     },
   });
+  const trainings = trainingsQuery.data ?? [];
+  const filteredTrainings = useMemo(() => {
+    return trainings.filter((training) => {
+      const matchesType =
+        typeFilter === "ALL" ||
+        (typeFilter === "LINKED_RESOURCE" && Boolean(training.resource_url)) ||
+        (typeFilter === "REFERENCE_ONLY" && !training.resource_url) ||
+        (typeFilter === "TECH_SPECIFIC" && Boolean(training.technology));
+
+      const matchesQuery = [training.title, training.description, training.technology]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase());
+
+      return matchesType && matchesQuery;
+    });
+  }, [query, trainings, typeFilter]);
 
   return (
     <div>
@@ -107,8 +137,39 @@ export default function ClientTrainings() {
         </Card>
       )}
 
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)]">
+            <div className="relative min-w-0">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search trainings, technologies, or descriptions"
+                className="pl-9"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={typeFilter} onValueChange={(value: TrainingTypeFilter) => setTypeFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {trainingTypeFilters.map((filter) => (
+                    <SelectItem key={filter.value} value={filter.value}>
+                      {filter.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2">
-        {(trainingsQuery.data ?? []).map((training) => (
+        {filteredTrainings.map((training) => (
           <Card key={training.id} className="hover:shadow-md transition-shadow">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
@@ -137,7 +198,7 @@ export default function ClientTrainings() {
           </Card>
         ))}
 
-        {!trainingsQuery.isLoading && !(trainingsQuery.data ?? []).length && (
+        {!trainingsQuery.isLoading && !trainings.length && (
           <Card className="hover:shadow-md transition-shadow">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
@@ -151,6 +212,14 @@ export default function ClientTrainings() {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!trainingsQuery.isLoading && trainings.length > 0 && !filteredTrainings.length && (
+          <Card className="md:col-span-2">
+            <CardContent className="pt-6 text-sm text-muted-foreground">
+              No trainings match your current filters.
             </CardContent>
           </Card>
         )}

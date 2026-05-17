@@ -20,6 +20,23 @@ import {
 } from "@/lib/portalApi";
 import { parsePaymentImportFile, type PaymentImportRow } from "@/lib/paymentImport";
 
+type ClientInvoiceTypeFilter = "ALL" | "OUTSTANDING" | "PAID" | "HIGH_VALUE";
+type ClientReportTypeFilter = "ALL" | "INVOICED" | "PENDING_INVOICE" | "HAS_EXCLUSIONS";
+
+const clientInvoiceTypeFilters: { value: ClientInvoiceTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All invoices" },
+  { value: "OUTSTANDING", label: "Outstanding" },
+  { value: "PAID", label: "Paid" },
+  { value: "HIGH_VALUE", label: "High value" },
+];
+
+const clientReportTypeFilters: { value: ClientReportTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All payments" },
+  { value: "INVOICED", label: "Invoice generated" },
+  { value: "PENDING_INVOICE", label: "Pending invoice" },
+  { value: "HAS_EXCLUSIONS", label: "Has exclusions" },
+];
+
 function money(value: number | null | undefined) {
   return `$${Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
@@ -38,6 +55,10 @@ export default function ClientPayments() {
   const [excludedAmount, setExcludedAmount] = useState("");
   const [receivedAt, setReceivedAt] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
+  const [invoiceQuery, setInvoiceQuery] = useState("");
+  const [invoiceTypeFilter, setInvoiceTypeFilter] = useState<ClientInvoiceTypeFilter>("ALL");
+  const [reportQuery, setReportQuery] = useState("");
+  const [reportTypeFilter, setReportTypeFilter] = useState<ClientReportTypeFilter>("ALL");
 
   const claimsQuery = useQuery({ queryKey: ["client-opportunity-claims"], queryFn: () => listOpportunityClaims() });
   const reportsQuery = useQuery({
@@ -57,6 +78,49 @@ export default function ClientPayments() {
   );
   const reports = reportsQuery.data ?? [];
   const invoices = invoicesQuery.data ?? [];
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((invoice) => {
+      const matchesType =
+        invoiceTypeFilter === "ALL" ||
+        (invoiceTypeFilter === "OUTSTANDING" && invoice.status !== "PAID") ||
+        (invoiceTypeFilter === "PAID" && invoice.status === "PAID") ||
+        (invoiceTypeFilter === "HIGH_VALUE" && Number(invoice.invoice_amount ?? 0) >= 5000);
+
+      const matchesQuery = [
+        invoice.invoice_number,
+        invoice.opportunity_registrations?.target_account_name,
+        invoice.customer_payment_reports?.customer_name,
+        invoice.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(invoiceQuery.toLowerCase());
+
+      return matchesType && matchesQuery;
+    });
+  }, [invoiceQuery, invoiceTypeFilter, invoices]);
+  const filteredReports = useMemo(() => {
+    return reports.filter((report) => {
+      const matchesType =
+        reportTypeFilter === "ALL" ||
+        (reportTypeFilter === "INVOICED" && report.status === "INVOICE_GENERATED") ||
+        (reportTypeFilter === "PENDING_INVOICE" && report.status !== "INVOICE_GENERATED") ||
+        (reportTypeFilter === "HAS_EXCLUSIONS" && Number(report.excluded_amount ?? 0) > 0);
+
+      const matchesQuery = [
+        report.customer_name,
+        report.opportunity_registrations?.target_account_name,
+        report.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(reportQuery.toLowerCase());
+
+      return matchesType && matchesQuery;
+    });
+  }, [reportQuery, reportTypeFilter, reports]);
   const matchedImportRows = useMemo(
     () => importRows.filter((row) => row.matchStatus === "matched"),
     [importRows],
@@ -413,7 +477,32 @@ export default function ClientPayments() {
               <CardTitle className="font-display">Generated invoices</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {invoices.map((invoice) => (
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)]">
+                <div className="relative min-w-0">
+                  <Input
+                    placeholder="Search invoices, customers, or accounts..."
+                    value={invoiceQuery}
+                    onChange={(event) => setInvoiceQuery(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select value={invoiceTypeFilter} onValueChange={(value: ClientInvoiceTypeFilter) => setInvoiceTypeFilter(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientInvoiceTypeFilters.map((filter) => (
+                        <SelectItem key={filter.value} value={filter.value}>
+                          {filter.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {filteredInvoices.map((invoice) => (
                 <div key={invoice.id} className="rounded-xl border p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -429,6 +518,9 @@ export default function ClientPayments() {
                 </div>
               ))}
               {!invoices.length ? <p className="text-sm text-muted-foreground">No invoices generated yet.</p> : null}
+              {invoices.length > 0 && !filteredInvoices.length ? (
+                <p className="text-sm text-muted-foreground">No invoices match your current filters.</p>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -437,7 +529,32 @@ export default function ClientPayments() {
               <CardTitle className="font-display">Reported customer payments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {reports.map((report) => (
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)]">
+                <div className="relative min-w-0">
+                  <Input
+                    placeholder="Search customers, accounts, or payment status..."
+                    value={reportQuery}
+                    onChange={(event) => setReportQuery(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select value={reportTypeFilter} onValueChange={(value: ClientReportTypeFilter) => setReportTypeFilter(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientReportTypeFilters.map((filter) => (
+                        <SelectItem key={filter.value} value={filter.value}>
+                          {filter.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {filteredReports.map((report) => (
                 <div key={report.id} className="rounded-xl border p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -456,6 +573,9 @@ export default function ClientPayments() {
                 </div>
               ))}
               {!reports.length ? <p className="text-sm text-muted-foreground">No customer payments reported yet.</p> : null}
+              {reports.length > 0 && !filteredReports.length ? (
+                <p className="text-sm text-muted-foreground">No payment reports match your current filters.</p>
+              ) : null}
             </CardContent>
           </Card>
         </div>
