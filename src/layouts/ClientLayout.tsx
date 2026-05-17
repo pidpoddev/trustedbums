@@ -22,6 +22,7 @@ import {
   MessageSquarePlus,
   Download,
   PlusCircle,
+  Users,
 } from "lucide-react";
 
 const navItems = [
@@ -30,6 +31,7 @@ const navItems = [
   { title: "Partner Terms", url: "/client/terms", icon: FileCheck },
   { title: "Agreements", url: "/client/agreements", icon: FileCheck },
   { title: "Profile", url: "/client/profile", icon: User },
+  { title: "Bums", url: "/client/bum-directory", icon: Users },
   { title: "Trainings", url: "/client/trainings", icon: GraduationCap },
   { title: "Requests", url: "/client/requests", icon: MessageSquarePlus },
   { title: "Exports", url: "/client/exports", icon: Download },

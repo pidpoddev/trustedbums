@@ -137,6 +137,55 @@ export interface TrainingMaterialInput {
   is_published?: boolean;
 }
 
+export type BumAvailabilityStatus = "open" | "selective" | "unavailable";
+export type BumVerificationStatus = "self_reported" | "reviewed" | "verified";
+
+export interface BumProfileRecord {
+  user_id: string;
+  headline: string | null;
+  bio: string | null;
+  linkedin_url: string | null;
+  years_experience: number | null;
+  availability_status: BumAvailabilityStatus;
+  home_region: string | null;
+  industries: string[];
+  regions: string[];
+  products_sold: string[];
+  buyer_personas: string[];
+  worked_with_companies: string[];
+  relationship_companies: string[];
+  certifications: string[];
+  skills: string[];
+  notable_wins: string | null;
+  verification_status: BumVerificationStatus;
+  is_visible_to_clients: boolean;
+  last_linkedin_imported_at: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Pick<ProfileRecord, "full_name" | "email" | "created_at"> | null;
+}
+
+export interface BumProfileInput {
+  headline?: string;
+  bio?: string;
+  linkedin_url?: string;
+  years_experience?: number | null;
+  availability_status?: BumAvailabilityStatus;
+  home_region?: string;
+  industries?: string[];
+  regions?: string[];
+  products_sold?: string[];
+  buyer_personas?: string[];
+  worked_with_companies?: string[];
+  relationship_companies?: string[];
+  certifications?: string[];
+  skills?: string[];
+  notable_wins?: string;
+  verification_status?: BumVerificationStatus;
+  is_visible_to_clients?: boolean;
+  last_linkedin_imported_at?: string | null;
+}
+
 interface ImpersonationFunctionProfile {
   id: string;
   email: string | null;
@@ -153,6 +202,16 @@ export interface ImpersonationTicketResponse {
 
 function toNullableString(value?: string) {
   return value?.trim() ? value.trim() : null;
+}
+
+function toUniqueTrimmedArray(values?: string[]) {
+  return Array.from(
+    new Set(
+      (values ?? [])
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  );
 }
 
 async function getProfileRecord(userId: string) {
@@ -640,6 +699,141 @@ export async function createTrainingMaterial(user: AuthUser, input: TrainingMate
   });
 
   return data;
+}
+
+export async function getOwnBumProfile(userId: string) {
+  const { data, error } = await supabase
+    .from("bum_profiles")
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .eq("user_id", userId)
+    .maybeSingle<BumProfileRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function upsertOwnBumProfile(user: AuthUser, input: BumProfileInput) {
+  const payload: Record<string, unknown> = {
+    user_id: user.id,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.headline !== undefined) {
+    payload.headline = toNullableString(input.headline);
+  }
+
+  if (input.bio !== undefined) {
+    payload.bio = toNullableString(input.bio);
+  }
+
+  if (input.linkedin_url !== undefined) {
+    payload.linkedin_url = toNullableString(input.linkedin_url);
+  }
+
+  if (input.years_experience !== undefined) {
+    payload.years_experience = input.years_experience;
+  }
+
+  if (input.availability_status !== undefined) {
+    payload.availability_status = input.availability_status;
+  }
+
+  if (input.home_region !== undefined) {
+    payload.home_region = toNullableString(input.home_region);
+  }
+
+  if (input.industries !== undefined) {
+    payload.industries = toUniqueTrimmedArray(input.industries);
+  }
+
+  if (input.regions !== undefined) {
+    payload.regions = toUniqueTrimmedArray(input.regions);
+  }
+
+  if (input.products_sold !== undefined) {
+    payload.products_sold = toUniqueTrimmedArray(input.products_sold);
+  }
+
+  if (input.buyer_personas !== undefined) {
+    payload.buyer_personas = toUniqueTrimmedArray(input.buyer_personas);
+  }
+
+  if (input.worked_with_companies !== undefined) {
+    payload.worked_with_companies = toUniqueTrimmedArray(input.worked_with_companies);
+  }
+
+  if (input.relationship_companies !== undefined) {
+    payload.relationship_companies = toUniqueTrimmedArray(input.relationship_companies);
+  }
+
+  if (input.certifications !== undefined) {
+    payload.certifications = toUniqueTrimmedArray(input.certifications);
+  }
+
+  if (input.skills !== undefined) {
+    payload.skills = toUniqueTrimmedArray(input.skills);
+  }
+
+  if (input.notable_wins !== undefined) {
+    payload.notable_wins = toNullableString(input.notable_wins);
+  }
+
+  if (input.verification_status !== undefined) {
+    payload.verification_status = input.verification_status;
+  }
+
+  if (input.is_visible_to_clients !== undefined) {
+    payload.is_visible_to_clients = input.is_visible_to_clients;
+  }
+
+  if (input.last_linkedin_imported_at !== undefined) {
+    payload.last_linkedin_imported_at = input.last_linkedin_imported_at;
+  }
+
+  const { data, error } = await supabase
+    .from("bum_profiles")
+    .upsert(payload, { onConflict: "user_id" })
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .single<BumProfileRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function listAdminBumProfiles() {
+  const { data, error } = await supabase
+    .from("bum_profiles")
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .order("updated_at", { ascending: false })
+    .returns<BumProfileRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listVisibleBumProfiles() {
+  const { data, error } = await supabase
+    .from("bum_profiles")
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .eq("is_visible_to_clients", true)
+    .order("verification_status", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .returns<BumProfileRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
 }
 
 async function invokeImpersonationFunction(accessToken: string, body: Record<string, unknown>) {

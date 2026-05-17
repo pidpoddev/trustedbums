@@ -29,6 +29,7 @@ import ClientAgreements from "./pages/client/ClientAgreements";
 import ClientTerms from "./pages/client/ClientTerms";
 import ClientOpportunityNew from "./pages/client/ClientOpportunityNew";
 import ClientProfile from "./pages/client/ClientProfile";
+import ClientBums from "./pages/client/ClientBums";
 import ClientTrainings from "./pages/client/ClientTrainings";
 import ClientRequests from "./pages/client/ClientRequests";
 import ClientExports from "./pages/client/ClientExports";
@@ -93,6 +94,7 @@ const App = () => (
                       <Route path="opportunities/new" element={<ClientOpportunityNew />} />
                       <Route path="agreements" element={<ClientAgreements />} />
                       <Route path="profile" element={<ClientProfile />} />
+                      <Route path="bum-directory" element={<ClientBums />} />
                       <Route path="trainings" element={<ClientTrainings />} />
                       <Route path="requests" element={<ClientRequests />} />
                       <Route path="exports" element={<ClientExports />} />
