@@ -90,16 +90,16 @@ const Index = () => {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
                 <Handshake className="h-4 w-4" />
-                Trust is our distribution channel
+                BUMS = Bring Us More Sales
               </div>
               <h1 className="mt-6 max-w-4xl font-display text-5xl font-bold leading-tight md:text-7xl">
                 We Open Doors
                 <span className="block text-primary">Cold Outreach Can’t</span>
               </h1>
               <p className="mt-6 max-w-2xl text-xl text-muted-foreground">
-                Trusted Bums helps companies reach overwhelmed decision makers through trusted human introductions. When
-                the inbox is saturated and the buyer would never take another cold pitch, a trusted friend still gets
-                through.
+                Trusted Bums helps companies reach overwhelmed decision makers through trusted human introductions. The
+                name is playful on purpose. BUMS means Bring Us More Sales, and the model is simple: when cold
+                outreach gets ignored, trust still gets through.
               </p>
               <p className="mt-4 max-w-2xl text-base text-muted-foreground">
                 Sometimes we create access you would never win on your own. Other times, we compress months of friction
@@ -184,7 +184,7 @@ const Index = () => {
           <div className="max-w-3xl">
             <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Why it works</p>
             <h2 className="mt-3 font-display text-4xl font-bold md:text-5xl">
-              Decision makers are not starved for pitches. They are overloaded with them.
+              Decision makers do not need more pitches. They need a reason to listen.
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
               Your ideal buyer may never hear your message because they are already buried under cold emails,
@@ -342,8 +342,8 @@ const Index = () => {
             </div>
             <h3 className="mb-2 font-display text-xl font-bold">For Connectors</h3>
             <p className="text-muted-foreground">
-              Turn trusted relationships and hard-earned credibility into a revenue channel, while controlling when and
-              how you step into the introduction process.
+              Turn trusted relationships and hard-earned credibility into a revenue channel. Bring Us More Sales is the
+              joke, but it is also the job.
             </p>
           </div>
         </div>
