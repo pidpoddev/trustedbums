@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -13,12 +14,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   createCustomerTargetResponse,
+  listBumSavedItems,
   listCustomerTargets,
   listMarketplaceOpportunities,
+  setBumSavedItem,
   type CustomerTargetRecord,
   type CustomerTargetResponseStrength,
+  type BumSavedItemType,
 } from "@/lib/portalApi";
-import { Search, Briefcase, Calendar, DollarSign, Target, Handshake } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const responseFormInitial = {
@@ -28,10 +33,53 @@ const responseFormInitial = {
   note: "",
 };
 
+type ValueFilter = "ALL" | "UNDER_50K" | "50K_250K" | "250K_PLUS" | "UNKNOWN";
+type TermFilter = "ALL" | "SHORT" | "MEDIUM" | "LONG" | "UNKNOWN";
+
+const valueFilters: { value: ValueFilter; label: string }[] = [
+  { value: "ALL", label: "All values" },
+  { value: "UNDER_50K", label: "Under $50k" },
+  { value: "50K_250K", label: "$50k-$250k" },
+  { value: "250K_PLUS", label: "$250k+" },
+  { value: "UNKNOWN", label: "Value pending" },
+];
+
+const termFilters: { value: TermFilter; label: string }[] = [
+  { value: "ALL", label: "All terms" },
+  { value: "SHORT", label: "Short / near-term" },
+  { value: "MEDIUM", label: "Quarterly / medium" },
+  { value: "LONG", label: "Annual / long" },
+  { value: "UNKNOWN", label: "Term pending" },
+];
+
+function valueMatchesFilter(value: number | null, filter: ValueFilter) {
+  if (filter === "ALL") return true;
+  if (filter === "UNKNOWN") return value === null;
+  if (value === null) return false;
+  if (filter === "UNDER_50K") return value < 50000;
+  if (filter === "50K_250K") return value >= 50000 && value < 250000;
+  return value >= 250000;
+}
+
+function termMatchesFilter(term: string | null, filter: TermFilter) {
+  if (filter === "ALL") return true;
+  if (filter === "UNKNOWN") return !term?.trim();
+
+  const normalized = term?.toLowerCase() ?? "";
+  if (filter === "SHORT") return /now|asap|urgent|week|month|30|45|60|short|pilot|near/.test(normalized);
+  if (filter === "MEDIUM") return /quarter|q[1-4]|90|medium|semester/.test(normalized);
+  return /annual|year|12|long|multi|ongoing|duration|receives revenue/.test(normalized);
+}
+
 export default function BumOpportunities() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
+  const [heartedOnly, setHeartedOnly] = useState(false);
+  const [industry, setIndustry] = useState("ALL");
+  const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
+  const [termFilter, setTermFilter] = useState<TermFilter>("ALL");
   const [selectedTarget, setSelectedTarget] = useState<CustomerTargetRecord | null>(null);
   const [responseForm, setResponseForm] = useState(responseFormInitial);
   const opportunitiesQuery = useQuery({
@@ -42,8 +90,33 @@ export default function BumOpportunities() {
     queryKey: ["bum-customer-target-opportunities"],
     queryFn: () => listCustomerTargets(null),
   });
+  const savedItemsQuery = useQuery({
+    queryKey: ["bum-saved-items", user?.id],
+    queryFn: () => listBumSavedItems(user!.id),
+    enabled: Boolean(user?.id),
+  });
   const opportunities = opportunitiesQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
+  const savedOpportunityIds = new Set(
+    (savedItemsQuery.data ?? [])
+      .filter((item) => item.item_type === "OPPORTUNITY")
+      .map((item) => item.opportunity_registration_id)
+      .filter(Boolean),
+  );
+  const savedTargetIds = new Set(
+    (savedItemsQuery.data ?? [])
+      .filter((item) => item.item_type === "CUSTOMER_TARGET")
+      .map((item) => item.customer_target_id)
+      .filter(Boolean),
+  );
+  const allIndustries = Array.from(
+    new Set(
+      [
+        ...opportunities.map((opportunity) => opportunity.expected_product_service?.trim()),
+        ...targets.map((target) => target.expected_product_service?.trim()),
+      ].filter(Boolean),
+    ),
+  );
 
   const responseMutation = useMutation({
     mutationFn: () =>
@@ -70,18 +143,40 @@ export default function BumOpportunities() {
       });
     },
   });
+  const saveMutation = useMutation({
+    mutationFn: ({ itemType, itemId, saved }: { itemType: BumSavedItemType; itemId: string; saved: boolean }) =>
+      setBumSavedItem(user!, { itemType, itemId }, saved),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bum-saved-items", user?.id] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update heart",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const filtered = opportunities.filter((opportunity) => {
     const matchesQuery = `${opportunity.target_account_name} ${opportunity.companies?.name ?? ""} ${opportunity.opportunity_description ?? ""} ${opportunity.expected_product_service ?? ""}`
       .toLowerCase()
       .includes(query.toLowerCase());
-    return matchesQuery;
+    const matchesHeart = !heartedOnly || savedOpportunityIds.has(opportunity.id);
+    const matchesIndustry = industry === "ALL" || opportunity.expected_product_service === industry;
+    const matchesValue = valueMatchesFilter(opportunity.estimated_deal_value ? Number(opportunity.estimated_deal_value) : null, valueFilter);
+    const matchesTerm = termMatchesFilter(`${opportunity.expected_timeline ?? ""} ${opportunity.commission_duration ?? ""}`.trim(), termFilter);
+    return matchesQuery && matchesHeart && matchesIndustry && matchesValue && matchesTerm;
   });
   const filteredTargets = targets.filter((target) => {
     const matchesQuery = `${target.target_companies?.name ?? target.target_account_name} ${target.client_companies?.name ?? ""} ${target.expected_product_service ?? ""} ${target.notes ?? ""}`
       .toLowerCase()
       .includes(query.toLowerCase());
-    return matchesQuery;
+    const matchesHeart = !heartedOnly || savedTargetIds.has(target.id);
+    const matchesIndustry = industry === "ALL" || target.expected_product_service === industry;
+    const matchesValue = valueMatchesFilter(target.estimated_deal_value ? Number(target.estimated_deal_value) : null, valueFilter);
+    const matchesTerm = termMatchesFilter(target.expected_timeline, termFilter);
+    return matchesQuery && matchesHeart && matchesIndustry && matchesValue && matchesTerm;
   });
 
   return (
@@ -91,7 +186,7 @@ export default function BumOpportunities() {
         description="Browse live client opportunities and recommend customers you know."
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -100,6 +195,62 @@ export default function BumOpportunities() {
             onChange={(e) => setQuery(e.target.value)}
             className="pl-9"
           />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={heartedOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setHeartedOnly((current) => !current)}
+          >
+            <Heart className={cn("mr-2 h-4 w-4", heartedOnly && "fill-current")} />
+            Hearted
+          </Button>
+          <Button variant={industry === "ALL" ? "default" : "outline"} size="sm" onClick={() => setIndustry("ALL")}>
+            All industries
+          </Button>
+          {allIndustries.map((item) => (
+            <Button
+              key={item}
+              variant={industry === item ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIndustry(item)}
+            >
+              {item}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Anticipated contract value</Label>
+          <Select value={valueFilter} onValueChange={(value: ValueFilter) => setValueFilter(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {valueFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Contract term / timing</Label>
+          <Select value={termFilter} onValueChange={(value: TermFilter) => setTermFilter(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {termFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -110,7 +261,10 @@ export default function BumOpportunities() {
       )}
 
       <div className="grid gap-4">
-        {filteredTargets.map((targetAccount) => (
+        {filteredTargets.map((targetAccount) => {
+          const isHearted = savedTargetIds.has(targetAccount.id);
+
+          return (
           <Card key={`target-${targetAccount.id}`} className="transition-shadow hover:shadow-md">
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
@@ -132,6 +286,9 @@ export default function BumOpportunities() {
                     {targetAccount.notes ?? targetAccount.expected_product_service ?? "Client is looking for a path into this target account."}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                    {targetAccount.expected_product_service ? (
+                      <Badge variant="secondary">{targetAccount.expected_product_service}</Badge>
+                    ) : null}
                     <span className="inline-flex items-center gap-1">
                       <DollarSign className="h-3 w-3" />
                       {targetAccount.estimated_deal_value
@@ -144,7 +301,16 @@ export default function BumOpportunities() {
                     </span>
                   </div>
                 </div>
-                <div>
+                <div className="flex flex-col items-end gap-2">
+                  <Button
+                    size="icon"
+                    variant={isHearted ? "default" : "outline"}
+                    aria-label={isHearted ? "Unheart target account" : "Heart target account"}
+                    disabled={!user || saveMutation.isPending}
+                    onClick={() => saveMutation.mutate({ itemType: "CUSTOMER_TARGET", itemId: targetAccount.id, saved: !isHearted })}
+                  >
+                    <Heart className={cn("h-4 w-4", isHearted && "fill-current")} />
+                  </Button>
                   <Button size="sm" onClick={() => setSelectedTarget(targetAccount)}>
                     <Handshake className="mr-2 h-4 w-4" />
                     I know someone
@@ -153,9 +319,13 @@ export default function BumOpportunities() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
 
-        {filtered.map((opportunity) => (
+        {filtered.map((opportunity) => {
+          const isHearted = savedOpportunityIds.has(opportunity.id);
+
+          return (
           <Card key={opportunity.id} className="transition-shadow hover:shadow-md">
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
@@ -172,6 +342,9 @@ export default function BumOpportunities() {
                   </p>
                   <p className="mt-2 text-sm">{opportunity.opportunity_description ?? "No description provided yet."}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                    {opportunity.expected_product_service ? (
+                      <Badge variant="secondary">{opportunity.expected_product_service}</Badge>
+                    ) : null}
                     <span className="inline-flex items-center gap-1">
                       <DollarSign className="h-3 w-3" />
                       {opportunity.estimated_deal_value
@@ -184,7 +357,16 @@ export default function BumOpportunities() {
                     </span>
                   </div>
                 </div>
-                <div>
+                <div className="flex flex-col items-end gap-2">
+                  <Button
+                    size="icon"
+                    variant={isHearted ? "default" : "outline"}
+                    aria-label={isHearted ? "Unheart opportunity" : "Heart opportunity"}
+                    disabled={!user || saveMutation.isPending}
+                    onClick={() => saveMutation.mutate({ itemType: "OPPORTUNITY", itemId: opportunity.id, saved: !isHearted })}
+                  >
+                    <Heart className={cn("h-4 w-4", isHearted && "fill-current")} />
+                  </Button>
                   <Link to={`/bum/opportunities/${opportunity.id}`}>
                     <Button size="sm">View opportunity</Button>
                   </Link>
@@ -192,7 +374,8 @@ export default function BumOpportunities() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
         {!opportunitiesQuery.isLoading && !targetsQuery.isLoading && filtered.length === 0 && filteredTargets.length === 0 && (
           <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground">
             {opportunities.length || targets.length

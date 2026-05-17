@@ -189,6 +189,23 @@ export interface CustomerTargetResponseInput {
   note?: string;
 }
 
+export type BumSavedItemType = "CLIENT" | "OPPORTUNITY" | "CUSTOMER_TARGET";
+
+export interface BumSavedItemRecord {
+  id: string;
+  bum_user_id: string;
+  item_type: BumSavedItemType;
+  client_company_id: string | null;
+  opportunity_registration_id: string | null;
+  customer_target_id: string | null;
+  created_at: string;
+}
+
+export interface BumSavedItemInput {
+  itemType: BumSavedItemType;
+  itemId: string;
+}
+
 export interface CustomerTargetInput {
   target_account_name: string;
   company_website?: string;
@@ -887,6 +904,73 @@ export async function listMarketplaceOpportunities() {
   }
 
   return data ?? [];
+}
+
+export async function listBumSavedItems(userId: string) {
+  const { data, error } = await supabase
+    .from("bum_saved_items")
+    .select("*")
+    .eq("bum_user_id", userId)
+    .order("created_at", { ascending: false })
+    .returns<BumSavedItemRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function setBumSavedItem(user: AuthUser, input: BumSavedItemInput, saved: boolean) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can save marketplace items.");
+  }
+
+  const columnByType: Record<BumSavedItemType, keyof Pick<BumSavedItemRecord, "client_company_id" | "opportunity_registration_id" | "customer_target_id">> = {
+    CLIENT: "client_company_id",
+    OPPORTUNITY: "opportunity_registration_id",
+    CUSTOMER_TARGET: "customer_target_id",
+  };
+  const itemColumn = columnByType[input.itemType];
+
+  if (!saved) {
+    const { error } = await supabase
+      .from("bum_saved_items")
+      .delete()
+      .eq("bum_user_id", user.id)
+      .eq("item_type", input.itemType)
+      .eq(itemColumn, input.itemId);
+
+    if (error) {
+      throw error;
+    }
+
+    return null;
+  }
+
+  const payload: Partial<BumSavedItemRecord> & Pick<BumSavedItemRecord, "bum_user_id" | "item_type"> = {
+    bum_user_id: user.id,
+    item_type: input.itemType,
+    client_company_id: null,
+    opportunity_registration_id: null,
+    customer_target_id: null,
+    [itemColumn]: input.itemId,
+  };
+
+  const { data, error } = await supabase
+    .from("bum_saved_items")
+    .insert(payload)
+    .select("*")
+    .single<BumSavedItemRecord>();
+
+  if (error) {
+    if (error.code === "23505") {
+      return null;
+    }
+    throw error;
+  }
+
+  return data;
 }
 
 export async function getMarketplaceOpportunity(id: string) {

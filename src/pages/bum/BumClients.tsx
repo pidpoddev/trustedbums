@@ -1,25 +1,78 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { listCompanies, listCustomerTargets, listMarketplaceOpportunities } from "@/lib/portalApi";
-import { Search, Building2, ExternalLink, Briefcase, Target } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { listBumSavedItems, listCompanies, listCustomerTargets, listMarketplaceOpportunities, setBumSavedItem } from "@/lib/portalApi";
+import { cn } from "@/lib/utils";
+import { Search, Building2, ExternalLink, Briefcase, Target, Heart, DollarSign, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface MarketplaceClientSummary {
+  id: string;
+  canHeart: boolean;
   company: string;
   website: string | null;
   pitch: string;
   industries: string[];
   openCount: number;
   targetCount: number;
+  maxDealValue: number | null;
+  termHints: string[];
+}
+
+type ValueFilter = "ALL" | "UNDER_50K" | "50K_250K" | "250K_PLUS" | "UNKNOWN";
+type TermFilter = "ALL" | "SHORT" | "MEDIUM" | "LONG" | "UNKNOWN";
+
+const valueFilters: { value: ValueFilter; label: string }[] = [
+  { value: "ALL", label: "All values" },
+  { value: "UNDER_50K", label: "Under $50k" },
+  { value: "50K_250K", label: "$50k-$250k" },
+  { value: "250K_PLUS", label: "$250k+" },
+  { value: "UNKNOWN", label: "Value pending" },
+];
+
+const termFilters: { value: TermFilter; label: string }[] = [
+  { value: "ALL", label: "All terms" },
+  { value: "SHORT", label: "Short / near-term" },
+  { value: "MEDIUM", label: "Quarterly / medium" },
+  { value: "LONG", label: "Annual / long" },
+  { value: "UNKNOWN", label: "Term pending" },
+];
+
+function valueMatchesFilter(value: number | null, filter: ValueFilter) {
+  if (filter === "ALL") return true;
+  if (filter === "UNKNOWN") return value === null;
+  if (value === null) return false;
+  if (filter === "UNDER_50K") return value < 50000;
+  if (filter === "50K_250K") return value >= 50000 && value < 250000;
+  return value >= 250000;
+}
+
+function termMatchesFilter(terms: string[], filter: TermFilter) {
+  if (filter === "ALL") return true;
+  if (filter === "UNKNOWN") return terms.length === 0;
+
+  const normalized = terms.join(" ").toLowerCase();
+  if (filter === "SHORT") return /now|asap|urgent|week|month|30|45|60|short|pilot|near/.test(normalized);
+  if (filter === "MEDIUM") return /quarter|q[1-4]|90|medium|semester/.test(normalized);
+  return /annual|year|12|long|multi|ongoing|duration|receives revenue/.test(normalized);
 }
 
 export default function BumClients() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
+  const [heartedOnly, setHeartedOnly] = useState(false);
+  const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
+  const [termFilter, setTermFilter] = useState<TermFilter>("ALL");
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
     queryFn: listMarketplaceOpportunities,
@@ -32,14 +85,54 @@ export default function BumClients() {
     queryKey: ["bum-customer-targets"],
     queryFn: () => listCustomerTargets(null),
   });
+  const savedItemsQuery = useQuery({
+    queryKey: ["bum-saved-items", user?.id],
+    queryFn: () => listBumSavedItems(user!.id),
+    enabled: Boolean(user?.id),
+  });
+
+  const savedClientIds = useMemo(
+    () => new Set((savedItemsQuery.data ?? []).filter((item) => item.item_type === "CLIENT").map((item) => item.client_company_id).filter(Boolean)),
+    [savedItemsQuery.data],
+  );
+
+  const saveMutation = useMutation({
+    mutationFn: ({ itemId, saved }: { itemId: string; saved: boolean }) =>
+      setBumSavedItem(user!, { itemType: "CLIENT", itemId }, saved),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bum-saved-items", user?.id] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update heart",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const marketplaceClients = useMemo<MarketplaceClientSummary[]>(() => {
     const opportunities = opportunitiesQuery.data ?? [];
     const targetCounts = new Map<string, number>();
+    const targetValues = new Map<string, number>();
+    const targetTerms = new Map<string, string[]>();
+    const targetIndustries = new Map<string, string[]>();
     const summaries = new Map<string, MarketplaceClientSummary>();
 
     for (const target of targetsQuery.data ?? []) {
       targetCounts.set(target.client_company_id, (targetCounts.get(target.client_company_id) ?? 0) + 1);
+      if (target.estimated_deal_value) {
+        targetValues.set(target.client_company_id, Math.max(targetValues.get(target.client_company_id) ?? 0, Number(target.estimated_deal_value)));
+      }
+      if (target.expected_timeline?.trim()) {
+        targetTerms.set(target.client_company_id, [...(targetTerms.get(target.client_company_id) ?? []), target.expected_timeline]);
+      }
+      if (target.expected_product_service?.trim()) {
+        targetIndustries.set(target.client_company_id, [
+          ...(targetIndustries.get(target.client_company_id) ?? []),
+          target.expected_product_service,
+        ]);
+      }
     }
 
     for (const company of companiesQuery.data ?? []) {
@@ -48,12 +141,16 @@ export default function BumClients() {
       }
 
       summaries.set(company.name, {
+        id: company.id,
+        canHeart: true,
         company: company.name,
         website: company.website,
         pitch: "Trusted Bums client with customer target accounts available for warm intros.",
-        industries: [],
+        industries: Array.from(new Set(targetIndustries.get(company.id) ?? [])),
         openCount: 0,
         targetCount: targetCounts.get(company.id) ?? 0,
+        maxDealValue: targetValues.get(company.id) ?? null,
+        termHints: targetTerms.get(company.id) ?? [],
       });
     }
 
@@ -67,17 +164,30 @@ export default function BumClients() {
         if (productHint && !existing.industries.includes(productHint)) {
           existing.industries.push(productHint);
         }
+        if (opportunity.estimated_deal_value) {
+          existing.maxDealValue = Math.max(existing.maxDealValue ?? 0, Number(opportunity.estimated_deal_value));
+        }
+        if (opportunity.commission_duration?.trim()) {
+          existing.termHints.push(opportunity.commission_duration);
+        }
+        if (opportunity.expected_timeline?.trim()) {
+          existing.termHints.push(opportunity.expected_timeline);
+        }
         existing.pitch = opportunity.opportunity_description ?? existing.pitch;
         continue;
       }
 
       summaries.set(company, {
+        id: opportunity.company_id ?? opportunity.id,
+        canHeart: Boolean(opportunity.company_id),
         company,
         website: null,
         pitch: opportunity.opportunity_description ?? "Live client opportunity available in the marketplace.",
         industries: productHint ? [productHint] : [],
         openCount: 1,
         targetCount: 0,
+        maxDealValue: opportunity.estimated_deal_value ? Number(opportunity.estimated_deal_value) : null,
+        termHints: [opportunity.expected_timeline, opportunity.commission_duration].filter(Boolean) as string[],
       });
     }
 
@@ -95,7 +205,10 @@ export default function BumClients() {
       .toLowerCase()
       .includes(query.toLowerCase());
     const matchesIndustry = industry === "ALL" || client.industries.includes(industry);
-    return matchesQuery && matchesIndustry;
+    const matchesHeart = !heartedOnly || savedClientIds.has(client.id);
+    const matchesValue = valueMatchesFilter(client.maxDealValue, valueFilter);
+    const matchesTerm = termMatchesFilter(client.termHints, termFilter);
+    return matchesQuery && matchesIndustry && matchesHeart && matchesValue && matchesTerm;
   });
 
   return (
@@ -105,7 +218,7 @@ export default function BumClients() {
         description="Search live client companies, target-account pipelines, and formal marketplace opportunities."
       />
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -116,6 +229,14 @@ export default function BumClients() {
           />
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button
+            variant={heartedOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setHeartedOnly((current) => !current)}
+          >
+            <Heart className={cn("mr-2 h-4 w-4", heartedOnly && "fill-current")} />
+            Hearted
+          </Button>
           <Button
             variant={industry === "ALL" ? "default" : "outline"}
             size="sm"
@@ -136,10 +257,45 @@ export default function BumClients() {
         </div>
       </div>
 
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Anticipated contract value</Label>
+          <Select value={valueFilter} onValueChange={(value: ValueFilter) => setValueFilter(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {valueFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Contract term / timing</Label>
+          <Select value={termFilter} onValueChange={(value: TermFilter) => setTermFilter(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {termFilters.map((filter) => (
+                <SelectItem key={filter.value} value={filter.value}>
+                  {filter.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="grid gap-4">
         {filtered.map((client) => {
+          const isHearted = savedClientIds.has(client.id);
+
           return (
-            <Card key={client.company} className="hover:shadow-md transition-shadow">
+            <Card key={client.id} className="hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">
                   <div className="rounded-xl bg-primary/10 p-3">
@@ -166,9 +322,26 @@ export default function BumClients() {
                       )) : (
                         <Badge variant="outline">{client.targetCount} target accounts</Badge>
                       )}
+                      <Badge variant="outline">
+                        <DollarSign className="mr-1 h-3 w-3" />
+                        {client.maxDealValue ? `$${client.maxDealValue.toLocaleString()} max` : "Value pending"}
+                      </Badge>
+                      <Badge variant="outline">
+                        <Clock className="mr-1 h-3 w-3" />
+                        {client.termHints.length ? "Term details available" : "Term pending"}
+                      </Badge>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
+                    <Button
+                      size="icon"
+                      variant={isHearted ? "default" : "outline"}
+                      aria-label={isHearted ? `Unheart ${client.company}` : `Heart ${client.company}`}
+                      disabled={!user || !client.canHeart || saveMutation.isPending}
+                      onClick={() => saveMutation.mutate({ itemId: client.id, saved: !isHearted })}
+                    >
+                      <Heart className={cn("h-4 w-4", isHearted && "fill-current")} />
+                    </Button>
                     {client.openCount ? (
                       <Badge className="bg-success text-success-foreground hover:bg-success/90">{client.openCount} open</Badge>
                     ) : (
@@ -181,7 +354,7 @@ export default function BumClients() {
                         </Button>
                       </Link>
                     ) : (
-                      <Link to="/bum/live-conversations">
+                      <Link to="/bum/opportunities">
                         <Button size="sm" variant="outline">
                           <Target className="mr-2 h-4 w-4" /> View targets
                         </Button>
