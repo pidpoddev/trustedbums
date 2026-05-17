@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { listMarketplaceOpportunities } from "@/lib/portalApi";
-import { Search, Building2, ExternalLink, Briefcase } from "lucide-react";
+import { listCompanies, listCustomerTargets, listMarketplaceOpportunities } from "@/lib/portalApi";
+import { Search, Building2, ExternalLink, Briefcase, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface MarketplaceClientSummary {
@@ -15,6 +15,7 @@ interface MarketplaceClientSummary {
   pitch: string;
   industries: string[];
   openCount: number;
+  targetCount: number;
 }
 
 export default function BumClients() {
@@ -23,10 +24,38 @@ export default function BumClients() {
     queryKey: ["bum-marketplace-opportunities"],
     queryFn: listMarketplaceOpportunities,
   });
+  const companiesQuery = useQuery({
+    queryKey: ["bum-client-companies"],
+    queryFn: listCompanies,
+  });
+  const targetsQuery = useQuery({
+    queryKey: ["bum-customer-targets"],
+    queryFn: () => listCustomerTargets(null),
+  });
 
   const marketplaceClients = useMemo<MarketplaceClientSummary[]>(() => {
     const opportunities = opportunitiesQuery.data ?? [];
+    const targetCounts = new Map<string, number>();
     const summaries = new Map<string, MarketplaceClientSummary>();
+
+    for (const target of targetsQuery.data ?? []) {
+      targetCounts.set(target.client_company_id, (targetCounts.get(target.client_company_id) ?? 0) + 1);
+    }
+
+    for (const company of companiesQuery.data ?? []) {
+      if (company.relationship_stage !== "CLIENT") {
+        continue;
+      }
+
+      summaries.set(company.name, {
+        company: company.name,
+        website: company.website,
+        pitch: "Trusted Bums client with customer target accounts available for warm intros.",
+        industries: [],
+        openCount: 0,
+        targetCount: targetCounts.get(company.id) ?? 0,
+      });
+    }
 
     for (const opportunity of opportunities) {
       const company = opportunity.companies?.name ?? "Trusted Bums Client";
@@ -38,6 +67,7 @@ export default function BumClients() {
         if (productHint && !existing.industries.includes(productHint)) {
           existing.industries.push(productHint);
         }
+        existing.pitch = opportunity.opportunity_description ?? existing.pitch;
         continue;
       }
 
@@ -47,11 +77,12 @@ export default function BumClients() {
         pitch: opportunity.opportunity_description ?? "Live client opportunity available in the marketplace.",
         industries: productHint ? [productHint] : [],
         openCount: 1,
+        targetCount: 0,
       });
     }
 
     return Array.from(summaries.values()).sort((left, right) => left.company.localeCompare(right.company));
-  }, [opportunitiesQuery.data]);
+  }, [companiesQuery.data, opportunitiesQuery.data, targetsQuery.data]);
 
   const allIndustries = useMemo(
     () => Array.from(new Set(marketplaceClients.flatMap((client) => client.industries))).filter(Boolean),
@@ -71,7 +102,7 @@ export default function BumClients() {
     <div className="space-y-6">
       <PageHeader
         title="Clients We Represent"
-        description="Search live client companies that currently have open marketplace opportunities."
+        description="Search live client companies, target-account pipelines, and formal marketplace opportunities."
       />
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -133,17 +164,29 @@ export default function BumClients() {
                       {client.industries.length ? client.industries.map((i) => (
                         <Badge key={i} variant="secondary">{i}</Badge>
                       )) : (
-                        <Badge variant="outline">Opportunity live</Badge>
+                        <Badge variant="outline">{client.targetCount} target accounts</Badge>
                       )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <Badge className="bg-success text-success-foreground hover:bg-success/90">{client.openCount} open</Badge>
-                    <Link to="/bum/opportunities">
-                      <Button size="sm" variant="outline">
-                        <Briefcase className="mr-2 h-4 w-4" /> View opps
-                      </Button>
-                    </Link>
+                    {client.openCount ? (
+                      <Badge className="bg-success text-success-foreground hover:bg-success/90">{client.openCount} open</Badge>
+                    ) : (
+                      <Badge variant="secondary">{client.targetCount} targets</Badge>
+                    )}
+                    {client.openCount ? (
+                      <Link to="/bum/opportunities">
+                        <Button size="sm" variant="outline">
+                          <Briefcase className="mr-2 h-4 w-4" /> View opps
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link to="/bum/live-conversations">
+                        <Button size="sm" variant="outline">
+                          <Target className="mr-2 h-4 w-4" /> View targets
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -152,7 +195,7 @@ export default function BumClients() {
         })}
         {filtered.length === 0 && (
           <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground">
-            {marketplaceClients.length ? "No live clients match your search." : "No live clients are available yet."}
+            {marketplaceClients.length ? "No clients match your search." : "No live clients are available yet."}
           </div>
         )}
       </div>
