@@ -249,6 +249,7 @@ export interface OpportunityRegistration {
   id: string;
   company_id: string | null;
   created_by: string;
+  pay_program_id: string | null;
   target_account_name: string;
   business_unit: string | null;
   opportunity_description: string | null;
@@ -264,6 +265,7 @@ export interface OpportunityRegistration {
   created_at: string;
   updated_at: string;
   companies?: Pick<CompanyRecord, "name"> | null;
+  client_pay_programs?: ClientPayProgramRecord | null;
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
 }
 
@@ -280,6 +282,69 @@ export interface OpportunityInput {
   commission_duration?: string;
   notes?: string;
   status?: RegistrationStatus;
+}
+
+export type CompanyAgreementType = "MASTER_SERVICES_AGREEMENT" | "SERVICE_ADDENDUM" | "OTHER";
+export type CompanyAgreementStatus = "DRAFT" | "ACTIVE" | "SUPERSEDED" | "TERMINATED";
+
+export interface CompanyAgreementRecord {
+  id: string;
+  company_id: string;
+  title: string;
+  agreement_type: CompanyAgreementType;
+  status: CompanyAgreementStatus;
+  effective_date: string | null;
+  document_url: string | null;
+  summary: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientPayProgramRecord {
+  id: string;
+  company_id: string;
+  agreement_id: string | null;
+  name: string;
+  status: "ACTIVE" | "PAUSED" | "SUPERSEDED";
+  commission_rate: number;
+  commission_period_months: number | null;
+  payment_terms: string | null;
+  commission_basis: string | null;
+  exclusions: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type OpportunityClaimStatus = "PROPOSED" | "APPROVED" | "SCHEDULED" | "MEETING_HELD" | "EXPIRED" | "DISPUTED" | "CLOSED";
+export type OpportunityClaimStrength = "STRONG" | "MODERATE" | "WEAK";
+
+export interface OpportunityClaimRecord {
+  id: string;
+  opportunity_registration_id: string;
+  company_id: string | null;
+  bum_user_id: string;
+  contact_name: string;
+  contact_company: string;
+  contact_email: string | null;
+  relationship_strength: OpportunityClaimStrength;
+  note: string | null;
+  status: OpportunityClaimStatus;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export interface OpportunityClaimInput {
+  opportunityId: string;
+  contactName: string;
+  contactCompany: string;
+  contactEmail?: string;
+  relationshipStrength: OpportunityClaimStrength;
+  note?: string;
 }
 
 export interface AuditEvent {
@@ -875,7 +940,7 @@ export async function createOpportunityRegistration(user: AuthUser, input: Oppor
 export async function listOpportunityRegistrations(status?: string) {
   let query = supabase
     .from("opportunity_registrations")
-    .select("*, companies(name)")
+    .select("*, companies(name), client_pay_programs(*)")
     .order("created_at", { ascending: false });
 
   if (status && status !== "All") {
@@ -894,7 +959,7 @@ export async function listOpportunityRegistrations(status?: string) {
 export async function listMarketplaceOpportunities() {
   const { data, error } = await supabase
     .from("opportunity_registrations")
-    .select("*, companies(name)")
+    .select("*, companies(name), client_pay_programs(*)")
     .eq("status", "Accepted")
     .order("created_at", { ascending: false })
     .returns<OpportunityRegistration[]>();
@@ -976,7 +1041,7 @@ export async function setBumSavedItem(user: AuthUser, input: BumSavedItemInput, 
 export async function getMarketplaceOpportunity(id: string) {
   const { data, error } = await supabase
     .from("opportunity_registrations")
-    .select("*, companies(name)")
+    .select("*, companies(name), client_pay_programs(*)")
     .eq("id", id)
     .eq("status", "Accepted")
     .maybeSingle<OpportunityRegistration>();
@@ -984,6 +1049,133 @@ export async function getMarketplaceOpportunity(id: string) {
   if (error) {
     throw error;
   }
+
+  return data;
+}
+
+export async function listCompanyAgreements(companyId: string) {
+  const { data, error } = await supabase
+    .from("company_agreements")
+    .select("*")
+    .eq("company_id", companyId)
+    .order("effective_date", { ascending: false })
+    .returns<CompanyAgreementRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listClientPayPrograms(companyId?: string | null) {
+  let query = supabase
+    .from("client_pay_programs")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (companyId) {
+    query = query.eq("company_id", companyId);
+  }
+
+  const { data, error } = await query.returns<ClientPayProgramRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listOpportunityClaims(opportunityId?: string) {
+  let query = supabase
+    .from("opportunity_claims")
+    .select("*, opportunity_registrations(id, target_account_name), profiles(id, full_name, email)")
+    .order("created_at", { ascending: false });
+
+  if (opportunityId) {
+    query = query.eq("opportunity_registration_id", opportunityId);
+  }
+
+  const { data, error } = await query.returns<OpportunityClaimRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createOpportunityClaim(user: AuthUser, input: OpportunityClaimInput) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can request opportunity claims.");
+  }
+
+  const { data: opportunity, error: opportunityError } = await supabase
+    .from("opportunity_registrations")
+    .select("id, company_id")
+    .eq("id", input.opportunityId)
+    .eq("status", "Accepted")
+    .maybeSingle<Pick<OpportunityRegistration, "id" | "company_id">>();
+
+  if (opportunityError) {
+    throw opportunityError;
+  }
+
+  if (!opportunity) {
+    throw new Error("That opportunity is no longer available.");
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_claims")
+    .insert({
+      opportunity_registration_id: opportunity.id,
+      company_id: opportunity.company_id,
+      bum_user_id: user.id,
+      contact_name: input.contactName.trim(),
+      contact_company: input.contactCompany.trim(),
+      contact_email: toNullableString(input.contactEmail),
+      relationship_strength: input.relationshipStrength,
+      note: toNullableString(input.note),
+      status: "PROPOSED",
+    })
+    .select("*")
+    .single<OpportunityClaimRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "opportunity_claim_created", "opportunity_claims", data.id, {
+    opportunity_registration_id: opportunity.id,
+    contact_name: data.contact_name,
+    contact_company: data.contact_company,
+    relationship_strength: data.relationship_strength,
+  });
+
+  return data;
+}
+
+export async function updateOpportunityClaimStatus(user: AuthUser, claimId: string, status: OpportunityClaimStatus, note?: string) {
+  const payload: Partial<Pick<OpportunityClaimRecord, "status" | "note">> = { status };
+  if (note?.trim()) {
+    payload.note = note.trim();
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_claims")
+    .update(payload)
+    .eq("id", claimId)
+    .select("*")
+    .single<OpportunityClaimRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "opportunity_claim_status_changed", "opportunity_claims", data.id, {
+    status,
+  });
 
   return data;
 }

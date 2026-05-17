@@ -1,11 +1,16 @@
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { claimStatusConfig } from "@/data/mockData";
-import { useIntroClaims } from "@/hooks/use-intro-claims";
+import { listOpportunityClaims } from "@/lib/portalApi";
 
 export default function AdminCredits() {
-  const { introClaims } = useIntroClaims();
+  const claimsQuery = useQuery({
+    queryKey: ["admin-opportunity-claims"],
+    queryFn: () => listOpportunityClaims(),
+  });
+  const claims = claimsQuery.data ?? [];
 
   return (
     <div>
@@ -27,21 +32,28 @@ export default function AdminCredits() {
                 </tr>
               </thead>
               <tbody>
-                {introClaims.map(claim => {
+                {claims.map((claim) => {
                   const config = claimStatusConfig[claim.status];
                   return (
                     <tr key={claim.id} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="py-3 font-medium">{claim.contact} <span className="text-muted-foreground">@ {claim.company}</span></td>
-                      <td className="py-3">{claim.opportunityTitle}</td>
-                      <td className="py-3">{claim.bumAlias}</td>
+                      <td className="py-3 font-medium">
+                        {claim.contact_name} <span className="text-muted-foreground">@ {claim.contact_company}</span>
+                      </td>
+                      <td className="py-3">{claim.opportunity_registrations?.target_account_name ?? "Opportunity pending"}</td>
+                      <td className="py-3">{claim.profiles?.full_name ?? claim.profiles?.email ?? "Trusted Bum"}</td>
                       <td className="py-3"><StatusBadge label={config.label} variant={config.variant} /></td>
-                      <td className="py-3"><span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">Door Opener</span></td>
+                      <td className="py-3"><span className="rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">Door Opener</span></td>
                       <td className="py-3 font-display font-bold">100%</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            {!claimsQuery.isLoading && !claims.length ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                No opportunity claims have been requested yet.
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>

@@ -1,14 +1,24 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { CheckCircle, Download, FileText } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PartnerTermsContent } from "@/components/PartnerTermsContent";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { downloadPartnerTermsPdf } from "@/lib/pdf";
+import { listCompanyAgreements } from "@/lib/portalApi";
 
 export default function ClientAgreements() {
+  const { user } = useAuth();
   const { terms, acceptance, hasAcceptedCurrentTerms, isLoading } = useCurrentTermsState();
+  const customAgreementsQuery = useQuery({
+    queryKey: ["company-agreements", user?.clientId],
+    queryFn: () => listCompanyAgreements(user!.clientId!),
+    enabled: Boolean(user?.clientId),
+  });
+  const customAgreements = customAgreementsQuery.data ?? [];
 
   if (isLoading || !terms) {
     return <div className="text-sm text-muted-foreground">Loading agreement records...</div>;
@@ -24,34 +34,66 @@ export default function ClientAgreements() {
       </PageHeader>
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <Card className={hasAcceptedCurrentTerms ? "border-success/40" : "border-warning/50"}>
-          <CardHeader>
-            <CardTitle className="font-display flex items-center gap-2">
+        <div className="space-y-4">
+          <Card className={hasAcceptedCurrentTerms ? "border-success/40" : "border-warning/50"}>
+            <CardHeader>
+              <CardTitle className="font-display flex items-center gap-2">
+                {hasAcceptedCurrentTerms ? (
+                  <CheckCircle className="h-5 w-5 text-success" />
+                ) : (
+                  <FileText className="h-5 w-5 text-warning" />
+                )}
+                Current Partner Terms
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="font-medium">{terms.title}</p>
+                <p className="text-sm text-muted-foreground">Version {terms.version}</p>
+              </div>
               {hasAcceptedCurrentTerms ? (
-                <CheckCircle className="h-5 w-5 text-success" />
+                <p className="text-sm text-muted-foreground">
+                  Accepted {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "for this version"}.
+                </p>
               ) : (
-                <FileText className="h-5 w-5 text-warning" />
+                <p className="text-sm text-muted-foreground">This terms version still needs acceptance.</p>
               )}
-              Current Partner Terms
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="font-medium">{terms.title}</p>
-              <p className="text-sm text-muted-foreground">Version {terms.version}</p>
-            </div>
-            {hasAcceptedCurrentTerms ? (
-              <p className="text-sm text-muted-foreground">
-                Accepted {acceptance ? new Date(acceptance.accepted_at).toLocaleString() : "for this version"}.
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">This terms version still needs acceptance.</p>
-            )}
-            <Button asChild className="w-full">
-              <Link to="/client/terms">Open terms screen</Link>
-            </Button>
-          </CardContent>
-        </Card>
+              <Button asChild className="w-full">
+                <Link to="/client/terms">Open terms screen</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {customAgreements.length ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-display flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Custom Agreements
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {customAgreements.map((agreement) => (
+                  <div key={agreement.id} className="rounded-xl border p-3">
+                    <p className="font-medium">{agreement.title}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {agreement.status} {agreement.effective_date ? `• Effective ${new Date(agreement.effective_date).toLocaleDateString()}` : ""}
+                    </p>
+                    {agreement.summary ? <p className="mt-2 text-sm text-muted-foreground">{agreement.summary}</p> : null}
+                    {agreement.document_url ? (
+                      <Button asChild size="sm" variant="outline" className="mt-3 w-full">
+                        <a href={agreement.document_url} target="_blank" rel="noreferrer">
+                          <Download className="mr-2 h-4 w-4" />
+                          Open DOCX
+                        </a>
+                      </Button>
+                    ) : null}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
 
         <Card>
           <CardContent className="max-h-[72vh] overflow-y-auto pt-6">

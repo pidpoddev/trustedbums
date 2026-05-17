@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,9 +22,13 @@ import {
   isClaimStatus,
   isRelationshipStrength,
 } from "@/data/mockData";
-import { useIntroClaims } from "@/hooks/use-intro-claims";
 import { useAuth } from "@/contexts/AuthContext";
-import { getMarketplaceOpportunity } from "@/lib/portalApi";
+import {
+  createOpportunityClaim,
+  getMarketplaceOpportunity,
+  listOpportunityClaims,
+  updateOpportunityClaimStatus,
+} from "@/lib/portalApi";
 import { ArrowLeft, Plus, Activity } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,26 +43,65 @@ interface ActivityEntry {
 export default function BumOpportunityDetail() {
   const { id } = useParams();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const opportunityQuery = useQuery({
     queryKey: ["bum-marketplace-opportunity", id],
     queryFn: () => getMarketplaceOpportunity(id!),
     enabled: Boolean(id),
   });
-  const { introClaims, addIntroClaim, updateIntroClaimStatus } = useIntroClaims();
+  const claimsQuery = useQuery({
+    queryKey: ["opportunity-claims", id],
+    queryFn: () => listOpportunityClaims(id),
+    enabled: Boolean(id),
+  });
   const opp = opportunityQuery.data;
+  const claims = claimsQuery.data ?? [];
 
-  // Recommendation form
   const [contact, setContact] = useState("");
   const [company, setCompany] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [strength, setStrength] = useState<RelationshipStrength>("MODERATE");
   const [note, setNote] = useState("");
 
-  // Status update form
-  const [updateContact, setUpdateContact] = useState("");
+  const [updateClaimId, setUpdateClaimId] = useState("");
   const [updateStatus, setUpdateStatus] = useState<ClaimStatus>("SCHEDULED");
   const [updateNote, setUpdateNote] = useState("");
 
-  const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const createClaimMutation = useMutation({
+    mutationFn: () =>
+      createOpportunityClaim(user!, {
+        opportunityId: opp!.id,
+        contactName: contact,
+        contactCompany: company,
+        contactEmail,
+        relationshipStrength: strength,
+        note,
+      }),
+    onSuccess: (claim) => {
+      queryClient.invalidateQueries({ queryKey: ["opportunity-claims", id] });
+      toast.success(`Claim requested for ${claim.contact_name} at ${claim.contact_company}`);
+      setContact("");
+      setCompany("");
+      setContactEmail("");
+      setNote("");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Unable to request claim");
+    },
+  });
+
+  const updateClaimMutation = useMutation({
+    mutationFn: () => updateOpportunityClaimStatus(user!, updateClaimId, updateStatus, updateNote),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["opportunity-claims", id] });
+      toast.success("Claim update logged");
+      setUpdateClaimId("");
+      setUpdateNote("");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Unable to update claim");
+    },
+  });
 
   if (opportunityQuery.isLoading) {
     return <div className="text-sm text-muted-foreground">Loading live opportunity...</div>;
@@ -77,57 +120,28 @@ export default function BumOpportunityDetail() {
     );
   }
 
-  const claims = introClaims.filter((claim) => claim.opportunityId === opp.id);
+  const activity: ActivityEntry[] = claims.map((claim) => ({
+    id: claim.id,
+    contact: `${claim.contact_name} @ ${claim.contact_company}`,
+    status: claim.status,
+    note: claim.note || `Claim requested with ${claim.relationship_strength.toLowerCase()} relationship strength.`,
+    at: new Date(claim.updated_at ?? claim.created_at).toLocaleDateString(),
+  }));
 
   const submitRecommendation = () => {
-    if (!contact || !company) {
+    if (!contact.trim() || !company.trim()) {
       toast.error("Contact name and company are required");
       return;
     }
-    const claim = addIntroClaim({
-      opportunityId: opp.id,
-      opportunityTitle: opp.target_account_name,
-      bumAlias: user?.name ?? "Trusted Bum",
-      contact,
-      company,
-      strength,
-      note,
-    });
-    setActivity((a) => [
-      {
-        id: `a-${claim.id}`,
-        contact: claim.contact,
-        status: claim.status,
-        note: `Recommended (${claim.strength}): ${claim.note || "No additional context"}`,
-        at: claim.createdAt,
-      },
-      ...a,
-    ]);
-    toast.success(`Recommended ${contact} at ${company}`);
-    setContact("");
-    setCompany("");
-    setNote("");
+    createClaimMutation.mutate();
   };
 
   const submitUpdate = () => {
-    if (!updateContact || !updateNote) {
-      toast.error("Contact and note are required");
+    if (!updateClaimId || !updateNote.trim()) {
+      toast.error("Claim and note are required");
       return;
     }
-    updateIntroClaimStatus(updateContact, updateStatus);
-    setActivity((a) => [
-      {
-        id: `a${Date.now()}`,
-        contact: updateContact,
-        status: updateStatus,
-        note: updateNote,
-        at: new Date().toISOString().slice(0, 10),
-      },
-      ...a,
-    ]);
-    toast.success("Update logged");
-    setUpdateContact("");
-    setUpdateNote("");
+    updateClaimMutation.mutate();
   };
 
   return (
@@ -170,6 +184,13 @@ export default function BumOpportunityDetail() {
               <p className="font-medium text-foreground">Commission duration</p>
               <p>{opp.commission_duration}</p>
             </div>
+            {opp.client_pay_programs ? (
+              <div className="md:col-span-2 rounded-xl border bg-muted/30 p-3">
+                <p className="font-medium text-foreground">{opp.client_pay_programs.name}</p>
+                <p className="mt-1">{opp.client_pay_programs.commission_basis}</p>
+                <p className="mt-1">{opp.client_pay_programs.payment_terms}</p>
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -178,7 +199,7 @@ export default function BumOpportunityDetail() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-primary" /> Recommend a customer
+              <Plus className="h-5 w-5 text-primary" /> Request a claim
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -189,6 +210,10 @@ export default function BumOpportunityDetail() {
             <div className="grid gap-2">
               <Label>Company</Label>
               <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme Inc" />
+            </div>
+            <div className="grid gap-2">
+              <Label>Email if known</Label>
+              <Input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="jane@example.com" />
             </div>
             <div className="grid gap-2">
               <Label>Relationship strength</Label>
@@ -210,10 +235,10 @@ export default function BumOpportunityDetail() {
             </div>
             <div className="grid gap-2">
               <Label>Why they're a fit</Label>
-              <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Context the client should know…" rows={3} />
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Context the client should know..." rows={3} />
             </div>
-            <Button onClick={submitRecommendation} className="w-full">
-              Submit recommendation
+            <Button onClick={submitRecommendation} className="w-full" disabled={createClaimMutation.isPending}>
+              Request claim
             </Button>
           </CardContent>
         </Card>
@@ -226,8 +251,17 @@ export default function BumOpportunityDetail() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-2">
-              <Label>Contact</Label>
-              <Input value={updateContact} onChange={(e) => setUpdateContact(e.target.value)} placeholder="Which intro is this about?" />
+              <Label>Claim</Label>
+              <Select value={updateClaimId} onValueChange={setUpdateClaimId}>
+                <SelectTrigger><SelectValue placeholder="Which claim is this about?" /></SelectTrigger>
+                <SelectContent>
+                  {claims.map((claim) => (
+                    <SelectItem key={claim.id} value={claim.id}>
+                      {claim.contact_name} @ {claim.contact_company}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label>New status</Label>
@@ -249,9 +283,9 @@ export default function BumOpportunityDetail() {
             </div>
             <div className="grid gap-2">
               <Label>What happened</Label>
-              <Textarea value={updateNote} onChange={(e) => setUpdateNote(e.target.value)} placeholder="e.g. Initial conversation occurred — they're interested in a demo." rows={3} />
+              <Textarea value={updateNote} onChange={(e) => setUpdateNote(e.target.value)} placeholder="e.g. Initial conversation occurred; they're interested in a demo." rows={3} />
             </div>
-            <Button onClick={submitUpdate} className="w-full" variant="secondary">
+            <Button onClick={submitUpdate} className="w-full" variant="secondary" disabled={updateClaimMutation.isPending || !claims.length}>
               Log update
             </Button>
           </CardContent>
@@ -274,24 +308,10 @@ export default function BumOpportunityDetail() {
                 </div>
               </div>
             ))}
+            {!activity.length ? (
+              <p className="text-sm text-muted-foreground">No claims have been requested for this opportunity yet.</p>
+            ) : null}
           </div>
-
-          {claims.length > 0 && (
-            <div className="mt-6 pt-6 border-t">
-              <h4 className="font-medium mb-3 text-sm">Existing claims on this opportunity</h4>
-              <div className="space-y-2">
-                {claims.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between text-sm">
-                    <div>
-                      <span className="font-medium">{c.contact}</span>
-                      <span className="text-muted-foreground"> @ {c.company} — {c.bumAlias}</span>
-                    </div>
-                    <StatusBadge {...claimStatusConfig[c.status]} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
