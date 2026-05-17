@@ -102,8 +102,8 @@ export const authorizationProfiles: AuthorizationProfile[] = [
   },
   {
     id: "user_3DpXqbTvpn4nxc9xNBjG0PN3V6s",
-    email: "admin@k2view.com",
-    name: "K2view Admin",
+    email: "jason.mckinney@k2view.com",
+    name: "Jason McKinney",
     role: "CLIENT",
     clientAccessRole: "CLIENT_ADMIN",
     companyName: "K2view",

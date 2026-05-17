@@ -796,6 +796,14 @@ async function upsertCompanyDomain(companyId: string, domain: string, isPrimary 
   }
 }
 
+async function upsertCompanyDomainBestEffort(companyId: string, domain: string, isPrimary = false) {
+  try {
+    await upsertCompanyDomain(companyId, domain, isPrimary);
+  } catch (error) {
+    console.warn("Unable to sync company domain during profile/company bootstrap.", error);
+  }
+}
+
 async function findExistingCompanyMatch(input: {
   companyName: string;
   companyWebsite?: string | null;
@@ -862,7 +870,7 @@ async function ensureCompany(input: {
   }
 
   if (websiteDomain) {
-    await upsertCompanyDomain(data.id, websiteDomain, true);
+    await upsertCompanyDomainBestEffort(data.id, websiteDomain, true);
   }
 
   return data;
@@ -914,7 +922,7 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
 
     const businessDomain = getBusinessDomainFromEmail(user.email);
     if (businessDomain) {
-      await upsertCompanyDomain(data.company_id, businessDomain, true);
+      await upsertCompanyDomainBestEffort(data.company_id, businessDomain, true);
     }
   }
 
