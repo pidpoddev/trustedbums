@@ -6,7 +6,7 @@ test.describe("authenticated role smoke", () => {
 
   test("admin reaches the admin dashboard", async ({ page }) => {
     const admin = getQaAccount("ADMIN");
-    test.skip(!admin, "Set QA_ADMIN_EMAIL and QA_ADMIN_PASSWORD.");
+    test.skip(!admin, "Set QA_ADMIN_EMAIL.");
 
     await goToAuthedPath(page, admin, "/dashboard");
 
@@ -16,7 +16,7 @@ test.describe("authenticated role smoke", () => {
 
   test("client admin reaches the client dashboard and can open target workflows", async ({ page }) => {
     const clientAdmin = getQaAccount("CLIENT_ADMIN");
-    test.skip(!clientAdmin, "Set QA_CLIENT_ADMIN_EMAIL and QA_CLIENT_ADMIN_PASSWORD.");
+    test.skip(!clientAdmin, "Set QA_CLIENT_ADMIN_EMAIL.");
 
     await goToAuthedPath(page, clientAdmin, "/dashboard");
 
@@ -29,7 +29,7 @@ test.describe("authenticated role smoke", () => {
 
   test("client finance can open payments and exports", async ({ page }) => {
     const finance = getQaAccount("CLIENT_FINANCE");
-    test.skip(!finance, "Set QA_CLIENT_FINANCE_EMAIL and QA_CLIENT_FINANCE_PASSWORD.");
+    test.skip(!finance, "Set QA_CLIENT_FINANCE_EMAIL.");
 
     await goToAuthedPath(page, finance, "/client/payments");
     await expect(page.getByRole("heading", { name: "Customer Payments" })).toBeVisible();
@@ -40,7 +40,7 @@ test.describe("authenticated role smoke", () => {
 
   test("client member is redirected away from finance-only pages", async ({ page }) => {
     const member = getQaAccount("CLIENT_MEMBER");
-    test.skip(!member, "Set QA_CLIENT_MEMBER_EMAIL and QA_CLIENT_MEMBER_PASSWORD.");
+    test.skip(!member, "Set QA_CLIENT_MEMBER_EMAIL.");
 
     await goToAuthedPath(page, member, "/client/payments");
 
@@ -50,7 +50,7 @@ test.describe("authenticated role smoke", () => {
 
   test("bum reaches the bum dashboard", async ({ page }) => {
     const bum = getQaAccount("BUM");
-    test.skip(!bum, "Set QA_BUM_EMAIL and QA_BUM_PASSWORD.");
+    test.skip(!bum, "Set QA_BUM_EMAIL.");
 
     await goToAuthedPath(page, bum, "/dashboard");
 

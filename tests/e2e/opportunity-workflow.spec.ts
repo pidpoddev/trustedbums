@@ -9,8 +9,8 @@ test.describe("critical opportunity workflow", () => {
 
     const clientAdmin = getQaAccount("CLIENT_ADMIN");
     const admin = getQaAccount("ADMIN");
-    test.skip(!clientAdmin, "Set QA_CLIENT_ADMIN_EMAIL and QA_CLIENT_ADMIN_PASSWORD.");
-    test.skip(!admin, "Set QA_ADMIN_EMAIL and QA_ADMIN_PASSWORD.");
+    test.skip(!clientAdmin, "Set QA_CLIENT_ADMIN_EMAIL.");
+    test.skip(!admin, "Set QA_ADMIN_EMAIL.");
 
     const targetAccount = `QA Smoke ${new Date().toISOString()}`;
     const clientContext = await browser.newContext();

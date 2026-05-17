@@ -1,15 +1,16 @@
+import { clerk } from "@clerk/testing/playwright";
 import { type Page } from "@playwright/test";
 
 export interface QaAccount {
   email: string;
-  password: string;
+  password?: string;
 }
 
 export function getQaAccount(prefix: string): QaAccount | null {
   const email = process.env[`QA_${prefix}_EMAIL`];
   const password = process.env[`QA_${prefix}_PASSWORD`];
 
-  if (!email || !password) {
+  if (!email) {
     return null;
   }
 
@@ -23,6 +24,17 @@ export function hasExternalQaTarget() {
 export async function signIn(page: Page, account: QaAccount) {
   await page.goto("/");
   await page.waitForFunction(() => Boolean(window.Clerk?.loaded), undefined, { timeout: 20_000 });
+
+  if (process.env.CLERK_SECRET_KEY) {
+    await clerk.signIn({ page, emailAddress: account.email });
+    await page.waitForLoadState("networkidle").catch(() => undefined);
+    await waitForClerkSession(page);
+    return;
+  }
+
+  if (!account.password) {
+    throw new Error("Set CLERK_SECRET_KEY or a QA account password to run authenticated E2E smoke tests.");
+  }
 
   const signInResult = await page.evaluate(async ({ email, password }) => {
     type ClerkError = {
@@ -57,7 +69,7 @@ export async function signIn(page: Page, account: QaAccount) {
     }
 
     try {
-      const attempt = await clerk.client.signIn.create({ identifier: email, password });
+      const attempt = await clerk.client.signIn.create({ identifier: email, password: password ?? "" });
 
       if (attempt.status === "complete" && attempt.createdSessionId) {
         await clerk.setActive({ session: attempt.createdSessionId });

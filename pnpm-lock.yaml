@@ -162,6 +162,9 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      '@clerk/testing':
+        specifier: ^2.0.29
+        version: 2.0.29(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@eslint/js':
         specifier: ^9.32.0
         version: 9.39.4
@@ -331,6 +334,10 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
+  '@clerk/backend@3.4.9':
+    resolution: {integrity: sha512-2sbnGrHga3t/IFAkyvWO6H9QG1bnj7KUA13hpRB9utOYGCRdCn6oLxtiSdH6uGUzjX/km1dtw0uwZIxYgHbuVA==}
+    engines: {node: '>=20.9.0'}
+
   '@clerk/react@6.6.4':
     resolution: {integrity: sha512-jhXqn1GFv309/gvVOdm3pBbeHDVVolyKbbrnHmvB+sAxEiwT7fIMP1JRUe2Rr1ycevMXRnxDzZmidra5xoFPKw==}
     engines: {node: '>=20.9.0'}
@@ -348,6 +355,18 @@ packages:
       react:
         optional: true
       react-dom:
+        optional: true
+
+  '@clerk/testing@2.0.29':
+    resolution: {integrity: sha512-QiR9lMhVBZ41STenV6NkQ7nXKFKXTYQmb4X++q9dqAncFQ8E+vieqK4t/iPrGgFAQ6nLAwzwGOqE55zxyD+5gw==}
+    engines: {node: '>=20.9.0'}
+    peerDependencies:
+      '@playwright/test': ^1
+      cypress: ^13 || ^14
+    peerDependenciesMeta:
+      '@playwright/test':
+        optional: true
+      cypress:
         optional: true
 
   '@esbuild/aix-ppc64@0.21.5':
@@ -1408,6 +1427,9 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
+  '@stablelib/base64@1.0.1':
+    resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
+
   '@supabase/auth-js@2.105.4':
     resolution: {integrity: sha512-Ejfa37M5xoIwoxVebxRahnwubPo8g22qkXQ4p50+N9MIvU9UZoN+A8dwVPtczzGf8oV/YXN80ZPxK4aWXuSN/A==}
     engines: {node: '>=20.0.0'}
@@ -2049,6 +2071,10 @@ packages:
     engines: {node: '>=12'}
     deprecated: Use your platform's native DOMException instead
 
+  dotenv@17.2.2:
+    resolution: {integrity: sha512-Sf2LSQP+bOlhKWWyhFsn0UsfdK/kCWRv1iuA2gXAwt3dyNabr6QSj00I2V10pidqz69soatm9ZwZvpQMTIOd5Q==}
+    engines: {node: '>=12'}
+
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
@@ -2198,6 +2224,9 @@ packages:
 
   fast-levenshtein@2.0.6:
     resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
+
+  fast-sha256@1.3.0:
+    resolution: {integrity: sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ==}
 
   fastq@1.20.1:
     resolution: {integrity: sha512-GGToxJ/w1x32s/D2EKND7kTil4n8OVk/9mycTc4VDza13lOvpUZTGX3mFSCtV9ksdGBVzvsyAVLM6mHFThxXxw==}
@@ -2870,6 +2899,9 @@ packages:
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
+  standardwebhooks@1.0.0:
+    resolution: {integrity: sha512-BbHGOQK9olHPMvQNHWul6MYlrRTAOKn03rOe4A8O3CLWhNf4YHBqq2HJKKC+sfqpxiBY52pNeesD6jIiLDz8jg==}
+
   std-env@3.10.0:
     resolution: {integrity: sha512-5GS12FdOZNliM5mAOxFRg7Ir0pWz8MdpYm6AY6VPkGpbA7ZzmbzNcBJQ0GPvvyWgcY7QAhCgf9Uy89I03faLkg==}
 
@@ -3289,6 +3321,15 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
+  '@clerk/backend@3.4.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@clerk/shared': 4.12.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      standardwebhooks: 1.0.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - react
+      - react-dom
+
   '@clerk/react@6.6.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@clerk/shared': 4.12.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -3306,6 +3347,17 @@ snapshots:
     optionalDependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+
+  '@clerk/testing@2.0.29(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@clerk/backend': 3.4.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@clerk/shared': 4.12.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      dotenv: 17.2.2
+    optionalDependencies:
+      '@playwright/test': 1.60.0
+    transitivePeerDependencies:
+      - react
+      - react-dom
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
@@ -4276,6 +4328,8 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
+  '@stablelib/base64@1.0.1': {}
+
   '@supabase/auth-js@2.105.4':
     dependencies:
       tslib: 2.8.1
@@ -4918,6 +4972,8 @@ snapshots:
     dependencies:
       webidl-conversions: 7.0.0
 
+  dotenv@17.2.2: {}
+
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -5098,6 +5154,8 @@ snapshots:
   fast-json-stable-stringify@2.1.0: {}
 
   fast-levenshtein@2.0.6: {}
+
+  fast-sha256@1.3.0: {}
 
   fastq@1.20.1:
     dependencies:
@@ -5726,6 +5784,11 @@ snapshots:
     optional: true
 
   stackback@0.0.2: {}
+
+  standardwebhooks@1.0.0:
+    dependencies:
+      '@stablelib/base64': 1.0.1
+      fast-sha256: 1.3.0
 
   std-env@3.10.0: {}
 

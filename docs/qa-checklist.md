@@ -48,16 +48,12 @@ Use the `E2E Smoke` workflow from GitHub Actions to validate staging or producti
 
 Required repository secrets:
 
+- `CLERK_SECRET_KEY`
 - `QA_ADMIN_EMAIL`
-- `QA_ADMIN_PASSWORD`
 - `QA_CLIENT_ADMIN_EMAIL`
-- `QA_CLIENT_ADMIN_PASSWORD`
 - `QA_CLIENT_FINANCE_EMAIL`
-- `QA_CLIENT_FINANCE_PASSWORD`
 - `QA_CLIENT_MEMBER_EMAIL`
-- `QA_CLIENT_MEMBER_PASSWORD`
 - `QA_BUM_EMAIL`
-- `QA_BUM_PASSWORD`
 
 The workflow accepts a `target_url` input and runs the public, authenticated, and workflow smoke tests against that deployed app.
 
