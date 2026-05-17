@@ -183,7 +183,7 @@ export default function BumOpportunities() {
     <div className="space-y-6">
       <PageHeader
         title="Opportunities"
-        description="Browse live client opportunities and recommend customers you know."
+        description="Browse live client opportunities, add people you know, and try to claim the opportunity."
       />
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">

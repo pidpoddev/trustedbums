@@ -12,6 +12,7 @@ import {
   listOpportunityRegistrations,
   listProfiles,
   listProspectContacts,
+  listTermsAcceptances,
   type CompanyRelationshipStage,
 } from "@/lib/portalApi";
 
@@ -38,6 +39,10 @@ export default function AdminClients() {
     queryKey: ["admin-prospect-recommendations"],
     queryFn: listAdminProspectRecommendations,
   });
+  const acceptancesQuery = useQuery({
+    queryKey: ["admin-terms-acceptances"],
+    queryFn: listTermsAcceptances,
+  });
   const contactsQuery = useQuery({
     queryKey: ["admin-prospect-contacts"],
     queryFn: listProspectContacts,
@@ -48,12 +53,22 @@ export default function AdminClients() {
     const opportunities = opportunitiesQuery.data ?? [];
     const recommendations = recommendationsQuery.data ?? [];
     const contacts = contactsQuery.data ?? [];
+    const acceptances = acceptancesQuery.data ?? [];
 
     return (companiesQuery.data ?? []).map((company) => {
       const users = profiles.filter((profile) => profile.company_id === company.id);
       const companyOpportunities = opportunities.filter((opportunity) => opportunity.company_id === company.id);
       const companyRecommendations = recommendations.filter((recommendation) => recommendation.company_id === company.id);
       const companyContacts = contacts.filter((contact) => contact.company_id === company.id);
+      const companyAcceptances = acceptances
+        .filter((acceptance) => acceptance.company_id === company.id)
+        .map((acceptance) => ({
+          version: acceptance.terms_versions?.version ?? acceptance.terms_version_id,
+          title: acceptance.terms_versions?.title ?? "Terms",
+          acceptedAt: acceptance.accepted_at,
+          acceptedBy: acceptance.profiles?.full_name ?? acceptance.profiles?.email ?? acceptance.user_id,
+        }))
+        .sort((left, right) => right.acceptedAt.localeCompare(left.acceptedAt));
       const recommenderNames = Array.from(
         new Set(
           companyRecommendations.map(
@@ -75,9 +90,32 @@ export default function AdminClients() {
         overlapCount,
         inviteOwners: Array.from(new Set(companyRecommendations.map((recommendation) => recommendation.invite_owner))),
         primaryContacts: companyContacts.filter((contact) => contact.is_primary).slice(0, 3),
+        acceptedTerms: companyAcceptances,
       };
-    });
-  }, [companiesQuery.data, contactsQuery.data, opportunitiesQuery.data, profilesQuery.data, recommendationsQuery.data]);
+    })
+      .filter((company) =>
+        company.relationship_stage === "CLIENT" ||
+        company.userCount > 0 ||
+        company.opportunityCount > 0 ||
+        company.acceptedTerms.length > 0,
+      )
+      .sort((left, right) => right.opportunityCount - left.opportunityCount || left.name.localeCompare(right.name));
+  }, [acceptancesQuery.data, companiesQuery.data, contactsQuery.data, opportunitiesQuery.data, profilesQuery.data, recommendationsQuery.data]);
+
+  const isLoading =
+    companiesQuery.isLoading ||
+    profilesQuery.isLoading ||
+    opportunitiesQuery.isLoading ||
+    recommendationsQuery.isLoading ||
+    acceptancesQuery.isLoading ||
+    contactsQuery.isLoading;
+  const hasError =
+    companiesQuery.isError ||
+    profilesQuery.isError ||
+    opportunitiesQuery.isError ||
+    recommendationsQuery.isError ||
+    acceptancesQuery.isError ||
+    contactsQuery.isError;
 
   return (
     <div>
@@ -86,7 +124,23 @@ export default function AdminClients() {
       </PageHeader>
 
       <div className="grid gap-4">
-        {companySummaries.map((company) => {
+        {isLoading ? (
+          <Card>
+            <CardContent className="pt-6 text-sm text-muted-foreground">
+              Loading live client companies...
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {!isLoading && hasError ? (
+          <Card>
+            <CardContent className="pt-6 text-sm text-destructive">
+              Unable to load client companies from Supabase.
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {!isLoading && !hasError ? companySummaries.map((company) => {
           return (
             <Card key={company.id} className="hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
@@ -134,6 +188,17 @@ export default function AdminClients() {
                               .join(", ")}
                           </p>
                         ) : null}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {company.acceptedTerms.length ? (
+                            company.acceptedTerms.map((terms) => (
+                              <Badge key={`${terms.version}-${terms.acceptedAt}-${terms.acceptedBy}`} variant="outline">
+                                {terms.version} by {terms.acceptedBy} on {new Date(terms.acceptedAt).toLocaleDateString()}
+                              </Badge>
+                            ))
+                          ) : (
+                            <Badge variant="outline">No accepted terms recorded</Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -156,11 +221,11 @@ export default function AdminClients() {
               </CardContent>
             </Card>
           );
-        })}
-        {!companySummaries.length && (
+        }) : null}
+        {!isLoading && !hasError && !companySummaries.length && (
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground">
-              No live client companies exist yet.
+              No live client companies are available yet.
             </CardContent>
           </Card>
         )}

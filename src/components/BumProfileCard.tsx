@@ -8,6 +8,11 @@ interface BumProfileCardProps {
   profile: Partial<BumProfileRecord> & {
     user_id: string;
     hasAcceptedAgreement?: boolean;
+    acceptedTerms?: Array<{
+      version: string;
+      title: string;
+      acceptedAt: string;
+    }>;
   };
   showAdminMeta?: boolean;
 }
@@ -55,6 +60,8 @@ function profileName(profile: BumProfileCardProps["profile"]) {
 }
 
 export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCardProps) {
+  const acceptedTerms = profile.acceptedTerms ?? [];
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="pt-6 space-y-5">
@@ -183,6 +190,17 @@ export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCar
                     </Badge>
                   ) : (
                     <Badge variant="outline">No LinkedIn import yet</Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {acceptedTerms.length ? (
+                    acceptedTerms.map((terms) => (
+                      <Badge key={`${terms.version}-${terms.acceptedAt}`} variant="outline">
+                        {terms.version} accepted {new Date(terms.acceptedAt).toLocaleDateString()}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline">No accepted terms recorded</Badge>
                   )}
                 </div>
               </div>

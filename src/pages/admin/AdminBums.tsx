@@ -17,6 +17,25 @@ export default function AdminBums() {
   const bumSummaries = useMemo(() => {
     const bumTermsId = (termsVersionsQuery.data ?? []).find((terms) => terms.version === BUM_TERMS_VERSION)?.id;
     const bumProfilesByUserId = new Map((bumProfilesQuery.data ?? []).map((profile) => [profile.user_id, profile]));
+    const acceptedTermsByUserId = new Map<
+      string,
+      Array<{
+        version: string;
+        title: string;
+        acceptedAt: string;
+      }>
+    >();
+
+    for (const acceptance of acceptancesQuery.data ?? []) {
+      const current = acceptedTermsByUserId.get(acceptance.user_id) ?? [];
+      current.push({
+        version: acceptance.terms_versions?.version ?? acceptance.terms_version_id,
+        title: acceptance.terms_versions?.title ?? "Terms",
+        acceptedAt: acceptance.accepted_at,
+      });
+      acceptedTermsByUserId.set(acceptance.user_id, current);
+    }
+
     const acceptedUserIds = new Set(
       (acceptancesQuery.data ?? [])
         .filter((acceptance) => acceptance.terms_version_id === bumTermsId)
@@ -33,6 +52,7 @@ export default function AdminBums() {
           return {
             ...bumProfile,
             hasAcceptedAgreement,
+            acceptedTerms: acceptedTermsByUserId.get(profile.id) ?? [],
             profiles: bumProfile.profiles ?? {
               full_name: profile.full_name,
               email: profile.email,
@@ -49,6 +69,7 @@ export default function AdminBums() {
             created_at: profile.created_at,
           },
           hasAcceptedAgreement,
+          acceptedTerms: acceptedTermsByUserId.get(profile.id) ?? [],
           is_visible_to_clients: false,
         };
       })

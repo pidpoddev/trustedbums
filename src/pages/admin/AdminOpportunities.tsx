@@ -60,8 +60,8 @@ export default function AdminOpportunities() {
   return (
     <div>
       <PageHeader
-        title="Pipelines"
-        description="Keep customer target accounts separate from formal opportunity registrations and commission records."
+        title="Opportunities"
+        description="Review target accounts separately from formal opportunity registrations and commission records."
       />
 
       <Tabs defaultValue="targets" className="space-y-6">
