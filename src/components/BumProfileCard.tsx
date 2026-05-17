@@ -55,8 +55,38 @@ function verificationVariant(status?: string) {
   return "secondary" as const;
 }
 
+function toFirstName(value?: string | null) {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.split(/\s+/)[0] || null;
+}
+
+function firstNameFromEmail(email?: string | null) {
+  const localPart = email?.split("@")[0]?.trim();
+
+  if (!localPart) {
+    return null;
+  }
+
+  const token = localPart.split(/[._-]+/)[0]?.trim();
+
+  if (!token) {
+    return null;
+  }
+
+  return token.charAt(0).toUpperCase() + token.slice(1);
+}
+
 function profileName(profile: BumProfileCardProps["profile"]) {
-  return profile.profiles?.full_name || profile.profiles?.email || profile.user_id;
+  return (
+    toFirstName(profile.profiles?.full_name) ||
+    firstNameFromEmail(profile.profiles?.email) ||
+    "Connector"
+  );
 }
 
 export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCardProps) {
