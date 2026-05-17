@@ -106,9 +106,35 @@ async function findClerkInput(page: Page, kind: "identifier" | "password") {
 }
 
 async function continueClerkForm(page: Page) {
-  const button = page.getByRole("button", { name: /continue|sign in|next/i }).last();
-  await expect(button).toBeVisible({ timeout: 10_000 });
-  await button.click();
+  const button = await findVisibleLocator([
+    page.locator(".cl-formButtonPrimary"),
+    page.locator('[data-localization-key="formButtonPrimary"]'),
+    page.locator('form button[type="submit"]'),
+    page.locator('[role="dialog"] button[type="submit"]'),
+    page.locator('[role="dialog"]').getByRole("button", { name: /continue|sign in|next/i }),
+    page.getByRole("button", { name: /continue|sign in|next/i }),
+  ]);
+
+  if (button) {
+    await button.click();
+    return;
+  }
+
+  for (const frame of page.frames()) {
+    const frameButton = await findVisibleLocator([
+      frame.locator(".cl-formButtonPrimary"),
+      frame.locator('[data-localization-key="formButtonPrimary"]'),
+      frame.locator('form button[type="submit"]'),
+      frame.getByRole("button", { name: /continue|sign in|next/i }),
+    ]);
+
+    if (frameButton) {
+      await frameButton.click();
+      return;
+    }
+  }
+
+  throw new Error("Unable to find a visible Clerk submit button.");
 }
 
 export async function signIn(page: Page, account: QaAccount) {
@@ -137,6 +163,7 @@ export async function signIn(page: Page, account: QaAccount) {
   await (await findClerkInput(page, "password")).fill(account.password);
   await continueClerkForm(page);
   await page.waitForLoadState("networkidle").catch(() => undefined);
+  await waitForClerkSession(page);
 }
 
 async function getClerkDebugState(page: Page) {
@@ -176,6 +203,18 @@ async function getClerkDebugState(page: Page) {
       unsafeMetadata: null,
       visibleText: `Unable to inspect Clerk state: ${error instanceof Error ? error.message : String(error)}`,
     }));
+}
+
+async function waitForClerkSession(page: Page) {
+  await expect
+    .poll(
+      async () => {
+        const state = await getClerkDebugState(page);
+        return state.clerkUserId;
+      },
+      { timeout: 20_000 },
+    )
+    .not.toBeNull();
 }
 
 export async function expectTrustedBumsSession(page: Page) {
