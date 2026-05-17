@@ -246,6 +246,13 @@ async function goToPathAfterTerms(page: Page, path: string) {
 
     await page.waitForTimeout(750);
 
+    const currentPath = new URL(page.url()).pathname.replace(/\/$/, "") || "/";
+    const expectedPath = path.replace(/\/$/, "") || "/";
+
+    if (expectedPath !== "/dashboard" && currentPath !== expectedPath) {
+      continue;
+    }
+
     if (!page.url().includes("/terms")) {
       return;
     }
@@ -253,7 +260,7 @@ async function goToPathAfterTerms(page: Page, path: string) {
 
   throw new Error(
     [
-      "Unable to reach requested path after accepting terms.",
+      "Unable to reach requested path after auth, route guards, and terms acceptance settled.",
       `Requested path: ${path}`,
       `Current URL: ${page.url()}`,
       `Visible text: ${(await page.locator("body").innerText().catch(() => "")).slice(0, 1_000)}`,
