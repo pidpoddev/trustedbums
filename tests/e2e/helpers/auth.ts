@@ -206,15 +206,27 @@ async function getClerkDebugState(page: Page) {
 }
 
 async function waitForClerkSession(page: Page) {
-  await expect
-    .poll(
-      async () => {
-        const state = await getClerkDebugState(page);
-        return state.clerkUserId;
-      },
-      { timeout: 20_000 },
-    )
-    .not.toBeNull();
+  const deadline = Date.now() + 20_000;
+  let lastState = await getClerkDebugState(page);
+
+  while (Date.now() < deadline) {
+    lastState = await getClerkDebugState(page);
+
+    if (lastState.clerkUserId) {
+      return;
+    }
+
+    await page.waitForTimeout(500);
+  }
+
+  throw new Error(
+    [
+      "Clerk did not establish a browser session after password submit.",
+      `Current URL: ${page.url()}`,
+      `Clerk state: ${JSON.stringify(lastState)}`,
+      "Check that the QA user has a password credential, is email-verified/active, does not require password reset/MFA, and is not blocked by Clerk bot protection.",
+    ].join(" "),
+  );
 }
 
 export async function expectTrustedBumsSession(page: Page) {

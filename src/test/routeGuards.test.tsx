@@ -156,7 +156,7 @@ describe("route guards", () => {
           <Route element={<ClientTermsGate />}>
             <Route path="/bum/dashboard" element={<div>Bum dashboard</div>} />
           </Route>
-          <Route path="/terms" element={<div>Terms page</div>} />
+          <Route path="/bum/terms" element={<div>Terms page</div>} />
         </Routes>
       </MemoryRouter>,
     );
