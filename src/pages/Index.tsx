@@ -49,6 +49,14 @@ const proofPoints = [
   { value: "Aligned", label: "commission-based outcomes" },
 ];
 
+const contactUser = "bums";
+const contactDomain = "trustedbums.com";
+const contactSubject = "Trusted Bums intro strategy";
+
+function openContactEmail() {
+  window.location.href = `mailto:${contactUser}@${contactDomain}?subject=${encodeURIComponent(contactSubject)}`;
+}
+
 const Index = () => {
   const { user, isLoaded, isSignedIn } = useAuth();
   const portalPath = user ? getDefaultPathForRole(user.role) : "/login";
@@ -375,20 +383,24 @@ const Index = () => {
                   Bring us the accounts your team cannot crack. We will help you figure out whether trust can open the
                   door.
                 </p>
-                <a
-                  href="mailto:bums@trustedbums.com?subject=Trusted%20Bums%20intro%20strategy"
-                  className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 font-display text-xl font-black text-white transition hover:border-primary/50 hover:bg-primary/15"
+                <button
+                  type="button"
+                  onClick={openContactEmail}
+                  className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-left font-display text-xl font-black text-white transition hover:border-primary/50 hover:bg-primary/15"
                 >
                   <Mail className="h-6 w-6 text-primary" />
-                  bums@trustedbums.com
-                </a>
+                  Open a contact email
+                </button>
                 <div className="mt-8 flex flex-wrap gap-4">
                   {showSignedOutActions ? (
                     <>
-                      <Button asChild size="lg" className="h-14 rounded-full px-8 text-base font-bold">
-                        <a href="mailto:bums@trustedbums.com?subject=Trusted%20Bums%20intro%20strategy">
-                          Talk to Trusted Bums
-                        </a>
+                      <Button
+                        type="button"
+                        size="lg"
+                        className="h-14 rounded-full px-8 text-base font-bold"
+                        onClick={openContactEmail}
+                      >
+                        Talk to Trusted Bums
                       </Button>
                       <SignupIntentDialog initialRole="BUM">
                         <Button
