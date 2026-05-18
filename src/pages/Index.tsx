@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   DoorOpen,
   Handshake,
+  Mail,
   MailX,
   ShieldCheck,
   Sparkles,
@@ -151,11 +152,11 @@ const Index = () => {
               <div className="mt-9 flex flex-wrap items-center gap-4">
                 {showSignedOutActions ? (
                   <>
-                    <SignupIntentDialog initialRole="CLIENT">
-                      <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold shadow-[0_0_38px_rgba(255,122,26,0.42)]">
+                    <Button asChild size="lg" className="h-14 rounded-full px-8 text-base font-bold shadow-[0_0_38px_rgba(255,122,26,0.42)]">
+                      <a href="#contact">
                         Request an intro strategy <ArrowRight className="ml-1 h-5 w-5" />
-                      </Button>
-                    </SignupIntentDialog>
+                      </a>
+                    </Button>
                     <SignupIntentDialog initialRole="BUM">
                       <Button
                         size="lg"
@@ -362,11 +363,11 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="container mx-auto px-6 py-20">
+        <section id="contact" className="container mx-auto scroll-mt-28 px-6 py-20">
           <div className="mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] border bg-gradient-to-br from-primary via-orange-500 to-[#ffb15f] p-1 shadow-2xl">
             <div className="grid gap-8 rounded-[2.35rem] bg-[#08111f] p-8 text-white md:p-12 lg:grid-cols-[1fr_0.8fr] lg:items-center">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">Start here</p>
+                <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">Contact us</p>
                 <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
                   If a buyer matters, trust gets there faster.
                 </h2>
@@ -374,14 +375,21 @@ const Index = () => {
                   Bring us the accounts your team cannot crack. We will help you figure out whether trust can open the
                   door.
                 </p>
+                <a
+                  href="mailto:bums@trustedbums.com?subject=Trusted%20Bums%20intro%20strategy"
+                  className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 font-display text-xl font-black text-white transition hover:border-primary/50 hover:bg-primary/15"
+                >
+                  <Mail className="h-6 w-6 text-primary" />
+                  bums@trustedbums.com
+                </a>
                 <div className="mt-8 flex flex-wrap gap-4">
                   {showSignedOutActions ? (
                     <>
-                      <SignupIntentDialog initialRole="CLIENT">
-                        <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold">
+                      <Button asChild size="lg" className="h-14 rounded-full px-8 text-base font-bold">
+                        <a href="mailto:bums@trustedbums.com?subject=Trusted%20Bums%20intro%20strategy">
                           Talk to Trusted Bums
-                        </Button>
-                      </SignupIntentDialog>
+                        </a>
+                      </Button>
                       <SignupIntentDialog initialRole="BUM">
                         <Button
                           size="lg"
