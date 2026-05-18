@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Download, FilePlus, ShieldCheck, Target } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
+import { ContactSubmissionsPanel } from "@/components/admin/ContactSubmissionsPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -264,6 +265,7 @@ export default function AdminDashboard() {
       <Tabs defaultValue="opportunities" className="space-y-6">
         <TabsList className="flex h-auto flex-wrap justify-start">
           <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
+          <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="terms">Terms Versions</TabsTrigger>
           <TabsTrigger value="acceptances">Acceptances</TabsTrigger>
           <TabsTrigger value="companies">Companies & Users</TabsTrigger>
@@ -330,6 +332,10 @@ export default function AdminDashboard() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="contacts">
+          <ContactSubmissionsPanel companies={companies} />
         </TabsContent>
 
         <TabsContent value="terms">
