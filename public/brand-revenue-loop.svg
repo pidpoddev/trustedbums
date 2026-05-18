@@ -12,17 +12,18 @@
     </linearGradient>
   </defs>
   <rect x="28" y="28" width="664" height="464" rx="42" fill="url(#bg)"/>
-  <circle cx="360" cy="250" r="158" fill="none" stroke="#08111f" stroke-width="18" opacity=".1"/>
-  <path d="M493 164a158 158 0 0 1 4 166" fill="none" stroke="url(#orange)" stroke-width="20" stroke-linecap="round"/>
-  <path d="M226 337a158 158 0 0 1-1-173" fill="none" stroke="#178b83" stroke-width="20" stroke-linecap="round"/>
-  <path d="M499 333l-49-10 31-39" fill="none" stroke="#ff7a1a" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M222 160l49 10-31 39" fill="none" stroke="#178b83" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="246" y="154" width="228" height="178" rx="30" fill="#08111f"/>
-  <path d="M302 286h116" stroke="#fff8ef" stroke-width="12" stroke-linecap="round"/>
-  <path d="M302 246h66" stroke="#fff8ef" stroke-width="12" stroke-linecap="round"/>
-  <path d="M302 206h116" stroke="#ff7a1a" stroke-width="12" stroke-linecap="round"/>
-  <circle cx="468" cy="329" r="56" fill="#ff7a1a"/>
-  <text x="447" y="349" font-family="Space Grotesk, Arial, sans-serif" font-size="54" font-weight="800" fill="#fff8ef">$</text>
-  <text x="92" y="444" font-family="Space Grotesk, Arial, sans-serif" font-size="32" font-weight="800" fill="#08111f">ALIGNED TO</text>
-  <text x="312" y="444" font-family="Space Grotesk, Arial, sans-serif" font-size="32" font-weight="800" fill="#ff7a1a">LONG-TERM VALUE</text>
+  <circle cx="360" cy="244" r="166" fill="none" stroke="#08111f" stroke-width="20" opacity=".1"/>
+  <path d="M500 154a166 166 0 0 1 4 174" fill="none" stroke="url(#orange)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M220 336a166 166 0 0 1-1-182" fill="none" stroke="#178b83" stroke-width="22" stroke-linecap="round"/>
+  <path d="M506 331l-52-11 32-41" fill="none" stroke="#ff7a1a" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M216 150l52 11-32 41" fill="none" stroke="#178b83" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="232" y="146" width="256" height="198" rx="32" fill="#08111f"/>
+  <path d="M300 294h120" stroke="#fff8ef" stroke-width="13" stroke-linecap="round"/>
+  <path d="M300 249h74" stroke="#fff8ef" stroke-width="13" stroke-linecap="round"/>
+  <path d="M300 204h120" stroke="#ff7a1a" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="496" cy="338" r="62" fill="#ff7a1a"/>
+  <text x="473" y="360" font-family="Space Grotesk, Arial, sans-serif" font-size="60" font-weight="800" fill="#fff8ef">$</text>
+  <rect x="168" y="406" width="384" height="52" rx="26" fill="#08111f"/>
+  <text x="214" y="441" font-family="Space Grotesk, Arial, sans-serif" font-size="26" font-weight="800" letter-spacing="3" fill="#fff8ef">VALUE LOOP</text>
+  <circle cx="492" cy="432" r="10" fill="#ff7a1a"/>
 </svg>
