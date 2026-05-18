@@ -1,16 +1,13 @@
+import { type ChangeEvent, type FormEvent, useState } from "react";
 import { SignInButton, UserButton } from "@clerk/react";
 import {
   ArrowRight,
-  BadgeDollarSign,
   Briefcase,
   CheckCircle2,
-  DoorOpen,
   Handshake,
-  Mail,
   MailX,
-  ShieldCheck,
+  Send,
   Sparkles,
-  TimerReset,
   Users,
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
@@ -18,9 +15,14 @@ import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SignupIntentDialog } from "@/components/SignupIntentDialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
 import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
+import { type ContactInterest, submitContactSubmission } from "@/lib/contactApi";
 
 const storyCards = [
   {
@@ -49,20 +51,68 @@ const proofPoints = [
   { value: "Aligned", label: "commission-based outcomes" },
 ];
 
-const contactUser = "bums";
-const contactDomain = "trustedbums.com";
-const contactSubject = "Trusted Bums intro strategy";
-
-function openContactEmail() {
-  window.location.href = `mailto:${contactUser}@${contactDomain}?subject=${encodeURIComponent(contactSubject)}`;
-}
+const defaultContactForm = {
+  name: "",
+  email: "",
+  companyName: "",
+  interest: "CLIENT" as ContactInterest,
+  targetAccounts: "",
+  message: "",
+  website: "",
+};
 
 const Index = () => {
   const { user, isLoaded, isSignedIn } = useAuth();
+  const { toast } = useToast();
+  const [contactForm, setContactForm] = useState(defaultContactForm);
+  const [isContactSubmitting, setIsContactSubmitting] = useState(false);
   const portalPath = user ? getDefaultPathForRole(user.role) : "/login";
   const needsRoleSetup = Boolean(isLoaded && isSignedIn && !user);
   const showSignedOutActions = !isLoaded || (!isSignedIn && !user);
   const showSignedInActions = Boolean(isLoaded && user);
+
+  const updateContactField =
+    (field: keyof typeof defaultContactForm) =>
+    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      const value = field === "interest" ? (event.target.value as ContactInterest) : event.target.value;
+      setContactForm((current) => ({ ...current, [field]: value }));
+    };
+
+  const submitContactForm = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const name = contactForm.name.trim();
+    const email = contactForm.email.trim();
+    const message = contactForm.message.trim();
+
+    if (name.length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || message.length < 10) {
+      toast({
+        title: "A little more detail helps",
+        description: "Please add your name, a valid email, and a short message before sending.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsContactSubmitting(true);
+    try {
+      await submitContactSubmission(contactForm);
+      setContactForm(defaultContactForm);
+      toast({
+        title: "Message sent",
+        description: "Thanks. Trusted Bums will review this and follow up soon.",
+      });
+    } catch (error) {
+      console.error("Unable to submit contact form", error);
+      toast({
+        title: "Unable to send message",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsContactSubmitting(false);
+    }
+  };
 
   if (isLoaded && user) {
     return <Navigate to={portalPath} replace />;
@@ -383,24 +433,15 @@ const Index = () => {
                   Bring us the accounts your team cannot crack. We will help you figure out whether trust can open the
                   door.
                 </p>
-                <button
-                  type="button"
-                  onClick={openContactEmail}
-                  className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-left font-display text-xl font-black text-white transition hover:border-primary/50 hover:bg-primary/15"
-                >
-                  <Mail className="h-6 w-6 text-primary" />
-                  Open a contact email
-                </button>
                 <div className="mt-8 flex flex-wrap gap-4">
                   {showSignedOutActions ? (
                     <>
                       <Button
-                        type="button"
+                        asChild
                         size="lg"
                         className="h-14 rounded-full px-8 text-base font-bold"
-                        onClick={openContactEmail}
                       >
-                        Talk to Trusted Bums
+                        <a href="#contact-form">Talk to Trusted Bums</a>
                       </Button>
                       <SignupIntentDialog initialRole="BUM">
                         <Button
@@ -421,21 +462,114 @@ const Index = () => {
                   )}
                 </div>
               </div>
-              <div className="grid gap-4">
-                {[
-                  [DoorOpen, "Access the unreachable"],
-                  [TimerReset, "Shorten the path to a serious meeting"],
-                  [BadgeDollarSign, "Align to long-term customer value"],
-                  [ShieldCheck, "Keep the workflow auditable"],
-                ].map(([Icon, label]) => (
-                  <div key={label as string} className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.06] p-5">
-                    <div className="rounded-2xl bg-primary/15 p-3">
-                      <Icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <p className="font-display text-xl font-black">{label as string}</p>
+              <form
+                id="contact-form"
+                onSubmit={submitContactForm}
+                className="rounded-[2rem] border border-white/10 bg-white/[0.07] p-5 shadow-2xl backdrop-blur md:p-6"
+              >
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="contact-name" className="text-white">
+                      Name
+                    </Label>
+                    <Input
+                      id="contact-name"
+                      value={contactForm.name}
+                      onChange={updateContactField("name")}
+                      autoComplete="name"
+                      className="h-12 border-white/15 bg-white text-[#08111f]"
+                      placeholder="Your name"
+                    />
                   </div>
-                ))}
-              </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="contact-email" className="text-white">
+                      Email
+                    </Label>
+                    <Input
+                      id="contact-email"
+                      type="email"
+                      value={contactForm.email}
+                      onChange={updateContactField("email")}
+                      autoComplete="email"
+                      className="h-12 border-white/15 bg-white text-[#08111f]"
+                      placeholder="you@company.com"
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="contact-company" className="text-white">
+                      Company
+                    </Label>
+                    <Input
+                      id="contact-company"
+                      value={contactForm.companyName}
+                      onChange={updateContactField("companyName")}
+                      autoComplete="organization"
+                      className="h-12 border-white/15 bg-white text-[#08111f]"
+                      placeholder="Company name"
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="contact-interest" className="text-white">
+                      What brings you here?
+                    </Label>
+                    <select
+                      id="contact-interest"
+                      value={contactForm.interest}
+                      onChange={updateContactField("interest")}
+                      className="h-12 w-full rounded-md border border-white/15 bg-white px-3 text-base text-[#08111f] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                    >
+                      <option value="CLIENT">I need introductions for my company</option>
+                      <option value="BUM">I want to become a Bum connector</option>
+                      <option value="GENERAL">I have a general question</option>
+                    </select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="contact-targets" className="text-white">
+                      Target accounts or buyers
+                    </Label>
+                    <Input
+                      id="contact-targets"
+                      value={contactForm.targetAccounts}
+                      onChange={updateContactField("targetAccounts")}
+                      className="h-12 border-white/15 bg-white text-[#08111f]"
+                      placeholder="Optional: accounts you want help reaching"
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="contact-message" className="text-white">
+                      Message
+                    </Label>
+                    <Textarea
+                      id="contact-message"
+                      value={contactForm.message}
+                      onChange={updateContactField("message")}
+                      className="min-h-32 border-white/15 bg-white text-[#08111f]"
+                      placeholder="Tell us what kind of door you are trying to open."
+                    />
+                  </div>
+
+                  <div className="hidden" aria-hidden="true">
+                    <Label htmlFor="contact-website">Website</Label>
+                    <Input
+                      id="contact-website"
+                      value={contactForm.website}
+                      onChange={updateContactField("website")}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <Button type="submit" size="lg" className="h-14 rounded-full text-base font-bold" disabled={isContactSubmitting}>
+                    {isContactSubmitting ? "Sending..." : "Send message"}
+                    <Send className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </section>
