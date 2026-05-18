@@ -21,8 +21,13 @@ export function AccessibilityMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="Accessibility settings">
-          <Accessibility className="h-5 w-5" />
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Accessibility settings"
+          className="border-white/20 bg-white text-[#08111f] shadow-sm hover:bg-primary hover:text-white"
+        >
+          <Accessibility className="h-5 w-5" strokeWidth={2.5} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-2rem)] p-2">
