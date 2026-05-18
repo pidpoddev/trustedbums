@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Trusted Bums mark</title>
+  <defs>
+    <linearGradient id="orange" x1="28" y1="22" x2="94" y2="94" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff8a1f"/>
+      <stop offset="1" stop-color="#f15a16"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="28" y1="96" x2="106" y2="26" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08111f"/>
+      <stop offset="1" stop-color="#142033"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="#fff8ef"/>
+  <rect x="11" y="11" width="106" height="106" rx="25" fill="none" stroke="#08111f" stroke-width="8"/>
+  <path d="M31 32h53c10 0 18 8 18 18 0 11-8 19-18 19H69v39H49V69H31V50h18v-6H31V32Z" fill="url(#orange)"/>
+  <path d="M91 53c14 5 23 17 23 31 0 18-15 33-36 33H46c-9 0-16-7-16-16 0-25 27-45 61-48Z" fill="url(#ink)"/>
+  <path d="M65 57h28c13 0 23 10 23 22 0 13-10 23-23 23H65V57Zm19 17v10h8c4 0 7-2 7-5s-3-5-7-5h-8Zm0 22v11h10c4 0 8-2 8-6 0-3-4-5-8-5H84Z" fill="#fff"/>
+  <path d="M31 50h18v56" fill="none" stroke="#fff" stroke-width="8"/>
+</svg>

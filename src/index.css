@@ -104,6 +104,11 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    background-image:
+      radial-gradient(circle at 14% 10%, hsl(var(--primary) / 0.08), transparent 28rem),
+      radial-gradient(circle at 92% 18%, hsl(var(--accent) / 0.08), transparent 24rem),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.035) 1px, transparent 1px);
+    background-size: auto, auto, 64px 64px;
   }
 
   html.colorblind-mode {
@@ -203,5 +208,64 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .hero-grid {
+    background-image:
+      linear-gradient(hsl(var(--primary) / 0.16) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.16) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: linear-gradient(to bottom, black, transparent 78%);
+  }
+
+  .brand-float {
+    animation: brand-float 7s ease-in-out infinite;
+  }
+
+  .brand-rise {
+    animation: brand-rise 0.7s ease-out both;
+  }
+
+  .brand-rise-delay-1 {
+    animation: brand-rise 0.7s ease-out 0.12s both;
+  }
+
+  .brand-rise-delay-2 {
+    animation: brand-rise 0.7s ease-out 0.22s both;
+  }
+
+  .brand-marquee {
+    animation: brand-marquee 24s linear infinite;
+  }
+
+  @keyframes brand-float {
+    0%, 100% {
+      transform: translateY(0) rotate(-1deg);
+    }
+    50% {
+      transform: translateY(-12px) rotate(1.5deg);
+    }
+  }
+
+  @keyframes brand-rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes brand-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
 }

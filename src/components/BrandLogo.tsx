@@ -9,8 +9,8 @@ interface BrandLogoProps {
 }
 
 const logoSources = {
-  light: "/logo-light.jpg",
-  dark: "/logo-dark.jpg",
+  light: "/logo-horizontal-light.svg",
+  dark: "/logo-horizontal-dark.svg",
 } as const;
 
 export function BrandLogo({
@@ -23,7 +23,7 @@ export function BrandLogo({
     <img
       src={logoSources[theme]}
       alt="Trusted Bums"
-      className={cn("block h-10 w-auto rounded-sm object-contain", imageClassName)}
+      className={cn("block h-12 w-auto object-contain", imageClassName)}
     />
   );
 

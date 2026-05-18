@@ -1,4 +1,17 @@
 import { SignInButton, UserButton } from "@clerk/react";
+import {
+  ArrowRight,
+  BadgeDollarSign,
+  Briefcase,
+  CheckCircle2,
+  DoorOpen,
+  Handshake,
+  MailX,
+  ShieldCheck,
+  Sparkles,
+  TimerReset,
+  Users,
+} from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -7,21 +20,39 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
 import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
-import {
-  ArrowRight,
-  Briefcase,
-  DoorOpen,
-  Handshake,
-  ShieldCheck,
-  TimerReset,
-  Users,
-  Zap,
-} from "lucide-react";
+
+const storyCards = [
+  {
+    eyebrow: "01",
+    title: "Cold outreach gets buried",
+    copy: "Your buyer is already deleting emails, dodging pitches, and protecting their calendar from strangers.",
+    image: "/brand-blocked-inbox.svg",
+  },
+  {
+    eyebrow: "02",
+    title: "Trust opens the side door",
+    copy: "A credible friend can start the conversation in a way no sequence, script, or generic SDR campaign can.",
+    image: "/brand-trust-connector.svg",
+  },
+  {
+    eyebrow: "03",
+    title: "Revenue stays aligned",
+    copy: "When the intro creates durable customer revenue, everyone stays tied to the value of the relationship.",
+    image: "/brand-revenue-loop.svg",
+  },
+];
+
+const proofPoints = [
+  { value: "Hard", label: "accounts, not easy volume" },
+  { value: "Warm", label: "routes into guarded buyers" },
+  { value: "Aligned", label: "commission-based outcomes" },
+];
 
 const Index = () => {
   const { user, isLoaded, isSignedIn } = useAuth();
   const portalPath = user ? getDefaultPathForRole(user.role) : "/login";
-  const showSignedOutActions = !isLoaded || !user;
+  const needsRoleSetup = Boolean(isLoaded && isSignedIn && !user);
+  const showSignedOutActions = !isLoaded || (!isSignedIn && !user);
   const showSignedInActions = Boolean(isLoaded && user);
 
   if (isLoaded && user) {
@@ -31,16 +62,14 @@ const Index = () => {
   if (isSignedIn && !isLoaded) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-            <BrandLogo to="/" imageClassName="h-12" />
-            <div className="flex items-center gap-3">
-              <AccessibilityMenu />
-            </div>
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#08111f]/95 backdrop-blur">
+          <div className="container mx-auto flex h-20 items-center justify-between px-6">
+            <BrandLogo to="/" theme="dark" imageClassName="h-16" />
+            <AccessibilityMenu />
           </div>
         </header>
-        <main className="container mx-auto flex min-h-[calc(100vh-4rem)] items-center justify-center px-6">
-          <div className="rounded-2xl border bg-card px-8 py-10 text-center">
+        <main className="container mx-auto flex min-h-[calc(100vh-5rem)] items-center justify-center px-6">
+          <div className="rounded-[2rem] border bg-card px-8 py-10 text-center shadow-xl">
             <p className="font-display text-2xl font-bold">Preparing your portal</p>
             <p className="mt-3 text-muted-foreground">
               We&apos;re setting up your account and checking your legal agreements.
@@ -52,30 +81,43 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <BrandLogo to="/" imageClassName="h-12" />
+    <div className="min-h-screen overflow-hidden bg-background">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#08111f]/95 text-white backdrop-blur-xl">
+        <div className="container mx-auto flex h-20 items-center justify-between px-6">
+          <BrandLogo to="/" theme="dark" imageClassName="h-16 md:h-[4.6rem]" />
           <div className="flex items-center gap-3">
             <AccessibilityMenu />
             {showSignedOutActions ? (
               <>
                 <SignInButton mode="modal" {...clerkSignInRedirectProps}>
-                  <Button variant="ghost" size="sm">Sign in</Button>
+                  <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">
+                    Sign in
+                  </Button>
                 </SignInButton>
                 <SignupIntentDialog>
-                  <Button size="sm">Sign up</Button>
+                  <Button size="sm" className="rounded-full px-5 shadow-[0_0_28px_rgba(255,122,26,0.35)]">
+                    Sign up
+                  </Button>
                 </SignupIntentDialog>
               </>
             ) : null}
             {showSignedInActions ? (
               <>
-                {user ? (
-                  <Link to={portalPath}>
-                    <Button variant="ghost" size="sm">Open Portal</Button>
-                  </Link>
-                ) : null}
+                <Link to={portalPath}>
+                  <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">
+                    Open Portal
+                  </Button>
+                </Link>
+                <UserButton />
+              </>
+            ) : null}
+            {needsRoleSetup ? (
+              <>
+                <Link to="/login">
+                  <Button size="sm" className="rounded-full px-5">
+                    Finish setup
+                  </Button>
+                </Link>
                 <UserButton />
               </>
             ) : null}
@@ -83,308 +125,307 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="container mx-auto px-6 py-24">
-        <div className="mx-auto max-w-6xl rounded-[2rem] border bg-gradient-to-br from-card via-card to-secondary/30 px-8 py-14 shadow-sm md:px-14 md:py-20">
-          <div className="grid gap-14 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-                <Handshake className="h-4 w-4" />
+      <main>
+        <section className="relative bg-[#08111f] text-white">
+          <div className="hero-grid absolute inset-0 opacity-70" />
+          <div className="absolute -left-32 top-20 h-80 w-80 rounded-full bg-primary/30 blur-3xl" />
+          <div className="absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
+
+          <div className="container relative mx-auto grid min-h-[760px] gap-12 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
+            <div className="brand-rise max-w-4xl">
+              <div className="inline-flex rotate-[-1.5deg] items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-4 py-2 text-sm font-bold uppercase tracking-[0.18em] text-orange-100 shadow-[0_0_35px_rgba(255,122,26,0.28)]">
+                <Sparkles className="h-4 w-4 text-primary" />
                 BUMS = Bring Us More Sales
               </div>
-              <h1 className="mt-6 max-w-4xl font-display text-5xl font-bold leading-tight md:text-7xl">
-                We Open Doors
-                <span className="block text-primary">Cold Outreach Can’t</span>
+
+              <h1 className="mt-7 max-w-5xl font-display text-5xl font-black leading-[0.92] tracking-[-0.06em] md:text-7xl xl:text-8xl">
+                Your buyer is ignoring strangers.
+                <span className="mt-3 block text-primary">Good thing we know a friend.</span>
               </h1>
-              <p className="mt-6 max-w-2xl text-xl text-muted-foreground">
-                Trusted Bums helps companies reach overwhelmed decision makers through trusted human introductions. The
-                name is playful on purpose. BUMS means Bring Us More Sales, and the model is simple: when cold
-                outreach gets ignored, trust still gets through.
-              </p>
-              <p className="mt-4 max-w-2xl text-base text-muted-foreground">
-                Sometimes we create access you would never win on your own. Other times, we compress months of friction
-                into one credible conversation and accelerate a door you eventually hoped would open.
+
+              <p className="mt-7 max-w-2xl text-xl leading-8 text-orange-50/78">
+                Trusted Bums turns hard-to-reach decision makers into warm conversations through credible human
+                introductions. The name is playful. The access is not.
               </p>
 
-              <div className="mt-10 flex flex-wrap items-center gap-4">
+              <div className="mt-9 flex flex-wrap items-center gap-4">
                 {showSignedOutActions ? (
                   <>
                     <SignupIntentDialog initialRole="CLIENT">
-                      <Button size="lg" className="px-8 text-lg">
-                        Request an Introduction Strategy <ArrowRight className="ml-2 h-5 w-5" />
+                      <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold shadow-[0_0_38px_rgba(255,122,26,0.42)]">
+                        Request an intro strategy <ArrowRight className="ml-1 h-5 w-5" />
                       </Button>
                     </SignupIntentDialog>
                     <SignupIntentDialog initialRole="BUM">
-                      <Button size="lg" variant="outline" className="px-8 text-lg">
-                        Join as a Connector <ArrowRight className="ml-2 h-5 w-5" />
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="h-14 rounded-full border-white/25 bg-white/8 px-8 text-base font-bold text-white hover:bg-white hover:text-[#08111f]"
+                      >
+                        Become a Bum <ArrowRight className="ml-1 h-5 w-5" />
                       </Button>
                     </SignupIntentDialog>
                   </>
                 ) : null}
                 {showSignedInActions ? (
                   <Link to={portalPath}>
-                    <Button size="lg" className="px-8 text-lg">
-                      Open Portal <ArrowRight className="ml-2 h-5 w-5" />
+                    <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold">
+                      Open Portal <ArrowRight className="ml-1 h-5 w-5" />
                     </Button>
                   </Link>
                 ) : null}
               </div>
+
+              <div className="mt-12 grid max-w-3xl gap-4 sm:grid-cols-3">
+                {proofPoints.map((point) => (
+                  <div key={point.value} className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur">
+                    <p className="font-display text-2xl font-black text-primary">{point.value}</p>
+                    <p className="mt-1 text-sm text-white/68">{point.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="rounded-3xl border bg-background/90 p-6 shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-2xl bg-primary/10 p-3">
-                    <DoorOpen className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-display text-xl font-bold">Access to the unreachable</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Reach buyers who are protected by noise, gatekeepers, and relationships you do not yet have.
-                    </p>
-                  </div>
+            <div className="brand-rise-delay-1 relative mx-auto w-full max-w-xl">
+              <div className="brand-float relative rounded-[2.5rem] border border-white/12 bg-white/[0.07] p-5 shadow-2xl backdrop-blur">
+                <div className="rounded-[2rem] bg-[#fff8ef] p-4 text-[#08111f] shadow-[0_25px_80px_rgba(0,0,0,0.28)]">
+                  <img
+                    src="/brand-trust-connector.svg"
+                    alt="A trusted connector bridges a client and decision maker"
+                    className="w-full rounded-[1.5rem]"
+                  />
                 </div>
               </div>
-              <div className="rounded-3xl border bg-background/90 p-6 shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-2xl bg-accent/10 p-3">
-                    <TimerReset className="h-6 w-6 text-accent" />
+              <div className="absolute -bottom-8 -left-4 max-w-[18rem] rotate-[-4deg] rounded-3xl bg-primary p-5 text-[#08111f] shadow-2xl">
+                <p className="font-display text-2xl font-black leading-none">Cold is crowded.</p>
+                <p className="mt-2 text-sm font-semibold">Trust still gets through.</p>
+              </div>
+              <div className="absolute -right-3 -top-5 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur">
+                No stranger danger sales pitch
+              </div>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden border-y border-white/10 bg-white/[0.04] py-4 text-sm font-bold uppercase tracking-[0.28em] text-white/64">
+            <div className="brand-marquee flex w-[200%] gap-10 whitespace-nowrap">
+              {Array.from({ length: 2 }).map((_, groupIndex) => (
+                <div key={groupIndex} className="flex w-1/2 shrink-0 items-center gap-10">
+                  <span>Warm introductions</span>
+                  <span className="text-primary">Bring Us More Sales</span>
+                  <span>Trusted connectors</span>
+                  <span className="text-primary">Hard accounts</span>
+                  <span>Relationship-led revenue</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="container mx-auto px-6 py-20">
+          <div className="mx-auto max-w-6xl">
+            <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">Why it works</p>
+                <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
+                  Decision makers do not need more pitches.
+                </h2>
+              </div>
+              <p className="text-lg leading-8 text-muted-foreground">
+                Your ideal buyer may never hear your message because their inbox is already an arena. We replace the
+                noise with a human reason to listen: a trusted person making a credible introduction.
+              </p>
+            </div>
+
+            <div className="mt-12 grid gap-6 lg:grid-cols-3">
+              {storyCards.map((card) => (
+                <article
+                  key={card.title}
+                  className="group overflow-hidden rounded-[2rem] border bg-card shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                >
+                  <div className="bg-secondary/40 p-3">
+                    <img src={card.image} alt="" className="aspect-[1.38] w-full rounded-[1.5rem] object-cover" />
                   </div>
-                  <div>
-                    <p className="font-display text-xl font-bold">Acceleration through trust</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Even when you could eventually get there, a trusted introduction radically shortens the time to a
-                      serious meeting.
-                    </p>
+                  <div className="p-7">
+                    <p className="font-display text-sm font-black uppercase tracking-[0.22em] text-primary">{card.eyebrow}</p>
+                    <h3 className="mt-3 font-display text-2xl font-black tracking-[-0.03em]">{card.title}</h3>
+                    <p className="mt-3 text-muted-foreground">{card.copy}</p>
                   </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="container mx-auto px-6 py-10">
+          <div className="mx-auto grid max-w-6xl gap-8 overflow-hidden rounded-[2.5rem] bg-[#08111f] p-8 text-white md:p-12 lg:grid-cols-[1fr_0.9fr]">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">The model</p>
+              <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
+                Not appointment setting. Access alignment.
+              </h2>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-white/70">
+                We focus on the doors that matter most: strategic accounts where access is difficult, trust is scarce,
+                and a credible introduction can accelerate months of friction into one serious conversation.
+              </p>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5">
+                  <MailX className="h-7 w-7 text-primary" />
+                  <p className="mt-4 font-display text-xl font-black">Less noise</p>
+                  <p className="mt-2 text-sm text-white/65">No more hoping a stranger reads email number seven.</p>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5">
+                  <Handshake className="h-7 w-7 text-primary" />
+                  <p className="mt-4 font-display text-xl font-black">More credibility</p>
+                  <p className="mt-2 text-sm text-white/65">The first touch comes from someone the buyer already trusts.</p>
                 </div>
               </div>
-              <div className="rounded-3xl border bg-background/90 p-6 shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-2xl bg-primary/10 p-3">
-                    <ShieldCheck className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-display text-xl font-bold">Long-term aligned incentives</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      When a difficult introduction creates durable customer revenue, our model stays aligned with that
-                      long-term value.
-                    </p>
-                  </div>
+            </div>
+
+            <div className="relative min-h-[420px]">
+              <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-primary/25 to-accent/20" />
+              <img
+                src="/brand-revenue-loop.svg"
+                alt="Revenue alignment loop"
+                className="relative z-10 h-full w-full rounded-[2rem] object-cover shadow-2xl"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="container mx-auto px-6 py-20">
+          <div className="mx-auto max-w-6xl rounded-[2.5rem] border bg-card p-8 shadow-sm md:p-12">
+            <div className="max-w-3xl">
+              <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">How it works</p>
+              <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
+                A real revenue channel, not a favor spreadsheet.
+              </h2>
+            </div>
+
+            <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+              {[
+                ["Choose the doors", "Clients name the accounts and decision makers that are worth a trusted route."],
+                ["Match the Bum", "We find the connector with the right relationship, context, and credibility."],
+                ["Make it warm", "The approach feels natural because it comes through trust, not automation."],
+                ["Track the value", "If the intro turns into durable revenue, everyone can see the aligned economics."],
+              ].map(([title, copy], index) => (
+                <div key={title} className="rounded-[1.75rem] bg-secondary/55 p-6">
+                  <p className="font-display text-sm font-black uppercase tracking-[0.2em] text-primary">
+                    {String(index + 1).padStart(2, "0")}
+                  </p>
+                  <p className="mt-5 font-display text-xl font-black">{title}</p>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="container mx-auto px-6 py-10">
+          <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">
+            <div className="rounded-[2rem] border bg-card p-8 shadow-sm md:p-10">
+              <div className="mb-6 w-fit rounded-2xl bg-primary/10 p-4">
+                <Briefcase className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="font-display text-3xl font-black tracking-[-0.04em]">For Clients</h3>
+              <p className="mt-4 text-muted-foreground">
+                Target the accounts your team struggles to reach, define commission terms, upload training, and track
+                introductions in a structured workflow.
+              </p>
+              <div className="mt-6 space-y-3">
+                {["Hard account targeting", "Commission-aligned strategy", "Bum training and enablement"].map((item) => (
+                  <p key={item} className="flex items-center gap-3 text-sm font-semibold">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    {item}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border bg-card p-8 shadow-sm md:p-10">
+              <div className="mb-6 w-fit rounded-2xl bg-accent/10 p-4">
+                <Users className="h-7 w-7 text-accent" />
+              </div>
+              <h3 className="font-display text-3xl font-black tracking-[-0.04em]">For Bums</h3>
+              <p className="mt-4 text-muted-foreground">
+                Turn trusted relationships and hard-earned credibility into a revenue channel. Bring Us More Sales is
+                the joke, but it is also the job.
+              </p>
+              <div className="mt-6 space-y-3">
+                {["Connector profile", "Opportunity matching", "Transparent payout tracking"].map((item) => (
+                  <p key={item} className="flex items-center gap-3 text-sm font-semibold">
+                    <CheckCircle2 className="h-5 w-5 text-accent" />
+                    {item}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="container mx-auto px-6 py-20">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] border bg-gradient-to-br from-primary via-orange-500 to-[#ffb15f] p-1 shadow-2xl">
+            <div className="grid gap-8 rounded-[2.35rem] bg-[#08111f] p-8 text-white md:p-12 lg:grid-cols-[1fr_0.8fr] lg:items-center">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">Start here</p>
+                <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
+                  If a buyer matters, trust gets there faster.
+                </h2>
+                <p className="mt-5 max-w-2xl text-lg leading-8 text-white/70">
+                  Bring us the accounts your team cannot crack. We will help you figure out whether trust can open the
+                  door.
+                </p>
+                <div className="mt-8 flex flex-wrap gap-4">
+                  {showSignedOutActions ? (
+                    <>
+                      <SignupIntentDialog initialRole="CLIENT">
+                        <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold">
+                          Talk to Trusted Bums
+                        </Button>
+                      </SignupIntentDialog>
+                      <SignupIntentDialog initialRole="BUM">
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="h-14 rounded-full border-white/25 bg-white/8 px-8 text-base font-bold text-white hover:bg-white hover:text-[#08111f]"
+                        >
+                          Become a Bum
+                        </Button>
+                      </SignupIntentDialog>
+                    </>
+                  ) : (
+                    <Link to={portalPath}>
+                      <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold">
+                        Open Portal
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Problem / Value */}
-      <section className="container mx-auto px-6 py-16">
-        <div className="mx-auto max-w-6xl">
-          <div className="max-w-3xl">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Why it works</p>
-            <h2 className="mt-3 font-display text-4xl font-bold md:text-5xl">
-              Decision makers do not need more pitches. They need a reason to listen.
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Your ideal buyer may never hear your message because they are already buried under cold emails,
-              unsolicited LinkedIn outreach, and generic appointment requests. We replace that noise with trust.
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            <div className="rounded-2xl border bg-card p-8 transition-shadow hover:shadow-lg">
-              <div className="mb-4 w-fit rounded-xl bg-primary/10 p-3">
-                <Briefcase className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-display text-xl font-bold">Hard accounts, not easy volume</h3>
-              <p className="mt-2 text-muted-foreground">
-                We focus on the buyers who matter most: strategic accounts where access is difficult, valuable, and
-                unlikely to come from standard outbound alone.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border bg-card p-8 transition-shadow hover:shadow-lg">
-              <div className="mb-4 w-fit rounded-xl bg-accent/10 p-3">
-                <Users className="h-6 w-6 text-accent" />
-              </div>
-              <h3 className="font-display text-xl font-bold">Trusted friend to trusted buyer</h3>
-              <p className="mt-2 text-muted-foreground">
-                The introduction is not another stranger trying to break through. It is someone the decision maker
-                already knows, trusts, and is more willing to hear out.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border bg-card p-8 transition-shadow hover:shadow-lg">
-              <div className="mb-4 w-fit rounded-xl bg-primary/10 p-3">
-                <Zap className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-display text-xl font-bold">Faster path to meaningful meetings</h3>
-              <p className="mt-2 text-muted-foreground">
-                We accelerate the first conversation so your team spends less time fighting for attention and more time
-                selling from inside the room.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works */}
-      <section className="container mx-auto px-6 py-16">
-        <div className="mx-auto max-w-6xl rounded-[2rem] border bg-card p-8 md:p-12">
-          <div className="max-w-3xl">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">How it works</p>
-            <h2 className="mt-3 font-display text-4xl font-bold md:text-5xl">
-              Trust-based introductions, structured like a real revenue channel
-            </h2>
-          </div>
-
-          <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl bg-secondary/45 p-6">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">01</p>
-              <p className="mt-4 font-display text-xl font-bold">Choose the accounts that matter</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                We start with the decision makers and customer targets your team most wants to reach.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-secondary/45 p-6">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">02</p>
-              <p className="mt-4 font-display text-xl font-bold">Match the right connector</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                We identify the trusted connector with the right relationship, context, and credibility to make the
-                approach feel natural.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-secondary/45 p-6">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">03</p>
-              <p className="mt-4 font-display text-xl font-bold">Open the door through trust</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                The outreach comes through a trusted friend, not another cold message competing in an exhausted inbox.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-secondary/45 p-6">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">04</p>
-              <p className="mt-4 font-display text-xl font-bold">Own the revenue from there</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Once the meeting is set, your team runs the sales process. We stay aligned to the value created if the
-                account becomes long-term revenue.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Economics / Audience */}
-      <section className="container mx-auto px-6 py-16">
-        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_0.9fr]">
-          <div className="rounded-[2rem] border bg-card p-8 md:p-10">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Commercial model</p>
-            <h2 className="mt-3 font-display text-3xl font-bold md:text-4xl">
-              We are not pricing a meeting. We are aligning to the value of access.
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              When we help create a relationship your team could not access, or help you reach it much faster through
-              trust, the value often extends far beyond a first meeting. That is why our model is built around a
-              durable percentage of the customer relationship when the introduction creates long-term revenue.
-            </p>
-            <p className="mt-4 text-muted-foreground">
-              The point is simple: if trust unlocks a valuable account, our incentives should stay aligned with the
-              revenue created, not end at the calendar invite.
-            </p>
-          </div>
-
-          <div className="rounded-[2rem] border bg-card p-8 md:p-10">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Best fit</p>
-            <h2 className="mt-3 font-display text-3xl font-bold md:text-4xl">
-              Built for high-value, relationship-driven sales
-            </h2>
-            <div className="mt-8 space-y-4">
-              <div className="rounded-2xl bg-secondary/45 p-5">
-                <p className="font-display text-lg font-bold">Complex B2B deals</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Especially where executive attention is scarce and account value is high.
-                </p>
-              </div>
-              <div className="rounded-2xl bg-secondary/45 p-5">
-                <p className="font-display text-lg font-bold">Difficult target accounts</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  The accounts your team talks about constantly but has not been able to break into.
-                </p>
-              </div>
-              <div className="rounded-2xl bg-secondary/45 p-5">
-                <p className="font-display text-lg font-bold">Teams that value speed</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  If you can eventually get there, we help you get there faster. If you cannot, we help make the
-                  impossible reachable.
-                </p>
+              <div className="grid gap-4">
+                {[
+                  [DoorOpen, "Access the unreachable"],
+                  [TimerReset, "Shorten the path to a serious meeting"],
+                  [BadgeDollarSign, "Align to long-term customer value"],
+                  [ShieldCheck, "Keep the workflow auditable"],
+                ].map(([Icon, label]) => (
+                  <div key={label as string} className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.06] p-5">
+                    <div className="rounded-2xl bg-primary/15 p-3">
+                      <Icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="font-display text-xl font-black">{label as string}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* Audience */}
-      <section className="container mx-auto px-6 py-16">
-        <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2">
-          <div className="rounded-2xl border bg-card p-8 transition-shadow hover:shadow-lg">
-            <div className="mb-4 w-fit rounded-xl bg-primary/10 p-3">
-              <Briefcase className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="mb-2 font-display text-xl font-bold">For Clients</h3>
-            <p className="text-muted-foreground">
-              Target the accounts your team struggles to reach, define the commercial model, and track introductions in
-              a structured, auditable workflow.
-            </p>
-          </div>
-          <div className="rounded-2xl border bg-card p-8 transition-shadow hover:shadow-lg">
-            <div className="mb-4 w-fit rounded-xl bg-accent/10 p-3">
-              <Users className="h-6 w-6 text-accent" />
-            </div>
-            <h3 className="mb-2 font-display text-xl font-bold">For Connectors</h3>
-            <p className="text-muted-foreground">
-              Turn trusted relationships and hard-earned credibility into a revenue channel. Bring Us More Sales is the
-              joke, but it is also the job.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact */}
-      <section className="container mx-auto px-6 py-16">
-        <div className="mx-auto max-w-6xl rounded-[2rem] border bg-gradient-to-br from-card via-card to-primary/10 p-8 md:p-10">
-          <div className="max-w-2xl">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Start here</p>
-            <h2 className="mt-3 font-display text-3xl font-bold md:text-4xl">If a buyer matters, trust gets there faster.</h2>
-            <p className="mt-3 text-muted-foreground">
-              If you have target accounts your team cannot seem to crack, or accounts you want to reach faster through
-              trusted introductions, we should talk.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-4">
-              {showSignedOutActions ? (
-                <>
-                  <SignupIntentDialog initialRole="CLIENT">
-                    <Button size="lg">Talk to Trusted Bums</Button>
-                  </SignupIntentDialog>
-                  <SignupIntentDialog initialRole="BUM">
-                    <Button size="lg" variant="outline">Become a Connector</Button>
-                  </SignupIntentDialog>
-                </>
-              ) : (
-                <Link to={portalPath}>
-                  <Button size="lg">Open Portal</Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t mt-16">
-        <div className="container mx-auto px-6 py-8 flex items-center justify-between text-sm text-muted-foreground">
-          <BrandLogo to="/" imageClassName="h-9" />
-          <div className="flex items-center gap-4">
-            <Link to="/privacy-policy" className="hover:text-foreground">
+      <footer className="border-t bg-[#08111f] text-white">
+        <div className="container mx-auto flex flex-col gap-5 px-6 py-8 text-sm text-white/62 md:flex-row md:items-center md:justify-between">
+          <BrandLogo to="/" theme="dark" imageClassName="h-12" />
+          <div className="flex flex-wrap items-center gap-4">
+            <Link to="/privacy-policy" className="hover:text-white">
               Privacy Policy
             </Link>
             <p>© 2026 Trusted Bums. All rights reserved.</p>
