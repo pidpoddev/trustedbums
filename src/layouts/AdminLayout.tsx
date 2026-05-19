@@ -25,6 +25,7 @@ import {
   DollarSign,
   Video,
   Mail,
+  GraduationCap,
   BarChart3,
   type LucideIcon,
 } from "lucide-react";
@@ -59,6 +60,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     label: "Communications",
     items: [
       { title: "Emails", url: "/admin/emails", icon: Mail },
+      { title: "Training & Assets", url: "/admin/training-assets", icon: GraduationCap },
       { title: "Reports", url: "/admin/reports", icon: BarChart3 },
     ],
   },

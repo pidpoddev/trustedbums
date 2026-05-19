@@ -37,7 +37,7 @@ const navGroups = [
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
   { title: "My Claims", url: "/bum/claims", icon: Handshake },
   { title: "Live Conversations", url: "/bum/live-conversations", icon: Calendar },
-  { title: "Trainings", url: "/bum/trainings", icon: GraduationCap },
+  { title: "Training & Assets", url: "/bum/trainings", icon: GraduationCap },
   ] },
   { label: "Finance", items: [
   { title: "Earnings", url: "/bum/earnings", icon: Wallet },

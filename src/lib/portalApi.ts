@@ -491,7 +491,7 @@ export interface TermsAcceptance {
   accepted_at: string;
   ip_address: string | null;
   user_agent: string | null;
-  companies?: Pick<CompanyRecord, "name"> | null;
+  companies?: Pick<CompanyRecord, "id" | "name"> | null;
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
   terms_versions?: Pick<TermsVersion, "version" | "title"> | null;
 }
@@ -749,7 +749,7 @@ export interface AuditEvent {
 export interface TrainingMaterialAttachment {
   id: string;
   training_material_id: string;
-  company_id: string;
+  company_id: string | null;
   uploaded_by: string;
   file_name: string;
   file_type: string | null;
@@ -761,7 +761,7 @@ export interface TrainingMaterialAttachment {
 
 export interface TrainingMaterial {
   id: string;
-  company_id: string;
+  company_id: string | null;
   created_by: string;
   title: string;
   description: string | null;
@@ -781,6 +781,7 @@ export interface TrainingMaterialInput {
   technology?: string;
   resource_url?: string;
   is_published?: boolean;
+  company_id?: string | null;
   attachments?: File[];
 }
 
@@ -3661,11 +3662,8 @@ function sanitizeAttachmentFileName(fileName: string) {
 }
 
 async function uploadTrainingMaterialAttachment(user: AuthUser, material: TrainingMaterial, file: File) {
-  if (!user.clientId) {
-    throw new Error("This client user is not linked to a company yet.");
-  }
-
-  const storagePath = `${user.clientId}/${material.id}/${crypto.randomUUID()}-${sanitizeAttachmentFileName(file.name)}`;
+  const storageScope = material.company_id ?? "corporate";
+  const storagePath = `${storageScope}/${material.id}/${crypto.randomUUID()}-${sanitizeAttachmentFileName(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from(TRAINING_MATERIAL_ATTACHMENTS_BUCKET)
     .upload(storagePath, file, {
@@ -3681,7 +3679,7 @@ async function uploadTrainingMaterialAttachment(user: AuthUser, material: Traini
     .from("training_material_attachments")
     .insert({
       training_material_id: material.id,
-      company_id: user.clientId,
+      company_id: material.company_id,
       uploaded_by: user.id,
       file_name: file.name || "Attachment",
       file_type: file.type || null,
@@ -3714,13 +3712,17 @@ export async function getTrainingMaterialAttachmentUrl(attachment: TrainingMater
   return data.signedUrl;
 }
 
-export async function listClientTrainingMaterials(user: AuthUser) {
-  const { data, error } = await supabase
+export async function listTrainingMaterialsForUser(user: AuthUser) {
+  let query = supabase
     .from("training_materials")
-    .select("*, companies(name), training_material_attachments(*)")
-    .eq("company_id", user.clientId ?? "")
-    .order("updated_at", { ascending: false })
-    .returns<TrainingMaterial[]>();
+    .select("*, companies(id, name), training_material_attachments(*)")
+    .order("updated_at", { ascending: false });
+
+  if (user.role === "CLIENT") {
+    query = query.or(`company_id.eq.${user.clientId ?? "00000000-0000-0000-0000-000000000000"},company_id.is.null`);
+  }
+
+  const { data, error } = await query.returns<TrainingMaterial[]>();
 
   if (error) {
     throw error;
@@ -3729,10 +3731,14 @@ export async function listClientTrainingMaterials(user: AuthUser) {
   return data ?? [];
 }
 
+export async function listClientTrainingMaterials(user: AuthUser) {
+  return listTrainingMaterialsForUser(user);
+}
+
 export async function listMarketplaceTrainingMaterials() {
   const { data, error } = await supabase
     .from("training_materials")
-    .select("*, companies(name), training_material_attachments(*)")
+    .select("*, companies(id, name), training_material_attachments(*)")
     .eq("is_published", true)
     .order("updated_at", { ascending: false })
     .returns<TrainingMaterial[]>();
@@ -3747,9 +3753,9 @@ export async function listMarketplaceTrainingMaterials() {
 export async function listPublishedClientTrainingMaterials(companyId: string) {
   const { data, error } = await supabase
     .from("training_materials")
-    .select("*, companies(name), training_material_attachments(*)")
-    .eq("company_id", companyId)
+    .select("*, companies(id, name), training_material_attachments(*)")
     .eq("is_published", true)
+    .or(`company_id.eq.${companyId},company_id.is.null`)
     .order("updated_at", { ascending: false })
     .returns<TrainingMaterial[]>();
 
@@ -3761,14 +3767,16 @@ export async function listPublishedClientTrainingMaterials(companyId: string) {
 }
 
 export async function createTrainingMaterial(user: AuthUser, input: TrainingMaterialInput) {
-  if (!user.clientId) {
+  const companyId = user.role === "CLIENT" ? user.clientId ?? null : input.company_id ?? null;
+
+  if (user.role === "CLIENT" && !companyId) {
     throw new Error("This client user is not linked to a company yet.");
   }
 
   const { data, error } = await supabase
     .from("training_materials")
     .insert({
-      company_id: user.clientId,
+      company_id: companyId,
       created_by: user.id,
       title: input.title.trim(),
       description: toNullableString(input.description),
@@ -3776,7 +3784,7 @@ export async function createTrainingMaterial(user: AuthUser, input: TrainingMate
       resource_url: toNullableString(input.resource_url),
       is_published: input.is_published ?? true,
     })
-    .select("*, companies(name)")
+    .select("*, companies(id, name)")
     .single<TrainingMaterial>();
 
   if (error) {

@@ -30,6 +30,7 @@ import AdminLiveConversations from "./pages/admin/AdminLiveConversations";
 import AdminEmails from "./pages/admin/AdminEmails";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminReports from "./pages/admin/AdminReports";
+import AdminTrainingAssets from "./pages/admin/AdminTrainingAssets";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientAgreements from "./pages/client/ClientAgreements";
 import ClientTerms from "./pages/client/ClientTerms";
@@ -93,6 +94,7 @@ const App = () => (
                       <Route path="payouts" element={<AdminPayouts />} />
                       <Route path="live-conversations" element={<AdminLiveConversations />} />
                       <Route path="emails" element={<AdminEmails />} />
+                      <Route path="training-assets" element={<AdminTrainingAssets />} />
                       <Route path="reports" element={<AdminReports />} />
                       <Route path="profile" element={<AdminProfile />} />
                     </Route>
