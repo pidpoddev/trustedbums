@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Link as LinkIcon, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText, Link as LinkIcon, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -32,6 +32,7 @@ interface MeetingTranscriptsSectionProps {
   filters: MeetingTranscriptFilters;
   companyId?: string | null;
   allowAdd?: boolean;
+  compact?: boolean;
 }
 
 function transcriptPreview(text: string | null) {
@@ -47,12 +48,14 @@ export function MeetingTranscriptsSection({
   filters,
   companyId,
   allowAdd = false,
+  compact = false,
 }: MeetingTranscriptsSectionProps) {
   const { user } = useAuth();
   const timeZone = useUserTimeZone();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(!compact);
   const [transcriptTitle, setTranscriptTitle] = useState("");
   const [transcriptText, setTranscriptText] = useState("");
   const [transcriptUrl, setTranscriptUrl] = useState("");
@@ -62,6 +65,7 @@ export function MeetingTranscriptsSection({
     queryFn: () => listMeetingTranscripts(filters),
   });
   const transcripts = transcriptsQuery.data ?? [];
+  const showContent = !compact || expanded;
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -94,15 +98,24 @@ export function MeetingTranscriptsSection({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className={compact ? "p-4" : undefined}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="font-display flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
               {title}
             </CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            <p className={compact ? "mt-1 text-xs text-muted-foreground" : "mt-1 text-sm text-muted-foreground"}>
+              {compact ? `${transcripts.length} transcript${transcripts.length === 1 ? "" : "s"} attached` : description}
+            </p>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {compact ? (
+              <Button type="button" size="sm" variant="ghost" onClick={() => setExpanded((current) => !current)}>
+                {expanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+                {expanded ? "Hide" : "Show"}
+              </Button>
+            ) : null}
           {allowAdd ? (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -159,9 +172,11 @@ export function MeetingTranscriptsSection({
               </DialogContent>
             </Dialog>
           ) : null}
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      {showContent ? (
+      <CardContent className={compact ? "space-y-3 px-4 pb-4 pt-0" : "space-y-3"}>
         {transcripts.map((transcript) => (
           <div key={transcript.id} className="rounded-xl border p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -195,6 +210,7 @@ export function MeetingTranscriptsSection({
           </div>
         ) : null}
       </CardContent>
+      ) : null}
     </Card>
   );
 }

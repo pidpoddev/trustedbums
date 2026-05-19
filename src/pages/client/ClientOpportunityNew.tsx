@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { CheckCircle, FileUp, Send, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { PaginationControls } from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { getPageItems } from "@/lib/pagination";
 import {
   createClientPayProgramRequest,
   createOpportunityRegistration,
@@ -23,6 +25,8 @@ import {
   type OpportunityRegistration,
 } from "@/lib/portalApi";
 import { parseOpportunityImportFile, toOpportunityInput, type OpportunityImportRow } from "@/lib/opportunityImport";
+
+const REGISTERED_OPPORTUNITIES_PAGE_SIZE = 6;
 
 const initialForm = {
   pay_program_id: "",
@@ -92,6 +96,7 @@ export default function ClientOpportunityNew() {
   const [editNotes, setEditNotes] = useState("");
   const [isRequestingPlan, setIsRequestingPlan] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [registeredPage, setRegisteredPage] = useState(1);
 
   const updateField = (field: keyof typeof initialForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -289,6 +294,7 @@ export default function ClientOpportunityNew() {
 
   const payPrograms = payProgramsQuery.data ?? [];
   const opportunities = opportunitiesQuery.data ?? [];
+  const visibleOpportunities = getPageItems(opportunities, registeredPage, REGISTERED_OPPORTUNITIES_PAGE_SIZE);
 
   return (
     <div>
@@ -717,7 +723,7 @@ export default function ClientOpportunityNew() {
               <CardTitle className="font-display">Registered opportunities</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {opportunities.map((opportunity) => (
+          {visibleOpportunities.map((opportunity) => (
             <Card key={opportunity.id} className="border-border/70">
               <CardContent className="pt-6">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -805,6 +811,8 @@ export default function ClientOpportunityNew() {
               </CardContent>
             </Card>
           ))}
+
+          <PaginationControls page={registeredPage} pageSize={REGISTERED_OPPORTUNITIES_PAGE_SIZE} totalItems={opportunities.length} onPageChange={setRegisteredPage} />
 
           {!opportunities.length ? (
             <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">

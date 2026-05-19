@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
+import { PaginationControls } from "@/components/PaginationControls";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,9 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { BUM_TERMS_VERSION } from "@/data/partnerTerms";
 import { useToast } from "@/hooks/use-toast";
+import { getPageItems } from "@/lib/pagination";
 import { inviteBum, listAdminBumProfiles, listProfiles, listTermsAcceptances, listTermsVersions } from "@/lib/portalApi";
 
 type BumTypeFilter = "ALL" | "VISIBLE_TO_CLIENTS" | "AGREEMENT_ACCEPTED" | "PROFILE_READY" | "HIDDEN";
+
+const ADMIN_BUMS_PAGE_SIZE = 8;
 
 const bumTypeFilters: { value: BumTypeFilter; label: string }[] = [
   { value: "ALL", label: "All Bum types" },
@@ -27,6 +31,7 @@ const bumTypeFilters: { value: BumTypeFilter; label: string }[] = [
 export default function AdminBums() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<BumTypeFilter>("ALL");
+  const [bumPage, setBumPage] = useState(1);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
@@ -163,6 +168,8 @@ export default function AdminBums() {
     });
   }, [bumSummaries, query, typeFilter]);
 
+  const visibleBums = getPageItems(filteredBums, bumPage, ADMIN_BUMS_PAGE_SIZE);
+
   return (
     <div>
       <PageHeader title="Bums" description="Review connector background, coverage, and agreement status">
@@ -269,9 +276,13 @@ export default function AdminBums() {
           </Card>
         ) : null}
 
-        {!isLoading && !hasError ? filteredBums.map((bum) => (
+        {!isLoading && !hasError ? visibleBums.map((bum) => (
           <BumProfileCard key={bum.user_id} profile={bum} showAdminMeta />
         )) : null}
+
+        {!isLoading && !hasError ? (
+          <PaginationControls page={bumPage} pageSize={ADMIN_BUMS_PAGE_SIZE} totalItems={filteredBums.length} onPageChange={setBumPage} />
+        ) : null}
       </div>
     </div>
   );

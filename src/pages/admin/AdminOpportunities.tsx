@@ -25,7 +25,7 @@ import {
   type ReverseOpportunityStatus,
 } from "@/lib/portalApi";
 
-const ADMIN_OPPORTUNITY_PAGE_SIZE = 12;
+const ADMIN_OPPORTUNITY_PAGE_SIZE = 6;
 
 function registrationVariant(status: RegistrationStatus) {
   if (status === "Accepted" || status === "Closed Won") {
@@ -362,6 +362,7 @@ export default function AdminOpportunities() {
                       filters={{ customerTargetId: targetAccount.id }}
                       companyId={targetAccount.client_company_id}
                       allowAdd
+                      compact
                     />
                   </div>
                 </CardContent>
@@ -446,6 +447,7 @@ export default function AdminOpportunities() {
                         filters={{ opportunityRegistrationId: registration.id }}
                         companyId={registration.company_id}
                         allowAdd
+                        compact
                       />
                     </div>
                   </CardContent>

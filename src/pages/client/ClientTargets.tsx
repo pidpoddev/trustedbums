@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Plus, Search, Target } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { PaginationControls } from "@/components/PaginationControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSection";
 import { useAuth } from "@/contexts/AuthContext";
+import { getPageItems } from "@/lib/pagination";
 import { useToast } from "@/hooks/use-toast";
 import {
   createCustomerTarget,
@@ -18,6 +20,8 @@ import {
   type CustomerTargetPriority,
   type CustomerTargetStatus,
 } from "@/lib/portalApi";
+
+const CLIENT_TARGETS_PAGE_SIZE = 6;
 
 const initialForm = {
   target_account_name: "",
@@ -55,6 +59,7 @@ export default function ClientTargets() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<CustomerTargetTypeFilter>("ALL");
+  const [targetPage, setTargetPage] = useState(1);
   const [form, setForm] = useState(initialForm);
 
   const targetsQuery = useQuery({
@@ -122,6 +127,8 @@ export default function ClientTargets() {
       return matchesType && matchesQuery;
     });
   }, [query, targets, typeFilter]);
+
+  const visibleTargets = getPageItems(filteredTargets, targetPage, CLIENT_TARGETS_PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -323,7 +330,7 @@ export default function ClientTargets() {
       </Card>
 
       <div className="grid gap-4">
-        {filteredTargets.map((targetAccount) => (
+        {visibleTargets.map((targetAccount) => (
           <Card key={targetAccount.id} className="hover:shadow-md transition-shadow">
             <CardContent className="pt-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -375,11 +382,14 @@ export default function ClientTargets() {
                   filters={{ customerTargetId: targetAccount.id }}
                   companyId={targetAccount.client_company_id}
                   allowAdd
+                  compact
                 />
               </div>
             </CardContent>
           </Card>
         ))}
+
+        <PaginationControls page={targetPage} pageSize={CLIENT_TARGETS_PAGE_SIZE} totalItems={filteredTargets.length} onPageChange={setTargetPage} />
 
         {!targetsQuery.isLoading && !targets.length ? (
           <Card>

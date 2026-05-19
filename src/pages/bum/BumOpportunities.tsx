@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const MARKETPLACE_PAGE_SIZE = 12;
+const MARKETPLACE_PAGE_SIZE = 6;
 
 const responseFormInitial = {
   contactName: "",
@@ -331,7 +331,7 @@ export default function BumOpportunities() {
                   <p className="mt-1 text-sm text-muted-foreground">
                     {targetAccount.client_companies?.name ?? "Client pending"} • {targetAccount.priority} priority
                   </p>
-                  <p className="mt-2 text-sm">
+                  <p className="mt-2 line-clamp-2 text-sm">
                     {targetAccount.notes ?? targetAccount.expected_product_service ?? "Client is looking for a path into this target account."}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
@@ -389,7 +389,7 @@ export default function BumOpportunities() {
                   <p className="text-sm text-muted-foreground mt-1">
                     {opportunity.companies?.name ?? "Client pending"} • {opportunity.commission_rate}% commission
                   </p>
-                  <p className="mt-2 text-sm">{opportunity.opportunity_description ?? "No description provided yet."}</p>
+                  <p className="mt-2 line-clamp-2 text-sm">{opportunity.opportunity_description ?? "No description provided yet."}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                     {opportunity.expected_product_service ? (
                       <Badge variant="secondary">{opportunity.expected_product_service}</Badge>

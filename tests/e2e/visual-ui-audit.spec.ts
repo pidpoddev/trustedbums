@@ -1,3 +1,4 @@
+import { promises as fs } from "node:fs";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { getQaAccount, goToAuthedPath, hasExternalQaTarget, type QaAccount } from "./helpers/auth";
 
@@ -94,10 +95,24 @@ async function auditRoute(page: Page, account: QaAccount, role: RoleKey, route: 
   await expectNoObviousErrorPage(page);
   await expectNoHorizontalOverflow(page);
   await expectReasonablePageHeight(page);
+  const screenshotPath = testInfo.outputPath(`${testInfo.project.name}-${role.toLowerCase()}-${route.name}.png`);
   await page.screenshot({
-    path: testInfo.outputPath(`${testInfo.project.name}-${role.toLowerCase()}-${route.name}.png`),
+    path: screenshotPath,
     fullPage: true,
   });
+
+  const metrics = await page.evaluate(() => ({
+    viewportWidth: document.documentElement.clientWidth,
+    viewportHeight: window.innerHeight,
+    scrollWidth: document.documentElement.scrollWidth,
+    scrollHeight: document.documentElement.scrollHeight,
+  }));
+
+  await fs.writeFile(
+    testInfo.outputPath(`${testInfo.project.name}-${role.toLowerCase()}-${route.name}.json`),
+    `${JSON.stringify({ role, route: route.path, name: route.name, screenshotPath, metrics }, null, 2)}\n`,
+    "utf8",
+  );
 }
 
 test.describe("authenticated visual UI audit", () => {

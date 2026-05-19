@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FilterPanel } from "@/components/FilterPanel";
 import { PageHeader } from "@/components/PageHeader";
+import { PaginationControls } from "@/components/PaginationControls";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { getPageItems } from "@/lib/pagination";
 import { listBumSavedItems, listCompanies, listCustomerTargets, listMarketplaceOpportunities, setBumSavedItem } from "@/lib/portalApi";
 import { cn } from "@/lib/utils";
 import { Search, Building2, ExternalLink, Briefcase, Target, Heart, DollarSign, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
+
+const CLIENTS_PAGE_SIZE = 8;
 
 interface MarketplaceClientSummary {
   id: string;
@@ -82,6 +87,7 @@ export default function BumClients() {
   const [typeFilter, setTypeFilter] = useState<ClientTypeFilter>("ALL");
   const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
   const [termFilter, setTermFilter] = useState<TermFilter>("ALL");
+  const [clientPage, setClientPage] = useState(1);
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
     queryFn: listMarketplaceOpportunities,
@@ -225,6 +231,15 @@ export default function BumClients() {
     return matchesType && matchesQuery && matchesIndustry && matchesHeart && matchesValue && matchesTerm;
   });
 
+  const visibleClients = getPageItems(filtered, clientPage, CLIENTS_PAGE_SIZE);
+  const filterSummary = [
+    typeFilter !== "ALL" ? clientTypeFilters.find((filter) => filter.value === typeFilter)?.label : null,
+    industry !== "ALL" ? industry : null,
+    valueFilter !== "ALL" ? valueFilters.find((filter) => filter.value === valueFilter)?.label : null,
+    termFilter !== "ALL" ? termFilters.find((filter) => filter.value === termFilter)?.label : null,
+    heartedOnly ? "Hearted" : null,
+  ].filter(Boolean).join(" · ") || "All clients";
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -232,6 +247,7 @@ export default function BumClients() {
         description="Search live client companies, target-account pipelines, and formal marketplace opportunities."
       />
 
+      <FilterPanel summary={filterSummary}>
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto]">
         <div className="relative min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -314,15 +330,16 @@ export default function BumClients() {
           </Button>
         </div>
       </div>
+      </FilterPanel>
 
       <div className="grid gap-4">
-        {filtered.map((client) => {
+        {visibleClients.map((client) => {
           const isHearted = savedClientIds.has(client.id);
 
           return (
             <Card key={client.id} className="hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
-                <div className="flex items-start gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                   <div className="rounded-xl bg-primary/10 p-3">
                     <Building2 className="h-5 w-5 text-primary" />
                   </div>
@@ -357,7 +374,7 @@ export default function BumClients() {
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
+                  <div className="flex flex-row flex-wrap gap-2 sm:flex-col sm:items-end">
                     <Button
                       size="icon"
                       variant={isHearted ? "default" : "outline"}
@@ -391,6 +408,8 @@ export default function BumClients() {
             </Card>
           );
         })}
+        <PaginationControls page={clientPage} pageSize={CLIENTS_PAGE_SIZE} totalItems={filtered.length} onPageChange={setClientPage} />
+
         {filtered.length === 0 && (
           <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground">
             {marketplaceClients.length ? "No clients match your search." : "No live clients are available yet."}

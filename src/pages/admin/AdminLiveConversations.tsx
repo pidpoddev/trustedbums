@@ -11,7 +11,7 @@ import { getPageItems } from "@/lib/pagination";
 import { listCustomerTargets, listTeamsMeetings, type CustomerTargetStatus } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
-const TARGETS_PAGE_SIZE = 12;
+const TARGETS_PAGE_SIZE = 8;
 
 function targetVariant(status: CustomerTargetStatus) {
   if (status === "CLOSED_WON") {
