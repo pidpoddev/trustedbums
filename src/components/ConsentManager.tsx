@@ -142,8 +142,8 @@ We use necessary storage to run the site. Optional preferences, analytics, and o
         <Button
           type="button"
           variant="outline"
-          size="icon"
-          className="fixed bottom-2 left-2 z-40 h-6 w-6 rounded-full bg-background/90 p-0 text-muted-foreground shadow-sm hover:text-foreground [&_svg]:size-3"
+          size="sm"
+          className="fixed bottom-0 left-3 z-40 h-5 rounded-b-none rounded-t px-2 py-0 text-[10px] font-medium leading-none text-muted-foreground shadow-sm hover:text-foreground"
           aria-label="Privacy choices"
           title="Privacy choices"
           onClick={() => {
@@ -152,7 +152,7 @@ We use necessary storage to run the site. Optional preferences, analytics, and o
             setIsOpen(true);
           }}
         >
-          <ShieldCheck aria-hidden="true" />
+          Privacy
         </Button>
       ) : null}
     </>
