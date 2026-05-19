@@ -179,19 +179,26 @@ export default function AdminCommissionPlans() {
       />
 
       <TooltipProvider>
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="flex items-center gap-2 font-display">
-                <PlusCircle className="h-5 w-5 text-primary" /> Create commission plan
-              </CardTitle>
-              <Button variant={isCreatePlanOpen ? "secondary" : "default"} onClick={() => setIsCreatePlanOpen((current) => !current)}>
-                {isCreatePlanOpen ? <X className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                {isCreatePlanOpen ? "Close" : "Create"}
-              </Button>
-            </div>
-          </CardHeader>
-          {isCreatePlanOpen ? (
+        {!isCreatePlanOpen ? (
+          <div className="flex justify-end">
+            <Button onClick={() => setIsCreatePlanOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create commission plan
+            </Button>
+          </div>
+        ) : (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="flex items-center gap-2 font-display">
+                  <PlusCircle className="h-5 w-5 text-primary" /> Create commission plan
+                </CardTitle>
+                <Button variant="secondary" onClick={() => setIsCreatePlanOpen(false)}>
+                  <X className="mr-2 h-4 w-4" />
+                  Close
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 lg:grid-cols-3">
                 <div className="space-y-2">
@@ -255,8 +262,8 @@ export default function AdminCommissionPlans() {
                 </Button>
               </div>
             </CardContent>
-          ) : null}
-        </Card>
+          </Card>
+        )}
       </TooltipProvider>
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)]">

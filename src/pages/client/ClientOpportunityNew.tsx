@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { CheckCircle, FileUp, Send, Sparkles } from "lucide-react";
+import { CheckCircle, FileUp, PlusCircle, Send, Sparkles, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,8 @@ export default function ClientOpportunityNew() {
   const [isRequestingPlan, setIsRequestingPlan] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [registeredPage, setRegisteredPage] = useState(1);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isRequestPlanOpen, setIsRequestPlanOpen] = useState(false);
 
   const updateField = (field: keyof typeof initialForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -203,6 +205,7 @@ export default function ClientOpportunityNew() {
       await queryClient.invalidateQueries({ queryKey: ["admin-commission-plans"] });
       setRequestForm(initialRequestForm);
       setForm((current) => ({ ...current, pay_program_id: plan.id }));
+      setIsRequestPlanOpen(false);
       toast({
         title: "Commission plan request submitted",
         description: "The requested plan is now pending admin approval and has been attached to this opportunity draft.",
@@ -276,6 +279,7 @@ export default function ClientOpportunityNew() {
       });
       setSubmittedId(opportunity.id);
       setForm(initialForm);
+      setIsRegisterOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       toast({
         title: "Opportunity submitted",
@@ -417,9 +421,23 @@ export default function ClientOpportunityNew() {
         </TabsContent>
 
         <TabsContent value="register">
+          {!isRegisterOpen ? (
+            <div className="flex justify-end">
+              <Button onClick={() => setIsRegisterOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create opportunity
+              </Button>
+            </div>
+          ) : (
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Opportunity details</CardTitle>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="font-display">Opportunity details</CardTitle>
+                <Button type="button" variant="secondary" onClick={() => setIsRegisterOpen(false)}>
+                  <X className="mr-2 h-4 w-4" />
+                  Close
+                </Button>
+              </div>
         </CardHeader>
         <CardContent>
           <form className="grid gap-5" onSubmit={submitOpportunity}>
@@ -531,16 +549,31 @@ export default function ClientOpportunityNew() {
           </form>
         </CardContent>
       </Card>
+          )}
 
         </TabsContent>
 
         <TabsContent value="commission-plan">
+          {!isRequestPlanOpen ? (
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setIsRequestPlanOpen(true)}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Request commission plan
+              </Button>
+            </div>
+          ) : (
           <Card>
             <CardHeader>
-              <CardTitle className="font-display flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Request a new commission plan
-          </CardTitle>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="font-display flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Request a new commission plan
+                </CardTitle>
+                <Button type="button" variant="secondary" onClick={() => setIsRequestPlanOpen(false)}>
+                  <X className="mr-2 h-4 w-4" />
+                  Close
+                </Button>
+              </div>
         </CardHeader>
         <CardContent>
           <form className="grid gap-5" onSubmit={requestCommissionPlan}>
@@ -714,6 +747,7 @@ export default function ClientOpportunityNew() {
           </form>
         </CardContent>
       </Card>
+          )}
 
         </TabsContent>
 

@@ -323,19 +323,26 @@ export default function AdminOpportunities() {
       />
 
       <TooltipProvider>
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="flex items-center gap-2 font-display">
-                <PlusCircle className="h-5 w-5 text-primary" /> Create opportunity
-              </CardTitle>
-              <Button variant={isCreateOpportunityOpen ? "secondary" : "default"} onClick={() => setIsCreateOpportunityOpen((current) => !current)}>
-                {isCreateOpportunityOpen ? <X className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                {isCreateOpportunityOpen ? "Close" : "Create"}
-              </Button>
-            </div>
-          </CardHeader>
-          {isCreateOpportunityOpen ? (
+        {!isCreateOpportunityOpen ? (
+          <div className="mb-6 flex justify-end">
+            <Button onClick={() => setIsCreateOpportunityOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create opportunity
+            </Button>
+          </div>
+        ) : (
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="flex items-center gap-2 font-display">
+                  <PlusCircle className="h-5 w-5 text-primary" /> Create opportunity
+                </CardTitle>
+                <Button variant="secondary" onClick={() => setIsCreateOpportunityOpen(false)}>
+                  <X className="mr-2 h-4 w-4" />
+                  Close
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 lg:grid-cols-3">
                 <div className="space-y-2">
@@ -410,8 +417,8 @@ export default function AdminOpportunities() {
                 </Button>
               </div>
             </CardContent>
-          ) : null}
-        </Card>
+          </Card>
+        )}
       </TooltipProvider>
 
       <Tabs defaultValue="priority" className="space-y-6">
