@@ -55,10 +55,7 @@ export default function BumLayout() {
       <div className="min-h-screen flex w-full">
         <Sidebar>
           <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
-            <div>
-              <BrandLogo to="/" theme="dark" imageClassName="h-12" />
-              <span className="block text-[10px] text-sidebar-foreground/60 uppercase tracking-wider">Bum</span>
-            </div>
+            <BrandLogo to="/" theme="dark" imageClassName="h-12" />
           </div>
           <SidebarContent>
             {navGroups.map((group) => (
