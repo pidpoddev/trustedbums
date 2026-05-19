@@ -1911,23 +1911,24 @@ export async function listOpportunityClaims(opportunityId?: string) {
 
   const claims = data ?? [];
 
-  const lockedOpportunityIds = new Set<string>();
-  const opportunityIds = [...new Set(claims.map((claim) => claim.opportunity_registration_id).filter(Boolean))];
+  const lockedClaimIds = new Set<string>();
+  const claimIds = claims.map((claim) => claim.id).filter(Boolean);
 
-  if (opportunityIds.length) {
+  if (claimIds.length) {
     const [{ data: transcriptRows, error: transcriptError }, { data: meetingRows, error: meetingError }] =
       await Promise.all([
         supabase
           .from("meeting_transcripts")
-          .select("opportunity_registration_id")
-          .in("opportunity_registration_id", opportunityIds)
-          .limit(opportunityIds.length),
+          .select("opportunity_claim_id")
+          .in("opportunity_claim_id", claimIds)
+          .eq("status", "AVAILABLE")
+          .limit(claimIds.length),
         supabase
           .from("teams_meetings")
-          .select("opportunity_registration_id")
-          .in("opportunity_registration_id", opportunityIds)
-          .neq("status", "CANCELLED")
-          .limit(opportunityIds.length),
+          .select("opportunity_claim_id")
+          .in("opportunity_claim_id", claimIds)
+          .eq("status", "COMPLETED")
+          .limit(claimIds.length),
       ]);
 
     if (transcriptError) {
@@ -1938,20 +1939,20 @@ export async function listOpportunityClaims(opportunityId?: string) {
     }
 
     for (const row of transcriptRows ?? []) {
-      if (row.opportunity_registration_id) {
-        lockedOpportunityIds.add(row.opportunity_registration_id);
+      if (row.opportunity_claim_id) {
+        lockedClaimIds.add(row.opportunity_claim_id);
       }
     }
     for (const row of meetingRows ?? []) {
-      if (row.opportunity_registration_id) {
-        lockedOpportunityIds.add(row.opportunity_registration_id);
+      if (row.opportunity_claim_id) {
+        lockedClaimIds.add(row.opportunity_claim_id);
       }
     }
   }
 
   return claims.map((claim) => ({
     ...claim,
-    meeting_locked: lockedOpportunityIds.has(claim.opportunity_registration_id),
+    meeting_locked: lockedClaimIds.has(claim.id),
   }));
 }
 
@@ -2243,19 +2244,41 @@ const ACTIVE_CLAIM_STATUSES: OpportunityClaimStatus[] = [
   "MEETING_HELD",
 ];
 
+async function hasCompletedMeetingForClaim(claimId: string) {
+  const [{ data: transcript }, { data: meeting }] = await Promise.all([
+    supabase
+      .from("meeting_transcripts")
+      .select("id")
+      .eq("opportunity_claim_id", claimId)
+      .eq("status", "AVAILABLE")
+      .limit(1)
+      .maybeSingle<{ id: string }>(),
+    supabase
+      .from("teams_meetings")
+      .select("id")
+      .eq("opportunity_claim_id", claimId)
+      .eq("status", "COMPLETED")
+      .limit(1)
+      .maybeSingle<{ id: string }>(),
+  ]);
+
+  return Boolean(transcript?.id || meeting?.id);
+}
+
 async function hasLoggedMeetingForOpportunity(opportunityId: string) {
   const [{ data: transcript }, { data: meeting }] = await Promise.all([
     supabase
       .from("meeting_transcripts")
       .select("id")
       .eq("opportunity_registration_id", opportunityId)
+      .eq("status", "AVAILABLE")
       .limit(1)
       .maybeSingle<{ id: string }>(),
     supabase
       .from("teams_meetings")
       .select("id")
       .eq("opportunity_registration_id", opportunityId)
-      .neq("status", "CANCELLED")
+      .eq("status", "COMPLETED")
       .limit(1)
       .maybeSingle<{ id: string }>(),
   ]);
@@ -2325,9 +2348,9 @@ export async function updateOpportunityClaimShare(user: AuthUser, claimId: strin
     throw new Error("That opportunity claim could not be found.");
   }
 
-  const isLocked = await hasLoggedMeetingForOpportunity(claim.opportunity_registration_id);
+  const isLocked = await hasCompletedMeetingForClaim(claim.id);
   if (isLocked) {
-    throw new Error("Bum share can no longer be changed after a meeting is logged for this opportunity.");
+    throw new Error("This claim can no longer be changed after a completed meeting is logged against it.");
   }
 
   const { data: siblingClaims, error: siblingError } = await supabase
@@ -2365,6 +2388,93 @@ export async function updateOpportunityClaimShare(user: AuthUser, claimId: strin
   await rebalanceOpportunityClaimShares(claim.opportunity_registration_id);
   await createAuditEvent(user, "opportunity_claim_share_updated", "opportunity_claims", data.id, {
     bum_share_percent: bumSharePercent,
+  });
+
+  return data;
+}
+
+export async function updateAdminOpportunityClaim(
+  user: AuthUser,
+  claimId: string,
+  updates: Partial<Pick<OpportunityClaimRecord, "contact_name" | "contact_company" | "contact_email" | "relationship_strength" | "note" | "status" | "bum_share_percent">>,
+) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only Admins can edit opportunity claims.");
+  }
+
+  const { data: claim, error: claimError } = await supabase
+    .from("opportunity_claims")
+    .select("id, opportunity_registration_id, status, bum_share_percent, share_manually_set")
+    .eq("id", claimId)
+    .maybeSingle<Pick<OpportunityClaimRecord, "id" | "opportunity_registration_id" | "status" | "bum_share_percent" | "share_manually_set">>();
+
+  if (claimError) {
+    throw claimError;
+  }
+
+  if (!claim) {
+    throw new Error("That opportunity claim could not be found.");
+  }
+
+  const isLocked = await hasCompletedMeetingForClaim(claim.id);
+  if (isLocked) {
+    throw new Error("This claim can no longer be edited after a completed meeting is logged against it.");
+  }
+
+  const payload: Partial<OpportunityClaimRecord> = {};
+
+  if (updates.contact_name !== undefined) payload.contact_name = updates.contact_name.trim();
+  if (updates.contact_company !== undefined) payload.contact_company = updates.contact_company.trim();
+  if (updates.contact_email !== undefined) payload.contact_email = toNullableString(updates.contact_email);
+  if (updates.relationship_strength !== undefined) payload.relationship_strength = updates.relationship_strength;
+  if (updates.note !== undefined) payload.note = toNullableString(updates.note);
+  if (updates.status !== undefined) payload.status = updates.status;
+
+  if (updates.bum_share_percent !== undefined) {
+    const bumSharePercent = Number(updates.bum_share_percent);
+    if (bumSharePercent < 0 || bumSharePercent > 100) {
+      throw new Error("Bum share percent must be between 0 and 100.");
+    }
+
+    const { data: siblingClaims, error: siblingError } = await supabase
+      .from("opportunity_claims")
+      .select("id, status, bum_share_percent, share_manually_set")
+      .eq("opportunity_registration_id", claim.opportunity_registration_id)
+      .returns<Array<Pick<OpportunityClaimRecord, "id" | "status" | "bum_share_percent" | "share_manually_set">>>();
+
+    if (siblingError) {
+      throw siblingError;
+    }
+
+    const activeSiblingClaims = (siblingClaims ?? []).filter(
+      (item) => item.id !== claim.id && ACTIVE_CLAIM_STATUSES.includes(item.status),
+    );
+    const manualSiblingTotal = activeSiblingClaims
+      .filter((item) => item.share_manually_set)
+      .reduce((sum, item) => sum + Number(item.bum_share_percent ?? 0), 0);
+
+    if (manualSiblingTotal + bumSharePercent > DEFAULT_BUM_COMMISSION_POOL_PERCENT) {
+      throw new Error("The total Bum share for active claims cannot exceed 50% of the Trusted Bums commission.");
+    }
+
+    payload.bum_share_percent = bumSharePercent;
+    payload.share_manually_set = true;
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_claims")
+    .update(payload)
+    .eq("id", claimId)
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, client_pay_programs(*)), profiles(id, full_name, email)")
+    .single<OpportunityClaimRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await rebalanceOpportunityClaimShares(data.opportunity_registration_id);
+  await createAuditEvent(user, "opportunity_claim_updated", "opportunity_claims", data.id, {
+    fields: Object.keys(payload),
   });
 
   return data;
