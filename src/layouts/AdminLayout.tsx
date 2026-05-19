@@ -24,7 +24,6 @@ import {
   CreditCard,
   DollarSign,
   Video,
-  User,
   Mail,
   BarChart3,
   type LucideIcon,
@@ -63,13 +62,9 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
       { title: "Reports", url: "/admin/reports", icon: BarChart3 },
     ],
   },
-  {
-    label: "Admin",
-    items: [{ title: "Profile", url: "/admin/profile", icon: User }],
-  },
 ];
 
-const navItems = navGroups.flatMap((group) => group.items);
+const navItems = [...navGroups.flatMap((group) => group.items), { title: "Profile settings", url: "/admin/profile", icon: LayoutDashboard }];
 
 export default function AdminLayout() {
   const location = useLocation();

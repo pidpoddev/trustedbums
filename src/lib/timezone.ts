@@ -1,4 +1,33 @@
 export const DEFAULT_TIME_ZONE = "UTC";
+export type DateFormatPreference = "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD";
+export const DEFAULT_DATE_FORMAT: DateFormatPreference = "MM/DD/YYYY";
+const DATE_FORMAT_STORAGE_KEY = "trustedbums:date-format";
+
+export const dateFormatOptions: Array<{ value: DateFormatPreference; label: string; example: string }> = [
+  { value: "MM/DD/YYYY", label: "MM/DD/YYYY", example: "05/19/2026" },
+  { value: "DD/MM/YYYY", label: "DD/MM/YYYY", example: "19/05/2026" },
+  { value: "YYYY-MM-DD", label: "YYYY-MM-DD", example: "2026-05-19" },
+];
+
+export function normalizeDateFormat(value?: string | null): DateFormatPreference {
+  return value === "DD/MM/YYYY" || value === "YYYY-MM-DD" || value === "MM/DD/YYYY" ? value : DEFAULT_DATE_FORMAT;
+}
+
+export function getStoredDateFormat() {
+  if (typeof window === "undefined") {
+    return DEFAULT_DATE_FORMAT;
+  }
+
+  return normalizeDateFormat(window.localStorage.getItem(DATE_FORMAT_STORAGE_KEY));
+}
+
+export function setStoredDateFormat(value?: string | null) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(DATE_FORMAT_STORAGE_KEY, normalizeDateFormat(value));
+}
 
 function hasSupportedTimeZoneApi() {
   return typeof Intl !== "undefined" && typeof Intl.supportedValuesOf === "function";
@@ -110,6 +139,20 @@ function getTimeZoneOffsetMs(date: Date, timeZone: string) {
   return asUtc - date.getTime();
 }
 
+function formatDateWithPreference(date: Date, timeZone: string, dateFormat = getStoredDateFormat()) {
+  const parts = getTimeZoneParts(date, normalizeTimeZone(timeZone));
+
+  if (dateFormat === "DD/MM/YYYY") {
+    return parts.day + "/" + parts.month + "/" + parts.year;
+  }
+
+  if (dateFormat === "YYYY-MM-DD") {
+    return parts.year + "-" + parts.month + "-" + parts.day;
+  }
+
+  return parts.month + "/" + parts.day + "/" + parts.year;
+}
+
 export function formatDateForTimeZone(
   value: string | Date | null | undefined,
   timeZone: string,
@@ -119,11 +162,14 @@ export function formatDateForTimeZone(
     return "";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: normalizeTimeZone(timeZone),
-    ...(options ? {} : { dateStyle: "medium" as const }),
-    ...options,
-  }).format(new Date(value));
+  if (options) {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: normalizeTimeZone(timeZone),
+      ...options,
+    }).format(new Date(value));
+  }
+
+  return formatDateWithPreference(new Date(value), timeZone);
 }
 
 export function formatDateTimeForTimeZone(
@@ -135,11 +181,14 @@ export function formatDateTimeForTimeZone(
     return "";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: normalizeTimeZone(timeZone),
-    ...(options ? {} : { dateStyle: "medium" as const, timeStyle: "short" as const }),
-    ...options,
-  }).format(new Date(value));
+  if (options) {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: normalizeTimeZone(timeZone),
+      ...options,
+    }).format(new Date(value));
+  }
+
+  return formatDateWithPreference(new Date(value), timeZone) + " " + formatTimeForTimeZone(value, timeZone);
 }
 
 export function formatTimeForTimeZone(

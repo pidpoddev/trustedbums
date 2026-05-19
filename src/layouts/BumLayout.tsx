@@ -46,11 +46,10 @@ const navGroups = [
   ] },
   { label: "Account", items: [
   { title: "Connector Terms", url: "/bum/terms", icon: FileCheck },
-  { title: "Profile", url: "/bum/profile", icon: User },
   ] },
 ];
 
-const navItems = navGroups.flatMap((group) => group.items);
+const navItems = [...navGroups.flatMap((group) => group.items), { title: "Profile settings", url: "/bum/profile", icon: User }];
 
 export default function BumLayout() {
   const location = useLocation();

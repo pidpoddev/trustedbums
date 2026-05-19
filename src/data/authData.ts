@@ -7,6 +7,7 @@ export interface AuthUser {
   name: string;
   role: UserRole;
   timeZone?: string;
+  dateFormat?: string;
   clientAccessRole?: ClientAccessRole;
   clientId?: string;
   bumId?: string;

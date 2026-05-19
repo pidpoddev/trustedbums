@@ -1,7 +1,7 @@
 import { FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, type TermsFallbackVersion } from "@/data/partnerTerms";
 import { getSupabaseAccessToken, supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import type { AuthUser } from "@/data/authData";
-import { normalizeTimeZone } from "@/lib/timezone";
+import { normalizeDateFormat, normalizeTimeZone } from "@/lib/timezone";
 
 export type RegistrationStatus =
   | "Draft"
@@ -64,6 +64,7 @@ export interface ProfileRecord {
   is_admin: boolean;
   last_sign_in_at: string | null;
   time_zone: string | null;
+  date_format: string | null;
   created_at: string;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
 }
@@ -1134,6 +1135,7 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
         is_admin: user.role === "ADMIN",
         last_sign_in_at: new Date().toISOString(),
         time_zone: normalizeTimeZone(user.timeZone),
+        date_format: existing?.date_format ?? normalizeDateFormat(user.dateFormat),
       },
       { onConflict: "id" },
     )
@@ -1171,6 +1173,7 @@ export async function updateOwnProfileSettings(
   user: AuthUser,
   input: {
     timeZone?: string;
+    dateFormat?: string;
     fullName?: string;
   },
 ) {
@@ -1178,6 +1181,10 @@ export async function updateOwnProfileSettings(
 
   if (input.timeZone !== undefined) {
     payload.time_zone = normalizeTimeZone(input.timeZone);
+  }
+
+  if (input.dateFormat !== undefined) {
+    payload.date_format = normalizeDateFormat(input.dateFormat);
   }
 
   if (input.fullName !== undefined) {

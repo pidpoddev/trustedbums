@@ -13,7 +13,7 @@ import {
 } from "@/data/authData";
 import { ensureSupabaseProfileForAuthUser } from "@/lib/portalApi";
 import { setSupabaseAccessTokenProvider } from "@/lib/supabase";
-import { getBrowserTimeZone } from "@/lib/timezone";
+import { getBrowserTimeZone, getStoredDateFormat, normalizeDateFormat, setStoredDateFormat } from "@/lib/timezone";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -85,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clerkUser?.emailAddresses[0]?.emailAddress ??
       "";
     const browserTimeZone = getBrowserTimeZone();
+    const dateFormat = getStoredDateFormat();
 
     if (!isLoaded || !signedIn || !clerkUser || !email) {
       return null;
@@ -132,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ),
       role,
       timeZone: browserTimeZone,
+      dateFormat,
       clientAccessRole: role === "CLIENT" ? metadataClientAccessRole ?? fallbackUser?.clientAccessRole ?? DEFAULT_CLIENT_ACCESS_ROLE : undefined,
       clientId: fallbackUser?.clientId,
       bumId,
@@ -158,9 +160,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        setStoredDateFormat(profile.date_format ?? baseUser.dateFormat);
         setDbUser({
           ...baseUser,
           timeZone: profile.time_zone ?? baseUser.timeZone,
+          dateFormat: normalizeDateFormat(profile.date_format ?? baseUser.dateFormat),
           clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
           companyName: profile.companies?.name ?? baseUser.companyName,
         });
@@ -217,9 +221,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshUser: async () => {
         if (baseUser) {
           const profile = await ensureSupabaseProfileForAuthUser(baseUser);
+          setStoredDateFormat(profile.date_format ?? baseUser.dateFormat);
           setDbUser({
             ...baseUser,
             timeZone: profile.time_zone ?? baseUser.timeZone,
+            dateFormat: normalizeDateFormat(profile.date_format ?? baseUser.dateFormat),
             clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
             companyName: profile.companies?.name ?? baseUser.companyName,
           });
