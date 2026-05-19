@@ -517,7 +517,7 @@ Deno.serve(async (request: Request) => {
         description,
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
-        attendees: attendeeEmails,
+        attendees: attendeeEmails.map((email) => ({ email, response: "none", responseTime: null })),
         teams_join_url: teamsJoinUrl,
         microsoft_event_id: microsoftEvent.id ?? null,
         microsoft_online_meeting_id: microsoftOnlineMeetingId,

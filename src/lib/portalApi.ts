@@ -297,6 +297,23 @@ export interface CustomerTargetRecord {
   profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
 
+export interface TeamsMeetingAttendeeStatus {
+  response?: string | null;
+  time?: string | null;
+}
+
+export type TeamsMeetingAttendee =
+  | string
+  | {
+      email?: string | null;
+      address?: string | null;
+      name?: string | null;
+      type?: string | null;
+      response?: string | null;
+      responseTime?: string | null;
+      status?: TeamsMeetingAttendeeStatus | null;
+    };
+
 export interface TeamsMeetingRecord {
   id: string;
   customer_target_id: string;
@@ -309,7 +326,7 @@ export interface TeamsMeetingRecord {
   description: string | null;
   start_time: string;
   end_time: string;
-  attendees: string[];
+  attendees: TeamsMeetingAttendee[];
   teams_join_url: string | null;
   microsoft_event_id: string | null;
   microsoft_online_meeting_id: string | null;
@@ -391,6 +408,11 @@ export interface ScheduleTeamsMeetingResponse {
   eventWebLink: string | null;
   meetingOptionsConfigured?: boolean;
   meetingOptionsWarning?: string | null;
+}
+
+export interface SyncTeamsMeetingAttendanceResult {
+  updated: Array<{ id: string; attendees: TeamsMeetingAttendee[]; status?: string }>;
+  failed: Array<{ id: string; error: string }>;
 }
 
 export type CustomerTargetResponseStrength = "warm" | "strong" | "advisor" | "unknown";
@@ -3541,6 +3563,36 @@ export async function scheduleTeamsMeeting(input: ScheduleTeamsMeetingInput) {
 
   if (!("meeting" in payload)) {
     throw new Error("The Teams scheduler returned an incomplete response.");
+  }
+
+  return payload;
+}
+
+export async function syncTeamsMeetingAttendance(meetingIds: string[] = []) {
+  const accessToken = await getSupabaseAccessToken();
+
+  if (!accessToken) {
+    throw new Error("Sign in before refreshing Teams attendance.");
+  }
+
+  const response = await fetch(supabaseUrl + "/functions/v1/sync-teams-attendees", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: "Bearer " + accessToken,
+    },
+    body: JSON.stringify({ meetingIds }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as SyncTeamsMeetingAttendanceResult | { error?: string };
+
+  if (!response.ok) {
+    throw new Error("error" in payload && payload.error ? payload.error : "Unable to refresh Teams attendance.");
+  }
+
+  if (!("updated" in payload) || !("failed" in payload)) {
+    throw new Error("The Teams attendance sync returned an incomplete response.");
   }
 
   return payload;

@@ -22,6 +22,7 @@ import {
   listProfiles,
   listProspectContacts,
   listTermsAcceptances,
+  type CompanyRecord,
   type CompanyRelationshipStage,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
@@ -48,7 +49,7 @@ const clientTypeFilters: { value: ClientTypeFilter; label: string }[] = [
   { value: "INACTIVE", label: "Inactive" },
 ];
 
-function AdminClientEditButton({ company }: { company: any }) {
+function AdminClientEditButton({ company }: { company: CompanyRecord }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

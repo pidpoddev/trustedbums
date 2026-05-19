@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Target, Video } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Target } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { ScheduleTeamsMeetingDialog } from "@/components/ScheduleTeamsMeetingDialog";
+import { TeamsMeetingsPanel } from "@/components/TeamsMeetingsPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { getPageItems } from "@/lib/pagination";
-import { listCustomerTargets, listTeamsMeetings, type CustomerTargetStatus } from "@/lib/portalApi";
-import { formatDateTimeForTimeZone } from "@/lib/timezone";
+import { listCustomerTargets, listTeamsMeetings, syncTeamsMeetingAttendance, type CustomerTargetStatus } from "@/lib/portalApi";
 
 const TARGETS_PAGE_SIZE = 8;
 
@@ -32,6 +33,7 @@ function targetLabel(status: CustomerTargetStatus) {
 
 export default function BumLiveConversations() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const timeZone = useUserTimeZone();
   const [targetsPage, setTargetsPage] = useState(1);
   const targetsQuery = useQuery({
@@ -46,6 +48,28 @@ export default function BumLiveConversations() {
   const targets = targetsQuery.data ?? [];
   const visibleTargets = getPageItems(targets, targetsPage, TARGETS_PAGE_SIZE);
   const meetings = meetingsQuery.data ?? [];
+  const syncAttendanceMutation = useMutation({
+    mutationFn: () => syncTeamsMeetingAttendance(meetings.map((meeting) => meeting.id)),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: ["bum-teams-meetings"] });
+      if (result.failed.length) {
+        toast({
+          title: "Some attendee statuses could not be refreshed",
+          description: result.failed[0]?.error ?? "Microsoft Graph did not return every meeting response.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Attendance refreshed", description: "Invite responses were updated from Microsoft Graph." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to refresh attendance",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
   const targetsError = targetsQuery.error instanceof Error ? targetsQuery.error.message : null;
   const meetingsError = meetingsQuery.error instanceof Error ? meetingsQuery.error.message : null;
 
@@ -56,53 +80,16 @@ export default function BumLiveConversations() {
         description="Schedule Microsoft Teams intros for client target accounts and track your upcoming calls."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-display flex items-center gap-2">
-            <Video className="h-5 w-5 text-primary" />
-            Upcoming Teams calls
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          {meetingsError ? (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-              Unable to load Teams calls: {meetingsError}
-            </div>
-          ) : null}
-
-          {meetings.map((meeting) => (
-            <div key={meeting.id} className="rounded-xl border p-4">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="font-medium font-display">{meeting.subject}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDateTimeForTimeZone(meeting.start_time, timeZone)} ·{" "}
-                    {meeting.customer_targets?.target_companies?.name ??
-                      meeting.customer_targets?.target_account_name ??
-                      "Target account"}
-                  </p>
-                </div>
-                {meeting.teams_join_url ? (
-                  <a
-                    href={meeting.teams_join_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm font-medium text-primary hover:underline"
-                  >
-                    Join Teams call
-                  </a>
-                ) : null}
-              </div>
-            </div>
-          ))}
-
-          {!meetingsQuery.isLoading && !meetingsError && !meetings.length ? (
-            <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-              No Teams calls scheduled yet. Pick a target account below to create the first intro.
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+      <TeamsMeetingsPanel
+        meetings={meetings}
+        isLoading={meetingsQuery.isLoading}
+        error={meetingsError}
+        timeZone={timeZone}
+        upcomingTitle="Upcoming Teams calls"
+        emptyUpcomingMessage="No upcoming Teams calls are scheduled. Past meetings are shown separately once calls have ended."
+        onRefreshAttendance={() => syncAttendanceMutation.mutate()}
+        isRefreshingAttendance={syncAttendanceMutation.isPending}
+      />
 
       <Card>
         <CardHeader>

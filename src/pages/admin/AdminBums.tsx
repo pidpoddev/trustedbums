@@ -24,6 +24,7 @@ import {
   listTermsVersions,
   updateAdminBumProfile,
   type BumAvailabilityStatus,
+  type BumProfileRecord,
   type BumVerificationStatus,
 } from "@/lib/portalApi";
 
@@ -50,7 +51,7 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
-function AdminBumEditButton({ bum }: { bum: any }) {
+function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
