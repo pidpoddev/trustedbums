@@ -35,7 +35,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/client/trainings", heading: "Trainings & Assets", name: "client-trainings" },
     { path: "/client/requests", heading: "Inbound Requests", name: "client-requests" },
     { path: "/client/payments", heading: "Customer Payments", name: "client-payments" },
-    { path: "/client/exports", heading: "Exports & Integrations", name: "client-exports" },
+    { path: "/client/exports", heading: "Exports", name: "client-exports" },
     { path: "/client/reports", heading: "Client Reports", name: "client-reports" },
     { path: "/client/profile", heading: "Company Profile", name: "client-profile" },
     { path: "/client/agreements", heading: "Agreements", name: "client-agreements" },
@@ -43,7 +43,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
   CLIENT_FINANCE: [
     { path: "/client/dashboard", heading: /Welcome back/i, name: "client-finance-dashboard" },
     { path: "/client/payments", heading: "Customer Payments", name: "client-finance-payments" },
-    { path: "/client/exports", heading: "Exports & Integrations", name: "client-finance-exports" },
+    { path: "/client/exports", heading: "Exports", name: "client-finance-exports" },
     { path: "/client/reports", heading: "Client Reports", name: "client-finance-reports" },
   ],
   BUM: [

@@ -16,13 +16,7 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSection";
-import {
-  claimStatusConfig,
-  type ClaimStatus,
-  type RelationshipStrength,
-  isClaimStatus,
-  isRelationshipStrength,
-} from "@/data/mockData";
+import { claimStatusConfig, type ClaimStatus, type RelationshipStrength, isClaimStatus, isRelationshipStrength } from "@/lib/claimConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
@@ -128,11 +122,11 @@ export default function BumOpportunityDetail() {
     return (
       <div className="space-y-6">
         <PageHeader title="Opportunity not found" />
-        <Link to="/bum/opportunities">
-          <Button variant="outline">
+        <Button variant="outline" asChild>
+          <Link to="/bum/opportunities">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     );
   }
@@ -289,7 +283,7 @@ export default function BumOpportunityDetail() {
             </div>
             <div className="grid gap-2">
               <Label>Company</Label>
-              <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme Inc" />
+              <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Target company" />
             </div>
             <div className="grid gap-2">
               <Label>Email if known</Label>
@@ -363,7 +357,7 @@ export default function BumOpportunityDetail() {
             </div>
             <div className="grid gap-2">
               <Label>What happened</Label>
-              <Textarea value={updateNote} onChange={(e) => setUpdateNote(e.target.value)} placeholder="e.g. Initial conversation occurred; they're interested in a demo." rows={3} />
+              <Textarea value={updateNote} onChange={(e) => setUpdateNote(e.target.value)} placeholder="e.g. Initial conversation occurred; they are interested in an intro call." rows={3} />
             </div>
             <Button onClick={submitUpdate} className="w-full" variant="secondary" disabled={updateClaimMutation.isPending || !claims.length}>
               Log update

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, Plus, Search, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,9 +8,13 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
+  createClientCompany,
   listAdminProspectRecommendations,
   listCompanies,
   listOpportunityRegistrations,
@@ -46,6 +50,12 @@ const clientTypeFilters: { value: ClientTypeFilter; label: string }[] = [
 export default function AdminClients() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<ClientTypeFilter>("ALL");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientWebsite, setNewClientWebsite] = useState("");
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const timeZone = useUserTimeZone();
   const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: listCompanies });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
@@ -64,6 +74,23 @@ export default function AdminClients() {
   const contactsQuery = useQuery({
     queryKey: ["admin-prospect-contacts"],
     queryFn: listProspectContacts,
+  });
+  const createClientMutation = useMutation({
+    mutationFn: () => createClientCompany(user!, { name: newClientName, website: newClientWebsite }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
+      setCreateDialogOpen(false);
+      setNewClientName("");
+      setNewClientWebsite("");
+      toast({ title: "Client created", description: "The company was added as a live client record." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to create client",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const companySummaries = useMemo(() => {
@@ -183,7 +210,39 @@ export default function AdminClients() {
   return (
     <div>
       <PageHeader title="Clients" description="Manage companies, prospect overlap, and who owns the path into each account.">
-        <Button><Plus className="h-4 w-4 mr-2" /> Add Client</Button>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="h-4 w-4 mr-2" /> Add Client</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-display">Add client company</DialogTitle>
+              <DialogDescription>Create a live client company record in Supabase.</DialogDescription>
+            </DialogHeader>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                createClientMutation.mutate();
+              }}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="new-client-name">Company Name</Label>
+                <Input id="new-client-name" value={newClientName} onChange={(event) => setNewClientName(event.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-client-website">Website</Label>
+                <Input id="new-client-website" value={newClientWebsite} onChange={(event) => setNewClientWebsite(event.target.value)} placeholder="https://company.com" />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={createClientMutation.isPending || !newClientName.trim()}>
+                  {createClientMutation.isPending ? "Creating..." : "Create Client"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </PageHeader>
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)] mb-6">

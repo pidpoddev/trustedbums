@@ -165,7 +165,7 @@ export default function ClientDashboard() {
                   <Link to="/client/payments">Import monthly payments</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/client/exports">Open exports & integrations</Link>
+                  <Link to="/client/exports">Open exports</Link>
                 </Button>
                 <Button asChild variant="outline">
                   <Link to="/client/agreements">View acceptance records</Link>

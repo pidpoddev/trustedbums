@@ -127,7 +127,7 @@ export default function BumProspects() {
                   required
                   value={form.company_name}
                   onChange={(event) => updateField("company_name", event.target.value)}
-                  placeholder="Acme"
+                  placeholder="Target company"
                 />
               </div>
               <div className="space-y-2">

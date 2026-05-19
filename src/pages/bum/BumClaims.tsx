@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { claimStatusConfig } from "@/data/mockData";
+import { claimStatusConfig } from "@/lib/claimConfig";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   buildTopLineShareSchedule,
@@ -63,9 +63,9 @@ export default function BumClaims() {
                 When you request or receive an approved claim, it will show up here.
               </p>
             </div>
-            <Link to="/bum/opportunities">
-              <Button variant="outline">Browse opportunities</Button>
-            </Link>
+            <Button variant="outline" asChild>
+              <Link to="/bum/opportunities">Browse opportunities</Link>
+            </Button>
           </CardContent>
         </Card>
       ) : null}
@@ -139,12 +139,12 @@ export default function BumClaims() {
 
                 <div className="flex flex-wrap gap-2">
                   {claim.opportunity_registration_id ? (
-                    <Link to={`/bum/opportunities/${claim.opportunity_registration_id}`}>
-                      <Button size="sm">
+                    <Button size="sm" asChild>
+                      <Link to={`/bum/opportunities/${claim.opportunity_registration_id}`}>
                         Open opportunity
                         <ExternalLink className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   ) : null}
                 </div>
               </CardContent>

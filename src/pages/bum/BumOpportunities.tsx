@@ -416,9 +416,9 @@ export default function BumOpportunities() {
                   >
                     <Heart className={cn("h-4 w-4", isHearted && "fill-current")} />
                   </Button>
-                  <Link to={`/bum/opportunities/${opportunity.id}`}>
-                    <Button size="sm">View opportunity</Button>
-                  </Link>
+                  <Button size="sm" asChild>
+                    <Link to={`/bum/opportunities/${opportunity.id}`}>View opportunity</Link>
+                  </Button>
                 </div>
               </div>
             </CardContent>

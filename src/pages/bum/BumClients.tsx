@@ -390,17 +390,17 @@ export default function BumClients() {
                       <Badge variant="secondary">{client.targetCount} targets</Badge>
                     )}
                     {client.openCount ? (
-                      <Link to="/bum/opportunities">
-                        <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" asChild>
+                        <Link to="/bum/opportunities">
                           <Briefcase className="mr-2 h-4 w-4" /> View opps
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     ) : (
-                      <Link to="/bum/opportunities">
-                        <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" asChild>
+                        <Link to="/bum/opportunities">
                           <Target className="mr-2 h-4 w-4" /> View targets
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     )}
                   </div>
                 </div>

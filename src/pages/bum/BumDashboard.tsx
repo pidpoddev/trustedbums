@@ -68,7 +68,7 @@ export default function BumDashboard() {
     enabled: Boolean(user?.id),
   });
   const { introClaims } = useIntroClaims();
-  const myClaims = introClaims.filter((claim) => claim.bumAlias === (user?.name ?? "Trusted Bum"));
+  const myClaims = introClaims.filter((claim) => claim.bum_user_id === user?.id);
   const completeness = useMemo(() => getBumProfileCompleteness(profileQuery.data), [profileQuery.data]);
 
   useEffect(() => {

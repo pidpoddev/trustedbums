@@ -36,7 +36,7 @@ test.describe("authenticated role smoke", () => {
 
     if (!isMobile) {
       await goToAuthedPath(page, finance, "/client/exports");
-      await expect(page.getByRole("heading", { name: "Exports & Integrations" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Exports" })).toBeVisible();
     }
   });
 

@@ -61,7 +61,7 @@ const BUM_PROFILE_PROMPTS: BumProfilePromptDefinition[] = [
     label: "Which companies have you worked with?",
     description: "Add examples that show where you have experience or credibility.",
     type: "textarea",
-    placeholder: "Acme Corp\nBlueWave Solutions",
+    placeholder: "Company One\nCompany Two",
   },
   {
     key: "relationship_companies",

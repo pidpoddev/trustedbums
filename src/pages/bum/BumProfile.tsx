@@ -382,7 +382,7 @@ export default function BumProfile() {
                   rows={6}
                   value={form.worked_with_companies}
                   onChange={(event) => updateForm((current) => ({ ...current, worked_with_companies: event.target.value }))}
-                  placeholder={"Acme Corp\nBlueWave Solutions"}
+                  placeholder={"Company One\nCompany Two"}
                 />
               </div>
               <div className="space-y-2">

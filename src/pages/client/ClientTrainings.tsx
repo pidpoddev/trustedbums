@@ -99,7 +99,7 @@ export default function ClientTrainings() {
                   id="trainingTitle"
                   value={form.title}
                   onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-                  placeholder="Acme product overview"
+                  placeholder="Product overview"
                 />
               </div>
               <div className="space-y-2">

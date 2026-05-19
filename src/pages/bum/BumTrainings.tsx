@@ -96,11 +96,11 @@ export default function BumTrainings() {
                       Updated {formatDateForTimeZone(training.updated_at, timeZone)}
                     </span>
                     {training.resource_url ? (
-                      <a href={training.resource_url} target="_blank" rel="noreferrer">
-                        <Button size="sm" variant="ghost">
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href={training.resource_url} target="_blank" rel="noreferrer">
                           <PlayCircle className="mr-2 h-4 w-4" /> Open
-                        </Button>
-                      </a>
+                        </a>
+                      </Button>
                     ) : null}
                   </div>
                 </div>

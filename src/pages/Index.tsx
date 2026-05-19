@@ -162,21 +162,17 @@ const Index = () => {
             ) : null}
             {showSignedInActions ? (
               <>
-                <Link to={portalPath}>
-                  <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">
-                    Open Portal
-                  </Button>
-                </Link>
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white" asChild>
+                  <Link to={portalPath}>Open Portal</Link>
+                </Button>
                 <UserButton />
               </>
             ) : null}
             {needsRoleSetup ? (
               <>
-                <Link to="/login">
-                  <Button size="sm" className="rounded-full px-5">
-                    Finish setup
-                  </Button>
-                </Link>
+                <Button size="sm" className="rounded-full px-5" asChild>
+                  <Link to="/login">Finish setup</Link>
+                </Button>
                 <UserButton />
               </>
             ) : null}
@@ -227,11 +223,11 @@ const Index = () => {
                   </>
                 ) : null}
                 {showSignedInActions ? (
-                  <Link to={portalPath}>
-                    <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold">
+                  <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold" asChild>
+                    <Link to={portalPath}>
                       Open Portal <ArrowRight className="ml-1 h-5 w-5" />
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 ) : null}
               </div>
 
@@ -454,11 +450,9 @@ const Index = () => {
                       </SignupIntentDialog>
                     </>
                   ) : (
-                    <Link to={portalPath}>
-                      <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold">
-                        Open Portal
-                      </Button>
-                    </Link>
+                    <Button size="lg" className="h-14 rounded-full px-8 text-base font-bold" asChild>
+                      <Link to={portalPath}>Open Portal</Link>
+                    </Button>
                   )}
                 </div>
               </div>

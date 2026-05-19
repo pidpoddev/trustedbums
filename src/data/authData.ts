@@ -1,5 +1,3 @@
-import { mockClients } from "@/data/mockData";
-
 export type UserRole = "ADMIN" | "CLIENT" | "BUM";
 export type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_MEMBER";
 
@@ -28,13 +26,6 @@ export const authorizationProfiles: AuthorizationProfile[] = [
     description: "Primary administrator account for managing the Trusted Bums marketplace.",
   },
   {
-    id: "admin-2",
-    email: "admin@trustedbums.com",
-    name: "Marketplace Admin",
-    role: "ADMIN",
-    description: "Demo administrator profile for local testing.",
-  },
-  {
     id: "user_3DpqskhX2597aERJ5kqHh4nTW13",
     email: "qa_admin@qa.com",
     name: "QA Admin",
@@ -42,37 +33,12 @@ export const authorizationProfiles: AuthorizationProfile[] = [
     description: "Production QA administrator account for smoke testing.",
   },
   {
-    id: "client-c1-1",
-    email: "sarah@acmecorp.com",
-    name: "Sarah Chen",
-    role: "CLIENT",
-    clientId: "c1",
-    description: "AcmeCorp owner with access to the AcmeCorp client portal.",
-  },
-  {
-    id: "client-c1-2",
-    email: "revops@acmecorp.com",
-    name: "Acme RevOps",
-    role: "CLIENT",
-    clientAccessRole: "CLIENT_FINANCE",
-    clientId: "c1",
-    description: "AcmeCorp finance user with access to payment and export workflows.",
-  },
-  {
-    id: "client-c2-1",
-    email: "marcus@bluewave.io",
-    name: "Marcus Johnson",
-    role: "CLIENT",
-    clientId: "c2",
-    description: "BlueWave user scoped to BlueWave data only.",
-  },
-  {
     id: "client-blackcurrant-1",
     email: "akshay@blackcurrant.ai",
     name: "Akshay Thakur",
     role: "CLIENT",
     companyName: "BlackCurrant",
-    description: "BlackCurrant CEO with access to the BlackCurrant client target account workspace.",
+    description: "BlackCurrant client account.",
   },
   {
     id: "user_3Dpr9RqyE3mLxFUO6vM18M0GEKf",
@@ -108,23 +74,7 @@ export const authorizationProfiles: AuthorizationProfile[] = [
     role: "CLIENT",
     clientAccessRole: "CLIENT_ADMIN",
     companyName: "K2view",
-    description: "K2view organization creator with access to the K2view client workspace.",
-  },
-  {
-    id: "bum-b1",
-    email: "jake@email.com",
-    name: "Jake Thompson",
-    role: "BUM",
-    bumId: "b1",
-    description: "Trusted Bum account tied to a single connector profile.",
-  },
-  {
-    id: "bum-b2",
-    email: "amy@email.com",
-    name: "Amy Liu",
-    role: "BUM",
-    bumId: "b2",
-    description: "Trusted Bum account tied to one account and payout identity.",
+    description: "K2view client account.",
   },
   {
     id: "user_3DprZp8fmnY0yNXfMd16Md9n127",
@@ -199,14 +149,6 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-function getEmailDomain(email: string) {
-  return normalizeEmail(email).split("@")[1] ?? "";
-}
-
-function normalizeDomain(domain: string) {
-  return domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
-}
-
 function slugify(value: string) {
   return value
     .trim()
@@ -225,20 +167,7 @@ export function getKnownClientForEmail(email?: string | null) {
     (account) => account.role === "CLIENT" && account.email.toLowerCase() === normalizedEmail,
   );
 
-  if (profile?.clientId) {
-    return mockClients.find((client) => client.id === profile.clientId);
-  }
-
-  const emailDomain = getEmailDomain(normalizedEmail);
-
-  if (!emailDomain) {
-    return undefined;
-  }
-
-  return mockClients.find((client) => {
-    const knownDomains = [getEmailDomain(client.email), normalizeDomain(client.website)].filter(Boolean);
-    return knownDomains.includes(emailDomain);
-  });
+  return profile?.companyName ? { company: profile.companyName } : undefined;
 }
 
 export function createPendingClientId(companyName: string) {

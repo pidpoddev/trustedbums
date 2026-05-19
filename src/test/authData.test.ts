@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { createPendingBumId, createPendingClientId, getKnownClientForEmail } from "@/data/authData";
 
 describe("auth data helpers", () => {
-  it("matches an existing client from a known user email alias", () => {
-    expect(getKnownClientForEmail("revops@acmecorp.com")?.company).toBe("AcmeCorp");
+  it("matches configured client fallback accounts without mock company data", () => {
+    expect(getKnownClientForEmail("qa_client_admin@qa.com")?.company).toBe("QA");
   });
 
-  it("matches an existing client from the email domain", () => {
-    expect(getKnownClientForEmail("new.person@bluewave.io")?.company).toBe("BlueWave Solutions");
+  it("does not infer client companies from static demo domains", () => {
+    expect(getKnownClientForEmail("new.person@bluewave.io")).toBeUndefined();
   });
 
   it("does not match unknown client domains", () => {

@@ -2701,6 +2701,88 @@ export async function listCompanies() {
   return data ?? [];
 }
 
+export async function getOwnClientCompany(user: AuthUser) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users linked to a company can read company profile details.");
+  }
+
+  const company = await getCompanyById(user.clientId);
+
+  if (!company) {
+    throw new Error("Your client company profile could not be found.");
+  }
+
+  return company;
+}
+
+export async function updateOwnClientCompanyProfile(
+  user: AuthUser,
+  input: { name: string; website?: string },
+) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users linked to a company can update company profile details.");
+  }
+
+  if (!input.name.trim()) {
+    throw new Error("Company name is required.");
+  }
+
+  const { data, error } = await supabase
+    .from("companies")
+    .update({
+      name: input.name.trim(),
+      website: toNullableString(input.website),
+    })
+    .eq("id", user.clientId)
+    .select("*")
+    .single<CompanyRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "client_company_profile_updated", "companies", data.id, {
+    name: data.name,
+    website: data.website,
+  });
+
+  return data;
+}
+
+export async function createClientCompany(
+  user: AuthUser,
+  input: { name: string; website?: string },
+) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can create client companies.");
+  }
+
+  if (!input.name.trim()) {
+    throw new Error("Company name is required.");
+  }
+
+  const { data, error } = await supabase
+    .from("companies")
+    .insert({
+      name: input.name.trim(),
+      website: toNullableString(input.website),
+      relationship_stage: "CLIENT",
+    })
+    .select("*")
+    .single<CompanyRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "client_company_created", "companies", data.id, {
+    name: data.name,
+    website: data.website,
+  });
+
+  return data;
+}
+
 export async function listProfiles() {
   const { data, error } = await supabase
     .from("profiles")
