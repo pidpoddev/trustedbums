@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, PlusCircle, Search, Sparkles, Target, Users } from "lucide-react";
+import { Building2, HelpCircle, PlusCircle, Search, Sparkles, Target, Users, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPanel } from "@/components/FilterPanel";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -88,6 +89,22 @@ const reverseOpportunityTypeFilters: { value: ReverseOpportunityTypeFilter; labe
   { value: "CLOSED", label: "Closed lost" },
 ];
 
+function FieldLabel({ children, tooltip }: { children: string; tooltip: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Label>{children}</Label>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" className="text-muted-foreground transition-colors hover:text-foreground" aria-label={`${children} help`}>
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">{tooltip}</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
 function reverseOpportunityVariant(status: ReverseOpportunityStatus) {
   if (status === "CLIENT_INTERESTED" || status === "CONVERTED") {
     return "success" as const;
@@ -114,6 +131,7 @@ export default function AdminOpportunities() {
   const [registrationPage, setRegistrationPage] = useState(1);
   const [reversePage, setReversePage] = useState(1);
   const [reverseOpportunityTypeFilter, setReverseOpportunityTypeFilter] = useState<ReverseOpportunityTypeFilter>("ALL");
+  const [isCreateOpportunityOpen, setIsCreateOpportunityOpen] = useState(false);
   const [newOpportunity, setNewOpportunity] = useState({
     company_id: "",
     pay_program_id: "",
@@ -159,6 +177,7 @@ export default function AdminOpportunities() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-opportunities"] });
       setNewOpportunity({ company_id: "", pay_program_id: "", target_account_name: "", business_unit: "", opportunity_description: "", client_contact: "", trusted_bums_contact: "", expected_product_service: "", estimated_deal_value: "", expected_timeline: "", notes: "" });
+      setIsCreateOpportunityOpen(false);
       toast({ title: "Opportunity created", description: "The client opportunity was submitted for tracking." });
     },
     onError: (error) => {
@@ -303,87 +322,97 @@ export default function AdminOpportunities() {
         description="Review target accounts separately from formal opportunity registrations and commission records."
       />
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <PlusCircle className="h-5 w-5 text-primary" /> Create opportunity
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Client</Label>
-              <Select value={newOpportunity.company_id} onValueChange={(value) => setNewOpportunity((current) => ({ ...current, company_id: value, pay_program_id: "" }))}>
-                <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
-                <SelectContent>
-                  {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <TooltipProvider>
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="flex items-center gap-2 font-display">
+                <PlusCircle className="h-5 w-5 text-primary" /> Create opportunity
+              </CardTitle>
+              <Button variant={isCreateOpportunityOpen ? "secondary" : "default"} onClick={() => setIsCreateOpportunityOpen((current) => !current)}>
+                {isCreateOpportunityOpen ? <X className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                {isCreateOpportunityOpen ? "Close" : "Create"}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label>Target account</Label>
-              <Input value={newOpportunity.target_account_name} onChange={(event) => setNewOpportunity((current) => ({ ...current, target_account_name: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Commission plan</Label>
-              <Select value={newOpportunity.pay_program_id || "none"} onValueChange={(value) => setNewOpportunity((current) => ({ ...current, pay_program_id: value === "none" ? "" : value }))} disabled={!newOpportunity.company_id}>
-                <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No specific plan</SelectItem>
-                  {selectedCompanyPayPrograms.map((program) => (
-                    <SelectItem key={program.id} value={program.id}>{program.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Business unit</Label>
-              <Input value={newOpportunity.business_unit} onChange={(event) => setNewOpportunity((current) => ({ ...current, business_unit: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Expected product / service</Label>
-              <Input value={newOpportunity.expected_product_service} onChange={(event) => setNewOpportunity((current) => ({ ...current, expected_product_service: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Estimated deal value</Label>
-              <Input type="number" value={newOpportunity.estimated_deal_value} onChange={(event) => setNewOpportunity((current) => ({ ...current, estimated_deal_value: event.target.value }))} />
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Client contact</Label>
-              <Input value={newOpportunity.client_contact} onChange={(event) => setNewOpportunity((current) => ({ ...current, client_contact: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Trusted Bums contact</Label>
-              <Input value={newOpportunity.trusted_bums_contact} onChange={(event) => setNewOpportunity((current) => ({ ...current, trusted_bums_contact: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Expected timeline</Label>
-              <Input value={newOpportunity.expected_timeline} onChange={(event) => setNewOpportunity((current) => ({ ...current, expected_timeline: event.target.value }))} />
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea rows={3} value={newOpportunity.opportunity_description} onChange={(event) => setNewOpportunity((current) => ({ ...current, opportunity_description: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea rows={3} value={newOpportunity.notes} onChange={(event) => setNewOpportunity((current) => ({ ...current, notes: event.target.value }))} />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button disabled={!newOpportunity.company_id || !newOpportunity.target_account_name || createOpportunityMutation.isPending} onClick={() => createOpportunityMutation.mutate()}>
-              {createOpportunityMutation.isPending ? "Creating..." : "Create opportunity"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          {isCreateOpportunityOpen ? (
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Choose the client company that owns this opportunity.">Client</FieldLabel>
+                  <Select value={newOpportunity.company_id} onValueChange={(value) => setNewOpportunity((current) => ({ ...current, company_id: value, pay_program_id: "" }))}>
+                    <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
+                    <SelectContent>
+                      {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Enter the prospect, customer, or target account the client wants to pursue.">Target account</FieldLabel>
+                  <Input value={newOpportunity.target_account_name} onChange={(event) => setNewOpportunity((current) => ({ ...current, target_account_name: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Optionally attach an approved client commission plan to set the payout rules for this opportunity.">Commission plan</FieldLabel>
+                  <Select value={newOpportunity.pay_program_id || "none"} onValueChange={(value) => setNewOpportunity((current) => ({ ...current, pay_program_id: value === "none" ? "" : value }))} disabled={!newOpportunity.company_id}>
+                    <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No specific plan</SelectItem>
+                      {selectedCompanyPayPrograms.map((program) => (
+                        <SelectItem key={program.id} value={program.id}>{program.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Name the client division, region, or product group tied to this opportunity, if applicable.">Business unit</FieldLabel>
+                  <Input value={newOpportunity.business_unit} onChange={(event) => setNewOpportunity((current) => ({ ...current, business_unit: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Describe the product or service the client hopes to sell into the target account.">Expected product / service</FieldLabel>
+                  <Input value={newOpportunity.expected_product_service} onChange={(event) => setNewOpportunity((current) => ({ ...current, expected_product_service: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Enter the estimated contract value or revenue opportunity before commissions.">Estimated deal value</FieldLabel>
+                  <Input type="number" value={newOpportunity.estimated_deal_value} onChange={(event) => setNewOpportunity((current) => ({ ...current, estimated_deal_value: event.target.value }))} />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <FieldLabel tooltip="List the client-side owner or stakeholder for follow-up.">Client contact</FieldLabel>
+                  <Input value={newOpportunity.client_contact} onChange={(event) => setNewOpportunity((current) => ({ ...current, client_contact: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Name the internal Trusted Bums owner coordinating the opportunity.">Trusted Bums contact</FieldLabel>
+                  <Input value={newOpportunity.trusted_bums_contact} onChange={(event) => setNewOpportunity((current) => ({ ...current, trusted_bums_contact: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Capture the expected timing, such as this quarter, next fiscal year, or a target close date.">Expected timeline</FieldLabel>
+                  <Input value={newOpportunity.expected_timeline} onChange={(event) => setNewOpportunity((current) => ({ ...current, expected_timeline: event.target.value }))} />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Summarize why this opportunity exists, the customer need, and the desired intro or next step.">Description</FieldLabel>
+                  <Textarea rows={3} value={newOpportunity.opportunity_description} onChange={(event) => setNewOpportunity((current) => ({ ...current, opportunity_description: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Add internal context, caveats, or admin-only details that help manage the opportunity.">Notes</FieldLabel>
+                  <Textarea rows={3} value={newOpportunity.notes} onChange={(event) => setNewOpportunity((current) => ({ ...current, notes: event.target.value }))} />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button disabled={!newOpportunity.company_id || !newOpportunity.target_account_name || createOpportunityMutation.isPending} onClick={() => createOpportunityMutation.mutate()}>
+                  {createOpportunityMutation.isPending ? "Creating..." : "Create opportunity"}
+                </Button>
+              </div>
+            </CardContent>
+          ) : null}
+        </Card>
+      </TooltipProvider>
 
       <Tabs defaultValue="priority" className="space-y-6">
         <TabsList className="flex h-auto flex-wrap justify-start">

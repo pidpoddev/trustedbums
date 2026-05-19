@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, PlusCircle, Search, X } from "lucide-react";
+import { Check, HelpCircle, PlusCircle, Search, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -20,6 +21,22 @@ import {
 } from "@/lib/portalApi";
 
 type PlanTypeFilter = "ALL" | "PENDING" | "APPROVED" | "DENIED";
+
+function FieldLabel({ children, tooltip }: { children: string; tooltip: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Label>{children}</Label>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" className="text-muted-foreground transition-colors hover:text-foreground" aria-label={`${children} help`}>
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">{tooltip}</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
 
 function approvalVariant(status: ClientPayProgramApprovalStatus) {
   if (status === "APPROVED") {
@@ -49,6 +66,7 @@ export default function AdminCommissionPlans() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<PlanTypeFilter>("ALL");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const [newPlan, setNewPlan] = useState({
     company_id: "",
     name: "",
@@ -94,6 +112,7 @@ export default function AdminCommissionPlans() {
       await queryClient.invalidateQueries({ queryKey: ["admin-commission-plans"] });
       await queryClient.invalidateQueries({ queryKey: ["client-pay-programs"] });
       setNewPlan({ company_id: "", name: "", year_1_rate: "", year_2_rate: "", year_3_rate: "", year_4_rate: "", year_5_rate: "", year_6_plus_rate: "", commission_period_months: "", commission_basis: "", payment_terms: "", exclusions: "", notes: "" });
+      setIsCreatePlanOpen(false);
       toast({ title: "Commission plan created", description: "The plan is active and approved for the selected client." });
     },
     onError: (error) => {
@@ -159,76 +178,86 @@ export default function AdminCommissionPlans() {
         description="Review company-specific commission plans, approve client requests, and keep plan visibility scoped to the assigned client."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <PlusCircle className="h-5 w-5 text-primary" /> Create commission plan
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Client</Label>
-              <Select value={newPlan.company_id} onValueChange={(value) => setNewPlan((current) => ({ ...current, company_id: value }))}>
-                <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
-                <SelectContent>
-                  {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <TooltipProvider>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="flex items-center gap-2 font-display">
+                <PlusCircle className="h-5 w-5 text-primary" /> Create commission plan
+              </CardTitle>
+              <Button variant={isCreatePlanOpen ? "secondary" : "default"} onClick={() => setIsCreatePlanOpen((current) => !current)}>
+                {isCreatePlanOpen ? <X className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                {isCreatePlanOpen ? "Close" : "Create"}
+              </Button>
             </div>
-            <div className="space-y-2 lg:col-span-2">
-              <Label>Plan name</Label>
-              <Input value={newPlan.name} onChange={(event) => setNewPlan((current) => ({ ...current, name: event.target.value }))} placeholder="Standard intro commission" />
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-            {([
-              ["year_1_rate", "Year 1 %"],
-              ["year_2_rate", "Year 2 %"],
-              ["year_3_rate", "Year 3 %"],
-              ["year_4_rate", "Year 4 %"],
-              ["year_5_rate", "Year 5 %"],
-              ["year_6_plus_rate", "Year 6+ %"],
-            ] as const).map(([key, label]) => (
-              <div key={key} className="space-y-2">
-                <Label>{label}</Label>
-                <Input type="number" value={newPlan[key]} onChange={(event) => setNewPlan((current) => ({ ...current, [key]: event.target.value }))} />
+          </CardHeader>
+          {isCreatePlanOpen ? (
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Choose the client company this commission plan belongs to.">Client</FieldLabel>
+                  <Select value={newPlan.company_id} onValueChange={(value) => setNewPlan((current) => ({ ...current, company_id: value }))}>
+                    <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
+                    <SelectContent>
+                      {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 lg:col-span-2">
+                  <FieldLabel tooltip="Use a recognizable name admins and clients can identify later, such as Standard Intro Commission.">Plan name</FieldLabel>
+                  <Input value={newPlan.name} onChange={(event) => setNewPlan((current) => ({ ...current, name: event.target.value }))} placeholder="Standard intro commission" />
+                </div>
               </div>
-            ))}
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Commission period months</Label>
-              <Input type="number" value={newPlan.commission_period_months} onChange={(event) => setNewPlan((current) => ({ ...current, commission_period_months: event.target.value }))} placeholder="Optional" />
-            </div>
-            <div className="space-y-2">
-              <Label>Commission basis</Label>
-              <Input value={newPlan.commission_basis} onChange={(event) => setNewPlan((current) => ({ ...current, commission_basis: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Payment terms</Label>
-              <Input value={newPlan.payment_terms} onChange={(event) => setNewPlan((current) => ({ ...current, payment_terms: event.target.value }))} />
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Exclusions</Label>
-              <Textarea rows={3} value={newPlan.exclusions} onChange={(event) => setNewPlan((current) => ({ ...current, exclusions: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea rows={3} value={newPlan.notes} onChange={(event) => setNewPlan((current) => ({ ...current, notes: event.target.value }))} />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button disabled={!newPlan.company_id || !newPlan.name || !newPlan.year_1_rate || createPlanMutation.isPending} onClick={() => createPlanMutation.mutate()}>
-              {createPlanMutation.isPending ? "Creating..." : "Create commission plan"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+                {([
+                  ["year_1_rate", "Year 1 %"],
+                  ["year_2_rate", "Year 2 %"],
+                  ["year_3_rate", "Year 3 %"],
+                  ["year_4_rate", "Year 4 %"],
+                  ["year_5_rate", "Year 5 %"],
+                  ["year_6_plus_rate", "Year 6+ %"],
+                ] as const).map(([key, label], index) => (
+                  <div key={key} className="space-y-2">
+                    <FieldLabel tooltip={index === 5 ? "Enter the commission percentage paid from year 6 onward." : `Enter the commission percentage paid during ${label.replace(" %", "").toLowerCase()}.`}>{label}</FieldLabel>
+                    <Input type="number" value={newPlan[key]} onChange={(event) => setNewPlan((current) => ({ ...current, [key]: event.target.value }))} />
+                  </div>
+                ))}
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Optionally limit how many months commissions are payable for this plan.">Commission period months</FieldLabel>
+                  <Input type="number" value={newPlan.commission_period_months} onChange={(event) => setNewPlan((current) => ({ ...current, commission_period_months: event.target.value }))} placeholder="Optional" />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Describe what commission is calculated from, such as net revenue, gross margin, or first-year ARR.">Commission basis</FieldLabel>
+                  <Input value={newPlan.commission_basis} onChange={(event) => setNewPlan((current) => ({ ...current, commission_basis: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Define when Trusted Bums is paid, for example net 30 after client payment is received.">Payment terms</FieldLabel>
+                  <Input value={newPlan.payment_terms} onChange={(event) => setNewPlan((current) => ({ ...current, payment_terms: event.target.value }))} />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <FieldLabel tooltip="List any products, accounts, services, geographies, or deal types that do not earn commission.">Exclusions</FieldLabel>
+                  <Textarea rows={3} value={newPlan.exclusions} onChange={(event) => setNewPlan((current) => ({ ...current, exclusions: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel tooltip="Add internal context or approval notes about why this plan exists.">Notes</FieldLabel>
+                  <Textarea rows={3} value={newPlan.notes} onChange={(event) => setNewPlan((current) => ({ ...current, notes: event.target.value }))} />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button disabled={!newPlan.company_id || !newPlan.name || !newPlan.year_1_rate || createPlanMutation.isPending} onClick={() => createPlanMutation.mutate()}>
+                  {createPlanMutation.isPending ? "Creating..." : "Create commission plan"}
+                </Button>
+              </div>
+            </CardContent>
+          ) : null}
+        </Card>
+      </TooltipProvider>
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)]">
         <div className="relative min-w-0">
