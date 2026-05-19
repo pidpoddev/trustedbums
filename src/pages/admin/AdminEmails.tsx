@@ -65,6 +65,18 @@ function cloneTemplate(template: AdminEmailTemplateRecord): AdminEmailTemplateRe
   return { ...template, metadata_fields: [...template.metadata_fields] };
 }
 
+function renderTemplateText(template: string, values: Record<string, string>) {
+  return template.replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_match, key: string) => values[key] ?? "");
+}
+
+function resolvePreviewRecipient(previewRecipients: AdminEmailPreviewRecipient[], testRecipientEmail: string) {
+  const recipient = previewRecipients.find((item) => !item.suppressed) ?? previewRecipients[0];
+  const fallbackEmail = testRecipientEmail.trim() || "recipient@example.com";
+  const email = recipient?.email ?? fallbackEmail;
+  const name = recipient?.name ?? email;
+  return { email, name };
+}
+
 function createBlankTemplate(): AdminEmailTemplateRecord {
   const now = new Date().toISOString();
   return {
@@ -109,7 +121,7 @@ export default function AdminEmails() {
     queryFn: listAdminEmailEngagementSummary,
     enabled: canLoadAdminEmailData,
   });
-  const templates = templatesQuery.data ?? [];
+  const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [draft, setDraft] = useState<AdminEmailTemplateRecord | null>(null);
   const [metadata, setMetadata] = useState<Record<string, string>>({});
@@ -177,6 +189,25 @@ export default function AdminEmails() {
       triggeredBy: mode === "test" ? "TEST" : "MANUAL",
     };
   };
+
+  const livePreview = useMemo(() => {
+    if (!draft) return null;
+    const customPreviewEmail = draft.recipient_group === "CUSTOM" ? parseRecipients(customRecipients)[0] : "";
+    const recipient = resolvePreviewRecipient(previewRecipients, customPreviewEmail || testRecipientEmail);
+    const previewMetadata = {
+      ...metadata,
+      recipient_email: recipient.email,
+      recipient_name: recipient.name,
+      client_name: metadata.client_name || recipient.name,
+      bum_name: metadata.bum_name || recipient.name,
+    };
+
+    return {
+      body: renderTemplateText(draft.body, previewMetadata),
+      subject: renderTemplateText(draft.subject, previewMetadata),
+      to: recipient.email,
+    };
+  }, [customRecipients, draft, metadata, previewRecipients, testRecipientEmail]);
 
   const previewMutation = useMutation({
     mutationFn: () => sendAdminEmail(buildSendInput("preview")),
@@ -273,7 +304,30 @@ export default function AdminEmails() {
                     <div className="space-y-2"><Label>Test recipient</Label><Input value={testRecipientEmail} onChange={(event) => setTestRecipientEmail(event.target.value)} /></div>
                   </div>
                   <div className="space-y-2"><Label>Subject</Label><Input value={draft.subject} onChange={(event) => updateDraft("subject", event.target.value)} /></div>
-                  <div className="space-y-2"><Label>Body</Label><Textarea rows={11} value={draft.body} onChange={(event) => updateDraft("body", event.target.value)} /></div>
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
+                    <div className="space-y-2"><Label>Body</Label><Textarea rows={13} value={draft.body} onChange={(event) => updateDraft("body", event.target.value)} /></div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label>Live email preview</Label>
+                        <Badge variant="secondary" className="max-w-[220px] truncate">To {livePreview?.to}</Badge>
+                      </div>
+                      <div className="overflow-hidden rounded-lg border bg-background shadow-sm">
+                        <div className="border-b bg-muted/40 px-4 py-3">
+                          <p className="truncate text-xs text-muted-foreground">To {livePreview?.to}</p>
+                          <p className="mt-1 truncate font-medium">{livePreview?.subject || "(No subject)"}</p>
+                        </div>
+                        <div className="max-h-[420px] overflow-auto bg-white p-4 text-slate-950">
+                          <div className="mx-auto max-w-[640px] rounded-md border border-slate-200 bg-white shadow-sm">
+                            <div className="border-b border-slate-200 px-5 py-4">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">Trusted Bums</p>
+                              <h3 className="mt-2 text-lg font-semibold leading-tight text-slate-950">{livePreview?.subject || "(No subject)"}</h3>
+                            </div>
+                            <div className="whitespace-pre-wrap px-5 py-4 text-sm leading-6 text-slate-800">{livePreview?.body || "Email body will appear here."}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div className="space-y-2"><Label>Metadata fields</Label><Input value={draft.metadata_fields.join(", ")} onChange={(event) => updateDraft("metadata_fields", event.target.value.split(",").map((field) => field.trim()).filter(Boolean))} /></div>
                   {draft.recipient_group === "CUSTOM" ? <div className="space-y-2"><Label>Custom recipients</Label><Textarea rows={3} value={customRecipients} onChange={(event) => setCustomRecipients(event.target.value)} placeholder="one@example.com, two@example.com" /></div> : null}
                   {draft.metadata_fields.length ? <div className="grid gap-3 md:grid-cols-2">{draft.metadata_fields.map((field) => <div key={field} className="space-y-2"><Label>{field}</Label><Input value={metadata[field] ?? ""} onChange={(event) => setMetadata((current) => ({ ...current, [field]: event.target.value }))} /></div>)}</div> : null}
