@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { listClaimInvoices, listCustomerPaymentReports, updateClaimInvoiceStatus, type ClaimInvoiceRecord } from "@/lib/portalApi";
+import { createClaimInvoice, createCustomerPaymentReport, listClaimInvoices, listCustomerPaymentReports, listOpportunityClaims, updateClaimInvoiceStatus, type ClaimInvoiceRecord } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { Search } from "lucide-react";
+import { FilePlus2, Search } from "lucide-react";
 
 function money(value: number | null | undefined) {
   return `$${Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -44,8 +45,20 @@ export default function AdminPayments() {
   const [paymentQuery, setPaymentQuery] = useState("");
   const [invoiceTypeFilter, setInvoiceTypeFilter] = useState<InvoiceTypeFilter>("ALL");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<PaymentReportTypeFilter>("ALL");
+  const [claimId, setClaimId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [grossAmount, setGrossAmount] = useState("");
+  const [commissionableAmount, setCommissionableAmount] = useState("");
+  const [excludedAmount, setExcludedAmount] = useState("");
+  const [receivedAt, setReceivedAt] = useState(new Date().toISOString().slice(0, 10));
+  const [notes, setNotes] = useState("");
+  const claimsQuery = useQuery({ queryKey: ["admin-opportunity-claims-for-payments"], queryFn: () => listOpportunityClaims() });
   const reportsQuery = useQuery({ queryKey: ["admin-customer-payment-reports"], queryFn: listCustomerPaymentReports });
   const invoicesQuery = useQuery({ queryKey: ["admin-claim-invoices"], queryFn: listClaimInvoices });
+  const claims = useMemo(
+    () => (claimsQuery.data ?? []).filter((claim) => ["APPROVED", "SCHEDULED", "MEETING_HELD", "CLOSED"].includes(claim.status)),
+    [claimsQuery.data],
+  );
   const reports = reportsQuery.data ?? [];
   const invoices = invoicesQuery.data ?? [];
   const filteredInvoices = useMemo(() => {
@@ -84,6 +97,41 @@ export default function AdminPayments() {
     });
   }, [paymentQuery, paymentTypeFilter, reports]);
 
+  const selectedClaim = claims.find((claim) => claim.id === claimId);
+
+  const generateInvoiceMutation = useMutation({
+    mutationFn: async () => {
+      const report = await createCustomerPaymentReport(user!, {
+        claimId,
+        customerName,
+        grossAmount: Number(grossAmount || 0),
+        commissionableAmount: Number(commissionableAmount || grossAmount || 0),
+        excludedAmount: Number(excludedAmount || 0),
+        customerPaymentReceivedAt: receivedAt,
+        notes,
+      });
+      return createClaimInvoice(user!, report.id);
+    },
+    onSuccess: async (invoice) => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-customer-payment-reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-claim-invoices"] });
+      toast({ title: "Invoice generated", description: invoice.invoice_number + " was generated for " + money(invoice.invoice_amount) + "." });
+      setClaimId("");
+      setCustomerName("");
+      setGrossAmount("");
+      setCommissionableAmount("");
+      setExcludedAmount("");
+      setNotes("");
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to generate invoice",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateInvoiceMutation = useMutation({
     mutationFn: ({ invoice, status }: { invoice: ClaimInvoiceRecord; status: "SENT" | "PAID" }) =>
       updateClaimInvoiceStatus(user!, invoice, status),
@@ -106,9 +154,79 @@ export default function AdminPayments() {
       <PageHeader title="Payments" description="Track client-reported customer payments and Trusted Bums invoices" />
 
       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <FilePlus2 className="h-5 w-5 text-primary" /> Generate invoice
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(260px,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="space-y-2 lg:col-span-2">
+              <Label>Approved claim</Label>
+              <Select value={claimId} onValueChange={setClaimId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select the claim tied to this customer payment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {claims.map((claim) => (
+                    <SelectItem key={claim.id} value={claim.id}>
+                      {claim.opportunity_registrations?.target_account_name ?? claim.contact_company} - {claim.contact_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!claims.length ? (
+                <p className="text-xs text-muted-foreground">No approved claims are ready for invoice generation yet.</p>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label>Customer name</Label>
+              <Input
+                value={customerName}
+                onChange={(event) => setCustomerName(event.target.value)}
+                placeholder={selectedClaim?.contact_company ?? "Customer company"}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Customer paid on</Label>
+              <Input type="date" value={receivedAt} onChange={(event) => setReceivedAt(event.target.value)} />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Gross amount received</Label>
+              <Input type="number" value={grossAmount} onChange={(event) => setGrossAmount(event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Commissionable amount</Label>
+              <Input
+                type="number"
+                value={commissionableAmount}
+                onChange={(event) => setCommissionableAmount(event.target.value)}
+                placeholder={grossAmount || "0"}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Excluded amount</Label>
+              <Input type="number" value={excludedAmount} onChange={(event) => setExcludedAmount(event.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Notes / exclusions</Label>
+            <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} />
+          </div>
+          <div className="flex justify-end">
+            <Button disabled={!claimId || !grossAmount || generateInvoiceMutation.isPending} onClick={() => generateInvoiceMutation.mutate()}>
+              {generateInvoiceMutation.isPending ? "Generating..." : "Generate invoice"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader><CardTitle className="font-display">Trusted Bums Invoices</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)] mb-4">
+          <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-end">
             <div className="relative min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -118,10 +236,10 @@ export default function AdminPayments() {
                 className="pl-9"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Type</Label>
+            <div>
+              <Label className="sr-only">Type</Label>
               <Select value={invoiceTypeFilter} onValueChange={(value: InvoiceTypeFilter) => setInvoiceTypeFilter(value)}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -196,7 +314,7 @@ export default function AdminPayments() {
       <Card>
         <CardHeader><CardTitle className="font-display">Client-Reported Customer Payments</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)] mb-4">
+          <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-end">
             <div className="relative min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -206,10 +324,10 @@ export default function AdminPayments() {
                 className="pl-9"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Type</Label>
+            <div>
+              <Label className="sr-only">Type</Label>
               <Select value={paymentTypeFilter} onValueChange={(value: PaymentReportTypeFilter) => setPaymentTypeFilter(value)}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
