@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -26,14 +26,18 @@ function FieldLabel({ children, tooltip }: { children: string; tooltip: string }
   return (
     <div className="flex items-center gap-1.5">
       <Label>{children}</Label>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button type="button" className="text-muted-foreground transition-colors hover:text-foreground" aria-label={`${children} help`}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label={`${children} help`}
+          >
             <HelpCircle className="h-3.5 w-3.5" />
           </button>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-xs">{tooltip}</TooltipContent>
-      </Tooltip>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 text-sm" align="start">{tooltip}</PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -178,7 +182,7 @@ export default function AdminCommissionPlans() {
         description="Review company-specific commission plans, approve client requests, and keep plan visibility scoped to the assigned client."
       />
 
-      <TooltipProvider>
+      <>
         {!isCreatePlanOpen ? (
           <div className="flex justify-end">
             <Button onClick={() => setIsCreatePlanOpen(true)}>
@@ -264,7 +268,7 @@ export default function AdminCommissionPlans() {
             </CardContent>
           </Card>
         )}
-      </TooltipProvider>
+      </>
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)]">
         <div className="relative min-w-0">

@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -93,14 +93,18 @@ function FieldLabel({ children, tooltip }: { children: string; tooltip: string }
   return (
     <div className="flex items-center gap-1.5">
       <Label>{children}</Label>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button type="button" className="text-muted-foreground transition-colors hover:text-foreground" aria-label={`${children} help`}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label={`${children} help`}
+          >
             <HelpCircle className="h-3.5 w-3.5" />
           </button>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-xs">{tooltip}</TooltipContent>
-      </Tooltip>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 text-sm" align="start">{tooltip}</PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -322,7 +326,7 @@ export default function AdminOpportunities() {
         description="Review target accounts separately from formal opportunity registrations and commission records."
       />
 
-      <TooltipProvider>
+      <>
         {!isCreateOpportunityOpen ? (
           <div className="mb-6 flex justify-end">
             <Button onClick={() => setIsCreateOpportunityOpen(true)}>
@@ -419,7 +423,7 @@ export default function AdminOpportunities() {
             </CardContent>
           </Card>
         )}
-      </TooltipProvider>
+      </>
 
       <Tabs defaultValue="priority" className="space-y-6">
         <TabsList className="flex h-auto flex-wrap justify-start">
