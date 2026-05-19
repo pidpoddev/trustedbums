@@ -29,6 +29,17 @@ async function ensureClerkTestingSetup() {
 }
 
 export async function signIn(page: Page, account: QaAccount) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "trustedbums:consent-preferences",
+      JSON.stringify({
+        version: "2026-05-19-eu-v1",
+        preferences: { necessary: true, preferences: true, analytics: true, marketing: true },
+        decidedAt: new Date().toISOString(),
+        source: "settings",
+      }),
+    );
+  });
   await page.goto("/");
   await page.waitForFunction(() => Boolean(window.Clerk?.loaded), undefined, { timeout: 20_000 });
 
