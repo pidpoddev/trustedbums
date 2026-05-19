@@ -24,7 +24,6 @@ import {
   Building2,
   GraduationCap,
   PlusCircle,
-  FileCheck,
   Sparkles,
   BarChart3,
 } from "lucide-react";
@@ -43,9 +42,6 @@ const navGroups = [
   { label: "Finance", items: [
   { title: "Earnings", url: "/bum/earnings", icon: Wallet },
   { title: "Reports", url: "/bum/reports", icon: BarChart3 },
-  ] },
-  { label: "Account", items: [
-  { title: "Connector Terms", url: "/bum/terms", icon: FileCheck },
   ] },
 ];
 

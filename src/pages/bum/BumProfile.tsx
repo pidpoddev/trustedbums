@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileUp, Linkedin, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Download, FileCheck, FileUp, Linkedin, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { UserTimeZoneCard } from "@/components/UserTimeZoneCard";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentTermsState } from "@/hooks/use-current-terms";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { importLinkedInExport, type LinkedInExportSelection } from "@/lib/linkedinImport";
 import { getOwnBumProfile, upsertOwnBumProfile } from "@/lib/portalApi";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
 interface BumProfileFormState {
   headline: string;
@@ -93,6 +97,7 @@ function toFormState(profile: Awaited<ReturnType<typeof getOwnBumProfile>>): Bum
 export default function BumProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<BumProfileFormState>(defaultForm);
   const [hasHydratedForm, setHasHydratedForm] = useState(false);
@@ -101,6 +106,7 @@ export default function BumProfile() {
   const [importNotes, setImportNotes] = useState<string[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [pendingLinkedInImportedAt, setPendingLinkedInImportedAt] = useState<string | null>(null);
+  const { terms, acceptance, hasAcceptedCurrentTerms, isLoading: isTermsLoading } = useCurrentTermsState();
 
   const profileQuery = useQuery({
     queryKey: ["bum-profile", user?.id],
@@ -246,8 +252,36 @@ export default function BumProfile() {
     <div className="space-y-6">
       <PageHeader title="Profile" description="Build the connector profile that admins and clients will review." />
 
-      <div className="max-w-2xl">
+      <div className="grid gap-4 lg:grid-cols-2">
         <UserTimeZoneCard description="Your time zone controls how meetings and timestamps appear throughout the Bum portal." />
+        <Card className={hasAcceptedCurrentTerms ? "border-success/40" : "border-warning/50"}>
+          <CardHeader>
+            <CardTitle className="font-display flex items-center gap-2">
+              <FileCheck className="h-5 w-5 text-primary" />
+              Accepted Terms
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <StatusBadge
+              label={hasAcceptedCurrentTerms ? "Connector agreement accepted" : "Agreement pending"}
+              variant={hasAcceptedCurrentTerms ? "success" : "warning"}
+            />
+            <div className="rounded-md border bg-muted/20 p-4">
+              <p className="font-medium text-foreground">{terms?.title ?? "Trusted Bums Connector Terms"}</p>
+              <p className="mt-1 text-muted-foreground">Version {terms?.version ?? "current"}</p>
+              <p className="mt-1 text-muted-foreground">
+                {acceptance
+                  ? `Accepted ${formatDateTimeForTimeZone(acceptance.accepted_at, timeZone)}`
+                  : isTermsLoading
+                    ? "Checking acceptance..."
+                    : "No acceptance recorded for this version."}
+              </p>
+            </div>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/bum/terms">Review connector agreement</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
