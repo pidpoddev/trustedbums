@@ -3700,10 +3700,10 @@ async function uploadTrainingMaterialAttachment(user: AuthUser, material: Traini
   return data;
 }
 
-export async function getTrainingMaterialAttachmentUrl(attachment: TrainingMaterialAttachment) {
+export async function getTrainingMaterialAttachmentUrl(attachment: TrainingMaterialAttachment, expiresInSeconds = 60 * 10) {
   const { data, error } = await supabase.storage
     .from(attachment.storage_bucket)
-    .createSignedUrl(attachment.storage_path, 60 * 10, {
+    .createSignedUrl(attachment.storage_path, expiresInSeconds, {
       download: attachment.file_name,
     });
 
@@ -3733,6 +3733,22 @@ export async function listMarketplaceTrainingMaterials() {
   const { data, error } = await supabase
     .from("training_materials")
     .select("*, companies(name), training_material_attachments(*)")
+    .eq("is_published", true)
+    .order("updated_at", { ascending: false })
+    .returns<TrainingMaterial[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listPublishedClientTrainingMaterials(companyId: string) {
+  const { data, error } = await supabase
+    .from("training_materials")
+    .select("*, companies(name), training_material_attachments(*)")
+    .eq("company_id", companyId)
     .eq("is_published", true)
     .order("updated_at", { ascending: false })
     .returns<TrainingMaterial[]>();

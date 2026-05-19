@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarPlus, ExternalLink, X } from "lucide-react";
+import { CalendarPlus, ExternalLink, FileText, X } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { listClientIntroductionAttendees, scheduleTeamsMeeting, type CustomerTargetRecord, type ScheduleTeamsMeetingResponse } from "@/lib/portalApi";
+import { getTrainingMaterialAttachmentUrl, listClientIntroductionAttendees, listPublishedClientTrainingMaterials, scheduleTeamsMeeting, type CustomerTargetRecord, type ScheduleTeamsMeetingResponse, type TrainingMaterial } from "@/lib/portalApi";
 import {
   formatDateTimeForTimeZone,
   getBrowserTimeZone,
@@ -78,6 +79,8 @@ function uniqueAttendees(attendees: MeetingAttendeeDraft[]) {
   return unique;
 }
 
+const READ_AHEAD_LINK_TTL_SECONDS = 60 * 60 * 24 * 30;
+
 function getTimeZoneAbbreviation(value: string, timeZone: string) {
   try {
     const iso = parseDateTimeLocalInTimeZoneToUtcIso(value, timeZone);
@@ -111,6 +114,7 @@ export function ScheduleTeamsMeetingDialog({
   const [attendeeEmailDraft, setAttendeeEmailDraft] = useState("");
   const [attendeeEmailError, setAttendeeEmailError] = useState<string | null>(null);
   const [description, setDescription] = useState("");
+  const [selectedReadAheadIds, setSelectedReadAheadIds] = useState<string[]>([]);
 
   const targetName = target.target_companies?.name ?? target.target_account_name;
   const clientName = target.client_companies?.name ?? "Client";
@@ -119,6 +123,11 @@ export function ScheduleTeamsMeetingDialog({
   const clientAttendeesQuery = useQuery({
     queryKey: ["client-introduction-attendees", target.client_company_id],
     queryFn: () => listClientIntroductionAttendees(target.client_company_id),
+    enabled: open && Boolean(target.client_company_id),
+  });
+  const readAheadQuery = useQuery({
+    queryKey: ["meeting-read-ahead-materials", target.client_company_id],
+    queryFn: () => listPublishedClientTrainingMaterials(target.client_company_id),
     enabled: open && Boolean(target.client_company_id),
   });
   const defaultAttendees = useMemo(() =>
@@ -162,12 +171,37 @@ export function ScheduleTeamsMeetingDialog({
     }
   }, [startTime, timeZone, timeZoneAbbreviation]);
 
+  const buildReadAheadDescription = async () => {
+    const selectedMaterials = (readAheadQuery.data ?? []).filter((material) => selectedReadAheadIds.includes(material.id));
+
+    if (!selectedMaterials.length) {
+      return description;
+    }
+
+    const readAheadLines: string[] = ["Read Ahead:"];
+
+    for (const material of selectedMaterials) {
+      readAheadLines.push("- " + material.title);
+
+      if (material.resource_url) {
+        readAheadLines.push("  Link: " + material.resource_url);
+      }
+
+      for (const attachment of material.training_material_attachments ?? []) {
+        const signedUrl = await getTrainingMaterialAttachmentUrl(attachment, READ_AHEAD_LINK_TTL_SECONDS);
+        readAheadLines.push("  Attachment: " + attachment.file_name + " - " + signedUrl);
+      }
+    }
+
+    return [description.trim(), readAheadLines.join("\n")].filter(Boolean).join("\n\n");
+  };
+
   const scheduleMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: async () =>
       scheduleTeamsMeeting({
         customerTargetId: target.id,
         subject: subject.trim() || defaultSubject,
-        description,
+        description: await buildReadAheadDescription(),
         startTime: parseDateTimeLocalInTimeZoneToUtcIso(startTime, timeZone),
         durationMinutes: Number(durationMinutes),
         attendeeEmails: attendees.map((attendee) => attendee.email),
@@ -259,6 +293,26 @@ export function ScheduleTeamsMeetingDialog({
     setHasEditedAttendees(true);
   };
 
+  const toggleReadAheadMaterial = (materialId: string) => {
+    setSelectedReadAheadIds((current) =>
+      current.includes(materialId)
+        ? current.filter((id) => id !== materialId)
+        : [...current, materialId],
+    );
+  };
+
+  const readAheadAssets = readAheadQuery.data ?? [];
+
+  const getReadAheadSummary = (material: TrainingMaterial) => {
+    const attachmentCount = material.training_material_attachments?.length ?? 0;
+    const parts = [
+      material.resource_url ? "link" : null,
+      attachmentCount ? `${attachmentCount} attachment${attachmentCount === 1 ? "" : "s"}` : null,
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(" + ") : "notes only";
+  };
+
   return (
     <Dialog
       open={open}
@@ -270,6 +324,7 @@ export function ScheduleTeamsMeetingDialog({
           setSubject(defaultSubject);
           setHasEditedAttendees(false);
           setAttendees(defaultAttendees);
+          setSelectedReadAheadIds([]);
         }
       }}
     >
@@ -377,6 +432,41 @@ export function ScheduleTeamsMeetingDialog({
             {attendeeEmailError ? <p className="text-xs text-destructive">{attendeeEmailError}</p> : null}
             <p className="text-xs text-muted-foreground">
               Bum, enabled client contacts, and the customer target are prefilled. Remove anyone who should not receive this invite.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Read Ahead assets</Label>
+            <div className="rounded-md border bg-background p-3">
+              {readAheadQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading available assets...</p>
+              ) : readAheadAssets.length ? (
+                <div className="grid gap-2">
+                  {readAheadAssets.map((material) => (
+                    <label key={material.id} className="flex cursor-pointer items-start gap-3 rounded-md p-2 hover:bg-muted/50">
+                      <Checkbox
+                        checked={selectedReadAheadIds.includes(material.id)}
+                        onCheckedChange={() => toggleReadAheadMaterial(material.id)}
+                        className="mt-1"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2 font-medium">
+                          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{material.title}</span>
+                        </span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {material.technology ?? "General"} · {getReadAheadSummary(material)}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No published Read Ahead assets are available for {clientName} yet.</p>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Selected assets are added to the calendar invite as links. Uploaded attachments use secure links that expire after 30 days.
             </p>
           </div>
 
