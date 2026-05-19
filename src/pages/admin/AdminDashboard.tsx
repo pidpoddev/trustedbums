@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Download, FilePlus, RefreshCw, ShieldCheck, Target } from "lucide-react";
+import { Building2, Download, FilePlus, ShieldCheck, Target } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -29,7 +29,6 @@ import {
   listOpportunityRegistrations,
   listProfiles,
   listTermsAcceptances,
-  syncClerkUsers,
   listTermsVersions,
   REGISTRATION_STATUSES,
   updateOpportunityRegistration,
@@ -174,28 +173,6 @@ export default function AdminDashboard() {
     queryFn: () => listOpportunityRegistrations(statusFilter),
   });
 
-  const syncClerkUsersMutation = useMutation({
-    mutationFn: () => syncClerkUsers({ limit: 50 }),
-    onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-bum-profiles"] });
-      const skippedPreview = result.skipped[0]
-        ? ` First skipped: ${result.skipped[0].email ?? result.skipped[0].id ?? "unknown user"} - ${result.skipped[0].reason}`
-        : "";
-      toast({
-        title: "Clerk users synced",
-        description: `Synced ${result.synced.length} user${result.synced.length === 1 ? "" : "s"}. ${result.skipped.length} skipped.${skippedPreview}`,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Unable to sync Clerk users",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
 
   const createTermsMutation = useMutation({
     mutationFn: () =>
@@ -241,12 +218,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader title="Admin Dashboard" description="Scan priority queues and jump into the focused admin workspaces.">
-        <Button variant="outline" onClick={() => syncClerkUsersMutation.mutate()} disabled={syncClerkUsersMutation.isPending}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${syncClerkUsersMutation.isPending ? "animate-spin" : ""}`} />
-          Sync Clerk users
-        </Button>
-      </PageHeader>
+      <PageHeader title="Admin Dashboard" description="Scan priority queues and jump into the focused admin workspaces." />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Companies" value={companies.length} icon={ShieldCheck} />

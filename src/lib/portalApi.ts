@@ -70,9 +70,66 @@ export interface ProfileRecord {
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
 }
 
+export type ClerkPortalRole = "ADMIN" | "CLIENT" | "BUM";
+
 export interface SyncClerkUsersResult {
-  synced: Array<{ id: string; email: string; role: "CLIENT" | "BUM"; companyName?: string | null }>;
+  synced: Array<{ id: string; email: string; role: ClerkPortalRole; companyName?: string | null }>;
   skipped: Array<{ id?: string; email?: string; reason: string }>;
+}
+
+export interface ClerkAdminUserRecord {
+  id: string | null;
+  email: string;
+  name: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  lastSignInAt: string | null;
+  publicMetadata: Record<string, unknown>;
+  privateMetadata: Record<string, unknown>;
+  unsafeMetadata: Record<string, unknown>;
+  metadata: {
+    role: ClerkPortalRole | null;
+    companyId: string | null;
+    companyName: string | null;
+    companyWebsite: string | null;
+  };
+  profile: {
+    id: string;
+    companyId: string | null;
+    companyName: string | null;
+    fullName: string | null;
+    email: string | null;
+    role: string | null;
+    isAdmin: boolean;
+    createdAt: string;
+    lastSignInAt: string | null;
+  } | null;
+}
+
+export interface ClerkUserToolSyncResult {
+  results: Array<{
+    synced: boolean;
+    id?: string | null;
+    email?: string | null;
+    role?: ClerkPortalRole;
+    companyId?: string | null;
+    companyName?: string | null;
+    reason?: string;
+  }>;
+}
+
+export interface ClerkUserAccessInput {
+  userId: string;
+  role: ClerkPortalRole;
+  companyId?: string | null;
+  companyName?: string | null;
+  companyWebsite?: string | null;
+}
+
+export interface ClerkSupportLinkResult {
+  url: string | null;
+  token: string | null;
+  expiresInSeconds: number;
 }
 
 export type AdminEmailRecipientGroup = "CLIENT_COMPANY" | "ALL_CLIENTS" | "ALL_BUMS" | "BUM_INDUSTRY_MATCH" | "ADMINS" | "CUSTOM";
@@ -3051,32 +3108,64 @@ export async function listProfiles() {
   return data ?? [];
 }
 
-export async function syncClerkUsers(input: { emails?: string[]; limit?: number } = {}) {
+async function invokeClerkUserTools<T>(body: Record<string, unknown>) {
   const token = await getSupabaseAccessToken();
 
   if (!token) {
-    throw new Error("Sign in before syncing Clerk users.");
+    throw new Error("Sign in before using Clerk troubleshooting tools.");
   }
 
-  const response = await fetch(`${supabaseUrl}/functions/v1/sync-clerk-users`, {
+  const response = await fetch(`${supabaseUrl}/functions/v1/clerk-user-tools`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       apikey: supabasePublishableKey,
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(input),
+    body: JSON.stringify(body),
   });
 
-  const payload = (await response.json().catch(() => ({}))) as SyncClerkUsersResult & { error?: string };
+  const payload = (await response.json().catch(() => ({}))) as T & { error?: string };
 
   if (!response.ok) {
-    throw new Error(payload.error || "Unable to sync Clerk users.");
+    throw new Error(payload.error || "Unable to run Clerk troubleshooting tool.");
   }
 
   return payload;
 }
 
+export async function syncClerkUsers(input: { emails?: string[]; userIds?: string[]; query?: string; limit?: number } = {}) {
+  const payload = await invokeClerkUserTools<ClerkUserToolSyncResult>({ action: "sync", ...input });
+  return {
+    synced: payload.results
+      .filter((result) => result.synced)
+      .map((result) => ({
+        id: result.id ?? "",
+        email: result.email ?? "",
+        role: result.role ?? "BUM",
+        companyName: result.companyName ?? null,
+      })),
+    skipped: payload.results
+      .filter((result) => !result.synced)
+      .map((result) => ({ id: result.id ?? undefined, email: result.email ?? undefined, reason: result.reason ?? "Unable to sync user." })),
+  } satisfies SyncClerkUsersResult;
+}
+
+export async function listClerkAdminUsers(input: { emails?: string[]; userIds?: string[]; query?: string; limit?: number } = {}) {
+  const payload = await invokeClerkUserTools<{ users: ClerkAdminUserRecord[] }>({ action: "list", ...input });
+  return payload.users ?? [];
+}
+
+export async function updateClerkUserAccess(input: ClerkUserAccessInput) {
+  return invokeClerkUserTools<{ user: ClerkAdminUserRecord; syncResult: ClerkUserToolSyncResult["results"][number] }>({
+    action: "update_access",
+    ...input,
+  });
+}
+
+export async function createClerkSupportLink(input: { userId: string; expiresInSeconds?: number }) {
+  return invokeClerkUserTools<ClerkSupportLinkResult>({ action: "create_support_link", ...input });
+}
 export async function createProspectRecommendation(user: AuthUser, input: ProspectInput) {
   if (user.role !== "BUM") {
     throw new Error("Only Bums can recommend prospects.");

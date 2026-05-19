@@ -27,6 +27,7 @@ import {
   Mail,
   GraduationCap,
   BarChart3,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 
@@ -62,6 +63,12 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
       { title: "Emails", url: "/admin/emails", icon: Mail },
       { title: "Training & Assets", url: "/admin/training-assets", icon: GraduationCap },
       { title: "Reports", url: "/admin/reports", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Troubleshooting",
+    items: [
+      { title: "Tools", url: "/admin/troubleshooting", icon: Wrench },
     ],
   },
 ];

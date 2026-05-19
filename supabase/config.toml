@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.sync-clerk-users]
 verify_jwt = false
+
+[functions.clerk-user-tools]
+verify_jwt = false
