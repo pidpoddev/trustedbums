@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { listCustomerPaymentReports, listCustomerTargets, listTeamsMeetings } from "@/lib/portalApi";
+import { listCustomerPaymentReports, listCustomerTargets, listTeamsMeetings, type TeamsMeetingAttendee } from "@/lib/portalApi";
 import { Download } from "lucide-react";
 
 type CsvRow = Record<string, string | number | null | undefined>;
@@ -12,6 +12,11 @@ type CsvRow = Record<string, string | number | null | undefined>;
 function csvValue(value: string | number | null | undefined) {
   const text = value === null || value === undefined ? "" : String(value);
   return /[",\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+}
+
+function formatMeetingAttendee(attendee: TeamsMeetingAttendee) {
+  const label = attendee.name ? attendee.name + " <" + attendee.email + ">" : attendee.email;
+  return attendee.response && attendee.response !== "none" ? label + " (" + attendee.response + ")" : label;
 }
 
 function downloadCsv(filename: string, rows: CsvRow[]) {
@@ -82,7 +87,7 @@ export default function ClientExports() {
         target_account: meeting.customer_targets?.target_account_name,
         start_time: meeting.start_time,
         end_time: meeting.end_time,
-        attendees: meeting.attendees.join("; "),
+        attendees: meeting.attendees.map(formatMeetingAttendee).join("; "),
         teams_join_url: meeting.teams_join_url,
         transcript_sync_status: meeting.transcript_sync_status,
       })),

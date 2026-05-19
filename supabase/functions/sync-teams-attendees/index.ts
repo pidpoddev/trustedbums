@@ -21,6 +21,12 @@ interface TeamsMeetingRow {
   attendees: unknown;
 }
 
+interface SyncAttendeesRequest {
+  meetingIds?: unknown;
+  source?: unknown;
+  batchSize?: unknown;
+}
+
 interface GraphErrorPayload {
   error?: {
     code?: string;
@@ -65,6 +71,7 @@ const microsoftTenantId = Deno.env.get("MICROSOFT_TENANT_ID");
 const microsoftClientId = Deno.env.get("MICROSOFT_CLIENT_ID");
 const microsoftClientSecret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
 const microsoftOrganizerEmail = Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
+const supabaseProjectRef = supabaseUrl ? new URL(supabaseUrl).hostname.split(".")[0] : null;
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -110,7 +117,20 @@ function parseJwtPayload(token: string) {
     throw new Error("The current session token is malformed.");
   }
 
-  return JSON.parse(decodeBase64Url(payloadSegment)) as ClaimsResponse & { iss?: string };
+  return JSON.parse(decodeBase64Url(payloadSegment)) as ClaimsResponse & { iss?: string; ref?: string; role?: string };
+}
+
+function isAuthorizedCronRequest(token: string, body: SyncAttendeesRequest) {
+  if (body.source !== "pg_cron") {
+    return false;
+  }
+
+  try {
+    const payload = parseJwtPayload(token);
+    return payload.iss === "supabase" && payload.ref === supabaseProjectRef && payload.role === "anon";
+  } catch {
+    return false;
+  }
 }
 
 function resolveClerkJwksUrl(issuer?: string) {
@@ -228,19 +248,34 @@ function normalizeGraphAttendees(attendees: GraphEventAttendee[] | undefined) {
     .filter((attendee): attendee is NonNullable<typeof attendee> => Boolean(attendee));
 }
 
-async function listVisibleMeetings(profile: ProfileRow, meetingIds: string[]) {
+function parseBatchSize(value: unknown, fallback: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.min(Math.max(Math.floor(value), 1), 100);
+}
+
+async function listVisibleMeetings(profile: ProfileRow | null, meetingIds: string[], limit: number) {
   let query = supabaseAdmin
     .from("teams_meetings")
     .select("id, client_company_id, scheduled_by, microsoft_event_id, attendees")
     .not("microsoft_event_id", "is", null)
     .order("start_time", { ascending: true })
-    .limit(100);
+    .limit(limit);
 
   if (meetingIds.length) {
     query = query.in("id", meetingIds);
   }
 
-  if (!profile.is_admin && profile.role?.toUpperCase() !== "ADMIN") {
+  if (!profile && !meetingIds.length) {
+    const now = Date.now();
+    const thirtyDaysFromNow = new Date(now + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+    query = query.eq("status", "SCHEDULED").lte("start_time", thirtyDaysFromNow).gte("end_time", sevenDaysAgo);
+  }
+
+  if (profile && !profile.is_admin && profile.role?.toUpperCase() !== "ADMIN") {
     if (profile.role?.toUpperCase() === "BUM") {
       query = query.eq("scheduled_by", profile.id);
     } else if (profile.company_id) {
@@ -269,18 +304,25 @@ Deno.serve(async (request: Request) => {
   }
 
   try {
-    const currentUserId = await getCurrentUserId(getBearerToken(request));
-    const profile = await getProfile(currentUserId);
+    const body = (await request.json().catch(() => ({}))) as SyncAttendeesRequest;
+    const bearerToken = getBearerToken(request);
+    const isCronSync = isAuthorizedCronRequest(bearerToken, body);
+    let profile: ProfileRow | null = null;
 
-    if (!profile) {
-      return json(403, { error: "Create a Trusted Bums profile before syncing Teams attendance." });
+    if (!isCronSync) {
+      const currentUserId = await getCurrentUserId(bearerToken);
+      profile = await getProfile(currentUserId);
+
+      if (!profile) {
+        return json(403, { error: "Create a Trusted Bums profile before syncing Teams attendance." });
+      }
     }
 
-    const body = (await request.json().catch(() => ({}))) as { meetingIds?: unknown };
     const meetingIds = Array.isArray(body.meetingIds)
       ? body.meetingIds.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
       : [];
-    const meetings = await listVisibleMeetings(profile, meetingIds);
+    const batchSize = parseBatchSize(body.batchSize, isCronSync ? 50 : 100);
+    const meetings = await listVisibleMeetings(profile, meetingIds, batchSize);
     const accessToken = await getMicrosoftAccessToken();
     const updated: Array<{ id: string; attendees: unknown[]; status?: string }> = [];
     const failed: Array<{ id: string; error: string }> = [];
@@ -316,7 +358,7 @@ Deno.serve(async (request: Request) => {
       }
     }
 
-    return json(200, { updated, failed });
+    return json(200, { source: isCronSync ? "pg_cron" : "user", updated, failed });
   } catch (error) {
     return json(500, { error: error instanceof Error ? error.message : "Unable to sync Teams attendee responses." });
   }
