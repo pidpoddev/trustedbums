@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Mail, MousePointerClick, Save, Send, ShieldAlert } from "lucide-react";
+import { Eye, Mail, MousePointerClick, Plus, Save, Send, ShieldAlert } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,9 +93,22 @@ export default function AdminEmails() {
   const { toast } = useToast();
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
-  const templatesQuery = useQuery({ queryKey: ["admin-email-templates"], queryFn: listAdminEmailTemplates });
-  const deliveriesQuery = useQuery({ queryKey: ["admin-email-deliveries"], queryFn: listAdminEmailDeliveries });
-  const engagementQuery = useQuery({ queryKey: ["admin-email-engagement"], queryFn: listAdminEmailEngagementSummary });
+  const canLoadAdminEmailData = user?.role === "ADMIN";
+  const templatesQuery = useQuery({
+    queryKey: ["admin-email-templates", user?.id],
+    queryFn: listAdminEmailTemplates,
+    enabled: canLoadAdminEmailData,
+  });
+  const deliveriesQuery = useQuery({
+    queryKey: ["admin-email-deliveries", user?.id],
+    queryFn: listAdminEmailDeliveries,
+    enabled: canLoadAdminEmailData,
+  });
+  const engagementQuery = useQuery({
+    queryKey: ["admin-email-engagement", user?.id],
+    queryFn: listAdminEmailEngagementSummary,
+    enabled: canLoadAdminEmailData,
+  });
   const templates = templatesQuery.data ?? [];
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [draft, setDraft] = useState<AdminEmailTemplateRecord | null>(null);
@@ -106,10 +119,20 @@ export default function AdminEmails() {
   const [previewCount, setPreviewCount] = useState(0);
   const [suppressedCount, setSuppressedCount] = useState(0);
 
-  const selectedTemplate = useMemo(
-    () => (selectedTemplateId ? templates.find((template) => template.id === selectedTemplateId) : templates[0]),
-    [selectedTemplateId, templates],
-  );
+  const startNewTemplate = () => {
+    setSelectedTemplateId("new-template");
+    setDraft(createBlankTemplate());
+    setMetadata({ headline: "", recipient_name: "", message: "" });
+    setCustomRecipients("");
+    setPreviewRecipients([]);
+    setPreviewCount(0);
+    setSuppressedCount(0);
+  };
+
+  const selectedTemplate = useMemo(() => {
+    if (selectedTemplateId === "new-template") return undefined;
+    return selectedTemplateId ? templates.find((template) => template.id === selectedTemplateId) : templates[0];
+  }, [selectedTemplateId, templates]);
 
   useEffect(() => {
     if (!selectedTemplate) return;
@@ -122,13 +145,19 @@ export default function AdminEmails() {
     setSuppressedCount(0);
   }, [selectedTemplate]);
 
+  useEffect(() => {
+    if (templatesQuery.isSuccess && templates.length === 0 && !draft) {
+      startNewTemplate();
+    }
+  }, [draft, templates.length, templatesQuery.isSuccess]);
+
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!user || !draft) throw new Error("Choose a template first.");
       return draft.id === "new-template" ? createAdminEmailTemplate(user, draft) : saveAdminEmailTemplate(user, draft);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-email-templates"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-email-templates", user?.id] });
       toast({ title: "Template saved", description: "Future manual and triggered sends will use the new copy." });
     },
     onError: (error) => toast({ title: "Unable to save template", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }),
@@ -163,8 +192,8 @@ export default function AdminEmails() {
   const sendMutation = useMutation({
     mutationFn: (mode: "manual" | "test") => sendAdminEmail(buildSendInput(mode)),
     onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-email-deliveries"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-email-engagement"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-email-deliveries", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-email-engagement", user?.id] });
       toast({ title: result.mode === "test" ? "Test email sent" : "Email send complete", description: `${result.sent} sent${result.failed ? `, ${result.failed} failed` : ""}${result.suppressed ? `, ${result.suppressed} suppressed` : ""}.` });
     },
     onError: (error) => toast({ title: "Unable to send email", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }),
@@ -184,17 +213,9 @@ export default function AdminEmails() {
       <PageHeader title="Emails" description="Edit templates, preview audiences, send tests, and track engagement.">
         <Button
           variant="outline"
-          onClick={() => {
-            setSelectedTemplateId("new-template");
-            setDraft(createBlankTemplate());
-            setMetadata({ headline: "", recipient_name: "", message: "" });
-            setCustomRecipients("");
-            setPreviewRecipients([]);
-            setPreviewCount(0);
-            setSuppressedCount(0);
-          }}
+          onClick={startNewTemplate}
         >
-          New Template
+          <Plus className="mr-2 h-4 w-4" />New Template
         </Button>
         <Button variant="outline" onClick={() => previewMutation.mutate()} disabled={!draft || previewMutation.isPending}>Preview Audience</Button>
         <Button onClick={() => sendMutation.mutate("manual")} disabled={!draft || sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send</Button>
@@ -213,7 +234,14 @@ export default function AdminEmails() {
           <CardContent className="space-y-3">
             {templatesQuery.isLoading ? <p className="text-sm text-muted-foreground">Loading templates...</p> : null}
             {templatesQuery.isError ? <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">Unable to load templates. Refresh your session and confirm this account has Admin access.</p> : null}
-            {!templatesQuery.isLoading && !templatesQuery.isError && !templates.length ? <p className="rounded-md border p-3 text-sm text-muted-foreground">No templates are visible yet. Use New Template to create one.</p> : null}
+            {!templatesQuery.isLoading && !templatesQuery.isError && !templates.length ? (
+              <div className="rounded-md border p-3 text-sm">
+                <p className="text-muted-foreground">No templates are visible yet. Use New Template to create one.</p>
+                <Button className="mt-3 w-full" variant="outline" onClick={startNewTemplate}>
+                  <Plus className="mr-2 h-4 w-4" />New Template
+                </Button>
+              </div>
+            ) : null}
             {draft?.id === "new-template" ? (
               <button type="button" className="w-full rounded-lg border border-primary bg-primary/5 p-3 text-left text-sm">
                 <span className="font-medium">New email template</span>
