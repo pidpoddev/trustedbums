@@ -55,6 +55,22 @@ function getDisplayName(value: string | null | undefined, fallback: string) {
   return trimmed || fallback;
 }
 
+function getTimeZoneAbbreviation(value: string, timeZone: string) {
+  try {
+    const iso = parseDateTimeLocalInTimeZoneToUtcIso(value, timeZone);
+    const part = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "short",
+    })
+      .formatToParts(new Date(iso))
+      .find((item) => item.type === "timeZoneName")?.value;
+
+    return part || timeZone;
+  } catch {
+    return timeZone;
+  }
+}
+
 export function ScheduleTeamsMeetingDialog({
   target,
   triggerLabel = "Schedule Teams call",
@@ -100,17 +116,18 @@ export function ScheduleTeamsMeetingDialog({
     }
   }, [defaultSubject, open, subject]);
 
+  const timeZoneAbbreviation = useMemo(() => getTimeZoneAbbreviation(startTime, timeZone), [startTime, timeZone]);
   const previewStartTime = useMemo(() => {
     if (!startTime) {
       return "";
     }
 
     try {
-      return formatDateTimeForTimeZone(parseDateTimeLocalInTimeZoneToUtcIso(startTime, timeZone), timeZone);
+      return `${formatDateTimeForTimeZone(parseDateTimeLocalInTimeZoneToUtcIso(startTime, timeZone), timeZone)} ${timeZoneAbbreviation}`;
     } catch {
       return "";
     }
-  }, [startTime, timeZone]);
+  }, [startTime, timeZone, timeZoneAbbreviation]);
 
   const scheduleMutation = useMutation({
     mutationFn: () =>
@@ -247,14 +264,23 @@ export function ScheduleTeamsMeetingDialog({
           <div className="grid gap-4 md:grid-cols-[1fr_140px]">
             <div className="space-y-2">
               <Label htmlFor={`meeting-start-${target.id}`}>Start time</Label>
-              <Input
-                id={`meeting-start-${target.id}`}
-                type="datetime-local"
-                value={startTime}
-                onChange={(event) => setStartTime(event.target.value)}
-              />
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_96px]">
+                <Input
+                  id={`meeting-start-${target.id}`}
+                  type="datetime-local"
+                  value={startTime}
+                  onChange={(event) => setStartTime(event.target.value)}
+                />
+                <div
+                  className="flex h-10 items-center justify-center rounded-md border bg-muted px-3 text-sm font-medium text-muted-foreground"
+                  aria-label={`Timezone ${timeZoneAbbreviation}`}
+                  title={timeZone}
+                >
+                  {timeZoneAbbreviation}
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Interpreted in {timeZone}. Browser detected: {getBrowserTimeZone()}.
+                Date and time are interpreted in {timeZone}. Browser detected: {getBrowserTimeZone()}.
               </p>
             </div>
             <div className="space-y-2">
