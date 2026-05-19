@@ -30,25 +30,36 @@ import {
   CreditCard,
 } from "lucide-react";
 
-const navItems: Array<{
-  title: string;
-  url: string;
-  icon: typeof LayoutDashboard;
-  allowedAccessRoles?: ClientAccessRole[];
+const navGroups: Array<{
+  label: string;
+  items: Array<{
+    title: string;
+    url: string;
+    icon: typeof LayoutDashboard;
+    allowedAccessRoles?: ClientAccessRole[];
+  }>;
 }> = [
+  { label: "Workspace", items: [
   { title: "Dashboard", url: "/client/dashboard", icon: LayoutDashboard },
   { title: "Target Accounts", url: "/client/targets", icon: Target, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Register Opportunity", url: "/client/opportunities/new", icon: PlusCircle, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
-  { title: "Partner Terms", url: "/client/terms", icon: FileCheck },
-  { title: "Agreements", url: "/client/agreements", icon: FileCheck },
-  { title: "Profile", url: "/client/profile", icon: User },
   { title: "Bums", url: "/client/bum-directory", icon: Users, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Trainings", url: "/client/trainings", icon: GraduationCap, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Requests", url: "/client/requests", icon: MessageSquarePlus, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
+  ] },
+  { label: "Finance", items: [
   { title: "Payments", url: "/client/payments", icon: CreditCard, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
   { title: "Exports", url: "/client/exports", icon: Download, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
   { title: "Reports", url: "/client/reports", icon: BarChart3 },
+  ] },
+  { label: "Account", items: [
+  { title: "Partner Terms", url: "/client/terms", icon: FileCheck },
+  { title: "Agreements", url: "/client/agreements", icon: FileCheck },
+  { title: "Profile", url: "/client/profile", icon: User },
+  ] },
 ];
+
+const navItems = navGroups.flatMap((group) => group.items);
 
 export default function ClientLayout() {
   const location = useLocation();
@@ -74,40 +85,45 @@ export default function ClientLayout() {
             </div>
           </div>
           <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {visibleNavItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          end={item.url === "/client"}
-                          className="hover:bg-sidebar-accent/50"
-                          activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                        >
-                          <item.icon className="mr-2 h-4 w-4" />
-                          <span>{item.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            {navGroups.map((group) => {
+              const items = group.items.filter((item) => visibleNavItems.includes(item));
+              return items.length ? (
+                <SidebarGroup key={group.label}>
+                  <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {items.map((item) => (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton asChild>
+                            <NavLink
+                              to={item.url}
+                              end={item.url === "/client"}
+                              className="hover:bg-sidebar-accent/50"
+                              activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                            >
+                              <item.icon className="mr-2 h-4 w-4" />
+                              <span>{item.title}</span>
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              ) : null;
+            })}
           </SidebarContent>
         </Sidebar>
 
         <main className="flex-1 overflow-auto">
           <header className="h-14 border-b flex items-center px-4 bg-card">
             <SidebarTrigger />
-            <span className="ml-4 text-sm text-muted-foreground">
+            <span className="ml-4 truncate text-sm text-muted-foreground">
               {visibleNavItems.find(i => location.pathname === i.url || (i.url !== "/client" && location.pathname.startsWith(i.url)))?.title ?? "Client"}
             </span>
             <PortalHeaderActions />
           </header>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <Outlet />
           </div>
         </main>

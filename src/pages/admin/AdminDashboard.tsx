@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Download, FilePlus, ShieldCheck, Target } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { ContactSubmissionsPanel } from "@/components/admin/ContactSubmissionsPanel";
@@ -216,7 +217,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader title="Admin Dashboard" description="Operate legal onboarding, registrations, users, and audit records." />
+      <PageHeader title="Admin Dashboard" description="Scan priority queues and jump into the focused admin workspaces." />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Companies" value={companies.length} icon={ShieldCheck} />
@@ -228,18 +229,18 @@ export default function AdminDashboard() {
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr] mb-8">
         <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">
           <CardHeader>
-            <CardTitle className="font-display">Marketplace pipelines</CardTitle>
+            <CardTitle className="font-display">Priority queues</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
             <div>
-              Keep both funnels visible from here: companies Trusted Bums wants to win as clients, and the customer target accounts your clients want to sell into.
+              Use the dashboard for triage. Make detailed edits in the dedicated workspaces so this page stays fast to scan.
             </div>
             <div className="flex gap-2">
               <Button asChild variant="outline">
-                <Link to="/admin/clients">Client prospect overlap</Link>
+                <Link to="/admin/clients">Client pipeline</Link>
               </Button>
               <Button asChild>
-                <Link to="/admin/opportunities">Target account pipeline</Link>
+                <Link to="/admin/opportunities">Opportunities</Link>
               </Button>
             </div>
           </CardContent>
@@ -247,7 +248,7 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">Other metrics</CardTitle>
+            <CardTitle className="font-display">Operational pulse</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between text-sm">
@@ -262,10 +263,10 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      <Tabs defaultValue="opportunities" className="space-y-6">
+      <Tabs defaultValue="contacts" className="space-y-6">
         <TabsList className="flex h-auto flex-wrap justify-start">
-          <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
+          <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
           <TabsTrigger value="terms">Terms Versions</TabsTrigger>
           <TabsTrigger value="acceptances">Acceptances</TabsTrigger>
           <TabsTrigger value="companies">Companies & Users</TabsTrigger>
@@ -275,7 +276,7 @@ export default function AdminDashboard() {
         <TabsContent value="opportunities">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4">
-              <CardTitle className="font-display">Opportunity Registrations</CardTitle>
+              <CardTitle className="font-display">Opportunity registrations</CardTitle>
               <div className="flex gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[180px]">
@@ -330,6 +331,7 @@ export default function AdminDashboard() {
                   ))}
                 </TableBody>
               </Table>
+              {!opportunities.length ? <EmptyState title="No opportunity registrations" description="New registrations will appear here for quick triage." /> : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -559,6 +561,7 @@ export default function AdminDashboard() {
               <CardTitle className="font-display">Audit Events</CardTitle>
             </CardHeader>
             <CardContent>
+              {auditEvents.length ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -581,6 +584,9 @@ export default function AdminDashboard() {
                   ))}
                 </TableBody>
               </Table>
+              ) : (
+                <EmptyState title="No audit events yet" description="User and system activity will appear here." />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

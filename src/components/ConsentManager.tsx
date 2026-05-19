@@ -90,15 +90,15 @@ export function ConsentManager() {
   return (
     <>
       {isOpen ? (
-        <div className="fixed inset-0 z-[100] flex items-end bg-foreground/35 px-3 pb-3 backdrop-blur-sm sm:px-6 sm:pb-6">
-          <div className="mx-auto grid max-h-[88vh] w-full max-w-5xl gap-4 overflow-auto rounded-xl border bg-background p-4 shadow-2xl animate-in slide-in-from-bottom-6 duration-300 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:p-6">
+        <div className="fixed inset-x-0 bottom-0 z-[100] px-3 pb-3 sm:px-6 sm:pb-6">
+          <div className="mx-auto grid max-h-[78vh] w-full max-w-4xl gap-4 overflow-auto rounded-lg border bg-background/98 p-4 shadow-2xl animate-in slide-in-from-bottom-4 duration-300 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:p-5">
             <div className="max-w-4xl space-y-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-primary" />
                 <h2 className="font-display text-xl font-semibold">Privacy choices</h2>
               </div>
               <p className="text-sm leading-6 text-muted-foreground">
-                We use necessary storage to run the site and optional technologies for preferences, analytics, and business outreach measurement. Optional categories are off unless you choose them. You can change your choices at any time.
+We use necessary storage to run the site. Optional preferences, analytics, and outreach measurement stay off unless you choose them.
               </p>
               <p className="text-xs text-muted-foreground">
                 See the <Link to="/privacy-policy" className="font-medium text-primary underline-offset-4 hover:underline">Privacy Policy</Link> for more detail.
@@ -126,10 +126,10 @@ export function ConsentManager() {
               ) : null}
             </div>
 
-            <div className="flex flex-col gap-2 md:min-w-52">
+            <div className="flex flex-col gap-2 md:min-w-44">
               <Button variant="outline" onClick={() => savePreferences(defaultConsentPreferences, "banner")}>Reject all</Button>
               <Button onClick={() => savePreferences({ necessary: true, preferences: true, analytics: true, marketing: true }, "banner")}>Accept all</Button>
-              <Button variant="secondary" onClick={() => setShowSettings((current) => !current)}>
+              <Button variant="ghost" onClick={() => setShowSettings((current) => !current)}>
                 {showSettings ? "Hide settings" : "Customize"}
               </Button>
               {showSettings ? <Button variant="outline" onClick={() => savePreferences(draft, "settings")}>Save choices</Button> : null}

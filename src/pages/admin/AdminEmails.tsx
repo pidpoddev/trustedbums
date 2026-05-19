@@ -210,15 +210,10 @@ export default function AdminEmails() {
 
   return (
     <div>
-      <PageHeader title="Emails" description="Edit templates, preview audiences, send tests, and track engagement.">
-        <Button
-          variant="outline"
-          onClick={startNewTemplate}
-        >
+      <PageHeader title="Emails" description="Create reusable templates, test copy, send targeted messages, and track engagement.">
+        <Button variant="outline" onClick={startNewTemplate}>
           <Plus className="mr-2 h-4 w-4" />New Template
         </Button>
-        <Button variant="outline" onClick={() => previewMutation.mutate()} disabled={!draft || previewMutation.isPending}>Preview Audience</Button>
-        <Button onClick={() => sendMutation.mutate("manual")} disabled={!draft || sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send</Button>
       </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-4 mb-6">
@@ -260,7 +255,7 @@ export default function AdminEmails() {
 
         <div className="space-y-4">
           <Card>
-            <CardHeader><CardTitle className="font-display">Composer</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-display">Template editor</CardTitle></CardHeader>
             <CardContent className="space-y-5">
               {!draft ? <p className="text-sm text-muted-foreground">Choose a template to start composing.</p> : (
                 <>
@@ -282,7 +277,7 @@ export default function AdminEmails() {
                   <div className="space-y-2"><Label>Metadata fields</Label><Input value={draft.metadata_fields.join(", ")} onChange={(event) => updateDraft("metadata_fields", event.target.value.split(",").map((field) => field.trim()).filter(Boolean))} /></div>
                   {draft.recipient_group === "CUSTOM" ? <div className="space-y-2"><Label>Custom recipients</Label><Textarea rows={3} value={customRecipients} onChange={(event) => setCustomRecipients(event.target.value)} placeholder="one@example.com, two@example.com" /></div> : null}
                   {draft.metadata_fields.length ? <div className="grid gap-3 md:grid-cols-2">{draft.metadata_fields.map((field) => <div key={field} className="space-y-2"><Label>{field}</Label><Input value={metadata[field] ?? ""} onChange={(event) => setMetadata((current) => ({ ...current, [field]: event.target.value }))} /></div>)}</div> : null}
-                  <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}><Save className="mr-2 h-4 w-4" />{draft.id === "new-template" ? "Create Template" : "Save Template"}</Button><Button variant="outline" onClick={() => sendMutation.mutate("test")} disabled={sendMutation.isPending}><ShieldAlert className="mr-2 h-4 w-4" />Send Test</Button><Button variant="outline" onClick={() => previewMutation.mutate()} disabled={previewMutation.isPending}><Eye className="mr-2 h-4 w-4" />Preview Audience</Button><Button onClick={() => sendMutation.mutate("manual")} disabled={sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send Manually</Button></div>
+                  <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}><Save className="mr-2 h-4 w-4" />{draft.id === "new-template" ? "Create Template" : "Save Template"}</Button><Button variant="outline" onClick={() => sendMutation.mutate("test")} disabled={sendMutation.isPending}><ShieldAlert className="mr-2 h-4 w-4" />Send Test</Button></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => previewMutation.mutate()} disabled={previewMutation.isPending}><Eye className="mr-2 h-4 w-4" />Preview Audience</Button><Button onClick={() => sendMutation.mutate("manual")} disabled={sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send Manually</Button></div></div>
                 </>
               )}
             </CardContent>

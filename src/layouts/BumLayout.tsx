@@ -29,20 +29,28 @@ import {
   BarChart3,
 } from "lucide-react";
 
-const navItems = [
+const navGroups = [
+  { label: "Workspace", items: [
   { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
   { title: "Prospects", url: "/bum/prospects", icon: PlusCircle },
   { title: "Reverse Opportunities", url: "/bum/reverse-opportunities", icon: Sparkles },
   { title: "Clients", url: "/bum/clients", icon: Building2 },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
   { title: "My Claims", url: "/bum/claims", icon: Handshake },
-  { title: "Trainings", url: "/bum/trainings", icon: GraduationCap },
   { title: "Live Conversations", url: "/bum/live-conversations", icon: Calendar },
+  { title: "Trainings", url: "/bum/trainings", icon: GraduationCap },
+  ] },
+  { label: "Finance", items: [
   { title: "Earnings", url: "/bum/earnings", icon: Wallet },
   { title: "Reports", url: "/bum/reports", icon: BarChart3 },
+  ] },
+  { label: "Account", items: [
   { title: "Connector Terms", url: "/bum/terms", icon: FileCheck },
   { title: "Profile", url: "/bum/profile", icon: User },
+  ] },
 ];
+
+const navItems = navGroups.flatMap((group) => group.items);
 
 export default function BumLayout() {
   const location = useLocation();
@@ -58,40 +66,42 @@ export default function BumLayout() {
             </div>
           </div>
           <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          end={item.url === "/bum/dashboard"}
-                          className="hover:bg-sidebar-accent/50"
-                          activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                        >
-                          <item.icon className="mr-2 h-4 w-4" />
-                          <span>{item.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            {navGroups.map((group) => (
+              <SidebarGroup key={group.label}>
+                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {group.items.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                          <NavLink
+                            to={item.url}
+                            end={item.url === "/bum/dashboard"}
+                            className="hover:bg-sidebar-accent/50"
+                            activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                          >
+                            <item.icon className="mr-2 h-4 w-4" />
+                            <span>{item.title}</span>
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
           </SidebarContent>
         </Sidebar>
 
         <main className="flex-1 overflow-auto">
           <header className="h-14 border-b flex items-center px-4 bg-card">
             <SidebarTrigger />
-            <span className="ml-4 text-sm text-muted-foreground">
+            <span className="ml-4 truncate text-sm text-muted-foreground">
               {navItems.find((i) => location.pathname === i.url || location.pathname.startsWith(`${i.url}/`))?.title ?? "Bum"}
             </span>
             <PortalHeaderActions />
           </header>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <Outlet />
           </div>
         </main>

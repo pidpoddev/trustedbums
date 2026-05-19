@@ -10,15 +10,15 @@ interface StatCardProps {
 
 export function StatCard({ title, value, icon: Icon, subtitle }: StatCardProps) {
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between">
+    <Card className="shadow-none transition-shadow hover:shadow-sm">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex min-h-20 items-start justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold font-display mt-1">{value}</p>
+            <p className="mt-1 truncate font-display text-2xl font-bold">{value}</p>
             {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
           </div>
-          <div className="rounded-xl bg-primary/10 p-3">
+          <div className="rounded-md bg-primary/10 p-2">
             <Icon className="h-5 w-5 text-primary" />
           </div>
         </div>

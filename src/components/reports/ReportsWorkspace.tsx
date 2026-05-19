@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { BarChart3, Check, Download, FilePlus2, Loader2 } from "lucide-react";
+import { Check, Download, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EmptyState } from "@/components/EmptyState";
 
 export type ReportRow = Record<string, string | number | null | undefined>;
 
@@ -190,59 +191,29 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
         </Button>
       </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {recommendations.map((report) => (
-          <Card key={report.id} className={selectedReport?.id === report.id ? "border-primary/60 bg-primary/5" : ""}>
-            <CardHeader className="space-y-2">
-              <div className="flex items-start justify-between gap-3">
-                <div className="rounded-md bg-secondary p-2">
-                  <BarChart3 className="h-4 w-4 text-secondary-foreground" />
-                </div>
-                <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">{report.category}</span>
-              </div>
-              <CardTitle className="font-display text-base">{report.title}</CardTitle>
-              <CardDescription>{report.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                {report.rows.length.toLocaleString()} {report.dataLabel}
-              </p>
-              <Button
-                variant={selectedReport?.id === report.id ? "default" : "outline"}
-                className="w-full"
-                onClick={() => selectReport(report)}
-              >
-                {selectedReport?.id === report.id ? <Check className="mr-2 h-4 w-4" /> : <FilePlus2 className="mr-2 h-4 w-4" />}
-                Create report
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">Report builder</CardTitle>
-            <CardDescription>Choose a recommendation, date window, and the fields to include.</CardDescription>
+            <CardTitle className="font-display">Reports</CardTitle>
+            <CardDescription>Pick a saved recommendation, then adjust the date window and fields.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label>Report</Label>
-              <Select value={selectedReport?.id} onValueChange={(value) => selectReport(recommendations.find((item) => item.id === value)!)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {recommendations.map((report) => (
-                    <SelectItem key={report.id} value={report.id}>
-                      {report.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {recommendations.map((report) => (
+                <button
+                  key={report.id}
+                  type="button"
+                  onClick={() => selectReport(report)}
+                  className={`w-full rounded-md border p-3 text-left transition hover:border-primary ${selectedReport?.id === report.id ? "border-primary bg-primary/5" : "border-border"}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="font-medium">{report.title}</span>
+                    {selectedReport?.id === report.id ? <Check className="h-4 w-4 text-primary" /> : null}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{report.category} · {report.rows.length.toLocaleString()} {report.dataLabel}</p>
+                </button>
+              ))}
             </div>
-
             <div className="space-y-2">
               <Label>Date range</Label>
               <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRange)}>
@@ -332,8 +303,9 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
                 </ChartContainer>
               ) : null}
 
-              <div className="overflow-x-auto">
-                <Table>
+              {filteredRows.length ? (
+                <div>
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       {visibleColumns.map((column) => (
@@ -354,13 +326,11 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
-                {!isLoading && !filteredRows.length ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground">
-                    No rows match this report and date range yet.
-                  </div>
-                ) : null}
-              </div>
+                  </Table>
+                </div>
+              ) : (
+                <EmptyState title="No rows match this report" description="Try a wider date range or choose a different report." />
+              )}
             </CardContent>
           </Card>
         </div>

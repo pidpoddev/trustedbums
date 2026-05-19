@@ -27,71 +27,100 @@ import {
   User,
   Mail,
   BarChart3,
+  type LucideIcon,
 } from "lucide-react";
 
-const navItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "Clients", url: "/admin/clients", icon: Briefcase },
-  { title: "Bums", url: "/admin/bums", icon: Users },
-  { title: "Opportunities", url: "/admin/opportunities", icon: Target },
-  { title: "Credits", url: "/admin/credits", icon: Award },
-  { title: "Commission Plans", url: "/admin/commission-plans", icon: FileText },
-  { title: "Payments", url: "/admin/payments", icon: CreditCard },
-  { title: "Payouts", url: "/admin/payouts", icon: DollarSign },
-  { title: "Live Conversations", url: "/admin/live-conversations", icon: Video },
-  { title: "Emails", url: "/admin/emails", icon: Mail },
-  { title: "Reports", url: "/admin/reports", icon: BarChart3 },
-  { title: "Profile", url: "/admin/profile", icon: User },
+interface NavItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+}
+
+const navGroups: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: "Operations",
+    items: [
+      { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+      { title: "Clients", url: "/admin/clients", icon: Briefcase },
+      { title: "Bums", url: "/admin/bums", icon: Users },
+      { title: "Opportunities", url: "/admin/opportunities", icon: Target },
+      { title: "Live Conversations", url: "/admin/live-conversations", icon: Video },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { title: "Credits", url: "/admin/credits", icon: Award },
+      { title: "Commission Plans", url: "/admin/commission-plans", icon: FileText },
+      { title: "Payments", url: "/admin/payments", icon: CreditCard },
+      { title: "Payouts", url: "/admin/payouts", icon: DollarSign },
+    ],
+  },
+  {
+    label: "Communications",
+    items: [
+      { title: "Emails", url: "/admin/emails", icon: Mail },
+      { title: "Reports", url: "/admin/reports", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Admin",
+    items: [{ title: "Profile", url: "/admin/profile", icon: User }],
+  },
 ];
+
+const navItems = navGroups.flatMap((group) => group.items);
 
 export default function AdminLayout() {
   const location = useLocation();
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex min-h-screen w-full">
         <Sidebar>
-          <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
+          <div className="flex items-center gap-2 border-b border-sidebar-border p-4">
             <div>
               <BrandLogo to="/" theme="dark" imageClassName="h-12" />
-              <span className="block text-[10px] text-sidebar-foreground/60 uppercase tracking-wider">Admin</span>
+              <span className="block text-[10px] uppercase tracking-wider text-sidebar-foreground/60">Admin</span>
             </div>
           </div>
           <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Management</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          end={item.url === "/admin"}
-                          className="hover:bg-sidebar-accent/50"
-                          activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                        >
-                          <item.icon className="mr-2 h-4 w-4" />
-                          <span>{item.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            {navGroups.map((group) => (
+              <SidebarGroup key={group.label}>
+                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {group.items.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                          <NavLink
+                            to={item.url}
+                            end={item.url === "/admin"}
+                            className="hover:bg-sidebar-accent/50"
+                            activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                          >
+                            <item.icon className="mr-2 h-4 w-4" />
+                            <span>{item.title}</span>
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
           </SidebarContent>
         </Sidebar>
 
         <main className="flex-1 overflow-auto">
-          <header className="h-14 border-b flex items-center px-4 bg-card">
+          <header className="flex h-14 items-center border-b bg-card px-4">
             <SidebarTrigger />
-            <span className="ml-4 text-sm text-muted-foreground">
-              {navItems.find(i => location.pathname === i.url || (i.url !== "/admin" && location.pathname.startsWith(i.url)))?.title ?? "Admin"}
+            <span className="ml-4 truncate text-sm text-muted-foreground">
+              {navItems.find((i) => location.pathname === i.url || (i.url !== "/admin" && location.pathname.startsWith(i.url)))?.title ?? "Admin"}
             </span>
             <PortalHeaderActions />
           </header>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <Outlet />
           </div>
         </main>
