@@ -49,6 +49,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/bum/reverse-opportunities", heading: "Reverse Opportunities", name: "bum-reverse-opportunities" },
     { path: "/bum/clients", heading: "Clients We Represent", name: "bum-clients" },
     { path: "/bum/opportunities", heading: "Opportunities", name: "bum-opportunities" },
+    { path: "/bum/claims", heading: /^(My )?Claims$/, name: "bum-claims" },
     { path: "/bum/trainings", heading: "Trainings", name: "bum-trainings" },
     { path: "/bum/live-conversations", heading: "Live Conversations", name: "bum-live-conversations" },
     { path: "/bum/earnings", heading: "Earnings", name: "bum-earnings" },
