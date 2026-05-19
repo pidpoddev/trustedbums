@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 import {
+  createAdminEmailTemplate,
   listAdminEmailDeliveries,
   listAdminEmailEngagementSummary,
   listAdminEmailTemplates,
@@ -64,6 +65,29 @@ function cloneTemplate(template: AdminEmailTemplateRecord): AdminEmailTemplateRe
   return { ...template, metadata_fields: [...template.metadata_fields] };
 }
 
+function createBlankTemplate(): AdminEmailTemplateRecord {
+  const now = new Date().toISOString();
+  return {
+    id: "new-template",
+    slug: "",
+    name: "New email template",
+    description: "",
+    recipient_group: "CUSTOM",
+    trigger_event: "MANUAL",
+    subject: "{{headline}}",
+    body: "Hi {{recipient_name}},\n\n{{message}}\n\nTrusted Bums",
+    metadata_fields: ["headline", "recipient_name", "message"],
+    category: "admin_announcements",
+    reply_to: "bums@trustedbums.com",
+    rate_limit_per_hour: 120,
+    is_active: true,
+    created_by: null,
+    updated_by: null,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
 export default function AdminEmails() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -83,7 +107,7 @@ export default function AdminEmails() {
   const [suppressedCount, setSuppressedCount] = useState(0);
 
   const selectedTemplate = useMemo(
-    () => templates.find((template) => template.id === selectedTemplateId) ?? templates[0],
+    () => (selectedTemplateId ? templates.find((template) => template.id === selectedTemplateId) : templates[0]),
     [selectedTemplateId, templates],
   );
 
@@ -101,7 +125,7 @@ export default function AdminEmails() {
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!user || !draft) throw new Error("Choose a template first.");
-      return saveAdminEmailTemplate(user, draft);
+      return draft.id === "new-template" ? createAdminEmailTemplate(user, draft) : saveAdminEmailTemplate(user, draft);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-email-templates"] });
@@ -158,6 +182,20 @@ export default function AdminEmails() {
   return (
     <div>
       <PageHeader title="Emails" description="Edit templates, preview audiences, send tests, and track engagement.">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setSelectedTemplateId("new-template");
+            setDraft(createBlankTemplate());
+            setMetadata({ headline: "", recipient_name: "", message: "" });
+            setCustomRecipients("");
+            setPreviewRecipients([]);
+            setPreviewCount(0);
+            setSuppressedCount(0);
+          }}
+        >
+          New Template
+        </Button>
         <Button variant="outline" onClick={() => previewMutation.mutate()} disabled={!draft || previewMutation.isPending}>Preview Audience</Button>
         <Button onClick={() => sendMutation.mutate("manual")} disabled={!draft || sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send</Button>
       </PageHeader>
@@ -174,6 +212,14 @@ export default function AdminEmails() {
           <CardHeader><CardTitle className="flex items-center gap-2 font-display"><Mail className="h-5 w-5" />Templates</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {templatesQuery.isLoading ? <p className="text-sm text-muted-foreground">Loading templates...</p> : null}
+            {templatesQuery.isError ? <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">Unable to load templates. Refresh your session and confirm this account has Admin access.</p> : null}
+            {!templatesQuery.isLoading && !templatesQuery.isError && !templates.length ? <p className="rounded-md border p-3 text-sm text-muted-foreground">No templates are visible yet. Use New Template to create one.</p> : null}
+            {draft?.id === "new-template" ? (
+              <button type="button" className="w-full rounded-lg border border-primary bg-primary/5 p-3 text-left text-sm">
+                <span className="font-medium">New email template</span>
+                <p className="mt-1 text-xs text-muted-foreground">Unsaved draft</p>
+              </button>
+            ) : null}
             {templates.map((template) => (
               <button key={template.id} type="button" onClick={() => setSelectedTemplateId(template.id)} className={`w-full rounded-lg border p-3 text-left text-sm transition hover:border-primary ${template.id === selectedTemplateId ? "border-primary bg-primary/5" : "border-border"}`}>
                 <div className="flex items-start justify-between gap-2"><span className="font-medium">{template.name}</span><Badge variant={template.is_active ? "default" : "secondary"}>{template.is_active ? "Active" : "Off"}</Badge></div>
@@ -208,7 +254,7 @@ export default function AdminEmails() {
                   <div className="space-y-2"><Label>Metadata fields</Label><Input value={draft.metadata_fields.join(", ")} onChange={(event) => updateDraft("metadata_fields", event.target.value.split(",").map((field) => field.trim()).filter(Boolean))} /></div>
                   {draft.recipient_group === "CUSTOM" ? <div className="space-y-2"><Label>Custom recipients</Label><Textarea rows={3} value={customRecipients} onChange={(event) => setCustomRecipients(event.target.value)} placeholder="one@example.com, two@example.com" /></div> : null}
                   {draft.metadata_fields.length ? <div className="grid gap-3 md:grid-cols-2">{draft.metadata_fields.map((field) => <div key={field} className="space-y-2"><Label>{field}</Label><Input value={metadata[field] ?? ""} onChange={(event) => setMetadata((current) => ({ ...current, [field]: event.target.value }))} /></div>)}</div> : null}
-                  <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}><Save className="mr-2 h-4 w-4" />Save Template</Button><Button variant="outline" onClick={() => sendMutation.mutate("test")} disabled={sendMutation.isPending}><ShieldAlert className="mr-2 h-4 w-4" />Send Test</Button><Button variant="outline" onClick={() => previewMutation.mutate()} disabled={previewMutation.isPending}><Eye className="mr-2 h-4 w-4" />Preview Audience</Button><Button onClick={() => sendMutation.mutate("manual")} disabled={sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send Manually</Button></div>
+                  <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}><Save className="mr-2 h-4 w-4" />{draft.id === "new-template" ? "Create Template" : "Save Template"}</Button><Button variant="outline" onClick={() => sendMutation.mutate("test")} disabled={sendMutation.isPending}><ShieldAlert className="mr-2 h-4 w-4" />Send Test</Button><Button variant="outline" onClick={() => previewMutation.mutate()} disabled={previewMutation.isPending}><Eye className="mr-2 h-4 w-4" />Preview Audience</Button><Button onClick={() => sendMutation.mutate("manual")} disabled={sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send Manually</Button></div>
                 </>
               )}
             </CardContent>

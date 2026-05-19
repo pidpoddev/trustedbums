@@ -2540,6 +2540,60 @@ export async function listAdminEmailTemplates() {
   return data ?? [];
 }
 
+function slugifyEmailTemplateName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || `template-${Date.now()}`;
+}
+
+export async function createAdminEmailTemplate(
+  user: AuthUser,
+  input: Pick<
+    AdminEmailTemplateRecord,
+    "name" | "description" | "recipient_group" | "trigger_event" | "subject" | "body" | "metadata_fields" | "category" | "reply_to" | "rate_limit_per_hour" | "is_active"
+  > & { slug?: string },
+) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can create email templates.");
+  }
+
+  const { data, error } = await supabase
+    .from("admin_email_templates")
+    .insert({
+      slug: input.slug?.trim() || slugifyEmailTemplateName(input.name),
+      name: input.name.trim(),
+      description: toNullableString(input.description),
+      recipient_group: input.recipient_group,
+      trigger_event: input.trigger_event,
+      subject: input.subject.trim(),
+      body: input.body.trim(),
+      metadata_fields: input.metadata_fields,
+      category: input.category,
+      reply_to: toNullableString(input.reply_to),
+      rate_limit_per_hour: input.rate_limit_per_hour,
+      is_active: input.is_active,
+      created_by: user.id,
+      updated_by: user.id,
+    })
+    .select("*")
+    .single<AdminEmailTemplateRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "admin_email_template_created", "admin_email_templates", data.id, {
+    slug: data.slug,
+    recipient_group: data.recipient_group,
+    trigger_event: data.trigger_event,
+  });
+
+  return data;
+}
+
 export async function saveAdminEmailTemplate(user: AuthUser, template: AdminEmailTemplateRecord) {
   if (user.role !== "ADMIN") {
     throw new Error("Only admins can edit email templates.");
