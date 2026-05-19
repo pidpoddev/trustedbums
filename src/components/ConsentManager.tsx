@@ -91,7 +91,7 @@ export function ConsentManager() {
     <>
       {isOpen ? (
         <div className="fixed inset-x-0 bottom-0 z-[100] px-3 pb-3 sm:px-6 sm:pb-6">
-          <div className="mx-auto grid max-h-[78vh] w-full max-w-4xl gap-4 overflow-auto rounded-lg border bg-background/98 p-4 shadow-2xl animate-in slide-in-from-bottom-4 duration-300 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:p-5">
+          <div className="mx-auto grid max-h-[78vh] w-full max-w-4xl gap-4 overflow-auto rounded-lg border bg-background p-4 text-foreground shadow-2xl animate-in slide-in-from-bottom-4 duration-300 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:p-5">
             <div className="max-w-4xl space-y-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-primary" />
@@ -143,7 +143,7 @@ We use necessary storage to run the site. Optional preferences, analytics, and o
           type="button"
           variant="outline"
           size="sm"
-          className="fixed bottom-4 left-4 z-40 bg-background/95 shadow-lg backdrop-blur"
+          className="fixed bottom-4 left-4 z-40 bg-background shadow-lg"
           onClick={() => {
             setDraft(clonePreferences(record?.preferences ?? defaultConsentPreferences));
             setShowSettings(true);
