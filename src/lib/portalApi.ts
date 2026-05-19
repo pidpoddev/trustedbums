@@ -2783,6 +2783,50 @@ export async function createClientCompany(
   return data;
 }
 
+export async function updateAdminClientCompany(
+  user: AuthUser,
+  companyId: string,
+  input: {
+    name: string;
+    website?: string | null;
+    linkedin_company_url?: string | null;
+    relationship_stage: CompanyRelationshipStage;
+  },
+) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can update client companies.");
+  }
+
+  if (!input.name.trim()) {
+    throw new Error("Company name is required.");
+  }
+
+  const { data, error } = await supabase
+    .from("companies")
+    .update({
+      name: input.name.trim(),
+      website: toNullableString(input.website ?? undefined),
+      linkedin_company_url: normalizeLinkedInCompanyUrl(input.linkedin_company_url),
+      relationship_stage: input.relationship_stage,
+    })
+    .eq("id", companyId)
+    .select("*")
+    .single<CompanyRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "admin_client_company_updated", "companies", data.id, {
+    name: data.name,
+    website: data.website,
+    linkedin_company_url: data.linkedin_company_url,
+    relationship_stage: data.relationship_stage,
+  });
+
+  return data;
+}
+
 export async function listProfiles() {
   const { data, error } = await supabase
     .from("profiles")
@@ -3563,6 +3607,105 @@ export async function upsertOwnBumProfile(user: AuthUser, input: BumProfileInput
   if (error) {
     throw error;
   }
+
+  return data;
+}
+
+export async function updateAdminBumProfile(user: AuthUser, targetUserId: string, input: BumProfileInput) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can update Bum profiles.");
+  }
+
+  const payload: Record<string, unknown> = {
+    user_id: targetUserId,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.headline !== undefined) {
+    payload.headline = toNullableString(input.headline);
+  }
+
+  if (input.bio !== undefined) {
+    payload.bio = toNullableString(input.bio);
+  }
+
+  if (input.linkedin_url !== undefined) {
+    payload.linkedin_url = toNullableString(input.linkedin_url);
+  }
+
+  if (input.years_experience !== undefined) {
+    payload.years_experience = input.years_experience;
+  }
+
+  if (input.availability_status !== undefined) {
+    payload.availability_status = input.availability_status;
+  }
+
+  if (input.home_region !== undefined) {
+    payload.home_region = toNullableString(input.home_region);
+  }
+
+  if (input.industries !== undefined) {
+    payload.industries = toUniqueTrimmedArray(input.industries);
+  }
+
+  if (input.regions !== undefined) {
+    payload.regions = toUniqueTrimmedArray(input.regions);
+  }
+
+  if (input.products_sold !== undefined) {
+    payload.products_sold = toUniqueTrimmedArray(input.products_sold);
+  }
+
+  if (input.buyer_personas !== undefined) {
+    payload.buyer_personas = toUniqueTrimmedArray(input.buyer_personas);
+  }
+
+  if (input.worked_with_companies !== undefined) {
+    payload.worked_with_companies = toUniqueTrimmedArray(input.worked_with_companies);
+  }
+
+  if (input.relationship_companies !== undefined) {
+    payload.relationship_companies = toUniqueTrimmedArray(input.relationship_companies);
+  }
+
+  if (input.certifications !== undefined) {
+    payload.certifications = toUniqueTrimmedArray(input.certifications);
+  }
+
+  if (input.skills !== undefined) {
+    payload.skills = toUniqueTrimmedArray(input.skills);
+  }
+
+  if (input.notable_wins !== undefined) {
+    payload.notable_wins = toNullableString(input.notable_wins);
+  }
+
+  if (input.verification_status !== undefined) {
+    payload.verification_status = input.verification_status;
+  }
+
+  if (input.is_visible_to_clients !== undefined) {
+    payload.is_visible_to_clients = input.is_visible_to_clients;
+  }
+
+  if (input.last_linkedin_imported_at !== undefined) {
+    payload.last_linkedin_imported_at = input.last_linkedin_imported_at;
+  }
+
+  const { data, error } = await supabase
+    .from("bum_profiles")
+    .upsert(payload, { onConflict: "user_id" })
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .single<BumProfileRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "admin_bum_profile_updated", "bum_profiles", targetUserId, {
+    fields: Object.keys(payload).filter((key) => key !== "user_id" && key !== "updated_at"),
+  });
 
   return data;
 }

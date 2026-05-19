@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link2, Plus, Search, Users } from "lucide-react";
+import { Edit3, Link2, Plus, Search, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createClientCompany,
+  updateAdminClientCompany,
   listAdminProspectRecommendations,
   listCompanies,
   listOpportunityRegistrations,
@@ -46,6 +47,99 @@ const clientTypeFilters: { value: ClientTypeFilter; label: string }[] = [
   { value: "BUM_CONNECTED", label: "With Bum connections" },
   { value: "INACTIVE", label: "Inactive" },
 ];
+
+function AdminClientEditButton({ company }: { company: any }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    name: company.name ?? "",
+    website: company.website ?? "",
+    linkedinCompanyUrl: company.linkedin_company_url ?? "",
+    relationshipStage: company.relationship_stage as CompanyRelationshipStage,
+  });
+
+  function openEditor() {
+    setForm({
+      name: company.name ?? "",
+      website: company.website ?? "",
+      linkedinCompanyUrl: company.linkedin_company_url ?? "",
+      relationshipStage: company.relationship_stage as CompanyRelationshipStage,
+    });
+    setOpen(true);
+  }
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      updateAdminClientCompany(user!, company.id, {
+        name: form.name,
+        website: form.website,
+        linkedin_company_url: form.linkedinCompanyUrl,
+        relationship_stage: form.relationshipStage,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
+      setOpen(false);
+      toast({ title: "Client updated", description: "The company data was saved." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update client",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={openEditor}>
+        <Edit3 className="mr-2 h-4 w-4" /> Edit data
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Edit client data</DialogTitle>
+            <DialogDescription>Update the company profile and lifecycle stage admins use across the portal.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Company name</Label>
+              <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Website</Label>
+              <Input value={form.website} onChange={(event) => setForm((current) => ({ ...current, website: event.target.value }))} placeholder="https://company.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>LinkedIn company URL</Label>
+              <Input value={form.linkedinCompanyUrl} onChange={(event) => setForm((current) => ({ ...current, linkedinCompanyUrl: event.target.value }))} placeholder="https://linkedin.com/company/..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Relationship stage</Label>
+              <Select value={form.relationshipStage} onValueChange={(value) => setForm((current) => ({ ...current, relationshipStage: value as CompanyRelationshipStage }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PROSPECT">Prospect</SelectItem>
+                  <SelectItem value="INVITED">Invited</SelectItem>
+                  <SelectItem value="CLIENT">Client</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={updateMutation.isPending}>Cancel</Button>
+            <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending || !form.name.trim()}>
+              {updateMutation.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 export default function AdminClients() {
   const [query, setQuery] = useState("");
@@ -366,8 +460,10 @@ export default function AdminClients() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6">
-                    <div className="text-center">
+                  <div className="flex flex-col items-end gap-4">
+                    <AdminClientEditButton company={company} />
+                    <div className="flex items-center gap-6">
+                      <div className="text-center">
                       <p className="text-lg font-bold font-display">{company.opportunityCount}</p>
                       <p className="text-xs text-muted-foreground">Opportunities</p>
                     </div>
@@ -378,6 +474,7 @@ export default function AdminClients() {
                     <div className="text-center">
                       <p className="text-lg font-bold font-display">{company.recommenderNames.length}</p>
                       <p className="text-xs text-muted-foreground">Bums Connected</p>
+                    </div>
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Edit3, Plus, Search } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
 import { PaginationControls } from "@/components/PaginationControls";
 import { PageHeader } from "@/components/PageHeader";
@@ -11,10 +11,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { BUM_TERMS_VERSION } from "@/data/partnerTerms";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getPageItems } from "@/lib/pagination";
-import { inviteBum, listAdminBumProfiles, listProfiles, listTermsAcceptances, listTermsVersions } from "@/lib/portalApi";
+import {
+  inviteBum,
+  listAdminBumProfiles,
+  listProfiles,
+  listTermsAcceptances,
+  listTermsVersions,
+  updateAdminBumProfile,
+  type BumAvailabilityStatus,
+  type BumVerificationStatus,
+} from "@/lib/portalApi";
 
 type BumTypeFilter = "ALL" | "VISIBLE_TO_CLIENTS" | "AGREEMENT_ACCEPTED" | "PROFILE_READY" | "HIDDEN";
 
@@ -27,6 +38,216 @@ const bumTypeFilters: { value: BumTypeFilter; label: string }[] = [
   { value: "PROFILE_READY", label: "Profile ready" },
   { value: "HIDDEN", label: "Hidden from clients" },
 ];
+
+function joinList(values?: string[]) {
+  return (values ?? []).join(", ");
+}
+
+function splitList(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function AdminBumEditButton({ bum }: { bum: any }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    headline: "",
+    bio: "",
+    linkedinUrl: "",
+    yearsExperience: "",
+    availabilityStatus: "open" as BumAvailabilityStatus,
+    homeRegion: "",
+    industries: "",
+    regions: "",
+    productsSold: "",
+    buyerPersonas: "",
+    workedWithCompanies: "",
+    relationshipCompanies: "",
+    skills: "",
+    certifications: "",
+    notableWins: "",
+    verificationStatus: "self_reported" as BumVerificationStatus,
+    isVisibleToClients: false,
+  });
+
+  function openEditor() {
+    setForm({
+      headline: bum.headline ?? "",
+      bio: bum.bio ?? "",
+      linkedinUrl: bum.linkedin_url ?? "",
+      yearsExperience: bum.years_experience === null || bum.years_experience === undefined ? "" : String(bum.years_experience),
+      availabilityStatus: bum.availability_status ?? "open",
+      homeRegion: bum.home_region ?? "",
+      industries: joinList(bum.industries),
+      regions: joinList(bum.regions),
+      productsSold: joinList(bum.products_sold),
+      buyerPersonas: joinList(bum.buyer_personas),
+      workedWithCompanies: joinList(bum.worked_with_companies),
+      relationshipCompanies: joinList(bum.relationship_companies),
+      skills: joinList(bum.skills),
+      certifications: joinList(bum.certifications),
+      notableWins: bum.notable_wins ?? "",
+      verificationStatus: bum.verification_status ?? "self_reported",
+      isVisibleToClients: Boolean(bum.is_visible_to_clients),
+    });
+    setOpen(true);
+  }
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      updateAdminBumProfile(user!, bum.user_id, {
+        headline: form.headline,
+        bio: form.bio,
+        linkedin_url: form.linkedinUrl,
+        years_experience: form.yearsExperience.trim() ? Number(form.yearsExperience) : null,
+        availability_status: form.availabilityStatus,
+        home_region: form.homeRegion,
+        industries: splitList(form.industries),
+        regions: splitList(form.regions),
+        products_sold: splitList(form.productsSold),
+        buyer_personas: splitList(form.buyerPersonas),
+        worked_with_companies: splitList(form.workedWithCompanies),
+        relationship_companies: splitList(form.relationshipCompanies),
+        skills: splitList(form.skills),
+        certifications: splitList(form.certifications),
+        notable_wins: form.notableWins,
+        verification_status: form.verificationStatus,
+        is_visible_to_clients: form.isVisibleToClients,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-bum-profiles"] });
+      await queryClient.invalidateQueries({ queryKey: ["client-visible-bum-profiles"] });
+      setOpen(false);
+      toast({ title: "Bum updated", description: "The connector profile changes were saved." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update Bum",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={openEditor}>
+        <Edit3 className="mr-2 h-4 w-4" /> Edit data
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Edit Bum data</DialogTitle>
+            <DialogDescription>Update connector profile data shown to admins and, when visible, clients.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-1">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Headline</Label>
+                <Input value={form.headline} onChange={(event) => setForm((current) => ({ ...current, headline: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>LinkedIn URL</Label>
+                <Input value={form.linkedinUrl} onChange={(event) => setForm((current) => ({ ...current, linkedinUrl: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Years experience</Label>
+                <Input type="number" value={form.yearsExperience} onChange={(event) => setForm((current) => ({ ...current, yearsExperience: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Home region</Label>
+                <Input value={form.homeRegion} onChange={(event) => setForm((current) => ({ ...current, homeRegion: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Availability</Label>
+                <Select value={form.availabilityStatus} onValueChange={(value) => setForm((current) => ({ ...current, availabilityStatus: value as BumAvailabilityStatus }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="selective">Selective</SelectItem>
+                    <SelectItem value="unavailable">Unavailable</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Verification</Label>
+                <Select value={form.verificationStatus} onValueChange={(value) => setForm((current) => ({ ...current, verificationStatus: value as BumVerificationStatus }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="self_reported">Self reported</SelectItem>
+                    <SelectItem value="reviewed">Reviewed</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Bio</Label>
+              <Textarea rows={4} value={form.bio} onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))} />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Industries</Label>
+                <Input value={form.industries} onChange={(event) => setForm((current) => ({ ...current, industries: event.target.value }))} placeholder="Fintech, Healthcare, SaaS" />
+              </div>
+              <div className="space-y-2">
+                <Label>Regions</Label>
+                <Input value={form.regions} onChange={(event) => setForm((current) => ({ ...current, regions: event.target.value }))} placeholder="North America, EMEA" />
+              </div>
+              <div className="space-y-2">
+                <Label>Products / services sold</Label>
+                <Input value={form.productsSold} onChange={(event) => setForm((current) => ({ ...current, productsSold: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Buyer personas</Label>
+                <Input value={form.buyerPersonas} onChange={(event) => setForm((current) => ({ ...current, buyerPersonas: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Worked with companies</Label>
+                <Input value={form.workedWithCompanies} onChange={(event) => setForm((current) => ({ ...current, workedWithCompanies: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Relationships at</Label>
+                <Input value={form.relationshipCompanies} onChange={(event) => setForm((current) => ({ ...current, relationshipCompanies: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Skills</Label>
+                <Input value={form.skills} onChange={(event) => setForm((current) => ({ ...current, skills: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Certifications</Label>
+                <Input value={form.certifications} onChange={(event) => setForm((current) => ({ ...current, certifications: event.target.value }))} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Notable wins</Label>
+              <Textarea rows={3} value={form.notableWins} onChange={(event) => setForm((current) => ({ ...current, notableWins: event.target.value }))} />
+            </div>
+
+            <label className="flex items-center justify-between rounded-md border p-3 text-sm">
+              <span>Visible to clients</span>
+              <Switch checked={form.isVisibleToClients} onCheckedChange={(checked) => setForm((current) => ({ ...current, isVisibleToClients: checked }))} />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={updateMutation.isPending}>Cancel</Button>
+            <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 export default function AdminBums() {
   const [query, setQuery] = useState("");
@@ -277,7 +498,12 @@ export default function AdminBums() {
         ) : null}
 
         {!isLoading && !hasError ? visibleBums.map((bum) => (
-          <BumProfileCard key={bum.user_id} profile={bum} showAdminMeta />
+          <div key={bum.user_id} className="space-y-2">
+            <div className="flex justify-end">
+              <AdminBumEditButton bum={bum} />
+            </div>
+            <BumProfileCard profile={bum} showAdminMeta />
+          </div>
         )) : null}
 
         {!isLoading && !hasError ? (
