@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Search, X } from "lucide-react";
+import { Check, PlusCircle, Search, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
+  createClientPayProgramRequest,
   listClientPayPrograms,
+  listCompanies,
   reviewClientPayProgram,
   type ClientPayProgramApprovalStatus,
 } from "@/lib/portalApi";
@@ -47,10 +49,60 @@ export default function AdminCommissionPlans() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<PlanTypeFilter>("ALL");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [newPlan, setNewPlan] = useState({
+    company_id: "",
+    name: "",
+    year_1_rate: "",
+    year_2_rate: "",
+    year_3_rate: "",
+    year_4_rate: "",
+    year_5_rate: "",
+    year_6_plus_rate: "",
+    commission_period_months: "",
+    commission_basis: "",
+    payment_terms: "",
+    exclusions: "",
+    notes: "",
+  });
 
+  const companiesQuery = useQuery({ queryKey: ["admin-companies-for-commission-plans"], queryFn: listCompanies });
   const plansQuery = useQuery({
     queryKey: ["admin-commission-plans"],
     queryFn: () => listClientPayPrograms(),
+  });
+
+  const createPlanMutation = useMutation({
+    mutationFn: () => createClientPayProgramRequest(user!, {
+      company_id: newPlan.company_id,
+      approval_status: "APPROVED",
+      name: newPlan.name,
+      commission_rate: Number(newPlan.year_1_rate || 0),
+      year_1_rate: Number(newPlan.year_1_rate || 0),
+      year_2_rate: Number(newPlan.year_2_rate || 0),
+      year_3_rate: Number(newPlan.year_3_rate || 0),
+      year_4_rate: Number(newPlan.year_4_rate || 0),
+      year_5_rate: Number(newPlan.year_5_rate || 0),
+      year_6_plus_rate: Number(newPlan.year_6_plus_rate || 0),
+      commission_period_months: newPlan.commission_period_months ? Number(newPlan.commission_period_months) : null,
+      commission_basis: newPlan.commission_basis,
+      payment_terms: newPlan.payment_terms,
+      exclusions: newPlan.exclusions,
+      notes: newPlan.notes,
+      request_reason: "Created by admin",
+    }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-commission-plans"] });
+      await queryClient.invalidateQueries({ queryKey: ["client-pay-programs"] });
+      setNewPlan({ company_id: "", name: "", year_1_rate: "", year_2_rate: "", year_3_rate: "", year_4_rate: "", year_5_rate: "", year_6_plus_rate: "", commission_period_months: "", commission_basis: "", payment_terms: "", exclusions: "", notes: "" });
+      toast({ title: "Commission plan created", description: "The plan is active and approved for the selected client." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to create commission plan",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const reviewMutation = useMutation({
@@ -79,6 +131,7 @@ export default function AdminCommissionPlans() {
     },
   });
 
+  const companies = (companiesQuery.data ?? []).filter((company) => company.relationship_stage === "CLIENT");
   const plans = plansQuery.data ?? [];
   const filteredPlans = useMemo(() => {
     return plans.filter((plan) => {
@@ -105,6 +158,77 @@ export default function AdminCommissionPlans() {
         title="Commission Plans"
         description="Review company-specific commission plans, approve client requests, and keep plan visibility scoped to the assigned client."
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <PlusCircle className="h-5 w-5 text-primary" /> Create commission plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Client</Label>
+              <Select value={newPlan.company_id} onValueChange={(value) => setNewPlan((current) => ({ ...current, company_id: value }))}>
+                <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 lg:col-span-2">
+              <Label>Plan name</Label>
+              <Input value={newPlan.name} onChange={(event) => setNewPlan((current) => ({ ...current, name: event.target.value }))} placeholder="Standard intro commission" />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+            {([
+              ["year_1_rate", "Year 1 %"],
+              ["year_2_rate", "Year 2 %"],
+              ["year_3_rate", "Year 3 %"],
+              ["year_4_rate", "Year 4 %"],
+              ["year_5_rate", "Year 5 %"],
+              ["year_6_plus_rate", "Year 6+ %"],
+            ] as const).map(([key, label]) => (
+              <div key={key} className="space-y-2">
+                <Label>{label}</Label>
+                <Input type="number" value={newPlan[key]} onChange={(event) => setNewPlan((current) => ({ ...current, [key]: event.target.value }))} />
+              </div>
+            ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Commission period months</Label>
+              <Input type="number" value={newPlan.commission_period_months} onChange={(event) => setNewPlan((current) => ({ ...current, commission_period_months: event.target.value }))} placeholder="Optional" />
+            </div>
+            <div className="space-y-2">
+              <Label>Commission basis</Label>
+              <Input value={newPlan.commission_basis} onChange={(event) => setNewPlan((current) => ({ ...current, commission_basis: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Payment terms</Label>
+              <Input value={newPlan.payment_terms} onChange={(event) => setNewPlan((current) => ({ ...current, payment_terms: event.target.value }))} />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Exclusions</Label>
+              <Textarea rows={3} value={newPlan.exclusions} onChange={(event) => setNewPlan((current) => ({ ...current, exclusions: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea rows={3} value={newPlan.notes} onChange={(event) => setNewPlan((current) => ({ ...current, notes: event.target.value }))} />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button disabled={!newPlan.company_id || !newPlan.name || !newPlan.year_1_rate || createPlanMutation.isPending} onClick={() => createPlanMutation.mutate()}>
+              {createPlanMutation.isPending ? "Creating..." : "Create commission plan"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)]">
         <div className="relative min-w-0">

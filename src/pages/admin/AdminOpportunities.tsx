@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Search, Sparkles, Target, Users } from "lucide-react";
+import { Building2, PlusCircle, Search, Sparkles, Target, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPanel } from "@/components/FilterPanel";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -10,12 +10,17 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScheduleTeamsMeetingDialog } from "@/components/ScheduleTeamsMeetingDialog";
 import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSection";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
+  createOpportunityRegistration,
+  listClientPayPrograms,
+  listCompanies,
   listCustomerTargets,
   listAdminReverseOpportunities,
   listOpportunityRegistrations,
@@ -109,6 +114,21 @@ export default function AdminOpportunities() {
   const [registrationPage, setRegistrationPage] = useState(1);
   const [reversePage, setReversePage] = useState(1);
   const [reverseOpportunityTypeFilter, setReverseOpportunityTypeFilter] = useState<ReverseOpportunityTypeFilter>("ALL");
+  const [newOpportunity, setNewOpportunity] = useState({
+    company_id: "",
+    pay_program_id: "",
+    target_account_name: "",
+    business_unit: "",
+    opportunity_description: "",
+    client_contact: "",
+    trusted_bums_contact: "",
+    expected_product_service: "",
+    estimated_deal_value: "",
+    expected_timeline: "",
+    notes: "",
+  });
+  const companiesQuery = useQuery({ queryKey: ["admin-companies-for-opportunities"], queryFn: listCompanies });
+  const payProgramsQuery = useQuery({ queryKey: ["admin-pay-programs-for-opportunities"], queryFn: () => listClientPayPrograms() });
   const registrationsQuery = useQuery({
     queryKey: ["admin-opportunities", "All"],
     queryFn: () => listOpportunityRegistrations("All"),
@@ -121,6 +141,35 @@ export default function AdminOpportunities() {
     queryKey: ["admin-reverse-opportunities"],
     queryFn: listAdminReverseOpportunities,
   });
+  const createOpportunityMutation = useMutation({
+    mutationFn: () => createOpportunityRegistration(user!, {
+      company_id: newOpportunity.company_id,
+      pay_program_id: newOpportunity.pay_program_id || null,
+      target_account_name: newOpportunity.target_account_name,
+      business_unit: newOpportunity.business_unit,
+      opportunity_description: newOpportunity.opportunity_description,
+      client_contact: newOpportunity.client_contact,
+      trusted_bums_contact: newOpportunity.trusted_bums_contact,
+      expected_product_service: newOpportunity.expected_product_service,
+      estimated_deal_value: newOpportunity.estimated_deal_value ? Number(newOpportunity.estimated_deal_value) : null,
+      expected_timeline: newOpportunity.expected_timeline,
+      notes: newOpportunity.notes,
+      status: "Submitted",
+    }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-opportunities"] });
+      setNewOpportunity({ company_id: "", pay_program_id: "", target_account_name: "", business_unit: "", opportunity_description: "", client_contact: "", trusted_bums_contact: "", expected_product_service: "", estimated_deal_value: "", expected_timeline: "", notes: "" });
+      toast({ title: "Opportunity created", description: "The client opportunity was submitted for tracking." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to create opportunity",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const reverseStatusMutation = useMutation({
     mutationFn: async ({
       reverseOpportunityId,
@@ -147,6 +196,9 @@ export default function AdminOpportunities() {
     },
   });
 
+  const companies = (companiesQuery.data ?? []).filter((company) => company.relationship_stage === "CLIENT");
+  const payPrograms = payProgramsQuery.data ?? [];
+  const selectedCompanyPayPrograms = payPrograms.filter((program) => program.company_id === newOpportunity.company_id && program.status === "ACTIVE" && program.approval_status !== "DENIED");
   const registrations = registrationsQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
   const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
@@ -250,6 +302,88 @@ export default function AdminOpportunities() {
         title="Opportunities"
         description="Review target accounts separately from formal opportunity registrations and commission records."
       />
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <PlusCircle className="h-5 w-5 text-primary" /> Create opportunity
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Client</Label>
+              <Select value={newOpportunity.company_id} onValueChange={(value) => setNewOpportunity((current) => ({ ...current, company_id: value, pay_program_id: "" }))}>
+                <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Target account</Label>
+              <Input value={newOpportunity.target_account_name} onChange={(event) => setNewOpportunity((current) => ({ ...current, target_account_name: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Commission plan</Label>
+              <Select value={newOpportunity.pay_program_id || "none"} onValueChange={(value) => setNewOpportunity((current) => ({ ...current, pay_program_id: value === "none" ? "" : value }))} disabled={!newOpportunity.company_id}>
+                <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No specific plan</SelectItem>
+                  {selectedCompanyPayPrograms.map((program) => (
+                    <SelectItem key={program.id} value={program.id}>{program.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Business unit</Label>
+              <Input value={newOpportunity.business_unit} onChange={(event) => setNewOpportunity((current) => ({ ...current, business_unit: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Expected product / service</Label>
+              <Input value={newOpportunity.expected_product_service} onChange={(event) => setNewOpportunity((current) => ({ ...current, expected_product_service: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Estimated deal value</Label>
+              <Input type="number" value={newOpportunity.estimated_deal_value} onChange={(event) => setNewOpportunity((current) => ({ ...current, estimated_deal_value: event.target.value }))} />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Client contact</Label>
+              <Input value={newOpportunity.client_contact} onChange={(event) => setNewOpportunity((current) => ({ ...current, client_contact: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Trusted Bums contact</Label>
+              <Input value={newOpportunity.trusted_bums_contact} onChange={(event) => setNewOpportunity((current) => ({ ...current, trusted_bums_contact: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Expected timeline</Label>
+              <Input value={newOpportunity.expected_timeline} onChange={(event) => setNewOpportunity((current) => ({ ...current, expected_timeline: event.target.value }))} />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea rows={3} value={newOpportunity.opportunity_description} onChange={(event) => setNewOpportunity((current) => ({ ...current, opportunity_description: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea rows={3} value={newOpportunity.notes} onChange={(event) => setNewOpportunity((current) => ({ ...current, notes: event.target.value }))} />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button disabled={!newOpportunity.company_id || !newOpportunity.target_account_name || createOpportunityMutation.isPending} onClick={() => createOpportunityMutation.mutate()}>
+              {createOpportunityMutation.isPending ? "Creating..." : "Create opportunity"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="priority" className="space-y-6">
         <TabsList className="flex h-auto flex-wrap justify-start">

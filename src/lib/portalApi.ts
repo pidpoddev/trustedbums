@@ -499,6 +499,7 @@ export interface OpportunityRegistration {
 }
 
 export interface OpportunityInput {
+  company_id?: string | null;
   pay_program_id?: string | null;
   target_account_name: string;
   business_unit?: string;
@@ -564,6 +565,8 @@ export interface ClientPayProgramRecord {
 }
 
 export interface ClientPayProgramRequestInput {
+  company_id?: string;
+  approval_status?: ClientPayProgramApprovalStatus;
   name: string;
   commission_rate: number;
   year_1_rate: number;
@@ -1335,6 +1338,8 @@ export async function createOpportunityRegistration(user: AuthUser, input: Oppor
   let commissionRate = input.commission_rate ?? 10;
   let commissionDuration = input.commission_duration?.trim() || DEFAULT_COMMISSION_DURATION;
 
+  const targetCompanyId = user.role === "ADMIN" ? input.company_id ?? user.clientId ?? null : user.clientId ?? null;
+
   if (input.pay_program_id) {
     const { data: payProgram, error: payProgramError } = await supabase
       .from("client_pay_programs")
@@ -1350,7 +1355,11 @@ export async function createOpportunityRegistration(user: AuthUser, input: Oppor
       throw new Error("The selected commission plan is no longer available.");
     }
 
-    if (user.clientId && payProgram.company_id !== user.clientId) {
+    if (targetCompanyId && payProgram.company_id !== targetCompanyId) {
+      throw new Error("That commission plan is not assigned to the selected company.");
+    }
+
+    if (!targetCompanyId && user.role !== "ADMIN") {
       throw new Error("That commission plan is not assigned to your company.");
     }
 
@@ -1361,7 +1370,7 @@ export async function createOpportunityRegistration(user: AuthUser, input: Oppor
   const { data, error } = await supabase
     .from("opportunity_registrations")
     .insert({
-      company_id: user.clientId ?? null,
+      company_id: targetCompanyId,
       created_by: user.id,
       pay_program_id: input.pay_program_id ?? null,
       target_account_name: input.target_account_name.trim(),
@@ -1794,17 +1803,23 @@ export async function listOwnOpportunityRegistrations(user: AuthUser) {
 }
 
 export async function createClientPayProgramRequest(user: AuthUser, input: ClientPayProgramRequestInput) {
-  if (user.role !== "CLIENT" || !user.clientId) {
-    throw new Error("Only client users can request commission plans.");
+  if (user.role !== "CLIENT" && user.role !== "ADMIN") {
+    throw new Error("Only Clients and Admins can create commission plans.");
+  }
+
+  const companyId = user.role === "ADMIN" ? input.company_id : user.clientId;
+
+  if (!companyId) {
+    throw new Error("Choose a client company for this commission plan.");
   }
 
   const { data, error } = await supabase
     .from("client_pay_programs")
     .insert({
-      company_id: user.clientId,
+      company_id: companyId,
       name: input.name.trim(),
       status: "ACTIVE",
-      approval_status: "PENDING",
+      approval_status: user.role === "ADMIN" ? input.approval_status ?? "APPROVED" : "PENDING",
       commission_rate: input.commission_rate,
       year_1_rate: input.year_1_rate,
       year_2_rate: input.year_2_rate,
@@ -1817,7 +1832,9 @@ export async function createClientPayProgramRequest(user: AuthUser, input: Clien
       commission_basis: toNullableString(input.commission_basis),
       exclusions: toNullableString(input.exclusions),
       notes: toNullableString(input.notes),
-      requested_by: user.id,
+      requested_by: user.role === "ADMIN" ? null : user.id,
+      reviewed_by: user.role === "ADMIN" ? user.id : null,
+      reviewed_at: user.role === "ADMIN" ? new Date().toISOString() : null,
       request_reason: toNullableString(input.request_reason),
     })
     .select("*, companies(id, name), requested_by_profile:profiles!client_pay_programs_requested_by_fkey(id, full_name, email), reviewed_by_profile:profiles!client_pay_programs_reviewed_by_fkey(id, full_name, email)")
@@ -1830,6 +1847,7 @@ export async function createClientPayProgramRequest(user: AuthUser, input: Clien
   await createAuditEvent(user, "commission_plan_requested", "client_pay_programs", data.id, {
     name: data.name,
     company_id: data.company_id,
+    approval_status: data.approval_status,
     commission_rate: data.commission_rate,
     commission_schedule: buildTieredCommissionSummary(data),
   });
