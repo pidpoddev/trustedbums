@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Target, Video } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { PaginationControls } from "@/components/PaginationControls";
 import { ScheduleTeamsMeetingDialog } from "@/components/ScheduleTeamsMeetingDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
+import { getPageItems } from "@/lib/pagination";
 import { listCustomerTargets, listTeamsMeetings, type CustomerTargetStatus } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
+
+const TARGETS_PAGE_SIZE = 12;
 
 function targetVariant(status: CustomerTargetStatus) {
   if (status === "CLOSED_WON") {
@@ -28,6 +33,7 @@ function targetLabel(status: CustomerTargetStatus) {
 export default function BumLiveConversations() {
   const queryClient = useQueryClient();
   const timeZone = useUserTimeZone();
+  const [targetsPage, setTargetsPage] = useState(1);
   const targetsQuery = useQuery({
     queryKey: ["bum-customer-targets"],
     queryFn: () => listCustomerTargets(null),
@@ -38,6 +44,7 @@ export default function BumLiveConversations() {
   });
 
   const targets = targetsQuery.data ?? [];
+  const visibleTargets = getPageItems(targets, targetsPage, TARGETS_PAGE_SIZE);
   const meetings = meetingsQuery.data ?? [];
   const targetsError = targetsQuery.error instanceof Error ? targetsQuery.error.message : null;
   const meetingsError = meetingsQuery.error instanceof Error ? meetingsQuery.error.message : null;
@@ -111,7 +118,7 @@ export default function BumLiveConversations() {
             </div>
           ) : null}
 
-          {targets.map((targetAccount) => (
+          {visibleTargets.map((targetAccount) => (
             <div key={targetAccount.id} className="rounded-xl border p-4">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -141,6 +148,8 @@ export default function BumLiveConversations() {
               </div>
             </div>
           ))}
+
+          <PaginationControls page={targetsPage} pageSize={TARGETS_PAGE_SIZE} totalItems={targets.length} onPageChange={setTargetsPage} />
 
           {!targetsQuery.isLoading && !targetsError && !targets.length ? (
             <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
