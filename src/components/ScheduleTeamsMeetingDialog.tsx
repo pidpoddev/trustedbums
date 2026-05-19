@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { CalendarPlus, ExternalLink } from "lucide-react";
+import { CalendarPlus, ExternalLink, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { scheduleTeamsMeeting, type CustomerTargetRecord, type ScheduleTeamsMeetingResponse } from "@/lib/portalApi";
@@ -39,11 +41,13 @@ function getDefaultStartTime(timeZone: string) {
   return `${tomorrowDate}T09:00`;
 }
 
-function splitEmails(value: string) {
-  return value
-    .split(/[\n,;]/)
-    .map((email) => email.trim())
-    .filter(Boolean);
+
+function isEmailAddress(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function normalizeEmail(value: string) {
+  return value.trim().replace(/[;,]+$/, "").toLowerCase();
 }
 
 export function ScheduleTeamsMeetingDialog({
@@ -51,18 +55,39 @@ export function ScheduleTeamsMeetingDialog({
   triggerLabel = "Schedule Teams call",
   onScheduled,
 }: ScheduleTeamsMeetingDialogProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const timeZone = useUserTimeZone();
   const [open, setOpen] = useState(false);
   const [startTime, setStartTime] = useState(() => getDefaultStartTime(timeZone));
   const [durationMinutes, setDurationMinutes] = useState("30");
   const [subject, setSubject] = useState("");
-  const [attendeeEmails, setAttendeeEmails] = useState("");
+  const [attendeeEmails, setAttendeeEmails] = useState<string[]>([]);
+  const [attendeeEmailDraft, setAttendeeEmailDraft] = useState("");
+  const [attendeeEmailError, setAttendeeEmailError] = useState<string | null>(null);
   const [description, setDescription] = useState("");
 
   const targetName = target.target_companies?.name ?? target.target_account_name;
   const clientName = target.client_companies?.name ?? "Client";
   const defaultSubject = useMemo(() => `Trusted Bums intro: ${clientName} <> ${targetName}`, [clientName, targetName]);
+  const automaticAttendees = useMemo(
+    () =>
+      [
+        user?.email
+          ? {
+              label: user.name || user.email,
+              email: user.email,
+            }
+          : null,
+        target.key_contact_email
+          ? {
+              label: target.key_contact_name || "Target contact",
+              email: target.key_contact_email,
+            }
+          : null,
+      ].filter((attendee): attendee is { label: string; email: string } => Boolean(attendee)),
+    [target.key_contact_email, target.key_contact_name, user?.email, user?.name],
+  );
   const previewStartTime = useMemo(() => {
     if (!startTime) {
       return "";
@@ -83,7 +108,7 @@ export function ScheduleTeamsMeetingDialog({
         description,
         startTime: parseDateTimeLocalInTimeZoneToUtcIso(startTime, timeZone),
         durationMinutes: Number(durationMinutes),
-        attendeeEmails: splitEmails(attendeeEmails),
+        attendeeEmails,
       }),
     onSuccess: (response) => {
       toast({
@@ -105,9 +130,76 @@ export function ScheduleTeamsMeetingDialog({
     },
   });
 
-  const primaryContactLine = target.key_contact_email
-    ? `${target.key_contact_name ?? "Target contact"} <${target.key_contact_email}> will be included automatically.`
-    : "Add the target contact email below so Microsoft can send the invite.";
+
+  const addAttendeeEmail = (value: string) => {
+    const email = normalizeEmail(value);
+
+    if (!email) {
+      return true;
+    }
+
+    if (!isEmailAddress(email)) {
+      setAttendeeEmailError("Enter a valid email address.");
+      return false;
+    }
+
+    setAttendeeEmails((current) => (current.some((item) => item.toLowerCase() === email) ? current : [...current, email]));
+    setAttendeeEmailDraft("");
+    setAttendeeEmailError(null);
+    return true;
+  };
+
+  const addAttendeeEmails = (values: string[]) => {
+    const normalizedEmails = values.map(normalizeEmail).filter(Boolean);
+    const invalid = normalizedEmails.find((email) => !isEmailAddress(email));
+
+    if (invalid) {
+      setAttendeeEmailDraft(invalid);
+      setAttendeeEmailError("Enter a valid email address.");
+      return false;
+    }
+
+    setAttendeeEmails((current) => {
+      const known = new Set(current.map((email) => email.toLowerCase()));
+      const next = [...current];
+
+      for (const email of normalizedEmails) {
+        if (!known.has(email)) {
+          known.add(email);
+          next.push(email);
+        }
+      }
+
+      return next;
+    });
+    setAttendeeEmailError(null);
+    return true;
+  };
+
+  const handleAttendeeDraftChange = (value: string) => {
+    if (!/[\n,;]/.test(value)) {
+      setAttendeeEmailDraft(value);
+      setAttendeeEmailError(null);
+      return;
+    }
+
+    const parts = value.split(/[\n,;]+/);
+    const trailing = parts.pop() ?? "";
+
+    if (addAttendeeEmails(parts)) {
+      setAttendeeEmailDraft(trailing.trimStart());
+    }
+  };
+
+  const completeAttendeeDraft = () => {
+    if (addAttendeeEmail(attendeeEmailDraft)) {
+      setAttendeeEmailDraft("");
+    }
+  };
+
+  const removeAttendeeEmail = (email: string) => {
+    setAttendeeEmails((current) => current.filter((item) => item !== email));
+  };
 
   return (
     <Dialog
@@ -135,10 +227,6 @@ export function ScheduleTeamsMeetingDialog({
         </DialogHeader>
 
         <div className="grid gap-4">
-          <div className="rounded-xl border bg-muted/40 p-3 text-sm text-muted-foreground">
-            {primaryContactLine}
-          </div>
-
           <div className="rounded-xl border bg-muted/20 p-3 text-sm text-muted-foreground">
             Meeting preview: {previewStartTime || "Pick a start time"}.
           </div>
@@ -171,9 +259,9 @@ export function ScheduleTeamsMeetingDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`meeting-subject-${target.id}`}>Subject</Label>
+            <Label htmlFor={"meeting-subject-" + target.id}>Subject</Label>
             <Input
-              id={`meeting-subject-${target.id}`}
+              id={"meeting-subject-" + target.id}
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
               placeholder={defaultSubject}
@@ -181,17 +269,56 @@ export function ScheduleTeamsMeetingDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`meeting-attendees-${target.id}`}>Additional attendees</Label>
-            <Textarea
-              id={`meeting-attendees-${target.id}`}
-              rows={3}
-              value={attendeeEmails}
-              onChange={(event) => setAttendeeEmails(event.target.value)}
-              placeholder="client@example.com, admin@trustedbums.com, another.bum@example.com"
-            />
-            <p className="text-xs text-muted-foreground">
-              The scheduler automatically includes you and the target key contact when available.
-            </p>
+            <Label>Automatic attendees</Label>
+            <div className="flex flex-wrap gap-2 rounded-md border bg-muted/30 p-2">
+              {automaticAttendees.length ? (
+                automaticAttendees.map((attendee) => (
+                  <Badge key={attendee.email} variant="secondary" className="max-w-full gap-1.5 py-1">
+                    <span className="truncate">{attendee.label}</span>
+                    <span className="font-normal text-muted-foreground">{attendee.email}</span>
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">Add attendees below before sending the invite.</span>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={"meeting-attendees-" + target.id}>Additional attendees</Label>
+            <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-md border bg-background px-2 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+              {attendeeEmails.map((email) => (
+                <Badge key={email} variant="secondary" className="max-w-full gap-1 py-1 pr-1">
+                  <span className="truncate">{email}</span>
+                  <button
+                    type="button"
+                    className="rounded-full p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                    onClick={() => removeAttendeeEmail(email)}
+                    aria-label={"Remove " + email}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+              <input
+                id={"meeting-attendees-" + target.id}
+                className="h-7 min-w-[14rem] flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+                value={attendeeEmailDraft}
+                onChange={(event) => handleAttendeeDraftChange(event.target.value)}
+                onBlur={completeAttendeeDraft}
+                onKeyDown={(event) => {
+                  const draft = normalizeEmail(attendeeEmailDraft);
+                  const shouldComplete = ["Enter", "Tab", ",", ";"].includes(event.key) || (event.key === " " && isEmailAddress(draft));
+
+                  if (shouldComplete && attendeeEmailDraft.trim()) {
+                    event.preventDefault();
+                    completeAttendeeDraft();
+                  }
+                }}
+                placeholder={attendeeEmails.length ? "Add another email" : "client@example.com"}
+              />
+            </div>
+            {attendeeEmailError ? <p className="text-xs text-destructive">{attendeeEmailError}</p> : null}
           </div>
 
           <div className="space-y-2">
