@@ -142,15 +142,17 @@ We use necessary storage to run the site. Optional preferences, analytics, and o
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="fixed bottom-4 left-4 z-40 bg-background shadow-lg"
+          size="icon"
+          className="fixed bottom-2 left-2 z-40 h-6 w-6 rounded-full bg-background/90 p-0 text-muted-foreground shadow-sm hover:text-foreground [&_svg]:size-3"
+          aria-label="Privacy choices"
+          title="Privacy choices"
           onClick={() => {
             setDraft(clonePreferences(record?.preferences ?? defaultConsentPreferences));
             setShowSettings(true);
             setIsOpen(true);
           }}
         >
-          Privacy choices
+          <ShieldCheck aria-hidden="true" />
         </Button>
       ) : null}
     </>
