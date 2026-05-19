@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarPlus, ExternalLink, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,11 @@ function normalizeEmail(value: string) {
   return value.trim().replace(/[;,]+$/, "").toLowerCase();
 }
 
+function getDisplayName(value: string | null | undefined, fallback: string) {
+  const trimmed = value?.trim();
+  return trimmed || fallback;
+}
+
 export function ScheduleTeamsMeetingDialog({
   target,
   triggerLabel = "Schedule Teams call",
@@ -69,7 +74,8 @@ export function ScheduleTeamsMeetingDialog({
 
   const targetName = target.target_companies?.name ?? target.target_account_name;
   const clientName = target.client_companies?.name ?? "Client";
-  const defaultSubject = useMemo(() => `Trusted Bums intro: ${clientName} <> ${targetName}`, [clientName, targetName]);
+  const bumName = getDisplayName(target.profiles?.full_name, getDisplayName(user?.name, "Trusted Bums"));
+  const defaultSubject = useMemo(() => `${bumName} introducing ${clientName}`, [bumName, clientName]);
   const automaticAttendees = useMemo(
     () =>
       [
@@ -88,6 +94,12 @@ export function ScheduleTeamsMeetingDialog({
       ].filter((attendee): attendee is { label: string; email: string } => Boolean(attendee)),
     [target.key_contact_email, target.key_contact_name, user?.email, user?.name],
   );
+  useEffect(() => {
+    if (open && !subject.trim()) {
+      setSubject(defaultSubject);
+    }
+  }, [defaultSubject, open, subject]);
+
   const previewStartTime = useMemo(() => {
     if (!startTime) {
       return "";
@@ -209,6 +221,7 @@ export function ScheduleTeamsMeetingDialog({
 
         if (nextOpen) {
           setStartTime(getDefaultStartTime(timeZone));
+          setSubject(defaultSubject);
         }
       }}
     >

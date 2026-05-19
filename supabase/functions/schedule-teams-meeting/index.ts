@@ -216,6 +216,17 @@ function escapeODataString(value: string) {
   return value.replace(/'/g, "''");
 }
 
+function getMeetingSubject(profile: ProfileRow, target: CustomerTargetRow, requestedSubject?: string) {
+  const subject = requestedSubject?.trim();
+  if (subject) {
+    return subject;
+  }
+
+  const bumName = profile.full_name?.trim() || profile.email?.split("@")[0]?.trim() || "Trusted Bums";
+  const clientName = target.client_companies?.name ?? "Client";
+  return `${bumName} introducing ${clientName}`;
+}
+
 function buildMeetingBody(target: CustomerTargetRow, description: string | null) {
   const targetName = target.target_companies?.name ?? target.target_account_name;
   const clientName = target.client_companies?.name ?? "the client";
@@ -456,11 +467,7 @@ Deno.serve(async (request: Request) => {
     }
 
     const endTime = new Date(startTime.getTime() + durationMinutes * 60_000);
-    const subject =
-      body.subject?.trim() ||
-      `Trusted Bums intro: ${target.client_companies?.name ?? "Client"} <> ${
-        target.target_companies?.name ?? target.target_account_name
-      }`;
+    const subject = getMeetingSubject(profile, target, body.subject);
     const description = body.description?.trim() || null;
     const attendeeEmails = uniqueEmails([
       profile.email,
