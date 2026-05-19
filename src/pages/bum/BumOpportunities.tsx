@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
+import { FilterPanel } from "@/components/FilterPanel";
+import { PaginationControls } from "@/components/PaginationControls";
+import { getPageItems } from "@/lib/pagination";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +28,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
+
+const MARKETPLACE_PAGE_SIZE = 12;
 
 const responseFormInitial = {
   contactName: "",
@@ -89,6 +94,7 @@ export default function BumOpportunities() {
   const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
   const [termFilter, setTermFilter] = useState<TermFilter>("ALL");
   const [selectedTarget, setSelectedTarget] = useState<CustomerTargetRecord | null>(null);
+  const [marketplacePage, setMarketplacePage] = useState(1);
   const [responseForm, setResponseForm] = useState(responseFormInitial);
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
@@ -189,6 +195,22 @@ export default function BumOpportunities() {
     return matchesType && matchesQuery && matchesHeart && matchesIndustry && matchesValue && matchesTerm;
   });
 
+  const marketplaceItems = useMemo(
+    () => [
+      ...filteredTargets.map((item) => ({ type: "target" as const, item })),
+      ...filtered.map((item) => ({ type: "opportunity" as const, item })),
+    ],
+    [filtered, filteredTargets],
+  );
+  const visibleMarketplaceItems = getPageItems(marketplaceItems, marketplacePage, MARKETPLACE_PAGE_SIZE);
+  const visibleTargets = visibleMarketplaceItems.filter((entry) => entry.type === "target").map((entry) => entry.item);
+  const visibleOpportunities = visibleMarketplaceItems
+    .filter((entry) => entry.type === "opportunity")
+    .map((entry) => entry.item);
+  const filterSummary = [typeFilter !== "ALL" ? typeFilters.find((filter) => filter.value === typeFilter)?.label : null, industry !== "ALL" ? industry : null, valueFilter !== "ALL" ? valueFilters.find((filter) => filter.value === valueFilter)?.label : null, termFilter !== "ALL" ? termFilters.find((filter) => filter.value === termFilter)?.label : null, heartedOnly ? "Hearted" : null]
+    .filter(Boolean)
+    .join(" · ") || "All opportunities";
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -196,7 +218,8 @@ export default function BumOpportunities() {
         description="Browse live client opportunities, add people you know, and try to claim the opportunity."
       />
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto]">
+      <FilterPanel summary={filterSummary}>
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto]">
         <div className="relative min-w-0 xl:col-span-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -277,7 +300,8 @@ export default function BumOpportunities() {
             Hearted
           </Button>
         </div>
-      </div>
+        </div>
+      </FilterPanel>
 
       {(opportunitiesQuery.isLoading || targetsQuery.isLoading) && (
         <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground">
@@ -286,13 +310,13 @@ export default function BumOpportunities() {
       )}
 
       <div className="grid gap-4">
-        {filteredTargets.map((targetAccount) => {
+        {visibleTargets.map((targetAccount) => {
           const isHearted = savedTargetIds.has(targetAccount.id);
 
           return (
           <Card key={`target-${targetAccount.id}`} className="transition-shadow hover:shadow-md">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
+            <CardContent className="pt-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <div className="rounded-xl bg-primary/10 p-3">
                   <Target className="h-5 w-5 text-primary" />
                 </div>
@@ -326,7 +350,7 @@ export default function BumOpportunities() {
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex shrink-0 flex-row gap-2 md:flex-col md:items-end">
                   <Button
                     size="icon"
                     variant={isHearted ? "default" : "outline"}
@@ -347,13 +371,13 @@ export default function BumOpportunities() {
           );
         })}
 
-        {filtered.map((opportunity) => {
+        {visibleOpportunities.map((opportunity) => {
           const isHearted = savedOpportunityIds.has(opportunity.id);
 
           return (
           <Card key={opportunity.id} className="transition-shadow hover:shadow-md">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
+            <CardContent className="pt-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <div className="rounded-xl bg-accent/10 p-3">
                   <Briefcase className="h-5 w-5 text-accent" />
                 </div>
@@ -382,7 +406,7 @@ export default function BumOpportunities() {
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex shrink-0 flex-row gap-2 md:flex-col md:items-end">
                   <Button
                     size="icon"
                     variant={isHearted ? "default" : "outline"}
@@ -408,6 +432,12 @@ export default function BumOpportunities() {
               : "No live opportunities are available yet."}
           </div>
         )}
+        <PaginationControls
+          page={marketplacePage}
+          pageSize={MARKETPLACE_PAGE_SIZE}
+          totalItems={marketplaceItems.length}
+          onPageChange={setMarketplacePage}
+        />
       </div>
 
       <Dialog open={Boolean(selectedTarget)} onOpenChange={(open) => !open && setSelectedTarget(null)}>

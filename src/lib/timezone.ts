@@ -89,7 +89,7 @@ export function formatDateForTimeZone(
 
   return new Intl.DateTimeFormat("en-US", {
     timeZone: normalizeTimeZone(timeZone),
-    dateStyle: "medium",
+    ...(options ? {} : { dateStyle: "medium" as const }),
     ...options,
   }).format(new Date(value));
 }
@@ -105,8 +105,7 @@ export function formatDateTimeForTimeZone(
 
   return new Intl.DateTimeFormat("en-US", {
     timeZone: normalizeTimeZone(timeZone),
-    dateStyle: "medium",
-    timeStyle: "short",
+    ...(options ? {} : { dateStyle: "medium" as const, timeStyle: "short" as const }),
     ...options,
   }).format(new Date(value));
 }
@@ -122,7 +121,7 @@ export function formatTimeForTimeZone(
 
   return new Intl.DateTimeFormat("en-US", {
     timeZone: normalizeTimeZone(timeZone),
-    timeStyle: "short",
+    ...(options ? {} : { timeStyle: "short" as const }),
     ...options,
   }).format(new Date(value));
 }

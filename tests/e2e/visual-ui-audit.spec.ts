@@ -1,6 +1,8 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { getQaAccount, goToAuthedPath, hasExternalQaTarget, type QaAccount } from "./helpers/auth";
 
+const MAX_SCREENSHOT_HEIGHT = 12_000;
+
 type RoleKey = "ADMIN" | "CLIENT_ADMIN" | "CLIENT_FINANCE" | "BUM";
 
 interface VisualRoute {
@@ -49,6 +51,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/bum/reverse-opportunities", heading: "Reverse Opportunities", name: "bum-reverse-opportunities" },
     { path: "/bum/clients", heading: "Clients We Represent", name: "bum-clients" },
     { path: "/bum/opportunities", heading: "Opportunities", name: "bum-opportunities" },
+    { path: "/bum/claims", heading: /^(My )?Claims$/, name: "bum-claims" },
     { path: "/bum/trainings", heading: "Trainings", name: "bum-trainings" },
     { path: "/bum/live-conversations", heading: "Live Conversations", name: "bum-live-conversations" },
     { path: "/bum/earnings", heading: "Earnings", name: "bum-earnings" },
@@ -74,6 +77,11 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(overflow.overflowPixels, JSON.stringify(overflow)).toBeLessThanOrEqual(2);
 }
 
+async function expectReasonablePageHeight(page: Page) {
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  expect(height, `Full-page screenshot height ${height}px exceeds ${MAX_SCREENSHOT_HEIGHT}px. Add pagination, virtualization, or collapsible sections.`).toBeLessThanOrEqual(MAX_SCREENSHOT_HEIGHT);
+}
+
 async function expectNoObviousErrorPage(page: Page) {
   const text = await page.locator("body").innerText();
 
@@ -85,6 +93,7 @@ async function auditRoute(page: Page, account: QaAccount, role: RoleKey, route: 
   await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
   await expectNoObviousErrorPage(page);
   await expectNoHorizontalOverflow(page);
+  await expectReasonablePageHeight(page);
   await page.screenshot({
     path: testInfo.outputPath(`${testInfo.project.name}-${role.toLowerCase()}-${route.name}.png`),
     fullPage: true,

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -313,11 +314,20 @@ export default function ClientOpportunityNew() {
         </Card>
       )}
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="font-display flex items-center gap-2">
-            <FileUp className="h-5 w-5 text-primary" />
-            Import opportunity list
+      <Tabs defaultValue="register" className="space-y-6">
+        <TabsList className="flex h-auto flex-wrap justify-start">
+          <TabsTrigger value="register">Register</TabsTrigger>
+          <TabsTrigger value="import">Import</TabsTrigger>
+          <TabsTrigger value="commission-plan">Commission Plan</TabsTrigger>
+          <TabsTrigger value="registered">Registered</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="import">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display flex items-center gap-2">
+                <FileUp className="h-5 w-5 text-primary" />
+                Import opportunity list
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -398,9 +408,12 @@ export default function ClientOpportunityNew() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-display">Opportunity details</CardTitle>
+        </TabsContent>
+
+        <TabsContent value="register">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display">Opportunity details</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="grid gap-5" onSubmit={submitOpportunity}>
@@ -503,7 +516,7 @@ export default function ClientOpportunityNew() {
               <Textarea id="notes" rows={4} value={form.notes} onChange={(event) => updateField("notes", event.target.value)} />
             </div>
 
-            <div className="flex justify-end">
+            <div className="sticky bottom-3 z-10 flex justify-end rounded-lg border bg-background/95 p-3 shadow-sm backdrop-blur">
               <Button disabled={isSubmitting}>
                 <Send className="mr-2 h-4 w-4" />
                 Submit Registration
@@ -513,11 +526,14 @@ export default function ClientOpportunityNew() {
         </CardContent>
       </Card>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="font-display flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Request a new commission plan
+        </TabsContent>
+
+        <TabsContent value="commission-plan">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Request a new commission plan
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -693,9 +709,12 @@ export default function ClientOpportunityNew() {
         </CardContent>
       </Card>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="font-display">Registered opportunities</CardTitle>
+        </TabsContent>
+
+        <TabsContent value="registered">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display">Registered opportunities</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {opportunities.map((opportunity) => (
@@ -794,7 +813,9 @@ export default function ClientOpportunityNew() {
             </div>
           ) : null}
         </CardContent>
-      </Card>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

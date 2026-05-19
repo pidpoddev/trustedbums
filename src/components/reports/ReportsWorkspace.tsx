@@ -191,20 +191,20 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
         </Button>
       </PageHeader>
 
-      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
         <Card>
           <CardHeader>
             <CardTitle className="font-display">Reports</CardTitle>
-            <CardDescription>Pick a saved recommendation, then adjust the date window and fields.</CardDescription>
+            <CardDescription>Choose a report, date window, and fields.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="space-y-2">
+            <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
               {recommendations.map((report) => (
                 <button
                   key={report.id}
                   type="button"
                   onClick={() => selectReport(report)}
-                  className={`w-full rounded-md border p-3 text-left transition hover:border-primary ${selectedReport?.id === report.id ? "border-primary bg-primary/5" : "border-border"}`}
+                  className={`w-full rounded-md border p-2.5 text-left transition hover:border-primary ${selectedReport?.id === report.id ? "border-primary bg-primary/5" : "border-border"}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="font-medium">{report.title}</span>
@@ -232,7 +232,7 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
 
             <div className="space-y-3">
               <Label>Fields</Label>
-              <div className="space-y-2">
+              <div className="max-h-[260px] space-y-2 overflow-y-auto pr-1">
                 {selectedReport?.columns.map((column) => (
                   <label key={column.key} className="flex items-center gap-2 rounded-md border p-2 text-sm">
                     <Checkbox
@@ -304,7 +304,7 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
               ) : null}
 
               {filteredRows.length ? (
-                <div>
+                <div className="overflow-x-auto">
                   <Table>
                   <TableHeader>
                     <TableRow>
