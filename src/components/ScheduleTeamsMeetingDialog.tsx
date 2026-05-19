@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarPlus, ExternalLink, X } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { scheduleTeamsMeeting, type CustomerTargetRecord, type ScheduleTeamsMeetingResponse } from "@/lib/portalApi";
+import { listClientIntroductionAttendees, scheduleTeamsMeeting, type CustomerTargetRecord, type ScheduleTeamsMeetingResponse } from "@/lib/portalApi";
 import {
   formatDateTimeForTimeZone,
   getBrowserTimeZone,
@@ -30,6 +30,12 @@ interface ScheduleTeamsMeetingDialogProps {
   target: CustomerTargetRecord;
   triggerLabel?: string;
   onScheduled?: (response: ScheduleTeamsMeetingResponse) => void;
+}
+
+interface MeetingAttendeeDraft {
+  label: string;
+  email: string;
+  source: "Bum" | "Client" | "Customer" | "Added";
 }
 
 function getDefaultStartTime(timeZone: string) {
@@ -53,6 +59,23 @@ function normalizeEmail(value: string) {
 function getDisplayName(value: string | null | undefined, fallback: string) {
   const trimmed = value?.trim();
   return trimmed || fallback;
+}
+
+function uniqueAttendees(attendees: MeetingAttendeeDraft[]) {
+  const seen = new Set<string>();
+  const unique: MeetingAttendeeDraft[] = [];
+
+  for (const attendee of attendees) {
+    const email = normalizeEmail(attendee.email);
+    if (!email || seen.has(email)) {
+      continue;
+    }
+
+    seen.add(email);
+    unique.push({ ...attendee, email });
+  }
+
+  return unique;
 }
 
 function getTimeZoneAbbreviation(value: string, timeZone: string) {
@@ -83,7 +106,8 @@ export function ScheduleTeamsMeetingDialog({
   const [startTime, setStartTime] = useState(() => getDefaultStartTime(timeZone));
   const [durationMinutes, setDurationMinutes] = useState("30");
   const [subject, setSubject] = useState("");
-  const [attendeeEmails, setAttendeeEmails] = useState<string[]>([]);
+  const [attendees, setAttendees] = useState<MeetingAttendeeDraft[]>([]);
+  const [hasEditedAttendees, setHasEditedAttendees] = useState(false);
   const [attendeeEmailDraft, setAttendeeEmailDraft] = useState("");
   const [attendeeEmailError, setAttendeeEmailError] = useState<string | null>(null);
   const [description, setDescription] = useState("");
@@ -92,29 +116,38 @@ export function ScheduleTeamsMeetingDialog({
   const clientName = target.client_companies?.name ?? "Client";
   const bumName = getDisplayName(target.profiles?.full_name, getDisplayName(user?.name, "Trusted Bums"));
   const defaultSubject = useMemo(() => `${bumName} introducing ${clientName}`, [bumName, clientName]);
-  const automaticAttendees = useMemo(
-    () =>
-      [
-        user?.email
-          ? {
-              label: user.name || user.email,
-              email: user.email,
-            }
-          : null,
-        target.key_contact_email
-          ? {
-              label: target.key_contact_name || "Target contact",
-              email: target.key_contact_email,
-            }
-          : null,
-      ].filter((attendee): attendee is { label: string; email: string } => Boolean(attendee)),
-    [target.key_contact_email, target.key_contact_name, user?.email, user?.name],
+  const clientAttendeesQuery = useQuery({
+    queryKey: ["client-introduction-attendees", target.client_company_id],
+    queryFn: () => listClientIntroductionAttendees(target.client_company_id),
+    enabled: open && Boolean(target.client_company_id),
+  });
+  const defaultAttendees = useMemo(() =>
+    uniqueAttendees([
+      user?.email
+        ? { label: user.name || user.email, email: user.email, source: "Bum" as const }
+        : null,
+      ...(clientAttendeesQuery.data ?? []).map((profile) => ({
+        label: profile.full_name || profile.email || "Client contact",
+        email: profile.email ?? "",
+        source: "Client" as const,
+      })),
+      target.key_contact_email
+        ? { label: target.key_contact_name || "Customer target", email: target.key_contact_email, source: "Customer" as const }
+        : null,
+    ].filter((attendee): attendee is MeetingAttendeeDraft => Boolean(attendee))),
+    [clientAttendeesQuery.data, target.key_contact_email, target.key_contact_name, user?.email, user?.name],
   );
   useEffect(() => {
     if (open && !subject.trim()) {
       setSubject(defaultSubject);
     }
   }, [defaultSubject, open, subject]);
+
+  useEffect(() => {
+    if (open && !hasEditedAttendees) {
+      setAttendees(defaultAttendees);
+    }
+  }, [defaultAttendees, hasEditedAttendees, open]);
 
   const timeZoneAbbreviation = useMemo(() => getTimeZoneAbbreviation(startTime, timeZone), [startTime, timeZone]);
   const previewStartTime = useMemo(() => {
@@ -137,7 +170,7 @@ export function ScheduleTeamsMeetingDialog({
         description,
         startTime: parseDateTimeLocalInTimeZoneToUtcIso(startTime, timeZone),
         durationMinutes: Number(durationMinutes),
-        attendeeEmails,
+        attendeeEmails: attendees.map((attendee) => attendee.email),
       }),
     onSuccess: (response) => {
       toast({
@@ -172,7 +205,8 @@ export function ScheduleTeamsMeetingDialog({
       return false;
     }
 
-    setAttendeeEmails((current) => (current.some((item) => item.toLowerCase() === email) ? current : [...current, email]));
+    setAttendees((current) => uniqueAttendees([...current, { label: email, email, source: "Added" }]));
+    setHasEditedAttendees(true);
     setAttendeeEmailDraft("");
     setAttendeeEmailError(null);
     return true;
@@ -188,19 +222,13 @@ export function ScheduleTeamsMeetingDialog({
       return false;
     }
 
-    setAttendeeEmails((current) => {
-      const known = new Set(current.map((email) => email.toLowerCase()));
-      const next = [...current];
-
-      for (const email of normalizedEmails) {
-        if (!known.has(email)) {
-          known.add(email);
-          next.push(email);
-        }
-      }
-
-      return next;
-    });
+    setAttendees((current) =>
+      uniqueAttendees([
+        ...current,
+        ...normalizedEmails.map((email) => ({ label: email, email, source: "Added" as const })),
+      ]),
+    );
+    setHasEditedAttendees(true);
     setAttendeeEmailError(null);
     return true;
   };
@@ -227,7 +255,8 @@ export function ScheduleTeamsMeetingDialog({
   };
 
   const removeAttendeeEmail = (email: string) => {
-    setAttendeeEmails((current) => current.filter((item) => item !== email));
+    setAttendees((current) => current.filter((item) => item.email !== email));
+    setHasEditedAttendees(true);
   };
 
   return (
@@ -239,6 +268,8 @@ export function ScheduleTeamsMeetingDialog({
         if (nextOpen) {
           setStartTime(getDefaultStartTime(timeZone));
           setSubject(defaultSubject);
+          setHasEditedAttendees(false);
+          setAttendees(defaultAttendees);
         }
       }}
     >
@@ -308,32 +339,18 @@ export function ScheduleTeamsMeetingDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Automatic attendees</Label>
-            <div className="flex flex-wrap gap-2 rounded-md border bg-muted/30 p-2">
-              {automaticAttendees.length ? (
-                automaticAttendees.map((attendee) => (
-                  <Badge key={attendee.email} variant="secondary" className="max-w-full gap-1.5 py-1">
-                    <span className="truncate">{attendee.label}</span>
-                    <span className="font-normal text-muted-foreground">{attendee.email}</span>
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-sm text-muted-foreground">Add attendees below before sending the invite.</span>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor={"meeting-attendees-" + target.id}>Additional attendees</Label>
             <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-md border bg-background px-2 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-              {attendeeEmails.map((email) => (
-                <Badge key={email} variant="secondary" className="max-w-full gap-1 py-1 pr-1">
-                  <span className="truncate">{email}</span>
+              {attendees.map((attendee) => (
+                <Badge key={attendee.email} variant="secondary" className="max-w-full gap-1 py-1 pr-1">
+                  <span className="rounded-sm bg-background/70 px-1 text-[10px] uppercase tracking-wide text-muted-foreground">{attendee.source}</span>
+                  <span className="truncate">{attendee.label}</span>
+                  <span className="font-normal text-muted-foreground">{attendee.email}</span>
                   <button
                     type="button"
                     className="rounded-full p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
-                    onClick={() => removeAttendeeEmail(email)}
-                    aria-label={"Remove " + email}
+                    onClick={() => removeAttendeeEmail(attendee.email)}
+                    aria-label={"Remove " + attendee.email}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -354,10 +371,13 @@ export function ScheduleTeamsMeetingDialog({
                     completeAttendeeDraft();
                   }
                 }}
-                placeholder={attendeeEmails.length ? "Add another email" : "client@example.com"}
+                placeholder={attendees.length ? "Add another email" : "client@example.com"}
               />
             </div>
             {attendeeEmailError ? <p className="text-xs text-destructive">{attendeeEmailError}</p> : null}
+            <p className="text-xs text-muted-foreground">
+              Bum, enabled client contacts, and the customer target are prefilled. Remove anyone who should not receive this invite.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -376,7 +396,7 @@ export function ScheduleTeamsMeetingDialog({
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={() => scheduleMutation.mutate()} disabled={scheduleMutation.isPending}>
+          <Button type="button" onClick={() => scheduleMutation.mutate()} disabled={scheduleMutation.isPending || !attendees.length}>
             <ExternalLink className="mr-2 h-4 w-4" />
             Create Teams invite
           </Button>

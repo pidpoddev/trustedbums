@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { UserTimeZoneCard } from "@/components/UserTimeZoneCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +18,7 @@ export default function ClientProfile() {
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
+  const [invitedToCustomerIntroductions, setInvitedToCustomerIntroductions] = useState(true);
 
   const profileQuery = useQuery({
     queryKey: ["own-profile-settings", user?.id],
@@ -31,7 +33,8 @@ export default function ClientProfile() {
 
   useEffect(() => {
     setFullName(profileQuery.data?.full_name ?? user?.name ?? "");
-  }, [profileQuery.data?.full_name, user?.name]);
+    setInvitedToCustomerIntroductions(profileQuery.data?.invited_to_customer_introductions ?? true);
+  }, [profileQuery.data?.full_name, profileQuery.data?.invited_to_customer_introductions, user?.name]);
 
   useEffect(() => {
     setCompanyName(companyQuery.data?.name ?? user?.companyName ?? "");
@@ -44,7 +47,7 @@ export default function ClientProfile() {
         throw new Error("Sign in before updating your profile.");
       }
 
-      await updateOwnProfileSettings(user, { fullName });
+      await updateOwnProfileSettings(user, { fullName, invitedToCustomerIntroductions });
       return updateOwnClientCompanyProfile(user, { name: companyName, website });
     },
     onSuccess: async () => {
@@ -89,6 +92,20 @@ export default function ClientProfile() {
             <div className="space-y-2">
               <Label htmlFor="client-profile-name">Your Name</Label>
               <Input id="client-profile-name" value={fullName} onChange={(event) => setFullName(event.target.value)} disabled={isLoading} />
+            </div>
+            <div className="flex items-center space-x-2 rounded-md border p-4">
+              <Checkbox
+                id="client-invited-to-introductions"
+                checked={invitedToCustomerIntroductions}
+                onCheckedChange={(checked) => setInvitedToCustomerIntroductions(checked === true)}
+                disabled={isLoading}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="client-invited-to-introductions">Invited to Customer Introductions</Label>
+                <p className="text-sm text-muted-foreground">
+                  Keep this on if this person should be prefilled on customer introduction meeting invites. Turn it off for finance, operations, or other contacts who should not join intro calls by default.
+                </p>
+              </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">

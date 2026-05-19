@@ -12,6 +12,7 @@ interface ProfileRow {
   full_name: string | null;
   role: string | null;
   is_admin: boolean;
+  invited_to_customer_introductions?: boolean;
 }
 
 interface CustomerTargetRow {
@@ -173,6 +174,23 @@ async function getProfile(id: string) {
   }
 
   return data;
+}
+
+async function getClientIntroductionAttendees(companyId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("id, email, full_name, role, is_admin, invited_to_customer_introductions")
+    .eq("company_id", companyId)
+    .eq("role", "CLIENT")
+    .eq("invited_to_customer_introductions", true)
+    .not("email", "is", null)
+    .returns<ProfileRow[]>();
+
+  if (error) {
+    throw new Error("Unable to read client introduction attendees.");
+  }
+
+  return data ?? [];
 }
 
 async function getCustomerTarget(id: string) {
@@ -469,11 +487,15 @@ Deno.serve(async (request: Request) => {
     const endTime = new Date(startTime.getTime() + durationMinutes * 60_000);
     const subject = getMeetingSubject(profile, target, body.subject);
     const description = body.description?.trim() || null;
-    const attendeeEmails = uniqueEmails([
-      profile.email,
-      target.key_contact_email,
-      ...(Array.isArray(body.attendeeEmails) ? body.attendeeEmails : []),
-    ]);
+    const requestedAttendees = Array.isArray(body.attendeeEmails) ? body.attendeeEmails : null;
+    const clientAttendees = requestedAttendees ? [] : await getClientIntroductionAttendees(target.client_company_id);
+    const attendeeEmails = uniqueEmails(
+      requestedAttendees ?? [
+        profile.email,
+        ...clientAttendees.map((attendee) => attendee.email),
+        target.key_contact_email,
+      ],
+    );
 
     if (!attendeeEmails.length) {
       return json(400, { error: "Add at least one attendee email." });

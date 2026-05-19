@@ -65,6 +65,7 @@ export interface ProfileRecord {
   last_sign_in_at: string | null;
   time_zone: string | null;
   date_format: string | null;
+  invited_to_customer_introductions: boolean;
   created_at: string;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
 }
@@ -1194,15 +1195,35 @@ export async function getOwnProfileSettings(userId: string) {
   return getProfileRecord(userId);
 }
 
+export async function listClientIntroductionAttendees(companyId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, invited_to_customer_introductions")
+    .eq("company_id", companyId)
+    .eq("role", "CLIENT")
+    .eq("invited_to_customer_introductions", true)
+    .not("email", "is", null)
+    .order("full_name", { ascending: true })
+    .returns<Array<Pick<ProfileRecord, "id" | "full_name" | "email" | "invited_to_customer_introductions">>>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+
 export async function updateOwnProfileSettings(
   user: AuthUser,
   input: {
     timeZone?: string;
     dateFormat?: string;
     fullName?: string;
+    invitedToCustomerIntroductions?: boolean;
   },
 ) {
-  const payload: Record<string, string | null> = {};
+  const payload: Record<string, string | boolean | null> = {};
 
   if (input.timeZone !== undefined) {
     payload.time_zone = normalizeTimeZone(input.timeZone);
@@ -1214,6 +1235,10 @@ export async function updateOwnProfileSettings(
 
   if (input.fullName !== undefined) {
     payload.full_name = toNullableString(input.fullName);
+  }
+
+  if (input.invitedToCustomerIntroductions !== undefined) {
+    payload.invited_to_customer_introductions = input.invitedToCustomerIntroductions;
   }
 
   const { data, error } = await supabase
