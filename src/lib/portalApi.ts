@@ -1249,6 +1249,10 @@ export async function getCurrentTermsAcceptance(userId: string, companyId: strin
   return data;
 }
 
+function isUuid(value: string | undefined) {
+  return Boolean(value?.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i));
+}
+
 export async function createAuditEvent(
   user: Pick<AuthUser, "id" | "clientId">,
   eventType: string,
@@ -1256,13 +1260,16 @@ export async function createAuditEvent(
   entityId?: string,
   eventData?: Record<string, unknown>,
 ) {
+  const hasUuidEntityId = isUuid(entityId);
+  const normalizedEventData = hasUuidEntityId || !entityId ? eventData : { ...(eventData ?? {}), entity_id: entityId };
+
   const { error } = await supabase.from("audit_events").insert({
     company_id: user.clientId ?? null,
     user_id: user.id,
     event_type: eventType,
     entity_type: entityType ?? null,
-    entity_id: entityId ?? null,
-    event_data: eventData ?? {},
+    entity_id: hasUuidEntityId ? entityId : null,
+    event_data: normalizedEventData ?? {},
   });
 
   if (error) {
