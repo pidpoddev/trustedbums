@@ -70,6 +70,11 @@ export interface ProfileRecord {
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
 }
 
+export interface SyncClerkUsersResult {
+  synced: Array<{ id: string; email: string; role: "CLIENT" | "BUM"; companyName?: string | null }>;
+  skipped: Array<{ id?: string; email?: string; reason: string }>;
+}
+
 export type AdminEmailRecipientGroup = "CLIENT_COMPANY" | "ALL_CLIENTS" | "ALL_BUMS" | "BUM_INDUSTRY_MATCH" | "ADMINS" | "CUSTOM";
 export type AdminEmailTriggerEvent =
   | "MANUAL"
@@ -3044,6 +3049,32 @@ export async function listProfiles() {
   }
 
   return data ?? [];
+}
+
+export async function syncClerkUsers(input: { emails?: string[]; limit?: number } = {}) {
+  const token = await getSupabaseAccessToken();
+
+  if (!token) {
+    throw new Error("Sign in before syncing Clerk users.");
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/sync-clerk-users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as SyncClerkUsersResult & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Unable to sync Clerk users.");
+  }
+
+  return payload;
 }
 
 export async function createProspectRecommendation(user: AuthUser, input: ProspectInput) {
