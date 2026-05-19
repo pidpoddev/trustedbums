@@ -340,7 +340,7 @@ const Index = () => {
               <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-primary/25 to-accent/20" />
               <img
                 src="/brand-revenue-loop.svg"
-                alt="Revenue alignment loop"
+                alt="Customer revenue comes first, then Trusted Bums gets paid"
                 className="relative z-10 h-full w-full rounded-[2rem] object-cover shadow-2xl"
               />
             </div>
