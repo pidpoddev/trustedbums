@@ -6,19 +6,51 @@ function hasSupportedTimeZoneApi() {
 
 export function getSupportedTimeZones() {
   if (hasSupportedTimeZoneApi()) {
-    return Intl.supportedValuesOf("timeZone");
+    return Array.from(new Set([DEFAULT_TIME_ZONE, ...Intl.supportedValuesOf("timeZone")])).sort();
   }
 
   return [
     "UTC",
+    "America/Anchorage",
     "America/Los_Angeles",
+    "America/Phoenix",
     "America/Denver",
     "America/Chicago",
     "America/New_York",
+    "America/Toronto",
+    "America/Mexico_City",
+    "America/Bogota",
+    "America/Lima",
+    "America/Sao_Paulo",
+    "America/Argentina/Buenos_Aires",
+    "Europe/Dublin",
     "Europe/London",
+    "Europe/Lisbon",
+    "Europe/Madrid",
+    "Europe/Paris",
     "Europe/Berlin",
+    "Europe/Rome",
+    "Europe/Amsterdam",
+    "Europe/Stockholm",
+    "Europe/Warsaw",
+    "Europe/Athens",
+    "Europe/Istanbul",
+    "Africa/Cairo",
+    "Africa/Johannesburg",
+    "Asia/Dubai",
+    "Asia/Jerusalem",
+    "Asia/Kolkata",
+    "Asia/Bangkok",
+    "Asia/Singapore",
+    "Asia/Shanghai",
+    "Asia/Hong_Kong",
     "Asia/Tokyo",
+    "Asia/Seoul",
+    "Australia/Perth",
+    "Australia/Adelaide",
     "Australia/Sydney",
+    "Pacific/Auckland",
+    "Pacific/Honolulu",
   ];
 }
 

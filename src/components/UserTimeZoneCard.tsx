@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getOwnProfileSettings, updateOwnProfileSettings } from "@/lib/portalApi";
@@ -22,7 +22,10 @@ export function UserTimeZoneCard({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [timeZone, setTimeZone] = useState(user?.timeZone ?? getBrowserTimeZone());
-  const supportedTimeZones = getSupportedTimeZones();
+  const supportedTimeZones = useMemo(() => {
+    const values = new Set([normalizeTimeZone(user?.timeZone, getBrowserTimeZone()), ...getSupportedTimeZones()]);
+    return Array.from(values).sort();
+  }, [user?.timeZone]);
 
   const profileQuery = useQuery({
     queryKey: ["own-profile-settings", user?.id],
@@ -73,18 +76,18 @@ export function UserTimeZoneCard({
         <p className="text-sm text-muted-foreground">{description}</p>
         <div className="space-y-2">
           <Label htmlFor="user-time-zone">Preferred time zone</Label>
-          <Input
-            id="user-time-zone"
-            list="trusted-bums-time-zones"
-            value={timeZone}
-            onChange={(event) => setTimeZone(event.target.value)}
-            placeholder="America/Los_Angeles"
-          />
-          <datalist id="trusted-bums-time-zones">
-            {supportedTimeZones.map((supportedTimeZone) => (
-              <option key={supportedTimeZone} value={supportedTimeZone} />
-            ))}
-          </datalist>
+          <Select value={timeZone} onValueChange={setTimeZone}>
+            <SelectTrigger id="user-time-zone">
+              <SelectValue placeholder="Choose a time zone" />
+            </SelectTrigger>
+            <SelectContent position="item-aligned" className="max-h-80">
+              {supportedTimeZones.map((supportedTimeZone) => (
+                <SelectItem key={supportedTimeZone} value={supportedTimeZone}>
+                  {supportedTimeZone}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <p className="text-xs text-muted-foreground">
             Browser detected: {getBrowserTimeZone()}
           </p>
