@@ -10,9 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { createTrainingMaterial, listClientTrainingMaterials } from "@/lib/portalApi";
+import { createTrainingMaterial, getTrainingMaterialAttachmentUrl, listClientTrainingMaterials, type TrainingMaterialAttachment } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { Plus, FileText, Search, Upload } from "lucide-react";
+import { Download, FileText, Paperclip, Plus, Search, Upload, X } from "lucide-react";
 
 type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY" | "TECH_SPECIFIC";
 
@@ -23,6 +23,16 @@ const trainingTypeFilters: { value: TrainingTypeFilter; label: string }[] = [
   { value: "TECH_SPECIFIC", label: "Technology-specific" },
 ];
 
+function formatAttachmentSize(size: number) {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export default function ClientTrainings() {
   const { user } = useAuth();
   const timeZone = useUserTimeZone();
@@ -31,6 +41,7 @@ export default function ClientTrainings() {
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TrainingTypeFilter>("ALL");
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [form, setForm] = useState({
     title: "",
     technology: "",
@@ -43,11 +54,12 @@ export default function ClientTrainings() {
     enabled: Boolean(user?.clientId),
   });
   const createMutation = useMutation({
-    mutationFn: () => createTrainingMaterial(user!, form),
+    mutationFn: () => createTrainingMaterial(user!, { ...form, attachments }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["client-training-materials", user?.clientId] });
       await queryClient.invalidateQueries({ queryKey: ["bum-marketplace-trainings"] });
       setForm({ title: "", technology: "", resource_url: "", description: "" });
+      setAttachments([]);
       setShowForm(false);
       toast({
         title: "Training added",
@@ -62,6 +74,20 @@ export default function ClientTrainings() {
       });
     },
   });
+
+  const openAttachment = async (attachment: TrainingMaterialAttachment) => {
+    try {
+      const url = await getTrainingMaterialAttachmentUrl(attachment);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast({
+        title: "Unable to open attachment",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const trainings = trainingsQuery.data ?? [];
   const filteredTrainings = useMemo(() => {
     return trainings.filter((training) => {
@@ -119,6 +145,32 @@ export default function ClientTrainings() {
                   onChange={(event) => setForm((current) => ({ ...current, resource_url: event.target.value }))}
                   placeholder="https://..."
                 />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="trainingAttachments">Read Ahead attachments</Label>
+                <Input
+                  id="trainingAttachments"
+                  type="file"
+                  multiple
+                  onChange={(event) => setAttachments(Array.from(event.target.files ?? []))}
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.png,.jpg,.jpeg"
+                />
+                {attachments.length ? (
+                  <div className="grid gap-2 rounded-md border bg-muted/30 p-3">
+                    {attachments.map((file, index) => (
+                      <div key={`${file.name}-${file.size}-${index}`} className="flex items-center justify-between gap-3 text-sm">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{file.name}</span>
+                          <span className="shrink-0 text-xs text-muted-foreground">{formatAttachmentSize(file.size)}</span>
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setAttachments((current) => current.filter((_, currentIndex) => currentIndex !== index))}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="trainingDescription">Description</Label>
@@ -179,22 +231,27 @@ export default function ClientTrainings() {
                 <div className="rounded-lg bg-secondary p-2">
                   <FileText className="h-5 w-5 text-secondary-foreground" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="font-medium">{training.title}</p>
                   <p className="text-sm text-muted-foreground mt-1">{training.description ?? "No description provided."}</p>
                   <p className="text-xs text-muted-foreground mt-2">
                     {training.technology ?? "General"} · Updated {formatDateForTimeZone(training.updated_at, timeZone)}
                   </p>
-                  {training.resource_url ? (
-                    <a
-                      href={training.resource_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-3 inline-flex text-sm text-primary hover:underline"
-                    >
-                      Open training link
-                    </a>
-                  ) : null}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {training.resource_url ? (
+                      <Button size="sm" variant="outline" asChild>
+                        <a href={training.resource_url} target="_blank" rel="noreferrer">
+                          Open training link
+                        </a>
+                      </Button>
+                    ) : null}
+                    {(training.training_material_attachments ?? []).map((attachment) => (
+                      <Button key={attachment.id} size="sm" variant="outline" onClick={() => openAttachment(attachment)}>
+                        <Download className="mr-2 h-4 w-4" />
+                        {attachment.file_name}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -231,7 +288,7 @@ export default function ClientTrainings() {
           <CardContent className="pt-6 flex flex-col items-center justify-center h-full text-center py-12">
             <Upload className="h-8 w-8 text-muted-foreground mb-2" />
             <p className="font-medium text-muted-foreground">Training library is live</p>
-            <p className="text-sm text-muted-foreground mt-1">Add titles, descriptions, and links now. File uploads can come next.</p>
+            <p className="text-sm text-muted-foreground mt-1">Add titles, descriptions, links, and read-ahead attachments.</p>
           </CardContent>
         </Card>
       </div>

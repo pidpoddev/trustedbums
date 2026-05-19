@@ -746,6 +746,19 @@ export interface AuditEvent {
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
 }
 
+export interface TrainingMaterialAttachment {
+  id: string;
+  training_material_id: string;
+  company_id: string;
+  uploaded_by: string;
+  file_name: string;
+  file_type: string | null;
+  file_size: number;
+  storage_bucket: string;
+  storage_path: string;
+  created_at: string;
+}
+
 export interface TrainingMaterial {
   id: string;
   company_id: string;
@@ -759,6 +772,7 @@ export interface TrainingMaterial {
   updated_at: string;
   companies?: Pick<CompanyRecord, "name"> | null;
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
+  training_material_attachments?: TrainingMaterialAttachment[];
 }
 
 export interface TrainingMaterialInput {
@@ -767,6 +781,7 @@ export interface TrainingMaterialInput {
   technology?: string;
   resource_url?: string;
   is_published?: boolean;
+  attachments?: File[];
 }
 
 export type BumAvailabilityStatus = "open" | "selective" | "unavailable";
@@ -3638,10 +3653,71 @@ export async function listAuditEvents() {
   return data ?? [];
 }
 
+const TRAINING_MATERIAL_ATTACHMENTS_BUCKET = "training-material-attachments";
+
+function sanitizeAttachmentFileName(fileName: string) {
+  const sanitized = fileName.trim().replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+  return sanitized || "attachment";
+}
+
+async function uploadTrainingMaterialAttachment(user: AuthUser, material: TrainingMaterial, file: File) {
+  if (!user.clientId) {
+    throw new Error("This client user is not linked to a company yet.");
+  }
+
+  const storagePath = `${user.clientId}/${material.id}/${crypto.randomUUID()}-${sanitizeAttachmentFileName(file.name)}`;
+  const { error: uploadError } = await supabase.storage
+    .from(TRAINING_MATERIAL_ATTACHMENTS_BUCKET)
+    .upload(storagePath, file, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { data, error } = await supabase
+    .from("training_material_attachments")
+    .insert({
+      training_material_id: material.id,
+      company_id: user.clientId,
+      uploaded_by: user.id,
+      file_name: file.name || "Attachment",
+      file_type: file.type || null,
+      file_size: file.size,
+      storage_bucket: TRAINING_MATERIAL_ATTACHMENTS_BUCKET,
+      storage_path: storagePath,
+    })
+    .select("*")
+    .single<TrainingMaterialAttachment>();
+
+  if (error) {
+    await supabase.storage.from(TRAINING_MATERIAL_ATTACHMENTS_BUCKET).remove([storagePath]);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function getTrainingMaterialAttachmentUrl(attachment: TrainingMaterialAttachment) {
+  const { data, error } = await supabase.storage
+    .from(attachment.storage_bucket)
+    .createSignedUrl(attachment.storage_path, 60 * 10, {
+      download: attachment.file_name,
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return data.signedUrl;
+}
+
 export async function listClientTrainingMaterials(user: AuthUser) {
   const { data, error } = await supabase
     .from("training_materials")
-    .select("*, companies(name)")
+    .select("*, companies(name), training_material_attachments(*)")
     .eq("company_id", user.clientId ?? "")
     .order("updated_at", { ascending: false })
     .returns<TrainingMaterial[]>();
@@ -3656,7 +3732,7 @@ export async function listClientTrainingMaterials(user: AuthUser) {
 export async function listMarketplaceTrainingMaterials() {
   const { data, error } = await supabase
     .from("training_materials")
-    .select("*, companies(name)")
+    .select("*, companies(name), training_material_attachments(*)")
     .eq("is_published", true)
     .order("updated_at", { ascending: false })
     .returns<TrainingMaterial[]>();
@@ -3691,12 +3767,17 @@ export async function createTrainingMaterial(user: AuthUser, input: TrainingMate
     throw error;
   }
 
+  const attachments = input.attachments?.length
+    ? await Promise.all(input.attachments.map((file) => uploadTrainingMaterialAttachment(user, data, file)))
+    : [];
+
   await createAuditEvent(user, "training_material_created", "training_materials", data.id, {
     title: data.title,
     company_id: data.company_id,
+    attachment_count: attachments.length,
   });
 
-  return data;
+  return { ...data, training_material_attachments: attachments };
 }
 
 export async function inviteBum(input: BumInviteInput) {

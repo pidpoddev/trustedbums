@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { listMarketplaceTrainingMaterials } from "@/lib/portalApi";
+import { getTrainingMaterialAttachmentUrl, listMarketplaceTrainingMaterials, type TrainingMaterialAttachment } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { GraduationCap, Search, PlayCircle } from "lucide-react";
+import { Download, GraduationCap, PlayCircle, Search } from "lucide-react";
 
 type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY";
 
@@ -22,12 +23,26 @@ const trainingTypeFilters: { value: TrainingTypeFilter; label: string }[] = [
 
 export default function BumTrainings() {
   const timeZone = useUserTimeZone();
+  const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TrainingTypeFilter>("ALL");
   const trainingsQuery = useQuery({
     queryKey: ["bum-marketplace-trainings"],
     queryFn: listMarketplaceTrainingMaterials,
   });
+
+  const openAttachment = async (attachment: TrainingMaterialAttachment) => {
+    try {
+      const url = await getTrainingMaterialAttachmentUrl(attachment);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast({
+        title: "Unable to open attachment",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const filtered = (trainingsQuery.data ?? []).filter((training) => {
     const matchesType =
@@ -51,7 +66,7 @@ export default function BumTrainings() {
         <div className="relative min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search trainings…"
+            placeholder="Search trainings..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-9"
@@ -91,8 +106,8 @@ export default function BumTrainings() {
                     {training.technology ? <Badge variant="secondary">{training.technology}</Badge> : null}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{training.description ?? "No description provided."}</p>
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-xs text-muted-foreground">
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <span className="mr-auto text-xs text-muted-foreground">
                       Updated {formatDateForTimeZone(training.updated_at, timeZone)}
                     </span>
                     {training.resource_url ? (
@@ -102,6 +117,11 @@ export default function BumTrainings() {
                         </a>
                       </Button>
                     ) : null}
+                    {(training.training_material_attachments ?? []).map((attachment) => (
+                      <Button key={attachment.id} size="sm" variant="ghost" onClick={() => openAttachment(attachment)}>
+                        <Download className="mr-2 h-4 w-4" /> {attachment.file_name}
+                      </Button>
+                    ))}
                   </div>
                 </div>
               </div>
