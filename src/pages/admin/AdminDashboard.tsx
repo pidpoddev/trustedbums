@@ -180,9 +180,12 @@ export default function AdminDashboard() {
       await queryClient.invalidateQueries({ queryKey: ["admin-profiles"] });
       await queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
       await queryClient.invalidateQueries({ queryKey: ["admin-bum-profiles"] });
+      const skippedPreview = result.skipped[0]
+        ? ` First skipped: ${result.skipped[0].email ?? result.skipped[0].id ?? "unknown user"} - ${result.skipped[0].reason}`
+        : "";
       toast({
         title: "Clerk users synced",
-        description: `Synced ${result.synced.length} user${result.synced.length === 1 ? "" : "s"}. ${result.skipped.length} skipped.`,
+        description: `Synced ${result.synced.length} user${result.synced.length === 1 ? "" : "s"}. ${result.skipped.length} skipped.${skippedPreview}`,
       });
     },
     onError: (error) => {
