@@ -28,19 +28,6 @@ test.describe("critical opportunity workflow", () => {
     await clientPage.getByLabel("Estimated deal value").fill("10000");
     await clientPage.getByLabel("Expected timeline").fill("QA validation");
 
-    const planName = "QA Smoke Plan " + new Date().toISOString();
-    await clientPage.getByLabel("Plan name").fill(planName);
-    await clientPage.getByLabel("Year 1 commission %").fill("1");
-    await clientPage.getByLabel("Year 2 commission %").fill("1");
-    await clientPage.getByLabel("Year 3 commission %").fill("1");
-    await clientPage.getByLabel("Year 4 commission %").fill("1");
-    await clientPage.getByLabel("Year 5 commission %").fill("1");
-    await clientPage.getByLabel("Year 6+ commission %").fill("1");
-    await clientPage.getByLabel("Why do you need this plan?").fill("Automated QA smoke validation.");
-    const requestPlanButton = clientPage.getByRole("button", { name: /request new plan/i });
-    await requestPlanButton.scrollIntoViewIfNeeded();
-    await requestPlanButton.click({ force: true });
-    await expect(clientPage.getByRole("button", { name: /submit registration/i })).toBeEnabled({ timeout: 20_000 });
     await clientPage.getByLabel("Opportunity description").fill("Automated QA smoke opportunity.");
     await clientPage.getByLabel("Notes", { exact: true }).fill("Created by Playwright QA smoke testing.");
     await clientPage.getByRole("button", { name: /submit registration/i }).click();

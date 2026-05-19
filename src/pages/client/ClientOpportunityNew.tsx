@@ -504,7 +504,7 @@ export default function ClientOpportunityNew() {
             </div>
 
             <div className="flex justify-end">
-              <Button disabled={isSubmitting || !form.pay_program_id}>
+              <Button disabled={isSubmitting}>
                 <Send className="mr-2 h-4 w-4" />
                 Submit Registration
               </Button>
