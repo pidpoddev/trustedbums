@@ -5,7 +5,7 @@ test.describe("staging smoke", () => {
 
   test("loads public pages", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /We Open Doors/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Your buyer is ignoring strangers/i })).toBeVisible();
 
     await page.goto("/privacy-policy");
     await expect(page.getByRole("heading", { name: /Privacy Policy/i })).toBeVisible();
@@ -13,12 +13,12 @@ test.describe("staging smoke", () => {
 
   test("redirects protected routes away from anonymous users", async ({ page }) => {
     await page.goto("/admin");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/login$/);
 
     await page.goto("/client/dashboard");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/login$/);
 
     await page.goto("/bum/dashboard");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/login$/);
   });
 });
