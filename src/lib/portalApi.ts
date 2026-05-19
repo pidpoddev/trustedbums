@@ -791,6 +791,19 @@ export interface BumProfileInput {
   last_linkedin_imported_at?: string | null;
 }
 
+export interface BumInviteInput {
+  email: string;
+  name?: string;
+  note?: string;
+}
+
+export interface BumInviteResult {
+  invited: boolean;
+  invitationId: string | null;
+  status: string | null;
+  email: string;
+}
+
 interface ImpersonationFunctionProfile {
   id: string;
   email: string | null;
@@ -3339,6 +3352,30 @@ export async function createTrainingMaterial(user: AuthUser, input: TrainingMate
   });
 
   return data;
+}
+
+export async function inviteBum(input: BumInviteInput) {
+  const token = await getSupabaseAccessToken();
+  const response = await fetch(`${supabaseUrl}/functions/v1/invite-bum`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token ?? supabasePublishableKey}`,
+    },
+    body: JSON.stringify({
+      ...input,
+      redirectUrl: new URL(`${import.meta.env.BASE_URL || "/"}login`, window.location.origin).toString(),
+    }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as BumInviteResult & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Unable to invite this Bum.");
+  }
+
+  return payload;
 }
 
 export async function getOwnBumProfile(userId: string) {

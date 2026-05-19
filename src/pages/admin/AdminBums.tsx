@@ -1,15 +1,18 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { BUM_TERMS_VERSION } from "@/data/partnerTerms";
-import { listAdminBumProfiles, listProfiles, listTermsAcceptances, listTermsVersions } from "@/lib/portalApi";
+import { useToast } from "@/hooks/use-toast";
+import { inviteBum, listAdminBumProfiles, listProfiles, listTermsAcceptances, listTermsVersions } from "@/lib/portalApi";
 
 type BumTypeFilter = "ALL" | "VISIBLE_TO_CLIENTS" | "AGREEMENT_ACCEPTED" | "PROFILE_READY" | "HIDDEN";
 
@@ -24,10 +27,34 @@ const bumTypeFilters: { value: BumTypeFilter; label: string }[] = [
 export default function AdminBums() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<BumTypeFilter>("ALL");
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteNote, setInviteNote] = useState("");
+  const { toast } = useToast();
   const bumProfilesQuery = useQuery({ queryKey: ["admin-bum-profiles"], queryFn: listAdminBumProfiles });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
   const termsVersionsQuery = useQuery({ queryKey: ["admin-terms-versions"], queryFn: listTermsVersions });
   const acceptancesQuery = useQuery({ queryKey: ["admin-terms-acceptances"], queryFn: listTermsAcceptances });
+
+  const inviteMutation = useMutation({
+    mutationFn: () => inviteBum({ email: inviteEmail, name: inviteName, note: inviteNote }),
+    onSuccess: (result) => {
+      setInviteOpen(false);
+      setInviteEmail("");
+      setInviteName("");
+      setInviteNote("");
+      toast({ title: "Bum invited", description: `Clerk sent an invitation to ${result.email}.` });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to invite Bum",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
 
   const bumSummaries = useMemo(() => {
     const bumTermsId = (termsVersionsQuery.data ?? []).find((terms) => terms.version === BUM_TERMS_VERSION)?.id;
@@ -139,8 +166,56 @@ export default function AdminBums() {
   return (
     <div>
       <PageHeader title="Bums" description="Review connector background, coverage, and agreement status">
-        <Button><Plus className="h-4 w-4 mr-2" /> Invite Bum</Button>
+        <Button onClick={() => setInviteOpen(true)}><Plus className="h-4 w-4 mr-2" /> Invite Bum</Button>
       </PageHeader>
+
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite Bum</DialogTitle>
+            <DialogDescription>
+              Send a Clerk invitation that tags the new account as a Bum when they sign up.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="invite-bum-email">Email</Label>
+              <Input
+                id="invite-bum-email"
+                type="email"
+                value={inviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                placeholder="connector@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invite-bum-name">Name</Label>
+              <Input
+                id="invite-bum-name"
+                value={inviteName}
+                onChange={(event) => setInviteName(event.target.value)}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invite-bum-note">Internal note</Label>
+              <Textarea
+                id="invite-bum-note"
+                rows={3}
+                value={inviteNote}
+                onChange={(event) => setInviteNote(event.target.value)}
+                placeholder="Optional context for the audit trail"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteOpen(false)} disabled={inviteMutation.isPending}>Cancel</Button>
+            <Button onClick={() => inviteMutation.mutate()} disabled={inviteMutation.isPending || !inviteEmail.trim()}>
+              {inviteMutation.isPending ? "Sending..." : "Send Invite"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)] mb-6">
         <div className="relative min-w-0">
