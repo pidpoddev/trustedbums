@@ -29,6 +29,7 @@ import AdminPayouts from "./pages/admin/AdminPayouts";
 import AdminLiveConversations from "./pages/admin/AdminLiveConversations";
 import AdminEmails from "./pages/admin/AdminEmails";
 import AdminProfile from "./pages/admin/AdminProfile";
+import AdminReports from "./pages/admin/AdminReports";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientAgreements from "./pages/client/ClientAgreements";
 import ClientTerms from "./pages/client/ClientTerms";
@@ -40,6 +41,7 @@ import ClientTrainings from "./pages/client/ClientTrainings";
 import ClientRequests from "./pages/client/ClientRequests";
 import ClientExports from "./pages/client/ClientExports";
 import ClientPayments from "./pages/client/ClientPayments";
+import ClientReports from "./pages/client/ClientReports";
 import BumLayout from "./layouts/BumLayout";
 import BumDashboard from "./pages/bum/BumDashboard";
 import BumProspects from "./pages/bum/BumProspects";
@@ -52,6 +54,7 @@ import BumProfile from "./pages/bum/BumProfile";
 import BumClients from "./pages/bum/BumClients";
 import BumTrainings from "./pages/bum/BumTrainings";
 import BumOpportunityDetail from "./pages/bum/BumOpportunityDetail";
+import BumReports from "./pages/bum/BumReports";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +93,7 @@ const App = () => (
                       <Route path="payouts" element={<AdminPayouts />} />
                       <Route path="live-conversations" element={<AdminLiveConversations />} />
                       <Route path="emails" element={<AdminEmails />} />
+                      <Route path="reports" element={<AdminReports />} />
                       <Route path="profile" element={<AdminProfile />} />
                     </Route>
                   </Route>
@@ -104,6 +108,7 @@ const App = () => (
                       <Route path="terms" element={<ClientTerms />} />
                       <Route path="agreements" element={<ClientAgreements />} />
                       <Route path="profile" element={<ClientProfile />} />
+                      <Route path="reports" element={<ClientReports />} />
                       <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN", "CLIENT_MEMBER"]} />}>
                         <Route path="targets" element={<ClientTargets />} />
                         <Route path="opportunities/new" element={<ClientOpportunityNew />} />
@@ -135,6 +140,7 @@ const App = () => (
                       <Route path="trainings" element={<BumTrainings />} />
                       <Route path="live-conversations" element={<BumLiveConversations />} />
                       <Route path="earnings" element={<BumEarnings />} />
+                      <Route path="reports" element={<BumReports />} />
                       <Route path="profile" element={<BumProfile />} />
                     </Route>
                   </Route>

@@ -26,6 +26,7 @@ import {
   Video,
   User,
   Mail,
+  BarChart3,
 } from "lucide-react";
 
 const navItems = [
@@ -39,6 +40,7 @@ const navItems = [
   { title: "Payouts", url: "/admin/payouts", icon: DollarSign },
   { title: "Live Conversations", url: "/admin/live-conversations", icon: Video },
   { title: "Emails", url: "/admin/emails", icon: Mail },
+  { title: "Reports", url: "/admin/reports", icon: BarChart3 },
   { title: "Profile", url: "/admin/profile", icon: User },
 ];
 

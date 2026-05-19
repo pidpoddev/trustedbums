@@ -23,6 +23,7 @@ import {
   GraduationCap,
   MessageSquarePlus,
   Download,
+  BarChart3,
   PlusCircle,
   Users,
   Target,
@@ -46,6 +47,7 @@ const navItems: Array<{
   { title: "Requests", url: "/client/requests", icon: MessageSquarePlus, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Payments", url: "/client/payments", icon: CreditCard, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
   { title: "Exports", url: "/client/exports", icon: Download, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
+  { title: "Reports", url: "/client/reports", icon: BarChart3 },
 ];
 
 export default function ClientLayout() {
