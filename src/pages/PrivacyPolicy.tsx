@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { createConsentRecord, defaultConsentPreferences, readConsentRecord, writeConsentRecord } from "@/lib/consent";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -29,9 +31,14 @@ const sections = [
       "We use reasonable administrative, technical, and organizational safeguards designed to protect information. No system can be guaranteed perfectly secure, so users should also take care to protect their credentials and account access.",
   },
   {
-    title: "Your Choices",
+    title: "Cookies, Local Storage, and Consent",
     body:
-      "You may contact us to request updates or corrections to your information, ask questions about data handling, or request account-related assistance. Additional rights may apply depending on your location.",
+      "Strictly necessary storage is used for security, authentication, accessibility, and remembering your consent choice. Preferences, analytics, and marketing or engagement measurement are optional and are disabled unless you choose them. You can reject all optional categories as easily as accepting them, and you can change your choices at any time using the Privacy choices control.",
+  },
+  {
+    title: "Your Choices and EU/UK Rights",
+    body:
+      "Depending on your location, you may have rights to access, correct, delete, restrict, object to, or port personal data, and to withdraw consent where processing is based on consent. Withdrawing consent does not affect processing that occurred before withdrawal.",
   },
   {
     title: "Changes to This Policy",
@@ -41,7 +48,7 @@ const sections = [
   {
     title: "Contact Us",
     body:
-      "If you have questions about this Privacy Policy or our data practices, please contact Trusted Bums. You can replace this placeholder section later with your preferred contact email, mailing address, or support form.",
+      "If you have questions about this Privacy Policy, data rights, or consent choices, contact Trusted Bums at bums@trustedbums.com.",
   },
 ];
 
@@ -63,11 +70,35 @@ export default function PrivacyPolicy() {
       <main className="container mx-auto max-w-4xl px-6 py-16">
         <div className="rounded-3xl border bg-card p-8 md:p-12">
           <div className="max-w-3xl">
-            <p className="text-sm font-medium text-primary">Effective Date: May 16, 2026</p>
+            <p className="text-sm font-medium text-primary">Effective Date: May 19, 2026</p>
             <h1 className="mt-3 font-display text-4xl font-bold">Privacy Policy</h1>
             <p className="mt-4 text-base leading-7 text-muted-foreground">
               This Privacy Policy describes how Trusted Bums collects, uses, shares, and protects information in connection with the Trusted Bums website, platform, and related services.
             </p>
+          </div>
+
+          <div className="mt-8 rounded-xl border bg-background p-4">
+            <h2 className="font-display text-xl font-bold">Manage Consent</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Use the consent manager to accept, reject, or customize optional categories. Strictly necessary storage remains on because the service cannot operate securely without it.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => writeConsentRecord(createConsentRecord(defaultConsentPreferences, "settings"))}
+              >
+                Reject optional categories
+              </Button>
+              <Button
+                onClick={() => {
+                  const current = readConsentRecord()?.preferences ?? defaultConsentPreferences;
+                  writeConsentRecord(createConsentRecord({ ...current, necessary: true }, "settings"));
+                  window.dispatchEvent(new Event("trustedbums:open-consent-settings"));
+                }}
+              >
+                Review privacy choices
+              </Button>
+            </div>
           </div>
 
           <div className="mt-10 space-y-8">

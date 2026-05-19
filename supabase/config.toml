@@ -29,3 +29,12 @@ domain = "gorgeous-kit-53.accounts.dev"
 
 [functions.schedule-teams-meeting]
 verify_jwt = false
+
+[functions.send-website-email]
+verify_jwt = false
+
+[functions.send-admin-email]
+verify_jwt = false
+
+[functions.email-track]
+verify_jwt = false

@@ -47,8 +47,17 @@ interface MicrosoftEventResponse {
 
 interface GraphCollection<T> {
   value?: T[];
+}
+
+interface GraphErrorPayload {
   error?: {
+    code?: string;
     message?: string;
+    innerError?: {
+      date?: string;
+      "request-id"?: string;
+      "client-request-id"?: string;
+    };
   };
 }
 
@@ -248,10 +257,15 @@ async function getMicrosoftAccessToken() {
     }),
   });
 
-  const payload = (await response.json().catch(() => ({}))) as { access_token?: string; error_description?: string };
+  const payload = (await response.json().catch(() => ({}))) as {
+    access_token?: string;
+    error?: string;
+    error_description?: string;
+  };
 
   if (!response.ok || !payload.access_token) {
-    throw new Error(payload.error_description || "Microsoft rejected the scheduler credentials.");
+    const detail = [payload.error, payload.error_description].filter(Boolean).join(": ");
+    throw new Error(detail || `Microsoft rejected the scheduler credentials with HTTP ${response.status}.`);
   }
 
   return payload.access_token;
@@ -310,16 +324,30 @@ async function createTeamsEvent(input: {
   return payload;
 }
 
-async function graphGetJson<T>(url: string, accessToken: string) {
+function microsoftGraphErrorMessage(payload: GraphErrorPayload, fallback: string, status: number) {
+  const graphError = payload.error;
+  const requestId = graphError?.innerError?.["request-id"] ?? graphError?.innerError?.["client-request-id"];
+  const detail = [
+    fallback,
+    `HTTP ${status}`,
+    graphError?.code,
+    graphError?.message,
+    requestId ? `request-id ${requestId}` : null,
+  ].filter(Boolean);
+
+  return detail.join(" | ");
+}
+
+async function graphGetJson<T>(url: string, accessToken: string, context = "Microsoft Graph request") {
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
   });
-  const payload = (await response.json().catch(() => ({}))) as T & { error?: { message?: string } };
+  const payload = (await response.json().catch(() => ({}))) as T & GraphErrorPayload;
 
   if (!response.ok) {
-    throw new Error(payload.error?.message || "Microsoft Graph request failed.");
+    throw new Error(microsoftGraphErrorMessage(payload, context, response.status));
   }
 
   return payload;
@@ -336,6 +364,7 @@ async function resolveOnlineMeetingId(teamsJoinUrl: string | null, accessToken: 
   const payload = await graphGetJson<GraphCollection<GraphOnlineMeeting>>(
     `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings?${params.toString()}`,
     accessToken,
+    "Resolve Teams online meeting from join URL",
   );
 
   return payload.value?.[0]?.id ?? null;
@@ -362,8 +391,8 @@ async function configureOnlineMeetingOptions(onlineMeetingId: string, accessToke
   );
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
-    throw new Error(payload.error?.message || "Microsoft Graph could not update the Teams meeting options.");
+    const payload = (await response.json().catch(() => ({}))) as GraphErrorPayload;
+    throw new Error(microsoftGraphErrorMessage(payload, "Configure Teams meeting recording/transcription options", response.status));
   }
 }
 
@@ -493,6 +522,7 @@ Deno.serve(async (request: Request) => {
         microsoft_event_id: microsoftEvent.id ?? null,
         microsoft_online_meeting_id: microsoftOnlineMeetingId,
         microsoft_event_web_link: microsoftEvent.webLink ?? null,
+        transcript_sync_error: meetingOptionsWarning,
       })
       .select("*")
       .single();

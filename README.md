@@ -76,6 +76,44 @@ domain = "gorgeous-kit-53.accounts.dev"
 
 For production, configure the live Clerk instance in the Supabase dashboard using Clerk third-party auth. Do not reuse the development `.accounts.dev` domain in production.
 
+### Clerk Metadata Admin Tools
+
+The app derives portal access from Clerk user metadata before syncing the user into Supabase. Supported metadata fields include:
+
+```json
+{ "role": "ADMIN" }
+{ "role": "CLIENT", "clientAccessRole": "CLIENT_ADMIN", "companyName": "Example Co" }
+{ "role": "BUM", "bumId": "example-bum" }
+```
+
+The frontend reads these values from Clerk `publicMetadata` first and falls back to `unsafeMetadata` for older repaired accounts. Admin-only metadata repair is handled by the deployed Supabase Edge Function `admin-user-tools`, which uses `CLERK_SECRET_KEY` from Supabase Edge Function secrets to call the Clerk Backend API and update both Clerk metadata and the matching Supabase `profiles` row.
+
+Required Supabase Edge Function secrets for Clerk admin tooling:
+
+```text
+CLERK_SECRET_KEY
+CLERK_FRONTEND_API_URL
+SUPABASE_SERVICE_ROLE_KEY
+```
+
+Verification: the live Supabase project has an active Clerk metadata repair path. Edge Function logs show a successful `one-off-clerk-role-fix` Clerk metadata update before that one-off function was disabled, and the reusable `admin-user-tools` function is currently deployed with Clerk API support.
+
+## Website Email
+
+Website contact notifications are sent by the deployed Supabase Edge Function `send-website-email`. The homepage contact form saves the submission to `contact_submissions`, then invokes this function as a best-effort notification. The function uses the existing Microsoft Graph client-credentials setup and sends from `MICROSOFT_ORGANIZER_EMAIL` with replies directed to the submitter.
+
+Required Supabase Edge Function secrets for website email:
+
+```text
+MICROSOFT_TENANT_ID
+MICROSOFT_CLIENT_ID
+MICROSOFT_CLIENT_SECRET
+MICROSOFT_ORGANIZER_EMAIL
+WEBSITE_CONTACT_NOTIFY_TO # optional; defaults to MICROSOFT_ORGANIZER_EMAIL
+```
+
+The Azure app must have Microsoft Graph `Mail.Send` as an Application permission with admin consent. The helper script `scripts/add-graph-mail-send-permission.ps1` grants that permission for the Trusted Bums app registration. Live verification on May 19, 2026 returned `200 {"sent":true}` from `send-website-email`.
+
 ## Portal Flow
 
 Client users must accept the current active Partner Terms at `/client/terms` before accessing client dashboard features. When a new active terms version is created, client users are redirected back to the terms page until they accept the latest version.

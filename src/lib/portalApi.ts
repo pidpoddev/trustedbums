@@ -68,6 +68,115 @@ export interface ProfileRecord {
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
 }
 
+export type AdminEmailRecipientGroup = "CLIENT_COMPANY" | "ALL_CLIENTS" | "ALL_BUMS" | "BUM_INDUSTRY_MATCH" | "ADMINS" | "CUSTOM";
+export type AdminEmailTriggerEvent =
+  | "MANUAL"
+  | "OPPORTUNITY_CLAIM_CREATED"
+  | "OPPORTUNITY_CLAIM_STATUS_CHANGED"
+  | "CLIENT_CREATED"
+  | "CLIENT_TARGET_CREATED"
+  | "CONTACT_SUBMISSION_CREATED";
+export type AdminEmailDeliveryStatus = "QUEUED" | "SENT" | "FAILED";
+export type AdminEmailCategory =
+  | "transactional"
+  | "opportunity_updates"
+  | "client_alerts"
+  | "bum_marketplace_alerts"
+  | "admin_announcements"
+  | "onboarding"
+  | "marketing";
+
+export interface AdminEmailTemplateRecord {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  recipient_group: AdminEmailRecipientGroup;
+  trigger_event: AdminEmailTriggerEvent | null;
+  subject: string;
+  body: string;
+  metadata_fields: string[];
+  category: AdminEmailCategory;
+  reply_to: string | null;
+  rate_limit_per_hour: number;
+  is_active: boolean;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminEmailDeliveryRecord {
+  id: string;
+  campaign_id: string | null;
+  template_id: string | null;
+  template_slug: string | null;
+  recipient_group: AdminEmailRecipientGroup;
+  recipient_profile_id: string | null;
+  recipient_email: string;
+  subject: string;
+  body: string;
+  metadata: Record<string, unknown>;
+  status: AdminEmailDeliveryStatus;
+  category: AdminEmailCategory;
+  error: string | null;
+  sent_at: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
+  last_engaged_at: string | null;
+  engagement_score: number;
+  is_test: boolean;
+  triggered_by: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface AdminEmailSendInput {
+  mode?: "manual" | "action" | "preview" | "test";
+  templateId?: string;
+  templateSlug?: string;
+  recipientGroup?: AdminEmailRecipientGroup;
+  recipientEmails?: string[];
+  testRecipientEmail?: string;
+  subject?: string;
+  body?: string;
+  metadata?: Record<string, unknown>;
+  triggeredBy?: AdminEmailTriggerEvent | "MANUAL" | string;
+}
+
+export interface AdminEmailPreviewRecipient {
+  email: string;
+  name?: string | null;
+  suppressed?: boolean;
+  suppressionReason?: string;
+}
+
+export interface AdminEmailSendResult {
+  mode?: "manual" | "action" | "preview" | "test";
+  campaignId?: string;
+  count?: number;
+  suppressed?: number;
+  recipients?: AdminEmailPreviewRecipient[];
+  sent: number;
+  failed: number;
+  results: Array<{ email: string; status: "SENT" | "FAILED"; error?: string }>;
+}
+
+
+export interface AdminEmailEngagementSummaryRecord {
+  recipient_email: string;
+  recipient_profile_id: string | null;
+  full_name: string | null;
+  role: string | null;
+  company_id: string | null;
+  company_name: string | null;
+  sent_count: number;
+  opened_count: number;
+  clicked_count: number;
+  engagement_score: number;
+  last_engaged_at: string | null;
+}
+
 export interface ProspectRecommendationRecord {
   id: string;
   company_id: string;
@@ -2223,10 +2332,10 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
 
   const { data: opportunity, error: opportunityError } = await supabase
     .from("opportunity_registrations")
-    .select("id, company_id")
+    .select("id, company_id, target_account_name")
     .eq("id", input.opportunityId)
     .eq("status", "Accepted")
-    .maybeSingle<Pick<OpportunityRegistration, "id" | "company_id">>();
+    .maybeSingle<Pick<OpportunityRegistration, "id" | "company_id" | "target_account_name">>();
 
   if (opportunityError) {
     throw opportunityError;
@@ -2265,6 +2374,23 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
     contact_name: data.contact_name,
     contact_company: data.contact_company,
     relationship_strength: data.relationship_strength,
+  });
+
+  await sendAdminEmail({
+    mode: "action",
+    templateSlug: "opportunity_claim_created_client",
+    metadata: {
+      company_id: opportunity.company_id,
+      target_account_name: opportunity.target_account_name,
+      contact_name: data.contact_name,
+      contact_company: data.contact_company,
+      relationship_strength: data.relationship_strength,
+      bum_name: user.name || user.email,
+      admin_note: data.note ?? "",
+    },
+    triggeredBy: "OPPORTUNITY_CLAIM_CREATED",
+  }).catch((error) => {
+    console.error("Unable to send opportunity claim notification", error);
   });
 
   return data;
@@ -2398,6 +2524,104 @@ export async function listTermsAcceptances() {
   }
 
   return data ?? [];
+}
+
+export async function listAdminEmailTemplates() {
+  const { data, error } = await supabase
+    .from("admin_email_templates")
+    .select("*")
+    .order("name", { ascending: true })
+    .returns<AdminEmailTemplateRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function saveAdminEmailTemplate(user: AuthUser, template: AdminEmailTemplateRecord) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can edit email templates.");
+  }
+
+  const { data, error } = await supabase
+    .from("admin_email_templates")
+    .update({
+      name: template.name.trim(),
+      description: toNullableString(template.description),
+      recipient_group: template.recipient_group,
+      trigger_event: template.trigger_event,
+      subject: template.subject.trim(),
+      body: template.body.trim(),
+      metadata_fields: template.metadata_fields,
+      category: template.category,
+      reply_to: toNullableString(template.reply_to),
+      rate_limit_per_hour: template.rate_limit_per_hour,
+      is_active: template.is_active,
+      updated_by: user.id,
+    })
+    .eq("id", template.id)
+    .select("*")
+    .single<AdminEmailTemplateRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "admin_email_template_updated", "admin_email_templates", data.id, {
+    slug: data.slug,
+    recipient_group: data.recipient_group,
+    trigger_event: data.trigger_event,
+  });
+
+  return data;
+}
+
+export async function listAdminEmailDeliveries() {
+  const { data, error } = await supabase
+    .from("admin_email_deliveries")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50)
+    .returns<AdminEmailDeliveryRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listAdminEmailEngagementSummary() {
+  const { data, error } = await supabase
+    .from("admin_email_engagement_summary")
+    .select("*")
+    .order("engagement_score", { ascending: false })
+    .limit(50)
+    .returns<AdminEmailEngagementSummaryRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function sendAdminEmail(input: AdminEmailSendInput) {
+  const { data, error } = await supabase.functions.invoke<AdminEmailSendResult>("send-admin-email", {
+    body: input,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error("Email function returned no response.");
+  }
+
+  return data;
 }
 
 export async function listCompanies() {

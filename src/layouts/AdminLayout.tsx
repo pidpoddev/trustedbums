@@ -25,6 +25,7 @@ import {
   DollarSign,
   Video,
   User,
+  Mail,
 } from "lucide-react";
 
 const navItems = [
@@ -37,6 +38,7 @@ const navItems = [
   { title: "Payments", url: "/admin/payments", icon: CreditCard },
   { title: "Payouts", url: "/admin/payouts", icon: DollarSign },
   { title: "Live Conversations", url: "/admin/live-conversations", icon: Video },
+  { title: "Emails", url: "/admin/emails", icon: Mail },
   { title: "Profile", url: "/admin/profile", icon: User },
 ];
 

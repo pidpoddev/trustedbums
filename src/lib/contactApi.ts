@@ -146,6 +146,17 @@ export async function submitContactSubmission(input: ContactSubmissionInput) {
     throw error;
   }
 
+  const { error: emailError } = await supabase.functions.invoke("send-website-email", {
+    body: {
+      template: "contact-submission",
+      ...input,
+    },
+  });
+
+  if (emailError) {
+    console.error("Unable to send contact submission notification", emailError);
+  }
+
   return { submitted: true };
 }
 

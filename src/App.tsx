@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { ClerkTicketHandler } from "@/components/ClerkTicketHandler";
+import { ConsentManager } from "@/components/ConsentManager";
 import { ClientAccessRoute } from "@/components/ClientAccessRoute";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ClientTermsGate } from "@/components/ClientTermsGate";
@@ -26,6 +27,7 @@ import AdminCommissionPlans from "./pages/admin/AdminCommissionPlans";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminPayouts from "./pages/admin/AdminPayouts";
 import AdminLiveConversations from "./pages/admin/AdminLiveConversations";
+import AdminEmails from "./pages/admin/AdminEmails";
 import AdminProfile from "./pages/admin/AdminProfile";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientAgreements from "./pages/client/ClientAgreements";
@@ -87,6 +89,7 @@ const App = () => (
                       <Route path="payments" element={<AdminPayments />} />
                       <Route path="payouts" element={<AdminPayouts />} />
                       <Route path="live-conversations" element={<AdminLiveConversations />} />
+                      <Route path="emails" element={<AdminEmails />} />
                       <Route path="profile" element={<AdminProfile />} />
                     </Route>
                   </Route>
@@ -139,6 +142,7 @@ const App = () => (
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <ConsentManager />
             </AppErrorBoundary>
           </AuthProvider>
         </BrowserRouter>
