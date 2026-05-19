@@ -248,7 +248,7 @@ export default function BumClients() {
       />
 
       <FilterPanel summary={filterSummary}>
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto] xl:items-end">
         <div className="relative min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

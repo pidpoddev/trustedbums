@@ -480,7 +480,7 @@ export default function ClientPayments() {
               <CardTitle className="font-display">Generated invoices</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)]">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)] md:items-end">
                 <div className="relative min-w-0">
                   <Input
                     placeholder="Search invoices, customers, or accounts..."
@@ -532,7 +532,7 @@ export default function ClientPayments() {
               <CardTitle className="font-display">Reported customer payments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)]">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)] md:items-end">
                 <div className="relative min-w-0">
                   <Input
                     placeholder="Search customers, accounts, or payment status..."

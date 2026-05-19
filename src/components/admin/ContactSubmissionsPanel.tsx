@@ -227,7 +227,7 @@ export function ContactSubmissionsPanel({ companies }: ContactSubmissionsPanelPr
           </div>
           <Badge variant="secondary">{submissions.length} total</Badge>
         </div>
-        <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+        <div className="grid gap-3 md:grid-cols-[1fr_220px] md:items-end">
           <Input
             placeholder="Search contacts, emails, companies, or notes..."
             value={search}

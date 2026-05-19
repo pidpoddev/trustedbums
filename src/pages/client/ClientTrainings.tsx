@@ -194,7 +194,7 @@ export default function ClientTrainings() {
 
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)]">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)] md:items-end">
             <div className="relative min-w-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
