@@ -27,6 +27,9 @@ test.describe("critical opportunity workflow", () => {
     await clientPage.getByLabel("Expected product/service").fill("QA smoke testing");
     await clientPage.getByLabel("Estimated deal value").fill("10000");
     await clientPage.getByLabel("Expected timeline").fill("QA validation");
+
+    await clientPage.getByLabel("Commission plan").click();
+    await clientPage.getByRole("option").first().click();
     await clientPage.getByLabel("Opportunity description").fill("Automated QA smoke opportunity.");
     await clientPage.getByLabel("Notes", { exact: true }).fill("Created by Playwright QA smoke testing.");
     await clientPage.getByRole("button", { name: /submit registration/i }).click();
