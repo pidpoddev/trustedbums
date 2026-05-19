@@ -261,10 +261,10 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden border-y border-white/10 bg-white/[0.04] py-4 text-sm font-bold uppercase tracking-[0.28em] text-white/64">
-            <div className="brand-marquee flex w-[200%] gap-10 whitespace-nowrap">
+          <div className="relative max-w-full overflow-hidden border-y border-white/10 bg-white/[0.04] py-4 text-sm font-bold uppercase tracking-[0.28em] text-white/64">
+            <div className="brand-marquee flex w-max whitespace-nowrap">
               {Array.from({ length: 2 }).map((_, groupIndex) => (
-                <div key={groupIndex} className="flex w-1/2 shrink-0 items-center gap-10">
+                <div key={groupIndex} className="brand-marquee-segment flex shrink-0 items-center">
                   <span>Warm introductions</span>
                   <span className="text-primary">Bring Us More Sales</span>
                   <span>Trusted connectors</span>

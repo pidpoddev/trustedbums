@@ -101,8 +101,13 @@
     @apply border-border;
   }
 
+  html {
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
     font-family: var(--font-body);
     background-image:
       radial-gradient(circle at 14% 10%, hsl(var(--primary) / 0.08), transparent 28rem),
@@ -237,7 +242,16 @@
   }
 
   .brand-marquee {
-    animation: brand-marquee 24s linear infinite;
+    animation: brand-marquee 28s linear infinite;
+  }
+
+  .brand-marquee-segment {
+    column-gap: clamp(2.5rem, 6vw, 5rem);
+    padding-right: clamp(2.5rem, 6vw, 5rem);
+  }
+
+  .brand-marquee-segment > span {
+    flex: 0 0 auto;
   }
 
   @keyframes brand-float {
