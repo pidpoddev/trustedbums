@@ -20,6 +20,7 @@ import {
   listAdminEmailDeliveries,
   listAdminEmailEngagementSummary,
   listAdminEmailTemplates,
+  listCompanies,
   saveAdminEmailTemplate,
   sendAdminEmail,
   type AdminEmailCategory,
@@ -121,7 +122,13 @@ export default function AdminEmails() {
     queryFn: listAdminEmailEngagementSummary,
     enabled: canLoadAdminEmailData,
   });
+  const companiesQuery = useQuery({
+    queryKey: ["admin-email-companies", user?.id],
+    queryFn: listCompanies,
+    enabled: canLoadAdminEmailData,
+  });
   const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
+  const companies = useMemo(() => companiesQuery.data ?? [], [companiesQuery.data]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [draft, setDraft] = useState<AdminEmailTemplateRecord | null>(null);
   const [metadata, setMetadata] = useState<Record<string, string>>({});
@@ -168,7 +175,9 @@ export default function AdminEmails() {
       if (!user || !draft) throw new Error("Choose a template first.");
       return draft.id === "new-template" ? createAdminEmailTemplate(user, draft) : saveAdminEmailTemplate(user, draft);
     },
-    onSuccess: async () => {
+    onSuccess: async (savedTemplate) => {
+      setSelectedTemplateId(savedTemplate.id);
+      setDraft(cloneTemplate(savedTemplate));
       await queryClient.invalidateQueries({ queryKey: ["admin-email-templates", user?.id] });
       toast({ title: "Template saved", description: "Future manual and triggered sends will use the new copy." });
     },
@@ -208,6 +217,59 @@ export default function AdminEmails() {
       to: recipient.email,
     };
   }, [customRecipients, draft, metadata, previewRecipients, testRecipientEmail]);
+
+  const validateSavedTemplate = () => {
+    if (!draft) return "Choose a template first.";
+    if (draft.id === "new-template") return "Save this template before previewing, testing, or sending it.";
+    return null;
+  };
+
+  const validateAudience = () => {
+    const templateMessage = validateSavedTemplate();
+    if (templateMessage) return templateMessage;
+    if (!draft) return "Choose a template first.";
+    if (draft.recipient_group === "CUSTOM" && parseRecipients(customRecipients).length === 0) {
+      return "Add at least one custom recipient before previewing this audience.";
+    }
+    if (draft.recipient_group === "CLIENT_COMPANY" && !metadata.company_id?.trim()) {
+      return "Choose a client company so the audience can be resolved.";
+    }
+    if (draft.recipient_group === "BUM_INDUSTRY_MATCH" && !metadata.industry?.trim()) {
+      return "Enter an industry so matching Bums can be found.";
+    }
+    return null;
+  };
+
+  const showValidationToast = (description: string) => {
+    toast({ title: "Audience needs details", description, variant: "destructive" });
+  };
+
+  const handlePreviewAudience = () => {
+    const validationMessage = validateAudience();
+    if (validationMessage) {
+      showValidationToast(validationMessage);
+      return;
+    }
+    previewMutation.mutate();
+  };
+
+  const handleSendTest = () => {
+    const validationMessage = validateSavedTemplate();
+    if (validationMessage) {
+      showValidationToast(validationMessage);
+      return;
+    }
+    sendMutation.mutate("test");
+  };
+
+  const handleSendManual = () => {
+    const validationMessage = validateAudience();
+    if (validationMessage) {
+      showValidationToast(validationMessage);
+      return;
+    }
+    sendMutation.mutate("manual");
+  };
 
   const previewMutation = useMutation({
     mutationFn: () => sendAdminEmail(buildSendInput("preview")),
@@ -329,9 +391,24 @@ export default function AdminEmails() {
                     </div>
                   </div>
                   <div className="space-y-2"><Label>Metadata fields</Label><Input value={draft.metadata_fields.join(", ")} onChange={(event) => updateDraft("metadata_fields", event.target.value.split(",").map((field) => field.trim()).filter(Boolean))} /></div>
+                  {draft.recipient_group === "CLIENT_COMPANY" ? (
+                    <div className="space-y-2">
+                      <Label>Client company for audience preview</Label>
+                      <Select
+                        value={metadata.company_id ?? ""}
+                        onValueChange={(value) => {
+                          const company = companies.find((item) => item.id === value);
+                          setMetadata((current) => ({ ...current, company_id: value, client_name: current.client_name || company?.name || "" }));
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder={companiesQuery.isLoading ? "Loading companies..." : "Choose a client company"} /></SelectTrigger>
+                        <SelectContent>{companies.map((company) => <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  ) : null}
                   {draft.recipient_group === "CUSTOM" ? <div className="space-y-2"><Label>Custom recipients</Label><Textarea rows={3} value={customRecipients} onChange={(event) => setCustomRecipients(event.target.value)} placeholder="one@example.com, two@example.com" /></div> : null}
                   {draft.metadata_fields.length ? <div className="grid gap-3 md:grid-cols-2">{draft.metadata_fields.map((field) => <div key={field} className="space-y-2"><Label>{field}</Label><Input value={metadata[field] ?? ""} onChange={(event) => setMetadata((current) => ({ ...current, [field]: event.target.value }))} /></div>)}</div> : null}
-                  <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}><Save className="mr-2 h-4 w-4" />{draft.id === "new-template" ? "Create Template" : "Save Template"}</Button><Button variant="outline" onClick={() => sendMutation.mutate("test")} disabled={sendMutation.isPending}><ShieldAlert className="mr-2 h-4 w-4" />Send Test</Button></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => previewMutation.mutate()} disabled={previewMutation.isPending}><Eye className="mr-2 h-4 w-4" />Preview Audience</Button><Button onClick={() => sendMutation.mutate("manual")} disabled={sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send Manually</Button></div></div>
+                  <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}><Save className="mr-2 h-4 w-4" />{draft.id === "new-template" ? "Create Template" : "Save Template"}</Button><Button variant="outline" onClick={handleSendTest} disabled={sendMutation.isPending}><ShieldAlert className="mr-2 h-4 w-4" />Send Test</Button></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={handlePreviewAudience} disabled={previewMutation.isPending}><Eye className="mr-2 h-4 w-4" />Preview Audience</Button><Button onClick={handleSendManual} disabled={sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send Manually</Button></div></div>
                 </>
               )}
             </CardContent>
