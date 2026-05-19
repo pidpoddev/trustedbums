@@ -221,10 +221,10 @@ export default function AdminDashboard() {
       <PageHeader title="Admin Dashboard" description="Scan priority queues and jump into the focused admin workspaces." />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <StatCard title="Companies" value={companies.length} icon={ShieldCheck} />
-        <StatCard title="Users" value={profiles.length} icon={ShieldCheck} />
-        <StatCard title="Client Prospects" value={clientProspects.length} icon={Building2} />
-        <StatCard title="Target Accounts" value={customerTargets.length} icon={Target} />
+        <StatCard title="Companies" value={companies.length} icon={ShieldCheck} to="/admin/clients" />
+        <StatCard title="Users" value={profiles.length} icon={ShieldCheck} to="/admin/troubleshooting" />
+        <StatCard title="Client Prospects" value={clientProspects.length} icon={Building2} to="/admin/clients" />
+        <StatCard title="Target Accounts" value={customerTargets.length} icon={Target} to="/admin/opportunities" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr] mb-8">

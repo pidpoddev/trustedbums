@@ -87,10 +87,10 @@ export default function ClientDashboard() {
         </PageHeader>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <StatCard title="Reported Payments" value={paymentReports.length} icon={CreditCard} />
-          <StatCard title="Generated Invoices" value={invoices.length} icon={FileCheck} />
-          <StatCard title="Commissionable Revenue" value={`$${totalCommissionableRevenue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Target} />
-          <StatCard title="Invoice Value" value={`$${generatedInvoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Download} />
+          <StatCard title="Reported Payments" value={paymentReports.length} icon={CreditCard} to="/client/payments" />
+          <StatCard title="Generated Invoices" value={invoices.length} icon={FileCheck} to="/client/payments" />
+          <StatCard title="Commissionable Revenue" value={`$${totalCommissionableRevenue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Target} to="/client/payments" />
+          <StatCard title="Invoice Value" value={`$${generatedInvoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Download} to="/client/payments" />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -196,11 +196,11 @@ export default function ClientDashboard() {
       </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <StatCard title="Target Accounts" value={targets.length} icon={Target} />
-        <StatCard title="Inbound Requests" value={reverseOpportunities.length} icon={Clock} />
-        <StatCard title="Active Opportunities" value={activeCount} icon={Target} />
-        <StatCard title="Accepted" value={acceptedCount} icon={FileCheck} />
-        <StatCard title="Target Prospects" value={targetProspectCount} icon={Clock} />
+        <StatCard title="Target Accounts" value={targets.length} icon={Target} to="/client/targets" />
+        <StatCard title="Inbound Requests" value={reverseOpportunities.length} icon={Clock} to="/client/requests" />
+        <StatCard title="Active Opportunities" value={activeCount} icon={Target} to="/client/opportunities/new" />
+        <StatCard title="Accepted" value={acceptedCount} icon={FileCheck} to="/client/opportunities/new" />
+        <StatCard title="Target Prospects" value={targetProspectCount} icon={Clock} to="/client/targets" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">

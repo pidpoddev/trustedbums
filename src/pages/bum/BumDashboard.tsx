@@ -225,12 +225,12 @@ export default function BumDashboard() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Prospected Clients" value={prospectsQuery.data?.length ?? 0} icon={Building2} />
-        <StatCard title="Reverse Opportunities" value={reverseOpportunitiesQuery.data?.length ?? 0} icon={Sparkles} />
-        <StatCard title="Open Opportunities" value={opportunitiesQuery.data?.length ?? 0} icon={Briefcase} />
-        <StatCard title="Active Claims" value={myClaims.length} icon={Handshake} />
-        <StatCard title="Pending Earnings" value="$0" icon={TrendingUp} />
-        <StatCard title="Lifetime Payouts" value="$0" icon={Wallet} />
+        <StatCard title="Prospected Clients" value={prospectsQuery.data?.length ?? 0} icon={Building2} to="/bum/prospects" />
+        <StatCard title="Reverse Opportunities" value={reverseOpportunitiesQuery.data?.length ?? 0} icon={Sparkles} to="/bum/reverse-opportunities" />
+        <StatCard title="Open Opportunities" value={opportunitiesQuery.data?.length ?? 0} icon={Briefcase} to="/bum/opportunities" />
+        <StatCard title="Active Claims" value={myClaims.length} icon={Handshake} to="/bum/claims" />
+        <StatCard title="Pending Earnings" value="$0" icon={TrendingUp} to="/bum/earnings" />
+        <StatCard title="Lifetime Payouts" value="$0" icon={Wallet} to="/bum/earnings" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">

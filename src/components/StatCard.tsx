@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 
@@ -6,11 +7,12 @@ interface StatCardProps {
   value: string | number;
   icon: LucideIcon;
   subtitle?: string;
+  to?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, subtitle }: StatCardProps) {
-  return (
-    <Card className="shadow-none transition-shadow hover:shadow-sm">
+export function StatCard({ title, value, icon: Icon, subtitle, to }: StatCardProps) {
+  const card = (
+    <Card className={to ? "h-full shadow-none transition-all hover:border-primary/40 hover:shadow-sm" : "h-full shadow-none transition-shadow hover:shadow-sm"}>
       <CardContent className="p-3 sm:p-4">
         <div className="flex min-h-16 items-start justify-between gap-3">
           <div>
@@ -24,5 +26,19 @@ export function StatCard({ title, value, icon: Icon, subtitle }: StatCardProps) 
         </div>
       </CardContent>
     </Card>
+  );
+
+  if (!to) {
+    return card;
+  }
+
+  return (
+    <Link
+      to={to}
+      aria-label={`Open ${title}`}
+      className="block h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+    >
+      {card}
+    </Link>
   );
 }
