@@ -4340,6 +4340,86 @@ export async function createTrainingMaterial(user: AuthUser, input: TrainingMate
   return { ...data, training_material_attachments: attachments };
 }
 
+export async function updateTrainingMaterial(user: AuthUser, material: TrainingMaterial, input: TrainingMaterialInput) {
+  const companyId = user.role === "CLIENT" ? user.clientId ?? null : input.company_id ?? null;
+
+  if (user.role === "CLIENT" && !companyId) {
+    throw new Error("This client user is not linked to a company yet.");
+  }
+
+  const { data, error } = await supabase
+    .from("training_materials")
+    .update({
+      company_id: companyId,
+      title: input.title.trim(),
+      description: toNullableString(input.description),
+      technology: toNullableString(input.technology),
+      resource_url: toNullableString(input.resource_url),
+      is_published: input.is_published ?? material.is_published,
+    })
+    .eq("id", material.id)
+    .select("*, companies(id, name), training_material_attachments(*)")
+    .single<TrainingMaterial>();
+
+  if (error) {
+    throw error;
+  }
+
+  const existingAttachments = data.training_material_attachments ?? [];
+  if (existingAttachments.length) {
+    const { error: attachmentUpdateError } = await supabase
+      .from("training_material_attachments")
+      .update({ company_id: data.company_id })
+      .eq("training_material_id", data.id);
+
+    if (attachmentUpdateError) {
+      throw attachmentUpdateError;
+    }
+  }
+
+  const newAttachments = input.attachments?.length
+    ? await Promise.all(input.attachments.map((file) => uploadTrainingMaterialAttachment(user, data, file)))
+    : [];
+
+  await createAuditEvent(user, "training_material_updated", "training_materials", data.id, {
+    title: data.title,
+    company_id: data.company_id,
+    attachment_count_added: newAttachments.length,
+  });
+
+  return { ...data, training_material_attachments: [...existingAttachments, ...newAttachments] };
+}
+
+export async function deleteTrainingMaterial(user: AuthUser, material: TrainingMaterial) {
+  const attachments = material.training_material_attachments ?? [];
+  const storagePaths = attachments.map((attachment) => attachment.storage_path);
+
+  if (storagePaths.length) {
+    const { error: storageError } = await supabase.storage
+      .from(TRAINING_MATERIAL_ATTACHMENTS_BUCKET)
+      .remove(storagePaths);
+
+    if (storageError) {
+      throw storageError;
+    }
+  }
+
+  const { error } = await supabase
+    .from("training_materials")
+    .delete()
+    .eq("id", material.id);
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "training_material_deleted", "training_materials", material.id, {
+    title: material.title,
+    company_id: material.company_id,
+    attachment_count: attachments.length,
+  });
+}
+
 export async function inviteBum(input: BumInviteInput) {
   const token = await getSupabaseAccessToken();
   const response = await fetch(`${supabaseUrl}/functions/v1/invite-bum`, {

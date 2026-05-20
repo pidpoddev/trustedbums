@@ -13,13 +13,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createTrainingMaterial,
+  deleteTrainingMaterial,
   getTrainingMaterialAttachmentUrl,
   listCompanies,
   listTrainingMaterialsForUser,
+  updateTrainingMaterial,
+  type TrainingMaterial,
   type TrainingMaterialAttachment,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { Download, FileText, Paperclip, Plus, Search, Upload, X } from "lucide-react";
+import { Download, FileText, Paperclip, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
 
 type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY" | "TECH_SPECIFIC";
 
@@ -47,8 +50,30 @@ export default function ClientTrainings() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TrainingTypeFilter>("ALL");
   const [scope, setScope] = useState(CORPORATE_SCOPE);
+  const [editingMaterial, setEditingMaterial] = useState<TrainingMaterial | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [form, setForm] = useState({ title: "", technology: "", resource_url: "", description: "" });
+
+  const resetAssetForm = () => {
+    setForm({ title: "", technology: "", resource_url: "", description: "" });
+    setAttachments([]);
+    setScope(CORPORATE_SCOPE);
+    setEditingMaterial(null);
+    setShowForm(false);
+  };
+
+  const startEditing = (training: TrainingMaterial) => {
+    setEditingMaterial(training);
+    setForm({
+      title: training.title,
+      technology: training.technology ?? "",
+      resource_url: training.resource_url ?? "",
+      description: training.description ?? "",
+    });
+    setScope(training.company_id ?? CORPORATE_SCOPE);
+    setAttachments([]);
+    setShowForm(true);
+  };
 
   const trainingsQuery = useQuery({
     queryKey: ["training-assets", user?.role, user?.clientId],
@@ -72,15 +97,54 @@ export default function ClientTrainings() {
       await queryClient.invalidateQueries({ queryKey: ["client-training-materials"] });
       await queryClient.invalidateQueries({ queryKey: ["bum-marketplace-trainings"] });
       await queryClient.invalidateQueries({ queryKey: ["meeting-read-ahead-materials"] });
-      setForm({ title: "", technology: "", resource_url: "", description: "" });
-      setAttachments([]);
-      setScope(CORPORATE_SCOPE);
-      setShowForm(false);
+      resetAssetForm();
       toast({ title: "Asset added", description: "The content is now available in Training & Assets." });
     },
     onError: (error) => {
       toast({
         title: "Unable to save asset",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      updateTrainingMaterial(user!, editingMaterial!, {
+        ...form,
+        company_id: canChooseScope ? (scope === CORPORATE_SCOPE ? null : scope) : user?.clientId ?? null,
+        attachments,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["training-assets"] });
+      await queryClient.invalidateQueries({ queryKey: ["client-training-materials"] });
+      await queryClient.invalidateQueries({ queryKey: ["bum-marketplace-trainings"] });
+      await queryClient.invalidateQueries({ queryKey: ["meeting-read-ahead-materials"] });
+      resetAssetForm();
+      toast({ title: "Asset updated", description: "The Training & Assets item was saved." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update asset",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (training: TrainingMaterial) => deleteTrainingMaterial(user!, training),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["training-assets"] });
+      await queryClient.invalidateQueries({ queryKey: ["client-training-materials"] });
+      await queryClient.invalidateQueries({ queryKey: ["bum-marketplace-trainings"] });
+      await queryClient.invalidateQueries({ queryKey: ["meeting-read-ahead-materials"] });
+      toast({ title: "Asset deleted", description: "The Training & Assets item was removed." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to delete asset",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -100,7 +164,7 @@ export default function ClientTrainings() {
     }
   };
 
-  const trainings = trainingsQuery.data ?? [];
+  const trainings = useMemo(() => trainingsQuery.data ?? [], [trainingsQuery.data]);
   const filteredTrainings = useMemo(() => {
     return trainings.filter((training) => {
       const matchesType =
@@ -121,7 +185,13 @@ export default function ClientTrainings() {
   return (
     <div>
       <PageHeader title="Training & Assets" description="Manage read-ahead content, product notes, and files Bums can reference.">
-        <Button onClick={() => setShowForm((current) => !current)}>
+        <Button onClick={() => {
+          if (showForm) {
+            resetAssetForm();
+          } else {
+            setShowForm(true);
+          }
+        }}>
           <Plus className="h-4 w-4 mr-2" /> Add Content
         </Button>
       </PageHeader>
@@ -129,6 +199,7 @@ export default function ClientTrainings() {
       {showForm && (
         <Card className="mb-6">
           <CardContent className="pt-6">
+            {editingMaterial ? <p className="mb-4 text-sm font-medium">Editing {editingMaterial.title}</p> : null}
             <div className="grid gap-4 md:grid-cols-2">
               {canChooseScope ? (
                 <div className="space-y-2 md:col-span-2">
@@ -182,9 +253,12 @@ export default function ClientTrainings() {
               </div>
             </div>
             <div className="mt-4 flex justify-end">
-              <Button disabled={!form.title.trim() || createMutation.isPending} onClick={() => createMutation.mutate()}>
-                Save Asset
-              </Button>
+              <div className="flex gap-2">
+                {editingMaterial ? <Button variant="outline" onClick={resetAssetForm}>Cancel</Button> : null}
+                <Button disabled={!form.title.trim() || createMutation.isPending || updateMutation.isPending} onClick={() => editingMaterial ? updateMutation.mutate() : createMutation.mutate()}>
+                  {editingMaterial ? "Update Asset" : "Save Asset"}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -220,6 +294,20 @@ export default function ClientTrainings() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium">{training.title}</p>
                     <Badge variant="outline">{training.companies?.name ?? "Corporate"}</Badge>
+                    {user?.role === "ADMIN" ? (
+                      <div className="ml-auto flex gap-1">
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEditing(training)} aria-label={`Edit ${training.title}`}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" disabled={deleteMutation.isPending} onClick={() => {
+                          if (window.confirm(`Delete ${training.title}? This cannot be undone.`)) {
+                            deleteMutation.mutate(training);
+                          }
+                        }} aria-label={`Delete ${training.title}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{training.description ?? "No description provided."}</p>
                   <p className="text-xs text-muted-foreground mt-2">{training.technology ?? "General"} · Updated {formatDateForTimeZone(training.updated_at, timeZone)}</p>
