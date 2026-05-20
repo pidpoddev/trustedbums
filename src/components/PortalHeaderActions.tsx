@@ -2,6 +2,7 @@ import { LogOut, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ImpersonationControls } from "@/components/ImpersonationControls";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
+import { SubmitFeedbackButton } from "@/components/SubmitFeedbackButton";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -44,6 +45,7 @@ export function PortalHeaderActions() {
   return (
     <div className="ml-auto flex items-center gap-3">
       <ImpersonationControls />
+      <SubmitFeedbackButton />
       <AccessibilityMenu />
       <div className="hidden text-right sm:block">
         <p className="text-sm font-medium leading-none">{user?.name}</p>

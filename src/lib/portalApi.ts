@@ -485,6 +485,51 @@ export interface ForceTranscriptSyncResult {
   failed: number;
 }
 
+export type FeedbackType = "BUG" | "FEATURE" | "QUESTION" | "OTHER";
+export type FeedbackStatus = "OPEN" | "IN_REVIEW" | "COMPLETE";
+
+export interface FeedbackSubmissionRecord {
+  id: string;
+  created_by: string;
+  company_id: string | null;
+  role: string | null;
+  client_access_role: string | null;
+  submitter_name: string | null;
+  submitter_email: string | null;
+  type: FeedbackType;
+  title: string;
+  description: string;
+  page_url: string;
+  page_path: string;
+  user_agent: string | null;
+  status: FeedbackStatus;
+  admin_notes: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
+  notification_sent_at: string | null;
+  notification_error: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  companies?: Pick<CompanyRecord, "id" | "name"> | null;
+}
+
+export interface FeedbackInput {
+  type: FeedbackType;
+  title: string;
+  description: string;
+  pageUrl: string;
+  pagePath: string;
+  userAgent?: string;
+  clientAccessRole?: string;
+}
+
+export interface FeedbackSubmitResult {
+  feedback: FeedbackSubmissionRecord;
+  emailSent: boolean;
+  emailError?: string;
+}
+
 export type CustomerTargetResponseStrength = "warm" | "strong" | "advisor" | "unknown";
 
 export interface CustomerTargetResponseRecord {
@@ -3764,6 +3809,72 @@ export async function forceTeamsTranscriptSync(batchSize = 10) {
   }
 
   return payload;
+}
+
+export async function submitFeedback(input: FeedbackInput) {
+  const accessToken = await getSupabaseAccessToken();
+
+  if (!accessToken) {
+    throw new Error("Sign in before submitting feedback.");
+  }
+
+  const response = await fetch(supabaseUrl + "/functions/v1/submit-feedback", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: "Bearer " + accessToken,
+    },
+    body: JSON.stringify(input),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as FeedbackSubmitResult | { error?: string };
+
+  if (!response.ok) {
+    throw new Error("error" in payload && payload.error ? payload.error : "Unable to submit feedback.");
+  }
+
+  if (!("feedback" in payload)) {
+    throw new Error("The feedback service returned an incomplete response.");
+  }
+
+  return payload;
+}
+
+export async function listFeedbackSubmissions() {
+  const { data, error } = await supabase
+    .from("feedback_submissions")
+    .select("*, profiles:feedback_submissions_created_by_fkey(id, full_name, email), companies:feedback_submissions_company_id_fkey(id, name)")
+    .order("created_at", { ascending: false })
+    .limit(100)
+    .returns<FeedbackSubmissionRecord[]>();
+
+  if (error) {
+    throw new Error(error.message || "Unable to load feedback submissions.");
+  }
+
+  return data ?? [];
+}
+
+export async function updateFeedbackSubmissionStatus(input: { id: string; status: FeedbackStatus; adminNotes?: string | null; completedBy?: string | null }) {
+  const patch = {
+    status: input.status,
+    admin_notes: input.adminNotes ?? null,
+    completed_at: input.status === "COMPLETE" ? new Date().toISOString() : null,
+    completed_by: input.status === "COMPLETE" ? input.completedBy ?? null : null,
+  };
+  const { data, error } = await supabase
+    .from("feedback_submissions")
+    .update(patch)
+    .eq("id", input.id)
+    .select("*, profiles:feedback_submissions_created_by_fkey(id, full_name, email), companies:feedback_submissions_company_id_fkey(id, name)")
+    .single<FeedbackSubmissionRecord>();
+
+  if (error) {
+    throw new Error(error.message || "Unable to update feedback.");
+  }
+
+  return data;
 }
 
 export async function syncTeamsMeetingAttendance(meetingIds: string[] = []) {

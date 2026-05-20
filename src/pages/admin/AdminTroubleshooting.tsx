@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, FileText, KeyRound, RefreshCw, Save, Search, Wrench } from "lucide-react";
+import { CheckCircle2, Copy, ExternalLink, FileText, KeyRound, RefreshCw, Save, Search, Wrench } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
@@ -16,11 +18,15 @@ import {
   forceTeamsTranscriptSync,
   listClerkAdminUsers,
   listCompanies,
+  listFeedbackSubmissions,
   syncClerkUsers,
   updateClerkUserAccess,
+  updateFeedbackSubmissionStatus,
   type ClerkAdminUserRecord,
   type ClerkPortalRole,
   type CompanyRecord,
+  type FeedbackStatus,
+  type FeedbackSubmissionRecord,
 } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
@@ -28,6 +34,12 @@ const ROLE_OPTIONS: Array<{ value: ClerkPortalRole; label: string }> = [
   { value: "CLIENT", label: "Client" },
   { value: "BUM", label: "Bum" },
   { value: "ADMIN", label: "Admin" },
+];
+
+const FEEDBACK_STATUS_OPTIONS: Array<{ value: FeedbackStatus; label: string }> = [
+  { value: "OPEN", label: "Open" },
+  { value: "IN_REVIEW", label: "In review" },
+  { value: "COMPLETE", label: "Complete" },
 ];
 
 function metadataPreview(value: Record<string, unknown>) {
@@ -40,6 +52,99 @@ function roleBadge(role?: string | null) {
   if (role === "ADMIN") return <Badge>Admin</Badge>;
   if (role === "CLIENT") return <Badge variant="secondary">Client</Badge>;
   return <Badge variant="outline">Bum</Badge>;
+}
+
+function feedbackTypeLabel(type: string) {
+  if (type === "BUG") return "Bug";
+  if (type === "FEATURE") return "Feature";
+  if (type === "QUESTION") return "Question";
+  return "Other";
+}
+
+function feedbackStatusBadge(status: FeedbackStatus) {
+  if (status === "COMPLETE") return <Badge>Complete</Badge>;
+  if (status === "IN_REVIEW") return <Badge variant="secondary">In review</Badge>;
+  return <Badge variant="outline">Open</Badge>;
+}
+
+function FeedbackSubmissionRow({ feedback, currentUserId }: { feedback: FeedbackSubmissionRecord; currentUserId?: string }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const timeZone = useUserTimeZone();
+  const [status, setStatus] = useState<FeedbackStatus>(feedback.status);
+  const [adminNotes, setAdminNotes] = useState(feedback.admin_notes ?? "");
+  const submitter = feedback.submitter_name ?? feedback.profiles?.full_name ?? feedback.submitter_email ?? feedback.profiles?.email ?? "Unknown user";
+
+  const updateMutation = useMutation({
+    mutationFn: (nextStatus: FeedbackStatus) =>
+      updateFeedbackSubmissionStatus({
+        id: feedback.id,
+        status: nextStatus,
+        adminNotes,
+        completedBy: currentUserId ?? null,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-feedback-submissions"] });
+      toast({ title: "Feedback updated", description: "The feedback log was updated." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to update feedback", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  return (
+    <TableRow>
+      <TableCell className="min-w-[180px] align-top">
+        <p className="font-medium">{formatDateTimeForTimeZone(feedback.created_at, timeZone)}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Badge variant="outline">{feedbackTypeLabel(feedback.type)}</Badge>
+          {feedbackStatusBadge(feedback.status)}
+          {feedback.notification_error ? <Badge variant="destructive">Email warning</Badge> : null}
+        </div>
+      </TableCell>
+      <TableCell className="min-w-[320px] align-top">
+        <p className="font-medium">{feedback.title}</p>
+        <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{feedback.description}</p>
+        {feedback.notification_error ? <p className="mt-2 text-xs text-destructive">Email: {feedback.notification_error}</p> : null}
+      </TableCell>
+      <TableCell className="min-w-[220px] align-top text-sm">
+        <p>{submitter}</p>
+        <p className="text-muted-foreground">{feedback.submitter_email ?? feedback.profiles?.email ?? "No email"}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {roleBadge(feedback.role)}
+          {feedback.companies?.name ? <Badge variant="outline">{feedback.companies.name}</Badge> : null}
+        </div>
+      </TableCell>
+      <TableCell className="min-w-[260px] align-top">
+        <a href={feedback.page_url} target="_blank" rel="noreferrer" className="inline-flex max-w-[260px] items-center gap-1 truncate text-sm font-medium text-primary hover:underline">
+          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{feedback.page_path}</span>
+        </a>
+        <p className="mt-2 break-all text-xs text-muted-foreground">{feedback.user_agent ?? "No browser details"}</p>
+      </TableCell>
+      <TableCell className="min-w-[260px] align-top">
+        <div className="space-y-2">
+          <Select value={status} onValueChange={(value) => setStatus(value as FeedbackStatus)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {FEEDBACK_STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Textarea value={adminNotes} onChange={(event) => setAdminNotes(event.target.value)} placeholder="Admin notes" rows={3} />
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => updateMutation.mutate(status)} disabled={updateMutation.isPending}>
+              <Save className="mr-2 h-4 w-4" /> Save
+            </Button>
+            <Button size="sm" onClick={() => { setStatus("COMPLETE"); updateMutation.mutate("COMPLETE"); }} disabled={updateMutation.isPending || feedback.status === "COMPLETE"}>
+              <CheckCircle2 className="mr-2 h-4 w-4" /> Complete
+            </Button>
+          </div>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 }
 
 function ClerkUserRow({ user, companies }: { user: ClerkAdminUserRecord; companies: CompanyRecord[] }) {
@@ -187,6 +292,7 @@ function ClerkUserRow({ user, companies }: { user: ClerkAdminUserRecord; compani
 }
 
 export default function AdminTroubleshooting() {
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [transcriptSyncSummary, setTranscriptSyncSummary] = useState<string | null>(null);
@@ -197,9 +303,11 @@ export default function AdminTroubleshooting() {
     queryKey: ["admin-clerk-users", submittedQuery],
     queryFn: () => listClerkAdminUsers({ query: submittedQuery || undefined, limit: 50 }),
   });
+  const feedbackQuery = useQuery({ queryKey: ["admin-feedback-submissions"], queryFn: listFeedbackSubmissions });
 
   const companies = useMemo(() => (companiesQuery.data ?? []).filter((company) => company.relationship_stage !== "INACTIVE"), [companiesQuery.data]);
   const users = clerkUsersQuery.data ?? [];
+  const feedbackItems = feedbackQuery.data ?? [];
 
   const forceTranscriptSyncMutation = useMutation({
     mutationFn: () => forceTeamsTranscriptSync(10),
@@ -237,8 +345,8 @@ export default function AdminTroubleshooting() {
   return (
     <div>
       <PageHeader title="Troubleshooting Tools" description="Repair Clerk metadata, Supabase profiles, and client account links.">
-        <Button variant="outline" onClick={() => clerkUsersQuery.refetch()} disabled={clerkUsersQuery.isFetching}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${clerkUsersQuery.isFetching ? "animate-spin" : ""}`} /> Refresh
+        <Button variant="outline" onClick={() => { void clerkUsersQuery.refetch(); void feedbackQuery.refetch(); }} disabled={clerkUsersQuery.isFetching || feedbackQuery.isFetching}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${clerkUsersQuery.isFetching || feedbackQuery.isFetching ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </PageHeader>
 
@@ -256,6 +364,34 @@ export default function AdminTroubleshooting() {
             <FileText className={`mr-2 h-4 w-4 ${forceTranscriptSyncMutation.isPending ? "animate-pulse" : ""}`} />
             Force Transcript Sync
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Feedback log</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Feedback</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Page</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {feedbackItems.map((feedback) => (
+                  <FeedbackSubmissionRow key={feedback.id} feedback={feedback} currentUserId={user?.id} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {feedbackQuery.isLoading ? <p className="mt-3 text-sm text-muted-foreground">Loading feedback submissions...</p> : null}
+          {!feedbackQuery.isLoading && !feedbackItems.length ? <p className="mt-3 text-sm text-muted-foreground">No feedback has been submitted yet.</p> : null}
         </CardContent>
       </Card>
 
