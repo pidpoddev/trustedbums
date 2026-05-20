@@ -478,6 +478,13 @@ export interface SyncTeamsMeetingAttendanceResult {
   failed: Array<{ id: string; error: string }>;
 }
 
+export interface ForceTranscriptSyncResult {
+  checked: number;
+  saved: number;
+  pending: number;
+  failed: number;
+}
+
 export type CustomerTargetResponseStrength = "warm" | "strong" | "advisor" | "unknown";
 
 export interface CustomerTargetResponseRecord {
@@ -3724,6 +3731,36 @@ export async function scheduleTeamsMeeting(input: ScheduleTeamsMeetingInput) {
 
   if (!("meeting" in payload)) {
     throw new Error("The Teams scheduler returned an incomplete response.");
+  }
+
+  return payload;
+}
+
+export async function forceTeamsTranscriptSync(batchSize = 10) {
+  const accessToken = await getSupabaseAccessToken();
+
+  if (!accessToken) {
+    throw new Error("Sign in before forcing Teams transcript sync.");
+  }
+
+  const response = await fetch(supabaseUrl + "/functions/v1/sync-teams-transcripts", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: "Bearer " + accessToken,
+    },
+    body: JSON.stringify({ batchSize, source: "admin-tool" }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as ForceTranscriptSyncResult | { error?: string };
+
+  if (!response.ok) {
+    throw new Error("error" in payload && payload.error ? payload.error : "Unable to sync Teams transcripts.");
+  }
+
+  if (!("checked" in payload) || !("saved" in payload) || !("pending" in payload) || !("failed" in payload)) {
+    throw new Error("The Teams transcript sync returned an incomplete response.");
   }
 
   return payload;

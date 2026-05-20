@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, KeyRound, RefreshCw, Save, Search, Wrench } from "lucide-react";
+import { Copy, FileText, KeyRound, RefreshCw, Save, Search, Wrench } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createClerkSupportLink,
+  forceTeamsTranscriptSync,
   listClerkAdminUsers,
   listCompanies,
   syncClerkUsers,
@@ -188,6 +189,7 @@ function ClerkUserRow({ user, companies }: { user: ClerkAdminUserRecord; compani
 export default function AdminTroubleshooting() {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
+  const [transcriptSyncSummary, setTranscriptSyncSummary] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: listCompanies });
@@ -198,6 +200,26 @@ export default function AdminTroubleshooting() {
 
   const companies = useMemo(() => (companiesQuery.data ?? []).filter((company) => company.relationship_stage !== "INACTIVE"), [companiesQuery.data]);
   const users = clerkUsersQuery.data ?? [];
+
+  const forceTranscriptSyncMutation = useMutation({
+    mutationFn: () => forceTeamsTranscriptSync(10),
+    onSuccess: async (result) => {
+      const summary = `Checked ${result.checked}. Saved ${result.saved}. Pending ${result.pending}. Failed ${result.failed}.`;
+      setTranscriptSyncSummary(summary);
+      await queryClient.invalidateQueries({ queryKey: ["meeting-transcripts"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-teams-meetings"] });
+      toast({
+        title: result.failed ? "Transcript sync completed with failures" : "Transcript sync forced",
+        description: summary,
+        variant: result.failed ? "destructive" : "default",
+        duration: 20000,
+      });
+    },
+    onError: (error) => {
+      setTranscriptSyncSummary(null);
+      toast({ title: "Unable to force transcript sync", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive", duration: 20000 });
+    },
+  });
 
   const syncRecentMutation = useMutation({
     mutationFn: () => syncClerkUsers({ query: submittedQuery || undefined, limit: 50 }),
@@ -219,6 +241,23 @@ export default function AdminTroubleshooting() {
           <RefreshCw className={`mr-2 h-4 w-4 ${clerkUsersQuery.isFetching ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </PageHeader>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2"><Wrench className="h-5 w-5 text-primary" /> Tools</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">Teams transcript sync</p>
+            <p className="text-sm text-muted-foreground">Run the transcript importer now instead of waiting for the scheduled cron.</p>
+            {transcriptSyncSummary ? <p className="mt-1 text-xs text-muted-foreground">Last run: {transcriptSyncSummary}</p> : null}
+          </div>
+          <Button variant="outline" onClick={() => forceTranscriptSyncMutation.mutate()} disabled={forceTranscriptSyncMutation.isPending}>
+            <FileText className={`mr-2 h-4 w-4 ${forceTranscriptSyncMutation.isPending ? "animate-pulse" : ""}`} />
+            Force Transcript Sync
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
