@@ -1,4 +1,5 @@
-import { ExternalLink, FileText, RefreshCw, Video } from "lucide-react";
+import { useState } from "react";
+import { FileText, RefreshCw, Video } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,6 +86,26 @@ function transcriptPreview(text: string | null) {
   return text.length > 220 ? text.slice(0, 220) + "..." : text;
 }
 
+function TranscriptText({ transcript }: { transcript: MeetingTranscriptRecord }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const hasInlineText = Boolean(transcript.transcript_text);
+  const canExpand = (transcript.transcript_text?.length ?? 0) > 220;
+  const text = isExpanded ? transcript.transcript_text : transcriptPreview(transcript.transcript_text);
+
+  return (
+    <div className="mt-2 min-w-0 max-w-full">
+      <p className="max-w-full whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+        {text}
+      </p>
+      {hasInlineText && canExpand ? (
+        <Button type="button" variant="link" size="sm" className="mt-1 h-auto px-0 text-xs" onClick={() => setIsExpanded((current) => !current)}>
+          {isExpanded ? "Show less" : "Show more"}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 function MeetingTranscriptSummary({ meetingId, timeZone }: { meetingId: string; timeZone: string }) {
   const transcriptsQuery = useQuery({
     queryKey: ["meeting-transcripts", "teams-meeting", meetingId],
@@ -107,22 +128,16 @@ function MeetingTranscriptSummary({ meetingId, timeZone }: { meetingId: string; 
         Meeting transcripts
       </div>
       {transcripts.map((transcript: MeetingTranscriptRecord) => (
-        <div key={transcript.id} className="rounded-md border bg-muted/20 p-3">
+        <div key={transcript.id} className="min-w-0 max-w-full overflow-hidden rounded-md border bg-muted/20 p-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <p className="text-sm font-medium">{transcript.title}</p>
+            <div className="min-w-0">
+              <p className="break-words text-sm font-medium [overflow-wrap:anywhere]">{transcript.title}</p>
               <p className="text-xs text-muted-foreground">
                 {formatDateTimeForTimeZone(transcript.captured_at ?? transcript.created_at, timeZone)}
               </p>
             </div>
-            {transcript.transcript_url ? (
-              <a href={transcript.transcript_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-                <ExternalLink className="h-3 w-3" />
-                Open
-              </a>
-            ) : null}
           </div>
-          <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{transcriptPreview(transcript.transcript_text)}</p>
+          <TranscriptText transcript={transcript} />
         </div>
       ))}
     </div>
@@ -135,14 +150,14 @@ function MeetingCard({ meeting, showClient, timeZone }: { meeting: TeamsMeetingR
   const isPastMeeting = new Date(meeting.end_time).getTime() < Date.now();
 
   return (
-    <div className="rounded-xl border p-4">
+    <div className="min-w-0 overflow-hidden rounded-xl border p-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
-            <p className="font-medium font-display">{meeting.subject}</p>
+            <p className="min-w-0 break-words font-medium font-display [overflow-wrap:anywhere]">{meeting.subject}</p>
             <StatusBadge label={meeting.status} variant={meeting.status === "COMPLETED" ? "success" : meeting.status === "CANCELLED" ? "destructive" : "info"} />
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
             {formatDateTimeForTimeZone(meeting.start_time, timeZone)} · {meeting.customer_targets?.target_companies?.name ?? meeting.customer_targets?.target_account_name ?? "Target account"}
           </p>
           {showClient ? (
