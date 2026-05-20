@@ -8,6 +8,7 @@ interface TeamsMeetingRow {
   opportunity_registration_id: string | null;
   opportunity_claim_id: string | null;
   subject: string;
+  scheduled_by: string;
   end_time: string;
   teams_join_url: string | null;
   microsoft_online_meeting_id: string | null;
@@ -98,6 +99,21 @@ function escapeODataString(value: string) {
   return value.replace(/'/g, "''");
 }
 
+function getOnlineMeetingUserId(teamsJoinUrl: string | null) {
+  if (!teamsJoinUrl) {
+    return microsoftOrganizerEmail;
+  }
+
+  try {
+    const context = new URL(teamsJoinUrl).searchParams.get("context");
+    const parsed = context ? JSON.parse(context) as { Oid?: string } : null;
+
+    return parsed?.Oid || microsoftOrganizerEmail;
+  } catch {
+    return microsoftOrganizerEmail;
+  }
+}
+
 async function getMicrosoftAccessToken() {
   if (!microsoftTenantId || !microsoftClientId || !microsoftClientSecret) {
     throw new Error("Microsoft Graph credentials are not configured in Supabase Edge Function secrets.");
@@ -144,6 +160,22 @@ function microsoftGraphErrorMessage(payload: GraphErrorPayload, fallback: string
   return detail.join(" | ");
 }
 
+function errorToMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return fallback;
+  }
+}
+
 async function graphGetJson<T>(url: string, accessToken: string, context = "Microsoft Graph request") {
   const response = await fetch(url, {
     headers: {
@@ -182,7 +214,7 @@ async function getPendingMeetings(batchSize: number) {
 
   const { data, error } = await supabaseAdmin
     .from("teams_meetings")
-    .select("id, customer_target_id, client_company_id, opportunity_registration_id, opportunity_claim_id, subject, end_time, teams_join_url, microsoft_online_meeting_id, transcript_sync_status, customer_targets(target_account_name)")
+    .select("id, customer_target_id, client_company_id, opportunity_registration_id, opportunity_claim_id, subject, scheduled_by, end_time, teams_join_url, microsoft_online_meeting_id, transcript_sync_status, customer_targets(target_account_name)")
     .in("transcript_sync_status", ["PENDING", "FAILED"])
     .lte("end_time", endedBefore)
     .or(`transcript_sync_attempted_at.is.null,transcript_sync_attempted_at.lt.${retryBefore}`)
@@ -236,9 +268,10 @@ async function resolveOnlineMeetingId(meeting: TeamsMeetingRow, accessToken: str
     throw new Error("Meeting does not have a Teams join URL.");
   }
 
+  const onlineMeetingUserId = getOnlineMeetingUserId(meeting.teams_join_url);
   const filter = encodeURIComponent(`JoinWebUrl eq '${escapeODataString(meeting.teams_join_url)}'`);
   const payload = await graphGetJson<GraphCollection<GraphOnlineMeeting>>(
-    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings?$filter=${filter}`,
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(onlineMeetingUserId)}/onlineMeetings?$filter=${filter}`,
     accessToken,
     "Resolve Teams online meeting from join URL",
   );
@@ -277,9 +310,10 @@ async function resolveOnlineMeetingIdWithRetry(meeting: TeamsMeetingRow, accessT
   throw lastError ?? new Error("Unable to resolve Teams online meeting.");
 }
 
-async function listTranscripts(onlineMeetingId: string, accessToken: string) {
+async function listTranscripts(meeting: TeamsMeetingRow, onlineMeetingId: string, accessToken: string) {
+  const onlineMeetingUserId = getOnlineMeetingUserId(meeting.teams_join_url);
   const payload = await graphGetJson<GraphCollection<GraphTranscript>>(
-    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings/${encodeURIComponent(onlineMeetingId)}/transcripts`,
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(onlineMeetingUserId)}/onlineMeetings/${encodeURIComponent(onlineMeetingId)}/transcripts`,
     accessToken,
     "List Teams meeting transcripts",
   );
@@ -306,7 +340,7 @@ async function saveTranscript(input: {
     opportunity_registration_id: input.opportunityRegistrationId,
     opportunity_claim_id: input.meeting.opportunity_claim_id,
     company_id: input.meeting.client_company_id,
-    created_by: "system",
+    created_by: input.meeting.scheduled_by,
     source: "GRAPH",
     status: "AVAILABLE",
     title: `${input.meeting.subject} transcript`,
@@ -318,6 +352,7 @@ async function saveTranscript(input: {
     metadata: {
       microsoft_online_meeting_id: input.onlineMeetingId,
       microsoft_organizer_email: microsoftOrganizerEmail,
+      microsoft_online_meeting_user_id: getOnlineMeetingUserId(input.meeting.teams_join_url),
     },
   };
 
@@ -386,7 +421,7 @@ Deno.serve(async (request: Request) => {
       try {
         const opportunityRegistrationId = await resolveOpportunityRegistrationId(meeting);
         const onlineMeetingId = await resolveOnlineMeetingIdWithRetry(meeting, accessToken);
-        const transcripts = await listTranscripts(onlineMeetingId, accessToken);
+        const transcripts = await listTranscripts(meeting, onlineMeetingId, accessToken);
 
         if (!transcripts.length) {
           pending += 1;
@@ -397,7 +432,7 @@ Deno.serve(async (request: Request) => {
         for (const transcript of transcripts) {
           const contentUrl =
             transcript.transcriptContentUrl ??
-            `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings/${encodeURIComponent(onlineMeetingId)}/transcripts/${encodeURIComponent(transcript.id ?? "")}/content`;
+            `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(getOnlineMeetingUserId(meeting.teams_join_url))}/onlineMeetings/${encodeURIComponent(onlineMeetingId)}/transcripts/${encodeURIComponent(transcript.id ?? "")}/content`;
           const transcriptText = await graphGetText(contentUrl, accessToken);
           const created = await saveTranscript({
             meeting,
@@ -415,7 +450,7 @@ Deno.serve(async (request: Request) => {
         await markMeeting(meeting.id, "AVAILABLE", null);
       } catch (error) {
         failed += 1;
-        await markMeeting(meeting.id, "FAILED", error instanceof Error ? error.message : "Transcript sync failed.");
+        await markMeeting(meeting.id, "FAILED", errorToMessage(error, "Transcript sync failed."));
       }
     }
 
@@ -427,7 +462,7 @@ Deno.serve(async (request: Request) => {
     });
   } catch (error) {
     return json(400, {
-      error: error instanceof Error ? error.message : "Unable to sync Teams transcripts.",
+      error: errorToMessage(error, "Unable to sync Teams transcripts."),
     });
   }
 });
