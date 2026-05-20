@@ -64,6 +64,8 @@ interface GraphErrorPayload {
 
 interface GraphOnlineMeeting {
   id?: string;
+  allowTranscription?: boolean;
+  recordAutomatically?: boolean;
 }
 
 const corsHeaders = {
@@ -239,6 +241,21 @@ function escapeODataString(value: string) {
   return value.replace(/'/g, "''");
 }
 
+function getOnlineMeetingUserId(teamsJoinUrl: string | null) {
+  if (!teamsJoinUrl) {
+    return microsoftOrganizerEmail;
+  }
+
+  try {
+    const context = new URL(teamsJoinUrl).searchParams.get("context");
+    const parsed = context ? JSON.parse(context) as { Oid?: string } : null;
+
+    return parsed?.Oid || microsoftOrganizerEmail;
+  } catch {
+    return microsoftOrganizerEmail;
+  }
+}
+
 function getMeetingSubject(profile: ProfileRow, target: CustomerTargetRow, requestedSubject?: string) {
   const subject = requestedSubject?.trim();
   if (subject) {
@@ -392,9 +409,10 @@ async function resolveOnlineMeetingId(teamsJoinUrl: string | null, accessToken: 
     return null;
   }
 
+  const onlineMeetingUserId = getOnlineMeetingUserId(teamsJoinUrl);
   const filter = encodeURIComponent(`JoinWebUrl eq '${escapeODataString(teamsJoinUrl)}'`);
   const payload = await graphGetJson<GraphCollection<GraphOnlineMeeting>>(
-    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings?$filter=${filter}`,
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(onlineMeetingUserId)}/onlineMeetings?$filter=${filter}`,
     accessToken,
     "Resolve Teams online meeting from join URL",
   );
@@ -402,9 +420,19 @@ async function resolveOnlineMeetingId(teamsJoinUrl: string | null, accessToken: 
   return payload.value?.[0]?.id ?? null;
 }
 
-async function configureOnlineMeetingOptions(onlineMeetingId: string, accessToken: string) {
+function assertRecordingOptionsEnabled(settings: GraphOnlineMeeting) {
+  if (settings.recordAutomatically === false || settings.allowTranscription === false) {
+    throw new Error(
+      "Microsoft created the Teams invite, but automatic recording/transcription is still off. Confirm the organizer license and Teams admin recording/transcription policies allow automatic recording.",
+    );
+  }
+}
+
+async function configureOnlineMeetingOptions(teamsJoinUrl: string | null, onlineMeetingId: string, accessToken: string) {
+  const onlineMeetingUserId = getOnlineMeetingUserId(teamsJoinUrl);
+  const onlineMeetingUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(onlineMeetingUserId)}/onlineMeetings/${encodeURIComponent(onlineMeetingId)}`;
   const response = await fetch(
-    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings/${encodeURIComponent(onlineMeetingId)}`,
+    onlineMeetingUrl,
     {
       method: "PATCH",
       headers: {
@@ -427,6 +455,13 @@ async function configureOnlineMeetingOptions(onlineMeetingId: string, accessToke
     const payload = (await response.json().catch(() => ({}))) as GraphErrorPayload;
     throw new Error(microsoftGraphErrorMessage(payload, "Configure Teams meeting recording/transcription options", response.status));
   }
+
+  const settings = await graphGetJson<GraphOnlineMeeting>(
+    onlineMeetingUrl,
+    accessToken,
+    "Verify Teams meeting recording/transcription options",
+  );
+  assertRecordingOptionsEnabled(settings);
 }
 
 async function resolveOnlineMeetingIdWithRetry(teamsJoinUrl: string | null, accessToken: string) {
@@ -459,12 +494,12 @@ async function resolveOnlineMeetingIdWithRetry(teamsJoinUrl: string | null, acce
   throw lastError ?? new Error("Unable to resolve Teams online meeting.");
 }
 
-async function configureOnlineMeetingOptionsWithRetry(onlineMeetingId: string, accessToken: string) {
+async function configureOnlineMeetingOptionsWithRetry(teamsJoinUrl: string | null, onlineMeetingId: string, accessToken: string) {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= onlineMeetingRetryDelaysMs.length; attempt += 1) {
     try {
-      await configureOnlineMeetingOptions(onlineMeetingId, accessToken);
+      await configureOnlineMeetingOptions(teamsJoinUrl, onlineMeetingId, accessToken);
       return;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Unable to configure Teams meeting options.");
@@ -578,7 +613,7 @@ Deno.serve(async (request: Request) => {
         throw new Error("Microsoft Graph did not return an online meeting ID for meeting option updates.");
       }
 
-      await configureOnlineMeetingOptionsWithRetry(microsoftOnlineMeetingId, accessToken);
+      await configureOnlineMeetingOptionsWithRetry(teamsJoinUrl, microsoftOnlineMeetingId, accessToken);
       meetingOptionsConfigured = true;
     } catch (error) {
       meetingOptionsWarning =
