@@ -4327,9 +4327,15 @@ export async function createTrainingMaterial(user: AuthUser, input: TrainingMate
     throw error;
   }
 
-  const attachments = input.attachments?.length
-    ? await Promise.all(input.attachments.map((file) => uploadTrainingMaterialAttachment(user, data, file)))
-    : [];
+  let attachments: TrainingMaterialAttachment[] = [];
+  try {
+    attachments = input.attachments?.length
+      ? await Promise.all(input.attachments.map((file) => uploadTrainingMaterialAttachment(user, data, file)))
+      : [];
+  } catch (error) {
+    await supabase.from("training_materials").delete().eq("id", data.id);
+    throw error;
+  }
 
   await createAuditEvent(user, "training_material_created", "training_materials", data.id, {
     title: data.title,
