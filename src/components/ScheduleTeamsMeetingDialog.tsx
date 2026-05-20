@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarPlus, ExternalLink, FileText, X } from "lucide-react";
+import { AlertCircle, CalendarPlus, ExternalLink, FileText, X } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +63,10 @@ function getDisplayName(value: string | null | undefined, fallback: string) {
   return trimmed || fallback;
 }
 
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
 function uniqueAttendees(attendees: MeetingAttendeeDraft[]) {
   const seen = new Set<string>();
   const unique: MeetingAttendeeDraft[] = [];
@@ -115,6 +120,7 @@ export function ScheduleTeamsMeetingDialog({
   const [attendeeEmailError, setAttendeeEmailError] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [selectedReadAheadIds, setSelectedReadAheadIds] = useState<string[]>([]);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
 
   const targetName = target.target_companies?.name ?? target.target_account_name;
   const clientName = target.client_companies?.name ?? "Client";
@@ -197,6 +203,9 @@ export function ScheduleTeamsMeetingDialog({
   };
 
   const scheduleMutation = useMutation({
+    onMutate: () => {
+      setScheduleError(null);
+    },
     mutationFn: async () =>
       scheduleTeamsMeeting({
         customerTargetId: target.id,
@@ -207,21 +216,26 @@ export function ScheduleTeamsMeetingDialog({
         attendeeEmails: attendees.map((attendee) => attendee.email),
       }),
     onSuccess: (response) => {
+      setScheduleError(null);
       toast({
         title: "Teams call scheduled",
         description: response.meetingOptionsWarning
           ? `Invite created, but Teams options need attention: ${response.meetingOptionsWarning}`
           : "Microsoft created the calendar invite from bums@trustedbums.com with lobby bypass and automatic recording/transcription enabled.",
         variant: response.meetingOptionsWarning ? "destructive" : "default",
+        duration: response.meetingOptionsWarning ? 20000 : undefined,
       });
       setOpen(false);
       onScheduled?.(response);
     },
     onError: (error) => {
+      const message = errorMessage(error, "Please try again.");
+      setScheduleError(message);
       toast({
         title: "Unable to schedule Teams call",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description: message,
         variant: "destructive",
+        duration: 20000,
       });
     },
   });
@@ -320,6 +334,7 @@ export function ScheduleTeamsMeetingDialog({
         setOpen(nextOpen);
 
         if (nextOpen) {
+          setScheduleError(null);
           setStartTime(getDefaultStartTime(timeZone));
           setSubject(defaultSubject);
           setHasEditedAttendees(false);
@@ -347,6 +362,16 @@ export function ScheduleTeamsMeetingDialog({
           <div className="rounded-xl border bg-muted/20 p-3 text-sm text-muted-foreground">
             Meeting preview: {previewStartTime || "Pick a start time"}.
           </div>
+
+          {scheduleError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Unable to schedule Teams call</AlertTitle>
+              <AlertDescription className="break-words [overflow-wrap:anywhere]">
+                {scheduleError}
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
           <div className="grid gap-4 md:grid-cols-[1fr_140px]">
             <div className="space-y-2">
