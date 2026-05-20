@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { PARTNER_FAQ_BODY, PARTNER_TERMS_BODY } from "@/data/partnerTerms";
+import { ACTIVE_TERMS_CHANGE_SUMMARY, PARTNER_FAQ_BODY, PARTNER_TERMS_BODY } from "@/data/partnerTerms";
 import {
   activateTermsVersion,
   createTermsVersion,
@@ -152,6 +152,7 @@ export default function AdminDashboard() {
     title: "Trusted Bums Partner Terms",
     body: PARTNER_TERMS_BODY,
     faq_body: PARTNER_FAQ_BODY,
+    change_summary: ACTIVE_TERMS_CHANGE_SUMMARY,
     is_active: "false",
   });
 
@@ -181,6 +182,7 @@ export default function AdminDashboard() {
         title: newTerms.title,
         body: newTerms.body,
         faq_body: newTerms.faq_body,
+        change_summary: newTerms.change_summary,
         is_active: newTerms.is_active === "true",
       }),
     onSuccess: async () => {
@@ -395,8 +397,9 @@ export default function AdminDashboard() {
                     id="termsVersion"
                     value={newTerms.version}
                     onChange={(event) => setNewTerms((current) => ({ ...current, version: event.target.value }))}
-                    placeholder="v2"
+                    placeholder="1.4"
                   />
+                  <p className="text-xs text-muted-foreground">Use 1.1, 1.2, 1.3 style versions for amendments. Reserve a new major version for a full replacement.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="termsTitle">Title</Label>
@@ -404,6 +407,16 @@ export default function AdminDashboard() {
                     id="termsTitle"
                     value={newTerms.title}
                     onChange={(event) => setNewTerms((current) => ({ ...current, title: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="changeSummary">Change summary</Label>
+                  <Textarea
+                    id="changeSummary"
+                    rows={3}
+                    value={newTerms.change_summary}
+                    onChange={(event) => setNewTerms((current) => ({ ...current, change_summary: event.target.value }))}
+                    placeholder="Summarize what existing users need to know before accepting this version."
                   />
                 </div>
                 <div className="space-y-2">

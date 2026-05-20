@@ -127,6 +127,12 @@ export default function ClientTerms() {
                 </div>
               ) : (
                 <>
+                  {terms.change_summary ? (
+                    <div className="rounded-md border border-primary/20 bg-primary/5 p-4 text-sm">
+                      <p className="font-medium text-foreground">What changed in version {terms.version}</p>
+                      <p className="mt-1 leading-6 text-muted-foreground">{terms.change_summary}</p>
+                    </div>
+                  ) : null}
                   <div className="flex items-start gap-3 rounded-md border p-4">
                     <Checkbox
                       id="partnerTerms"

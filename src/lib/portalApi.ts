@@ -593,6 +593,7 @@ export interface TermsVersion {
   title: string;
   body: string;
   faq_body: string | null;
+  change_summary: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -607,7 +608,7 @@ export interface TermsAcceptance {
   user_agent: string | null;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
-  terms_versions?: Pick<TermsVersion, "id" | "version" | "title" | "body" | "faq_body" | "created_at"> | null;
+  terms_versions?: Pick<TermsVersion, "id" | "version" | "title" | "body" | "faq_body" | "change_summary" | "created_at"> | null;
 }
 
 export interface OpportunityRegistration {
@@ -2811,7 +2812,7 @@ export async function listTermsVersions() {
   return data ?? [];
 }
 
-export async function createTermsVersion(user: AuthUser, input: Pick<TermsVersion, "version" | "title" | "body" | "faq_body" | "is_active">) {
+export async function createTermsVersion(user: AuthUser, input: Pick<TermsVersion, "version" | "title" | "body" | "faq_body" | "change_summary" | "is_active">) {
   if (input.is_active) {
     await supabase.from("terms_versions").update({ is_active: false }).eq("is_active", true);
   }
@@ -2846,7 +2847,7 @@ export async function activateTermsVersion(user: AuthUser, terms: TermsVersion) 
 export async function listTermsAcceptances() {
   const { data, error } = await supabase
     .from("terms_acceptances")
-    .select("*, companies(name), terms_versions(id, version, title, body, faq_body, created_at)")
+    .select("*, companies(name), terms_versions(id, version, title, body, faq_body, change_summary, created_at)")
     .order("accepted_at", { ascending: false })
     .returns<TermsAcceptance[]>();
 

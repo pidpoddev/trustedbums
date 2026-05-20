@@ -24,6 +24,12 @@ export function PartnerTermsContent({ terms, showFaq = true }: PartnerTermsConte
             Last updated {formatDateForTimeZone(terms.created_at, timeZone)}
           </p>
         </div>
+        {terms.change_summary ? (
+          <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
+            <p className="text-sm font-semibold text-foreground">What changed in this version</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">{terms.change_summary}</p>
+          </div>
+        ) : null}
         <p className="text-sm leading-6 text-muted-foreground">{parsedTerms.overview}</p>
       </section>
 
