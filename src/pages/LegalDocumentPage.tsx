@@ -1,11 +1,38 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { BrandLogo } from "@/components/BrandLogo";
-import { footerLegalLinks, getLegalDocument } from "@/data/legalDocuments";
+import { footerLegalLinks, getLegalDocument, type LegalDocument } from "@/data/legalDocuments";
+import { getPublishedLegalDocument } from "@/lib/portalApi";
+
+function formatEffectiveDate(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+}
+
+function toLegalDocument(record: Awaited<ReturnType<typeof getPublishedLegalDocument>>): LegalDocument | null {
+  if (!record) {
+    return null;
+  }
+
+  return {
+    slug: record.slug,
+    title: record.title,
+    description: record.description,
+    effectiveDate: formatEffectiveDate(record.effective_date),
+    sections: record.sections,
+  };
+}
 
 export default function LegalDocumentPage() {
   const { slug } = useParams();
-  const document = getLegalDocument(slug);
+  const fallbackDocument = getLegalDocument(slug);
+  const publishedQuery = useQuery({
+    queryKey: ["public-legal-document", slug],
+    queryFn: () => getPublishedLegalDocument(slug!),
+    enabled: Boolean(slug),
+    retry: false,
+  });
+  const document = toLegalDocument(publishedQuery.data) ?? fallbackDocument;
 
   if (!document) {
     return <Navigate to="/" replace />;

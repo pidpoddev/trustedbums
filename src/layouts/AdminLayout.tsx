@@ -28,6 +28,7 @@ import {
   GraduationCap,
   BarChart3,
   Wrench,
+  FileSignature,
   type LucideIcon,
 } from "lucide-react";
 
@@ -66,9 +67,10 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     ],
   },
   {
-    label: "Troubleshooting",
+    label: "Admin Tools",
     items: [
       { title: "Tools", url: "/admin/troubleshooting", icon: Wrench },
+      { title: "Legal", url: "/admin/legal", icon: FileSignature },
     ],
   },
 ];

@@ -108,6 +108,10 @@ export const FALLBACK_TERMS_VERSION = {
   body: PARTNER_TERMS_BODY,
   faq_body: PARTNER_FAQ_BODY,
   change_summary: ACTIVE_TERMS_CHANGE_SUMMARY,
+  audience: "CLIENT",
+  is_custom: false,
+  custom_label: null,
+  created_by: null,
   is_active: true,
   created_at: "2026-05-02T00:00:00.000Z",
 };
@@ -187,6 +191,10 @@ export const BUM_FALLBACK_TERMS_VERSION = {
   body: BUM_TERMS_BODY,
   faq_body: BUM_TERMS_FAQ_BODY,
   change_summary: BUM_TERMS_CHANGE_SUMMARY,
+  audience: "BUM",
+  is_custom: false,
+  custom_label: null,
+  created_by: null,
   is_active: true,
   created_at: "2026-05-16T00:00:00.000Z",
 };

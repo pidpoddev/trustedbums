@@ -15,6 +15,23 @@ const effectiveDate = "May 20, 2026";
 
 export const legalDocuments: LegalDocument[] = [
   {
+    slug: "privacy-policy",
+    title: "Privacy Policy",
+    description: "How Trusted Bums collects, uses, shares, and protects information in connection with the website, platform, and related services.",
+    effectiveDate: "May 19, 2026",
+    sections: [
+      { title: "Information We Collect", body: ["We may collect information you provide directly to Trusted Bums, including your name, email address, company details, account information, submitted opportunities, communications, and other business information you choose to share through the platform."] },
+      { title: "How We Use Information", body: ["We use information to operate the platform, provide account access, manage introductions and opportunities, communicate with users, improve our services, maintain security, and comply with legal obligations."] },
+      { title: "How Information Is Shared", body: ["We may share information with service providers that help us run the platform, with authorized users inside your organization, and when required to protect rights, investigate misuse, or comply with law. We do not sell personal information."] },
+      { title: "Data Retention", body: ["We retain information for as long as reasonably necessary to provide the service, maintain business records, resolve disputes, enforce agreements, and meet legal or operational requirements."] },
+      { title: "Security", body: ["We use reasonable administrative, technical, and organizational safeguards designed to protect information. No system can be guaranteed perfectly secure, so users should also take care to protect their credentials and account access."] },
+      { title: "Cookies, Local Storage, and Consent", body: ["Strictly necessary storage is used for security, authentication, accessibility, and remembering your consent choice. Preferences, analytics, and marketing or engagement measurement are optional and are disabled unless you choose them. You can reject all optional categories as easily as accepting them, and you can change your choices at any time using the Privacy choices control."] },
+      { title: "Your Choices and EU/UK Rights", body: ["Depending on your location, you may have rights to access, correct, delete, restrict, object to, or port personal data, and to withdraw consent where processing is based on consent. Withdrawing consent does not affect processing that occurred before withdrawal."] },
+      { title: "Changes to This Policy", body: ["We may update this Privacy Policy from time to time. When we do, we will post the updated version on this page and revise the effective date below."] },
+      { title: "Contact Us", body: ["If you have questions about this Privacy Policy, data rights, or consent choices, contact Trusted Bums at bums@trustedbums.com."] },
+    ],
+  },
+  {
     slug: "terms-of-service",
     title: "Terms of Service",
     description: "General website and platform terms for visitors and account users.",

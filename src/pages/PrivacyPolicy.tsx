@@ -1,9 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { createConsentRecord, defaultConsentPreferences, readConsentRecord, writeConsentRecord } from "@/lib/consent";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { BrandLogo } from "@/components/BrandLogo";
-import { footerLegalLinks } from "@/data/legalDocuments";
+import { footerLegalLinks, getLegalDocument } from "@/data/legalDocuments";
+import { getPublishedLegalDocument } from "@/lib/portalApi";
 
 const sections = [
   {
@@ -53,7 +55,23 @@ const sections = [
   },
 ];
 
+function formatEffectiveDate(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+}
+
 export default function PrivacyPolicy() {
+  const fallback = getLegalDocument("privacy-policy");
+  const publishedQuery = useQuery({
+    queryKey: ["public-legal-document", "privacy-policy"],
+    queryFn: () => getPublishedLegalDocument("privacy-policy"),
+    retry: false,
+  });
+  const published = publishedQuery.data;
+  const pageTitle = published?.title ?? fallback?.title ?? "Privacy Policy";
+  const pageDescription = published?.description ?? fallback?.description ?? "This Privacy Policy describes how Trusted Bums collects, uses, shares, and protects information in connection with the Trusted Bums website, platform, and related services.";
+  const effectiveDate = published?.effective_date ? formatEffectiveDate(published.effective_date) : fallback?.effectiveDate ?? "May 19, 2026";
+  const pageSections = published?.sections ?? fallback?.sections ?? sections.map((section) => ({ title: section.title, body: [section.body] }));
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/80 backdrop-blur-sm">
@@ -71,11 +89,9 @@ export default function PrivacyPolicy() {
       <main className="container mx-auto max-w-4xl px-6 py-16">
         <div className="rounded-3xl border bg-card p-8 md:p-12">
           <div className="max-w-3xl">
-            <p className="text-sm font-medium text-primary">Effective Date: May 19, 2026</p>
-            <h1 className="mt-3 font-display text-4xl font-bold">Privacy Policy</h1>
-            <p className="mt-4 text-base leading-7 text-muted-foreground">
-              This Privacy Policy describes how Trusted Bums collects, uses, shares, and protects information in connection with the Trusted Bums website, platform, and related services.
-            </p>
+            <p className="text-sm font-medium text-primary">Effective Date: {effectiveDate}</p>
+            <h1 className="mt-3 font-display text-4xl font-bold">{pageTitle}</h1>
+            <p className="mt-4 text-base leading-7 text-muted-foreground">{pageDescription}</p>
           </div>
 
           <div className="mt-8 rounded-xl border bg-background p-4">
@@ -112,10 +128,10 @@ export default function PrivacyPolicy() {
           </div>
 
           <div className="mt-10 space-y-8">
-            {sections.map((section) => (
+            {pageSections.map((section) => (
               <section key={section.title} className="space-y-3">
                 <h2 className="font-display text-2xl font-bold">{section.title}</h2>
-                <p className="leading-7 text-muted-foreground">{section.body}</p>
+                {section.body.map((paragraph) => <p key={paragraph} className="leading-7 text-muted-foreground">{paragraph}</p>)}
               </section>
             ))}
           </div>

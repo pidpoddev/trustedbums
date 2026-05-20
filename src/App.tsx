@@ -34,6 +34,7 @@ import AdminProfile from "./pages/admin/AdminProfile";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminTrainingAssets from "./pages/admin/AdminTrainingAssets";
 import AdminTroubleshooting from "./pages/admin/AdminTroubleshooting";
+import AdminLegal from "./pages/admin/AdminLegal";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientAgreements from "./pages/client/ClientAgreements";
 import ClientTerms from "./pages/client/ClientTerms";
@@ -102,6 +103,7 @@ const App = () => (
                       <Route path="training-assets" element={<AdminTrainingAssets />} />
                       <Route path="reports" element={<AdminReports />} />
                       <Route path="troubleshooting" element={<AdminTroubleshooting />} />
+                      <Route path="legal" element={<AdminLegal />} />
                       <Route path="profile" element={<AdminProfile />} />
                     </Route>
                   </Route>

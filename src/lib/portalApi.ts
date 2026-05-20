@@ -1,4 +1,4 @@
-import { FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, type TermsFallbackVersion } from "@/data/partnerTerms";
+import { BUM_FALLBACK_TERMS_VERSION, FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, type TermsFallbackVersion } from "@/data/partnerTerms";
 import { getSupabaseAccessToken, supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import type { AuthUser } from "@/data/authData";
 import { normalizeDateFormat, normalizeTimeZone } from "@/lib/timezone";
@@ -594,8 +594,48 @@ export interface TermsVersion {
   body: string;
   faq_body: string | null;
   change_summary: string | null;
+  audience: "CLIENT" | "BUM";
+  is_custom: boolean;
+  custom_label: string | null;
+  created_by: string | null;
   is_active: boolean;
   created_at: string;
+}
+
+export interface TermsAssignmentRecord {
+  id: string;
+  terms_version_id: string;
+  audience: "CLIENT" | "BUM";
+  assigned_company_id: string | null;
+  assigned_user_id: string | null;
+  is_required: boolean;
+  notes: string | null;
+  assigned_by: string | null;
+  created_at: string;
+  due_at: string | null;
+  terms_versions?: TermsVersion | null;
+  companies?: Pick<CompanyRecord, "id" | "name"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export interface LegalDocumentRecord {
+  slug: string;
+  title: string;
+  description: string;
+  effective_date: string;
+  sections: Array<{ title: string; body: string[] }>;
+  is_published: boolean;
+  draft_title: string | null;
+  draft_description: string | null;
+  draft_effective_date: string | null;
+  draft_sections: Array<{ title: string; body: string[] }> | null;
+  change_summary: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  published_by: string | null;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
 }
 
 export interface TermsAcceptance {
@@ -608,7 +648,7 @@ export interface TermsAcceptance {
   user_agent: string | null;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
-  terms_versions?: Pick<TermsVersion, "id" | "version" | "title" | "body" | "faq_body" | "change_summary" | "created_at"> | null;
+  terms_versions?: Pick<TermsVersion, "id" | "version" | "title" | "body" | "faq_body" | "change_summary" | "audience" | "is_custom" | "custom_label" | "created_at"> | null;
 }
 
 export interface OpportunityRegistration {
@@ -1390,6 +1430,8 @@ export async function getActiveTermsVersion() {
   const { data, error } = await supabase
     .from("terms_versions")
     .select("*")
+    .eq("audience", "CLIENT")
+    .eq("is_custom", false)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -1397,6 +1439,23 @@ export async function getActiveTermsVersion() {
 
   if (error || !data) {
     return FALLBACK_TERMS_VERSION;
+  }
+
+  return data;
+}
+
+export async function getDefaultBumTermsVersion() {
+  const { data, error } = await supabase
+    .from("terms_versions")
+    .select("*")
+    .eq("audience", "BUM")
+    .eq("is_custom", false)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<TermsVersion>();
+
+  if (error || !data) {
+    return BUM_FALLBACK_TERMS_VERSION;
   }
 
   return data;
@@ -1434,6 +1493,57 @@ export async function getCurrentTermsAcceptance(userId: string, companyId: strin
   }
 
   return data;
+}
+
+export async function listRequiredTermsAssignmentsForUser(user: AuthUser) {
+  const baseQuery = supabase
+    .from("terms_assignments")
+    .select("*, companies(id, name), profiles(id, full_name, email), terms_versions(*)")
+    .eq("is_required", true)
+    .order("created_at", { ascending: true });
+
+  const query = user.role === "BUM"
+    ? baseQuery.eq("assigned_user_id", user.id)
+    : user.clientId
+      ? baseQuery.eq("assigned_company_id", user.clientId)
+      : baseQuery.eq("assigned_user_id", user.id);
+
+  const { data, error } = await query.returns<TermsAssignmentRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function getRequiredTermsForUser(user: AuthUser) {
+  const defaultTerms = user.role === "BUM" ? await getDefaultBumTermsVersion() : await getActiveTermsVersion();
+  const defaultAcceptance = await getCurrentTermsAcceptance(user.id, user.clientId, defaultTerms.id);
+
+  if (!defaultAcceptance) {
+    return { terms: defaultTerms, acceptance: null, assignment: null as TermsAssignmentRecord | null };
+  }
+
+  const assignments = await listRequiredTermsAssignmentsForUser(user);
+  for (const assignment of assignments) {
+    const assignedTerms = assignment.terms_versions;
+    if (!assignedTerms) {
+      continue;
+    }
+
+    const acceptance = await getCurrentTermsAcceptance(
+      user.id,
+      assignment.assigned_company_id ? user.clientId : undefined,
+      assignedTerms.id,
+    );
+
+    if (!acceptance) {
+      return { terms: assignedTerms, acceptance: null, assignment };
+    }
+  }
+
+  return { terms: defaultTerms, acceptance: defaultAcceptance, assignment: null as TermsAssignmentRecord | null };
 }
 
 function isUuid(value: string | undefined) {
@@ -2812,12 +2922,25 @@ export async function listTermsVersions() {
   return data ?? [];
 }
 
-export async function createTermsVersion(user: AuthUser, input: Pick<TermsVersion, "version" | "title" | "body" | "faq_body" | "change_summary" | "is_active">) {
-  if (input.is_active) {
-    await supabase.from("terms_versions").update({ is_active: false }).eq("is_active", true);
+export async function createTermsVersion(
+  user: AuthUser,
+  input: Pick<TermsVersion, "version" | "title" | "body" | "faq_body" | "change_summary"> &
+    Partial<Pick<TermsVersion, "audience" | "is_custom" | "custom_label" | "is_active">>,
+) {
+  const audience = input.audience ?? "CLIENT";
+  const isCustom = input.is_custom ?? false;
+  const shouldActivate = audience === "CLIENT" && !isCustom && Boolean(input.is_active);
+  if (shouldActivate) {
+    await supabase
+      .from("terms_versions")
+      .update({ is_active: false })
+      .eq("audience", "CLIENT")
+      .eq("is_custom", false)
+      .eq("is_active", true);
   }
 
-  const { data, error } = await supabase.from("terms_versions").insert(input).select("*").single<TermsVersion>();
+  const payload = { ...input, audience, is_custom: isCustom, custom_label: input.custom_label ?? null, is_active: shouldActivate, created_by: user.id };
+  const { data, error } = await supabase.from("terms_versions").insert(payload).select("*").single<TermsVersion>();
 
   if (error) {
     throw error;
@@ -2828,7 +2951,16 @@ export async function createTermsVersion(user: AuthUser, input: Pick<TermsVersio
 }
 
 export async function activateTermsVersion(user: AuthUser, terms: TermsVersion) {
-  await supabase.from("terms_versions").update({ is_active: false }).eq("is_active", true);
+  if (terms.audience !== "CLIENT" || terms.is_custom) {
+    throw new Error("Only standard Client contract versions can be activated globally.");
+  }
+
+  await supabase
+    .from("terms_versions")
+    .update({ is_active: false })
+    .eq("audience", "CLIENT")
+    .eq("is_custom", false)
+    .eq("is_active", true);
   const { data, error } = await supabase
     .from("terms_versions")
     .update({ is_active: true })
@@ -2847,7 +2979,7 @@ export async function activateTermsVersion(user: AuthUser, terms: TermsVersion) 
 export async function listTermsAcceptances() {
   const { data, error } = await supabase
     .from("terms_acceptances")
-    .select("*, companies(name), terms_versions(id, version, title, body, faq_body, change_summary, created_at)")
+    .select("*, companies(name), terms_versions(id, version, title, body, faq_body, change_summary, audience, is_custom, custom_label, created_at)")
     .order("accepted_at", { ascending: false })
     .returns<TermsAcceptance[]>();
 
@@ -2856,6 +2988,142 @@ export async function listTermsAcceptances() {
   }
 
   return data ?? [];
+}
+
+export async function createTermsAssignment(
+  user: AuthUser,
+  input: Pick<TermsAssignmentRecord, "terms_version_id" | "audience" | "assigned_company_id" | "assigned_user_id" | "is_required" | "notes" | "due_at">,
+) {
+  const { data, error } = await supabase
+    .from("terms_assignments")
+    .insert({ ...input, assigned_by: user.id })
+    .select("*, companies(id, name), profiles(id, full_name, email), terms_versions(*)")
+    .single<TermsAssignmentRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "terms_assignment_created", "terms_versions", input.terms_version_id, {
+    audience: input.audience,
+    assigned_company_id: input.assigned_company_id,
+    assigned_user_id: input.assigned_user_id,
+  });
+
+  return data;
+}
+
+export async function listTermsAssignments() {
+  const { data, error } = await supabase
+    .from("terms_assignments")
+    .select("*, companies(id, name), profiles(id, full_name, email), terms_versions(*)")
+    .order("created_at", { ascending: false })
+    .returns<TermsAssignmentRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function getPublishedLegalDocument(slug: string) {
+  const { data, error } = await supabase
+    .from("legal_documents")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_published", true)
+    .limit(1)
+    .maybeSingle<LegalDocumentRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function listLegalDocuments() {
+  const { data, error } = await supabase
+    .from("legal_documents")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .returns<LegalDocumentRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function saveLegalDocumentDraft(
+  user: AuthUser,
+  input: Pick<LegalDocumentRecord, "slug" | "title" | "description" | "effective_date" | "sections" | "change_summary">,
+) {
+  const payload = {
+    slug: input.slug,
+    title: input.title,
+    description: input.description,
+    effective_date: input.effective_date,
+    sections: input.sections,
+    draft_title: input.title,
+    draft_description: input.description,
+    draft_effective_date: input.effective_date,
+    draft_sections: input.sections,
+    change_summary: input.change_summary,
+    updated_by: user.id,
+    created_by: user.id,
+  };
+
+  const { data, error } = await supabase
+    .from("legal_documents")
+    .upsert(payload, { onConflict: "slug" })
+    .select("*")
+    .single<LegalDocumentRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "legal_document_draft_saved", undefined, undefined, { slug: input.slug });
+  return data;
+}
+
+export async function publishLegalDocument(
+  user: AuthUser,
+  input: Pick<LegalDocumentRecord, "slug" | "title" | "description" | "effective_date" | "sections" | "change_summary">,
+) {
+  const payload = {
+    slug: input.slug,
+    title: input.title,
+    description: input.description,
+    effective_date: input.effective_date,
+    sections: input.sections,
+    draft_title: input.title,
+    draft_description: input.description,
+    draft_effective_date: input.effective_date,
+    draft_sections: input.sections,
+    change_summary: input.change_summary,
+    is_published: true,
+    updated_by: user.id,
+    published_by: user.id,
+    created_by: user.id,
+    published_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("legal_documents")
+    .upsert(payload, { onConflict: "slug" })
+    .select("*")
+    .single<LegalDocumentRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "legal_document_published", undefined, undefined, { slug: input.slug });
+  return data;
 }
 
 export async function listAdminEmailTemplates() {

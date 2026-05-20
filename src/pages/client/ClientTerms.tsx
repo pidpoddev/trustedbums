@@ -32,7 +32,7 @@ function resolveDashboardPath(role: "ADMIN" | "CLIENT" | "BUM", from?: string) {
 export default function ClientTerms() {
   const { user } = useAuth();
   const timeZone = useUserTimeZone();
-  const { terms, acceptance, hasAcceptedCurrentTerms, isLoading, refetch } = useCurrentTermsState();
+  const { terms, acceptance, requiredAssignment, hasAcceptedCurrentTerms, isLoading, refetch } = useCurrentTermsState();
   const [checked, setChecked] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [shouldAutoContinue, setShouldAutoContinue] = useState(false);
@@ -92,9 +92,11 @@ export default function ClientTerms() {
       <PageHeader
         title={isBumTerms ? "Trusted Bums Connector Terms" : "Trusted Bums Terms & Legal Agreements"}
         description={
-          isBumTerms
-            ? "Review and accept the current connector agreement before continuing into the Bum portal."
-            : "Review and accept the current client legal terms before continuing into the platform."
+          requiredAssignment
+            ? "Review and accept this assigned contract before continuing into the platform."
+            : isBumTerms
+              ? "Review and accept the current connector agreement before continuing into the Bum portal."
+              : "Review and accept the current client legal terms before continuing into the platform."
         }
       />
 
@@ -118,6 +120,12 @@ export default function ClientTerms() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {requiredAssignment ? (
+                <div className="rounded-md border border-primary/20 bg-primary/5 p-4 text-sm">
+                  <p className="font-medium text-foreground">Assigned contract</p>
+                  <p className="mt-1 leading-6 text-muted-foreground">This contract was assigned specifically to {requiredAssignment.companies?.name ?? requiredAssignment.profiles?.email ?? "this account"} and must be accepted before access continues.</p>
+                </div>
+              ) : null}
               {hasAcceptedCurrentTerms ? (
                 <div className="rounded-md bg-success/10 p-4 text-sm">
                   <p className="font-medium text-success">Current terms accepted</p>
