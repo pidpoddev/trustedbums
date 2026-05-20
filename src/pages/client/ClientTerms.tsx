@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle, Download, Mail, MessageCircle, ScrollText } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PartnerTermsContent } from "@/components/PartnerTermsContent";
+import { SubmitFeedbackButton } from "@/components/SubmitFeedbackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -85,6 +86,9 @@ export default function ClientTerms() {
 
   return (
     <div id="top">
+      <div className="mb-4 flex justify-end">
+        <SubmitFeedbackButton />
+      </div>
       <PageHeader
         title={isBumTerms ? "Trusted Bums Connector Terms" : "Trusted Bums Terms & Legal Agreements"}
         description={
