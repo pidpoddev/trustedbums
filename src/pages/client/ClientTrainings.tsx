@@ -61,6 +61,56 @@ function getOfficeViewerUrl(fileUrl: string) {
   return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
 }
 
+function getGoogleSlidesEmbedUrl(assetUrl?: string | null) {
+  if (!assetUrl) return null;
+
+  try {
+    const parsedUrl = new URL(assetUrl);
+    if (parsedUrl.hostname !== "docs.google.com" || !parsedUrl.pathname.includes("/presentation/")) {
+      return null;
+    }
+
+    const segments = parsedUrl.pathname.split("/").filter(Boolean);
+    const documentMarkerIndex = segments.indexOf("d");
+    if (documentMarkerIndex === -1) return null;
+
+    const isPublishedPath = segments[documentMarkerIndex + 1] === "e";
+    const presentationId = isPublishedPath ? segments[documentMarkerIndex + 2] : segments[documentMarkerIndex + 1];
+    if (!presentationId) return null;
+
+    const embedPath = isPublishedPath
+      ? `/presentation/d/e/${presentationId}/embed`
+      : `/presentation/d/${presentationId}/embed`;
+    return `${parsedUrl.origin}${embedPath}?start=false&loop=false&delayms=3000`;
+  } catch {
+    return null;
+  }
+}
+
+function LinkedAssetPreviewTile({ assetUrl }: { assetUrl: string }) {
+  const googleSlidesEmbedUrl = getGoogleSlidesEmbedUrl(assetUrl);
+
+  if (!googleSlidesEmbedUrl) {
+    return null;
+  }
+
+  return (
+    <div className="overflow-hidden rounded-md border bg-background">
+      <div className="flex aspect-video items-center justify-center bg-muted/30">
+        <iframe title="Google Slides preview" src={googleSlidesEmbedUrl} className="h-full w-full border-0" allowFullScreen />
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t px-3 py-2 text-xs text-muted-foreground">
+        <span>Google Slides</span>
+        <Button type="button" size="sm" variant="ghost" className="h-7 px-2" asChild>
+          <a href={assetUrl} target="_blank" rel="noreferrer">
+            <ExternalLink className="mr-1 h-3.5 w-3.5" /> Open
+          </a>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function LocalAttachmentPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const isImage = isImageAttachment(file.type, file.name);
@@ -405,7 +455,12 @@ export default function ClientTrainings() {
                   <p className="text-sm text-muted-foreground mt-1">{training.description ?? "No description provided."}</p>
                   <p className="text-xs text-muted-foreground mt-2">{training.technology ?? "General"} · Updated {formatDateForTimeZone(training.updated_at, timeZone)}</p>
                   <div className="mt-3 space-y-3">
-                    {training.resource_url ? <Button size="sm" variant="outline" asChild><a href={training.resource_url} target="_blank" rel="noreferrer">Open asset link</a></Button> : null}
+                    {training.resource_url ? (
+                      <>
+                        <Button size="sm" variant="outline" asChild><a href={training.resource_url} target="_blank" rel="noreferrer">Open asset link</a></Button>
+                        <LinkedAssetPreviewTile assetUrl={training.resource_url} />
+                      </>
+                    ) : null}
                     {(training.training_material_attachments ?? []).length ? (
                       <div className="grid gap-3 sm:grid-cols-2">
                         {(training.training_material_attachments ?? []).map((attachment) => (
