@@ -23,7 +23,7 @@ import {
   type TrainingMaterialAttachment,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { ExternalLink, FileText, Image as ImageIcon, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { ExternalLink, FileText, Image as ImageIcon, Pencil, Plus, Presentation, Search, Trash2, Upload, X } from "lucide-react";
 
 type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY" | "TECH_SPECIFIC";
 
@@ -49,9 +49,22 @@ function isPdfAttachment(fileType?: string | null, fileName?: string) {
   return Boolean(fileType === "application/pdf" || fileName?.match(/\.pdf$/i));
 }
 
+function isPresentationAttachment(fileType?: string | null, fileName?: string) {
+  return Boolean(
+    fileType === "application/vnd.ms-powerpoint" ||
+      fileType === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+      fileName?.match(/\.(ppt|pptx)$/i),
+  );
+}
+
+function getOfficeViewerUrl(fileUrl: string) {
+  return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+}
+
 function LocalAttachmentPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const isImage = isImageAttachment(file.type, file.name);
+  const isPresentation = isPresentationAttachment(file.type, file.name);
 
   useEffect(() => {
     if (!isImage) {
@@ -71,8 +84,8 @@ function LocalAttachmentPreview({ file, onRemove }: { file: File; onRemove: () =
           <img src={previewUrl} alt="Selected asset preview" className="h-full w-full object-contain" />
         ) : (
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <FileText className="h-8 w-8" />
-            <span className="text-xs">Document preview</span>
+            {isPresentation ? <Presentation className="h-8 w-8" /> : <FileText className="h-8 w-8" />}
+            <span className="text-xs">{isPresentation ? "Slide preview after upload" : "Document preview"}</span>
           </div>
         )}
       </div>
@@ -89,13 +102,15 @@ function LocalAttachmentPreview({ file, onRemove }: { file: File; onRemove: () =
 function AttachmentPreviewTile({ attachment, onOpen }: { attachment: TrainingMaterialAttachment; onOpen: (attachment: TrainingMaterialAttachment) => void }) {
   const isImage = isImageAttachment(attachment.file_type, attachment.file_name);
   const isPdf = isPdfAttachment(attachment.file_type, attachment.file_name);
+  const isPresentation = isPresentationAttachment(attachment.file_type, attachment.file_name);
   const previewQuery = useQuery({
     queryKey: ["training-attachment-preview", attachment.id, attachment.storage_path],
     queryFn: () => getTrainingMaterialAttachmentPreviewUrl(attachment),
-    enabled: isImage || isPdf,
+    enabled: isImage || isPdf || isPresentation,
     staleTime: 1000 * 60 * 5,
   });
   const previewUrl = previewQuery.data;
+  const officePreviewUrl = isPresentation && previewUrl ? getOfficeViewerUrl(previewUrl) : null;
 
   return (
     <div className="overflow-hidden rounded-md border bg-background">
@@ -104,10 +119,12 @@ function AttachmentPreviewTile({ attachment, onOpen }: { attachment: TrainingMat
           <img src={previewUrl} alt="Asset preview" className="h-full w-full object-contain" />
         ) : isPdf && previewUrl ? (
           <iframe title="Asset preview" src={previewUrl} className="h-full w-full border-0" />
+        ) : officePreviewUrl ? (
+          <iframe title="Presentation preview" src={officePreviewUrl} className="h-full w-full border-0" />
         ) : (
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            {isImage ? <ImageIcon className="h-8 w-8" /> : <FileText className="h-8 w-8" />}
-            <span className="text-xs">{previewQuery.isLoading ? "Loading preview" : "Document preview"}</span>
+            {isImage ? <ImageIcon className="h-8 w-8" /> : isPresentation ? <Presentation className="h-8 w-8" /> : <FileText className="h-8 w-8" />}
+            <span className="text-xs">{previewQuery.isLoading ? "Loading preview" : isPresentation ? "Slide preview" : "Document preview"}</span>
           </div>
         )}
       </div>
