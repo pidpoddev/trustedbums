@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ import {
   type TrainingMaterialAttachment,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { ExternalLink, FileText, Image as ImageIcon, Pencil, Plus, Presentation, Search, Trash2, Upload, X } from "lucide-react";
+import { Download, ExternalLink, FileText, Image as ImageIcon, Maximize2, Pencil, Plus, Presentation, Search, Trash2, Upload, X } from "lucide-react";
 
 type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY" | "TECH_SPECIFIC";
 
@@ -61,6 +61,16 @@ function getOfficeViewerUrl(fileUrl: string) {
   return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
 }
 
+type FullscreenTarget = HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void };
+
+function requestPreviewFullscreen(element: HTMLElement | null) {
+  const target = element as FullscreenTarget | null;
+  const requestFullscreen = target?.requestFullscreen ?? target?.webkitRequestFullscreen;
+  if (target && requestFullscreen) {
+    void requestFullscreen.call(target);
+  }
+}
+
 function getGoogleSlidesEmbedUrl(assetUrl?: string | null) {
   if (!assetUrl) return null;
 
@@ -88,6 +98,7 @@ function getGoogleSlidesEmbedUrl(assetUrl?: string | null) {
 }
 
 function LinkedAssetPreviewTile({ assetUrl }: { assetUrl: string }) {
+  const previewRef = useRef<HTMLDivElement>(null);
   const googleSlidesEmbedUrl = getGoogleSlidesEmbedUrl(assetUrl);
 
   if (!googleSlidesEmbedUrl) {
@@ -96,16 +107,21 @@ function LinkedAssetPreviewTile({ assetUrl }: { assetUrl: string }) {
 
   return (
     <div className="overflow-hidden rounded-md border bg-background">
-      <div className="flex aspect-video items-center justify-center bg-muted/30">
+      <div ref={previewRef} className="flex aspect-video items-center justify-center bg-muted/30">
         <iframe title="Google Slides preview" src={googleSlidesEmbedUrl} className="h-full w-full border-0" allowFullScreen />
       </div>
       <div className="flex items-center justify-between gap-3 border-t px-3 py-2 text-xs text-muted-foreground">
         <span>Google Slides</span>
-        <Button type="button" size="sm" variant="ghost" className="h-7 px-2" asChild>
-          <a href={assetUrl} target="_blank" rel="noreferrer">
-            <ExternalLink className="mr-1 h-3.5 w-3.5" /> Open
-          </a>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => requestPreviewFullscreen(previewRef.current)} aria-label="View Google Slides full screen">
+            <Maximize2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button type="button" size="icon" variant="ghost" className="h-7 w-7" asChild>
+            <a href={assetUrl} target="_blank" rel="noreferrer" aria-label="Open Google Slides">
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -149,7 +165,8 @@ function LocalAttachmentPreview({ file, onRemove }: { file: File; onRemove: () =
   );
 }
 
-function AttachmentPreviewTile({ attachment, onOpen }: { attachment: TrainingMaterialAttachment; onOpen: (attachment: TrainingMaterialAttachment) => void }) {
+function AttachmentPreviewTile({ attachment, onDownload }: { attachment: TrainingMaterialAttachment; onDownload: (attachment: TrainingMaterialAttachment) => void }) {
+  const previewRef = useRef<HTMLDivElement>(null);
   const isImage = isImageAttachment(attachment.file_type, attachment.file_name);
   const isPdf = isPdfAttachment(attachment.file_type, attachment.file_name);
   const isPresentation = isPresentationAttachment(attachment.file_type, attachment.file_name);
@@ -164,7 +181,7 @@ function AttachmentPreviewTile({ attachment, onOpen }: { attachment: TrainingMat
 
   return (
     <div className="overflow-hidden rounded-md border bg-background">
-      <div className="flex aspect-video items-center justify-center bg-muted/30">
+      <div ref={previewRef} className="flex aspect-video items-center justify-center bg-muted/30">
         {isImage && previewUrl ? (
           <img src={previewUrl} alt="Asset preview" className="h-full w-full object-contain" />
         ) : isPdf && previewUrl ? (
@@ -180,9 +197,14 @@ function AttachmentPreviewTile({ attachment, onOpen }: { attachment: TrainingMat
       </div>
       <div className="flex items-center justify-between gap-3 border-t px-3 py-2 text-xs text-muted-foreground">
         <span>{attachment.file_type || "Attachment"} · {formatAttachmentSize(attachment.file_size)}</span>
-        <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={() => onOpen(attachment)}>
-          <ExternalLink className="mr-1 h-3.5 w-3.5" /> Open
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => requestPreviewFullscreen(previewRef.current)} aria-label="View attachment full screen">
+            <Maximize2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDownload(attachment)} aria-label="Download attachment">
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -299,13 +321,13 @@ export default function ClientTrainings() {
     },
   });
 
-  const openAttachment = async (attachment: TrainingMaterialAttachment) => {
+  const downloadAttachment = async (attachment: TrainingMaterialAttachment) => {
     try {
       const url = await getTrainingMaterialAttachmentUrl(attachment);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
       toast({
-        title: "Unable to open attachment",
+        title: "Unable to download attachment",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -464,7 +486,7 @@ export default function ClientTrainings() {
                     {(training.training_material_attachments ?? []).length ? (
                       <div className="grid gap-3 sm:grid-cols-2">
                         {(training.training_material_attachments ?? []).map((attachment) => (
-                          <AttachmentPreviewTile key={attachment.id} attachment={attachment} onOpen={openAttachment} />
+                          <AttachmentPreviewTile key={attachment.id} attachment={attachment} onDownload={downloadAttachment} />
                         ))}
                       </div>
                     ) : null}
