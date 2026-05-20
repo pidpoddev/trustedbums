@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Download, FileCheck, FileUp, Linkedin, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { UserAppearanceCard } from "@/components/UserAppearanceCard";
 import { UserTimeZoneCard } from "@/components/UserTimeZoneCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -252,8 +253,9 @@ export default function BumProfile() {
     <div className="space-y-6">
       <PageHeader title="Profile" description="Build the connector profile that admins and clients will review." />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-3">
         <UserTimeZoneCard description="Your time zone controls how meetings and timestamps appear throughout the Bum portal." />
+        <UserAppearanceCard />
         <Card className={hasAcceptedCurrentTerms ? "border-success/40" : "border-warning/50"}>
           <CardHeader>
             <CardTitle className="font-display flex items-center gap-2">

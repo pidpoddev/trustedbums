@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ClientTermsGate } from "@/components/ClientTermsGate";
 import { RoleDashboardRedirect } from "@/components/RoleDashboardRedirect";
 import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -63,6 +64,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="trustedbums:theme">
       <Toaster />
       <Sonner />
       <AccessibilityProvider>
@@ -157,6 +159,7 @@ const App = () => (
           </AuthProvider>
         </BrowserRouter>
       </AccessibilityProvider>
+      </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

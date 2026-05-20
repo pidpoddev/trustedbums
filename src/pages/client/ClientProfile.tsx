@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
+import { UserAppearanceCard } from "@/components/UserAppearanceCard";
 import { UserTimeZoneCard } from "@/components/UserTimeZoneCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,8 +76,9 @@ export default function ClientProfile() {
     <div className="space-y-6">
       <PageHeader title="Company Profile" description="Manage the live company and user details tied to your client account." />
 
-      <div className="max-w-2xl">
+      <div className="grid max-w-4xl gap-4 lg:grid-cols-2">
         <UserTimeZoneCard description="Pick the time zone that should be used for meeting scheduling and timestamp display throughout the client portal." />
+        <UserAppearanceCard />
       </div>
 
       <Card className="max-w-2xl">
