@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit3, Link2, Plus, Search, Users } from "lucide-react";
+import { Edit3, Link2, Plus, ScrollText, Search, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import {
   listTermsAcceptances,
   type CompanyRecord,
   type CompanyRelationshipStage,
+  type TermsAcceptance,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 
@@ -48,6 +49,44 @@ const clientTypeFilters: { value: ClientTypeFilter; label: string }[] = [
   { value: "BUM_CONNECTED", label: "With Bum connections" },
   { value: "INACTIVE", label: "Inactive" },
 ];
+
+function TermsAcceptanceDetailButton({ acceptance, acceptedBy }: { acceptance: TermsAcceptance; acceptedBy: string }) {
+  const timeZone = useUserTimeZone();
+  const terms = acceptance.terms_versions;
+  const version = terms?.version ?? "Recorded terms";
+  const title = terms?.title ?? "Terms";
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="h-auto min-h-8 justify-start gap-2 whitespace-normal text-left text-xs">
+          <ScrollText className="h-3.5 w-3.5 shrink-0" />
+          <span>
+            <span className="font-medium">{version}</span>
+            <span className="text-muted-foreground"> by {acceptedBy} on {formatDateForTimeZone(acceptance.accepted_at, timeZone)}</span>
+          </span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="font-display">{title}</DialogTitle>
+          <DialogDescription>
+            {version} accepted by {acceptedBy} on {formatDateTimeForTimeZone(acceptance.accepted_at, timeZone)}.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[65vh] overflow-y-auto rounded-md border bg-muted/20 p-4 text-sm leading-6">
+          {terms?.body ? <div className="whitespace-pre-wrap">{terms.body}</div> : <p className="text-muted-foreground">The full terms body is not available for this recorded acceptance.</p>}
+          {terms?.faq_body ? (
+            <div className="mt-6 border-t pt-4">
+              <p className="mb-2 font-medium">FAQ</p>
+              <div className="whitespace-pre-wrap text-muted-foreground">{terms.faq_body}</div>
+            </div>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function AdminClientEditButton({ company }: { company: CompanyRecord }) {
   const { user } = useAuth();
@@ -204,13 +243,12 @@ export default function AdminClients() {
       const companyAcceptances = acceptances
         .filter((acceptance) => acceptance.company_id === company.id)
         .map((acceptance) => ({
-          version: acceptance.terms_versions?.version ?? acceptance.terms_version_id,
-          title: acceptance.terms_versions?.title ?? "Terms",
+          acceptance,
           acceptedAt: acceptance.accepted_at,
           acceptedBy:
             profilesById.get(acceptance.user_id)?.full_name ??
             profilesById.get(acceptance.user_id)?.email ??
-            acceptance.user_id,
+            "Client user",
         }))
         .sort((left, right) => right.acceptedAt.localeCompare(left.acceptedAt));
       const recommenderNames = Array.from(
@@ -449,9 +487,7 @@ export default function AdminClients() {
                         <div className="flex flex-wrap gap-2 pt-1">
                           {company.acceptedTerms.length ? (
                             company.acceptedTerms.map((terms) => (
-                              <Badge key={`${terms.version}-${terms.acceptedAt}-${terms.acceptedBy}`} variant="outline">
-                                {terms.version} by {terms.acceptedBy} on {formatDateForTimeZone(terms.acceptedAt, timeZone)}
-                              </Badge>
+                              <TermsAcceptanceDetailButton key={terms.acceptance.id} acceptance={terms.acceptance} acceptedBy={terms.acceptedBy} />
                             ))
                           ) : (
                             <Badge variant="outline">No accepted terms recorded</Badge>

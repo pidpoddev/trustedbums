@@ -607,7 +607,7 @@ export interface TermsAcceptance {
   user_agent: string | null;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
-  terms_versions?: Pick<TermsVersion, "version" | "title"> | null;
+  terms_versions?: Pick<TermsVersion, "id" | "version" | "title" | "body" | "faq_body" | "created_at"> | null;
 }
 
 export interface OpportunityRegistration {
@@ -1417,17 +1417,16 @@ export async function getTermsVersionByVersion(version: string, fallbackTerms: T
 }
 
 export async function getCurrentTermsAcceptance(userId: string, companyId: string | undefined, termsVersionId: string) {
-  let query = supabase
+  const query = supabase
     .from("terms_acceptances")
     .select("*")
-    .eq("user_id", userId)
     .eq("terms_version_id", termsVersionId);
 
-  if (companyId) {
-    query = query.eq("company_id", companyId);
-  }
+  const scopedQuery = companyId
+    ? query.eq("company_id", companyId)
+    : query.eq("user_id", userId).is("company_id", null);
 
-  const { data, error } = await query.order("accepted_at", { ascending: false }).limit(1).maybeSingle<TermsAcceptance>();
+  const { data, error } = await scopedQuery.order("accepted_at", { ascending: false }).limit(1).maybeSingle<TermsAcceptance>();
 
   if (error) {
     throw error;
@@ -2847,7 +2846,7 @@ export async function activateTermsVersion(user: AuthUser, terms: TermsVersion) 
 export async function listTermsAcceptances() {
   const { data, error } = await supabase
     .from("terms_acceptances")
-    .select("*, companies(name), terms_versions(version, title)")
+    .select("*, companies(name), terms_versions(id, version, title, body, faq_body, created_at)")
     .order("accepted_at", { ascending: false })
     .returns<TermsAcceptance[]>();
 
