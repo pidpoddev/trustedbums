@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createTrainingMaterial,
   deleteTrainingMaterial,
+  getTrainingMaterialAttachmentPreviewUrl,
   getTrainingMaterialAttachmentUrl,
   listCompanies,
   listTrainingMaterialsForUser,
@@ -22,7 +23,7 @@ import {
   type TrainingMaterialAttachment,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { Download, FileText, Paperclip, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { ExternalLink, FileText, Image as ImageIcon, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
 
 type TrainingTypeFilter = "ALL" | "LINKED_RESOURCE" | "REFERENCE_ONLY" | "TECH_SPECIFIC";
 
@@ -38,6 +39,86 @@ function formatAttachmentSize(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function isImageAttachment(fileType?: string | null, fileName?: string) {
+  return Boolean(fileType?.startsWith("image/") || fileName?.match(/\.(png|jpe?g|gif|webp|svg)$/i));
+}
+
+function isPdfAttachment(fileType?: string | null, fileName?: string) {
+  return Boolean(fileType === "application/pdf" || fileName?.match(/\.pdf$/i));
+}
+
+function LocalAttachmentPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const isImage = isImageAttachment(file.type, file.name);
+
+  useEffect(() => {
+    if (!isImage) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file, isImage]);
+
+  return (
+    <div className="overflow-hidden rounded-md border bg-background">
+      <div className="flex aspect-video items-center justify-center bg-muted/30">
+        {previewUrl ? (
+          <img src={previewUrl} alt="Selected asset preview" className="h-full w-full object-contain" />
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+            <FileText className="h-8 w-8" />
+            <span className="text-xs">Document preview</span>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t px-3 py-2 text-xs text-muted-foreground">
+        <span>{file.type || "Attachment"} · {formatAttachmentSize(file.size)}</span>
+        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={onRemove} aria-label="Remove selected attachment">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function AttachmentPreviewTile({ attachment, onOpen }: { attachment: TrainingMaterialAttachment; onOpen: (attachment: TrainingMaterialAttachment) => void }) {
+  const isImage = isImageAttachment(attachment.file_type, attachment.file_name);
+  const isPdf = isPdfAttachment(attachment.file_type, attachment.file_name);
+  const previewQuery = useQuery({
+    queryKey: ["training-attachment-preview", attachment.id, attachment.storage_path],
+    queryFn: () => getTrainingMaterialAttachmentPreviewUrl(attachment),
+    enabled: isImage || isPdf,
+    staleTime: 1000 * 60 * 5,
+  });
+  const previewUrl = previewQuery.data;
+
+  return (
+    <div className="overflow-hidden rounded-md border bg-background">
+      <div className="flex aspect-video items-center justify-center bg-muted/30">
+        {isImage && previewUrl ? (
+          <img src={previewUrl} alt="Asset preview" className="h-full w-full object-contain" />
+        ) : isPdf && previewUrl ? (
+          <iframe title="Asset preview" src={previewUrl} className="h-full w-full border-0" />
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+            {isImage ? <ImageIcon className="h-8 w-8" /> : <FileText className="h-8 w-8" />}
+            <span className="text-xs">{previewQuery.isLoading ? "Loading preview" : "Document preview"}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t px-3 py-2 text-xs text-muted-foreground">
+        <span>{attachment.file_type || "Attachment"} · {formatAttachmentSize(attachment.file_size)}</span>
+        <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={() => onOpen(attachment)}>
+          <ExternalLink className="mr-1 h-3.5 w-3.5" /> Open
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export default function ClientTrainings() {
@@ -231,18 +312,13 @@ export default function ClientTrainings() {
                 <Label htmlFor="trainingAttachments">Attachments</Label>
                 <Input id="trainingAttachments" type="file" multiple onChange={(event) => setAttachments(Array.from(event.target.files ?? []))} accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.png,.jpg,.jpeg" />
                 {attachments.length ? (
-                  <div className="grid gap-2 rounded-md border bg-muted/30 p-3">
+                  <div className="grid gap-3 rounded-md border bg-muted/30 p-3 sm:grid-cols-2 lg:grid-cols-3">
                     {attachments.map((file, index) => (
-                      <div key={`${file.name}-${file.size}-${index}`} className="flex items-center justify-between gap-3 text-sm">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
-                          <span className="truncate">{file.name}</span>
-                          <span className="shrink-0 text-xs text-muted-foreground">{formatAttachmentSize(file.size)}</span>
-                        </div>
-                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setAttachments((current) => current.filter((_, currentIndex) => currentIndex !== index))}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <LocalAttachmentPreview
+                        key={`${file.name}-${file.size}-${index}`}
+                        file={file}
+                        onRemove={() => setAttachments((current) => current.filter((_, currentIndex) => currentIndex !== index))}
+                      />
                     ))}
                   </div>
                 ) : null}
@@ -311,13 +387,15 @@ export default function ClientTrainings() {
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{training.description ?? "No description provided."}</p>
                   <p className="text-xs text-muted-foreground mt-2">{training.technology ?? "General"} · Updated {formatDateForTimeZone(training.updated_at, timeZone)}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 space-y-3">
                     {training.resource_url ? <Button size="sm" variant="outline" asChild><a href={training.resource_url} target="_blank" rel="noreferrer">Open asset link</a></Button> : null}
-                    {(training.training_material_attachments ?? []).map((attachment) => (
-                      <Button key={attachment.id} size="sm" variant="outline" onClick={() => openAttachment(attachment)}>
-                        <Download className="mr-2 h-4 w-4" />{attachment.file_name}
-                      </Button>
-                    ))}
+                    {(training.training_material_attachments ?? []).length ? (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {(training.training_material_attachments ?? []).map((attachment) => (
+                          <AttachmentPreviewTile key={attachment.id} attachment={attachment} onOpen={openAttachment} />
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>

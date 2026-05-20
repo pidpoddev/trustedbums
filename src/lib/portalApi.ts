@@ -4248,6 +4248,18 @@ export async function getTrainingMaterialAttachmentUrl(attachment: TrainingMater
   return data.signedUrl;
 }
 
+export async function getTrainingMaterialAttachmentPreviewUrl(attachment: TrainingMaterialAttachment, expiresInSeconds = 60 * 10) {
+  const { data, error } = await supabase.storage
+    .from(attachment.storage_bucket)
+    .createSignedUrl(attachment.storage_path, expiresInSeconds);
+
+  if (error) {
+    throw error;
+  }
+
+  return data.signedUrl;
+}
+
 export async function listTrainingMaterialsForUser(user: AuthUser) {
   let query = supabase
     .from("training_materials")
