@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Mail, MousePointerClick, Plus, Save, Send, ShieldAlert } from "lucide-react";
+import { CalendarClock, Eye, Image, Mail, Megaphone, MousePointerClick, Plus, Save, Send, ShieldAlert, Sparkles, Workflow } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,31 +10,48 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 import {
+  createAdminEmailSchedule,
   createAdminEmailTemplate,
+  createAdminEmailTriggerRule,
+  getAdminEmailBrandSettings,
+  listAdminEmailCampaigns,
   listAdminEmailDeliveries,
   listAdminEmailEngagementSummary,
+  listAdminEmailSchedules,
   listAdminEmailTemplates,
+  listAdminEmailTriggerRules,
   listCompanies,
+  saveAdminEmailBrandSettings,
   saveAdminEmailTemplate,
   sendAdminEmail,
+  updateAdminEmailSchedule,
+  updateAdminEmailTriggerRule,
+  type AdminEmailBrandSettingsInput,
   type AdminEmailCategory,
   type AdminEmailPreviewRecipient,
   type AdminEmailRecipientGroup,
+  type AdminEmailScheduleInput,
+  type AdminEmailScheduleRecord,
   type AdminEmailTemplateRecord,
   type AdminEmailTriggerEvent,
+  type AdminEmailTriggerRuleInput,
+  type AdminEmailTriggerRuleRecord,
 } from "@/lib/portalApi";
+
+type TriggerRuleEvent = Exclude<AdminEmailTriggerEvent, "MANUAL">;
 
 const recipientGroups: Array<{ value: AdminEmailRecipientGroup; label: string }> = [
   { value: "CLIENT_COMPANY", label: "Client company users" },
   { value: "ALL_CLIENTS", label: "All clients" },
   { value: "ALL_BUMS", label: "All Bums" },
-  { value: "BUM_INDUSTRY_MATCH", label: "Bums by industry match" },
+  { value: "BUM_INDUSTRY_MATCH", label: "Bums by industry" },
   { value: "ADMINS", label: "Admins" },
   { value: "CUSTOM", label: "Custom recipients" },
 ];
@@ -49,8 +66,7 @@ const categories: Array<{ value: AdminEmailCategory; label: string }> = [
   { value: "marketing", label: "Marketing" },
 ];
 
-const triggerEvents: Array<{ value: AdminEmailTriggerEvent; label: string }> = [
-  { value: "MANUAL", label: "Manual only" },
+const triggerEvents: Array<{ value: TriggerRuleEvent; label: string }> = [
   { value: "OPPORTUNITY_CLAIM_CREATED", label: "Opportunity claim created" },
   { value: "OPPORTUNITY_CLAIM_STATUS_CHANGED", label: "Claim status changed" },
   { value: "CLIENT_CREATED", label: "Client created" },
@@ -58,8 +74,26 @@ const triggerEvents: Array<{ value: AdminEmailTriggerEvent; label: string }> = [
   { value: "CONTACT_SUBMISSION_CREATED", label: "Contact form submitted" },
 ];
 
+const defaultBrand: AdminEmailBrandSettingsInput = {
+  sender_name: "Trusted Bums",
+  logo_url: "https://trustedbums.com/logo-mark.svg",
+  accent_color: "#ea580c",
+  footer_text: "Trusted Bums connects relationship-led sellers with companies that need warm introductions.",
+  physical_address: "",
+};
+
 function parseRecipients(value: string) {
   return Array.from(new Set(value.split(/[\n,;]+/).map((item) => item.trim().toLowerCase()).filter(Boolean)));
+}
+
+function parseJsonObject(value: string, fallback: Record<string, unknown> = {}) {
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  const parsed = JSON.parse(trimmed) as unknown;
+  if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
+    throw new Error("Use a JSON object like client_name: Acme.");
+  }
+  return parsed as Record<string, unknown>;
 }
 
 function cloneTemplate(template: AdminEmailTemplateRecord): AdminEmailTemplateRecord {
@@ -68,6 +102,22 @@ function cloneTemplate(template: AdminEmailTemplateRecord): AdminEmailTemplateRe
 
 function renderTemplateText(template: string, values: Record<string, string>) {
   return template.replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_match, key: string) => values[key] ?? "");
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function renderPreviewHtml(body: string, brand: AdminEmailBrandSettingsInput) {
+  const lines = body.split("\n").map((line) => {
+    const imageMatch = line.trim().match(/^!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)$/);
+    if (imageMatch) {
+      return '<img src="' + escapeHtml(imageMatch[2]) + '" alt="' + escapeHtml(imageMatch[1] || "Email image") + '" style="display:block;max-width:100%;height:auto;border:0;border-radius:8px;margin:16px 0;" />';
+    }
+    return escapeHtml(line).replace(/https?:\/\/[^\s<]+/g, (url) => '<a href="' + escapeHtml(url) + '" style="color:' + brand.accent_color + ';text-decoration:underline;">' + escapeHtml(url) + '</a>');
+  }).join("<br>");
+  const address = brand.physical_address ? '<div style="margin-top:8px;">' + escapeHtml(brand.physical_address) + '</div>' : "";
+  return '<div style="background:#f8fafc;padding:18px;"><div style="max-width:680px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;"><div style="padding:22px 26px;border-bottom:1px solid #e2e8f0;"><img src="' + escapeHtml(brand.logo_url || defaultBrand.logo_url) + '" alt="' + escapeHtml(brand.sender_name || "Trusted Bums") + '" style="display:block;max-height:48px;width:auto;border:0;" /><div style="height:4px;width:56px;background:' + brand.accent_color + ';border-radius:999px;margin-top:18px;"></div></div><div style="padding:26px;font-size:15px;line-height:1.65;color:#334155;">' + lines + '</div><div style="padding:16px 26px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:12px;line-height:1.5;color:#64748b;">' + escapeHtml(brand.footer_text || defaultBrand.footer_text) + address + '</div></div></div>';
 }
 
 function resolvePreviewRecipient(previewRecipients: AdminEmailPreviewRecipient[], testRecipientEmail: string) {
@@ -83,7 +133,7 @@ function createBlankTemplate(): AdminEmailTemplateRecord {
   return {
     id: "new-template",
     slug: "",
-    name: "New email template",
+    name: "New campaign email",
     description: "",
     recipient_group: "CUSTOM",
     trigger_event: "MANUAL",
@@ -101,34 +151,39 @@ function createBlankTemplate(): AdminEmailTemplateRecord {
   };
 }
 
+function summarizeCron(value: string) {
+  const known: Record<string, string> = {
+    "0 9 * * 1": "Mondays at 9:00",
+    "0 9 * * *": "Daily at 9:00",
+    "0 9 1 * *": "Monthly on the 1st at 9:00",
+  };
+  return known[value.trim()] ?? value;
+}
+
 export default function AdminEmails() {
   const { user } = useAuth();
   const { toast } = useToast();
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const canLoadAdminEmailData = user?.role === "ADMIN";
-  const templatesQuery = useQuery({
-    queryKey: ["admin-email-templates", user?.id],
-    queryFn: listAdminEmailTemplates,
-    enabled: canLoadAdminEmailData,
-  });
-  const deliveriesQuery = useQuery({
-    queryKey: ["admin-email-deliveries", user?.id],
-    queryFn: listAdminEmailDeliveries,
-    enabled: canLoadAdminEmailData,
-  });
-  const engagementQuery = useQuery({
-    queryKey: ["admin-email-engagement", user?.id],
-    queryFn: listAdminEmailEngagementSummary,
-    enabled: canLoadAdminEmailData,
-  });
-  const companiesQuery = useQuery({
-    queryKey: ["admin-email-companies", user?.id],
-    queryFn: listCompanies,
-    enabled: canLoadAdminEmailData,
-  });
+
+  const templatesQuery = useQuery({ queryKey: ["admin-email-templates", user?.id], queryFn: listAdminEmailTemplates, enabled: canLoadAdminEmailData });
+  const deliveriesQuery = useQuery({ queryKey: ["admin-email-deliveries", user?.id], queryFn: listAdminEmailDeliveries, enabled: canLoadAdminEmailData });
+  const engagementQuery = useQuery({ queryKey: ["admin-email-engagement", user?.id], queryFn: listAdminEmailEngagementSummary, enabled: canLoadAdminEmailData });
+  const campaignsQuery = useQuery({ queryKey: ["admin-email-campaigns", user?.id], queryFn: listAdminEmailCampaigns, enabled: canLoadAdminEmailData });
+  const triggerRulesQuery = useQuery({ queryKey: ["admin-email-trigger-rules", user?.id], queryFn: listAdminEmailTriggerRules, enabled: canLoadAdminEmailData });
+  const schedulesQuery = useQuery({ queryKey: ["admin-email-schedules", user?.id], queryFn: listAdminEmailSchedules, enabled: canLoadAdminEmailData });
+  const brandQuery = useQuery({ queryKey: ["admin-email-brand", user?.id], queryFn: getAdminEmailBrandSettings, enabled: canLoadAdminEmailData });
+  const companiesQuery = useQuery({ queryKey: ["admin-email-companies", user?.id], queryFn: listCompanies, enabled: canLoadAdminEmailData });
+
   const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
-  const companies = useMemo(() => companiesQuery.data ?? [], [companiesQuery.data]);
+  const deliveries = deliveriesQuery.data ?? [];
+  const engagement = engagementQuery.data ?? [];
+  const campaigns = campaignsQuery.data ?? [];
+  const schedules = schedulesQuery.data ?? [];
+  const triggerRules = triggerRulesQuery.data ?? [];
+  const companies = companiesQuery.data ?? [];
+
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [draft, setDraft] = useState<AdminEmailTemplateRecord | null>(null);
   const [metadata, setMetadata] = useState<Record<string, string>>({});
@@ -137,6 +192,17 @@ export default function AdminEmails() {
   const [previewRecipients, setPreviewRecipients] = useState<AdminEmailPreviewRecipient[]>([]);
   const [previewCount, setPreviewCount] = useState(0);
   const [suppressedCount, setSuppressedCount] = useState(0);
+  const [brandDraft, setBrandDraft] = useState<AdminEmailBrandSettingsInput>(defaultBrand);
+  const [imageUrl, setImageUrl] = useState("");
+  const [scheduleId, setScheduleId] = useState<string | null>(null);
+  const [scheduleForm, setScheduleForm] = useState({ name: "", template_id: "", cron_expression: "0 9 * * 1", recipient_group: "ALL_BUMS" as AdminEmailRecipientGroup, recipient_emails: "", metadata: "{}", category: "admin_announcements" as AdminEmailCategory, next_run_at: "", is_active: true });
+  const [triggerRuleId, setTriggerRuleId] = useState<string | null>(null);
+  const [triggerForm, setTriggerForm] = useState({ name: "", trigger_event: "CLIENT_CREATED" as TriggerRuleEvent, template_id: "", delay_minutes: 0, conditions: "{}", is_active: true });
+
+  const selectedTemplate = useMemo(() => {
+    if (selectedTemplateId === "new-template") return undefined;
+    return selectedTemplateId ? templates.find((template) => template.id === selectedTemplateId) : templates[0];
+  }, [selectedTemplateId, templates]);
 
   const startNewTemplate = () => {
     setSelectedTemplateId("new-template");
@@ -148,16 +214,11 @@ export default function AdminEmails() {
     setSuppressedCount(0);
   };
 
-  const selectedTemplate = useMemo(() => {
-    if (selectedTemplateId === "new-template") return undefined;
-    return selectedTemplateId ? templates.find((template) => template.id === selectedTemplateId) : templates[0];
-  }, [selectedTemplateId, templates]);
-
   useEffect(() => {
     if (!selectedTemplate) return;
     setSelectedTemplateId(selectedTemplate.id);
     setDraft(cloneTemplate(selectedTemplate));
-    setMetadata(Object.fromEntries(selectedTemplate.metadata_fields.map((field) => [field, field === "admin_note" ? "Review this in the portal when you have a chance." : ""])));
+    setMetadata(Object.fromEntries(selectedTemplate.metadata_fields.map((field) => [field, field === "message" ? "Add your message here." : ""])));
     setCustomRecipients("");
     setPreviewRecipients([]);
     setPreviewCount(0);
@@ -165,12 +226,44 @@ export default function AdminEmails() {
   }, [selectedTemplate]);
 
   useEffect(() => {
-    if (templatesQuery.isSuccess && templates.length === 0 && !draft) {
-      startNewTemplate();
-    }
+    if (templatesQuery.isSuccess && templates.length === 0 && !draft) startNewTemplate();
   }, [draft, templates.length, templatesQuery.isSuccess]);
 
-  const saveMutation = useMutation({
+  useEffect(() => {
+    if (brandQuery.data) {
+      setBrandDraft({
+        sender_name: brandQuery.data.sender_name,
+        logo_url: brandQuery.data.logo_url,
+        accent_color: brandQuery.data.accent_color,
+        footer_text: brandQuery.data.footer_text,
+        physical_address: brandQuery.data.physical_address ?? "",
+      });
+    }
+  }, [brandQuery.data]);
+
+  const updateDraft = <Key extends keyof AdminEmailTemplateRecord>(key: Key, value: AdminEmailTemplateRecord[Key]) => {
+    setDraft((current) => (current ? { ...current, [key]: value } : current));
+  };
+
+  const insertBodySnippet = (snippet: string) => {
+    setDraft((current) => current ? { ...current, body: current.body.trimEnd() + "\n\n" + snippet } : current);
+  };
+
+  const livePreview = useMemo(() => {
+    if (!draft) return null;
+    const customPreviewEmail = draft.recipient_group === "CUSTOM" ? parseRecipients(customRecipients)[0] : "";
+    const recipient = resolvePreviewRecipient(previewRecipients, customPreviewEmail || testRecipientEmail);
+    const previewMetadata = {
+      ...metadata,
+      recipient_email: recipient.email,
+      recipient_name: metadata.recipient_name || recipient.name,
+      client_name: metadata.client_name || recipient.name,
+      bum_name: metadata.bum_name || recipient.name,
+    };
+    return { body: renderTemplateText(draft.body, previewMetadata), subject: renderTemplateText(draft.subject, previewMetadata), to: recipient.email };
+  }, [customRecipients, draft, metadata, previewRecipients, testRecipientEmail]);
+
+  const saveTemplateMutation = useMutation({
     mutationFn: () => {
       if (!user || !draft) throw new Error("Choose a template first.");
       return draft.id === "new-template" ? createAdminEmailTemplate(user, draft) : saveAdminEmailTemplate(user, draft);
@@ -179,13 +272,29 @@ export default function AdminEmails() {
       setSelectedTemplateId(savedTemplate.id);
       setDraft(cloneTemplate(savedTemplate));
       await queryClient.invalidateQueries({ queryKey: ["admin-email-templates", user?.id] });
-      toast({ title: "Template saved", description: "Future manual and triggered sends will use the new copy." });
+      toast({ title: "Email saved", description: "Template, audience defaults, and trigger setup were saved." });
     },
-    onError: (error) => toast({ title: "Unable to save template", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }),
+    onError: (error) => toast({ title: "Unable to save email", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }),
   });
 
+  const validateSavedTemplate = () => {
+    if (!draft) return "Choose an email first.";
+    if (draft.id === "new-template") return "Save this email before previewing, testing, or sending it.";
+    return null;
+  };
+
+  const validateAudience = () => {
+    const saved = validateSavedTemplate();
+    if (saved) return saved;
+    if (!draft) return "Choose an email first.";
+    if (draft.recipient_group === "CUSTOM" && parseRecipients(customRecipients).length === 0) return "Add at least one custom recipient.";
+    if (draft.recipient_group === "CLIENT_COMPANY" && !metadata.company_id?.trim()) return "Choose a client company.";
+    if (draft.recipient_group === "BUM_INDUSTRY_MATCH" && !metadata.industry?.trim()) return "Enter an industry.";
+    return null;
+  };
+
   const buildSendInput = (mode: "manual" | "preview" | "test") => {
-    if (!draft) throw new Error("Choose a template first.");
+    if (!draft) throw new Error("Choose an email first.");
     return {
       mode,
       templateId: draft.id,
@@ -199,85 +308,13 @@ export default function AdminEmails() {
     };
   };
 
-  const livePreview = useMemo(() => {
-    if (!draft) return null;
-    const customPreviewEmail = draft.recipient_group === "CUSTOM" ? parseRecipients(customRecipients)[0] : "";
-    const recipient = resolvePreviewRecipient(previewRecipients, customPreviewEmail || testRecipientEmail);
-    const previewMetadata = {
-      ...metadata,
-      recipient_email: recipient.email,
-      recipient_name: recipient.name,
-      client_name: metadata.client_name || recipient.name,
-      bum_name: metadata.bum_name || recipient.name,
-    };
-
-    return {
-      body: renderTemplateText(draft.body, previewMetadata),
-      subject: renderTemplateText(draft.subject, previewMetadata),
-      to: recipient.email,
-    };
-  }, [customRecipients, draft, metadata, previewRecipients, testRecipientEmail]);
-
-  const validateSavedTemplate = () => {
-    if (!draft) return "Choose a template first.";
-    if (draft.id === "new-template") return "Save this template before previewing, testing, or sending it.";
-    return null;
-  };
-
-  const validateAudience = () => {
-    const templateMessage = validateSavedTemplate();
-    if (templateMessage) return templateMessage;
-    if (!draft) return "Choose a template first.";
-    if (draft.recipient_group === "CUSTOM" && parseRecipients(customRecipients).length === 0) {
-      return "Add at least one custom recipient before previewing this audience.";
-    }
-    if (draft.recipient_group === "CLIENT_COMPANY" && !metadata.company_id?.trim()) {
-      return "Choose a client company so the audience can be resolved.";
-    }
-    if (draft.recipient_group === "BUM_INDUSTRY_MATCH" && !metadata.industry?.trim()) {
-      return "Enter an industry so matching Bums can be found.";
-    }
-    return null;
-  };
-
-  const showValidationToast = (description: string) => {
-    toast({ title: "Audience needs details", description, variant: "destructive" });
-  };
-
-  const handlePreviewAudience = () => {
-    const validationMessage = validateAudience();
-    if (validationMessage) {
-      showValidationToast(validationMessage);
-      return;
-    }
-    previewMutation.mutate();
-  };
-
-  const handleSendTest = () => {
-    const validationMessage = validateSavedTemplate();
-    if (validationMessage) {
-      showValidationToast(validationMessage);
-      return;
-    }
-    sendMutation.mutate("test");
-  };
-
-  const handleSendManual = () => {
-    const validationMessage = validateAudience();
-    if (validationMessage) {
-      showValidationToast(validationMessage);
-      return;
-    }
-    sendMutation.mutate("manual");
-  };
-
   const previewMutation = useMutation({
     mutationFn: () => sendAdminEmail(buildSendInput("preview")),
     onSuccess: (result) => {
       setPreviewRecipients(result.recipients ?? []);
       setPreviewCount(result.count ?? 0);
       setSuppressedCount(result.suppressed ?? 0);
-      toast({ title: "Audience preview ready", description: `${result.count ?? 0} sendable recipients${result.suppressed ? `, ${result.suppressed} suppressed` : ""}.` });
+      toast({ title: "Audience ready", description: (result.count ?? 0) + " sendable recipients" + (result.suppressed ? ", " + result.suppressed + " suppressed" : "") + "." });
     },
     onError: (error) => toast({ title: "Unable to preview audience", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }),
   });
@@ -285,152 +322,266 @@ export default function AdminEmails() {
   const sendMutation = useMutation({
     mutationFn: (mode: "manual" | "test") => sendAdminEmail(buildSendInput(mode)),
     onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-email-deliveries", user?.id] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-email-engagement", user?.id] });
-      toast({ title: result.mode === "test" ? "Test email sent" : "Email send complete", description: `${result.sent} sent${result.failed ? `, ${result.failed} failed` : ""}${result.suppressed ? `, ${result.suppressed} suppressed` : ""}.` });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-email-deliveries", user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-email-campaigns", user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-email-engagement", user?.id] }),
+      ]);
+      toast({ title: result.mode === "test" ? "Test email sent" : "Campaign sent", description: result.sent + " sent" + (result.failed ? ", " + result.failed + " failed" : "") + (result.suppressed ? ", " + result.suppressed + " suppressed" : "") + "." });
     },
     onError: (error) => toast({ title: "Unable to send email", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }),
   });
 
-  const updateDraft = <Key extends keyof AdminEmailTemplateRecord>(key: Key, value: AdminEmailTemplateRecord[Key]) => {
-    setDraft((current) => (current ? { ...current, [key]: value } : current));
+  const saveBrandMutation = useMutation({
+    mutationFn: () => {
+      if (!user) throw new Error("Sign in first.");
+      return saveAdminEmailBrandSettings(user, brandDraft);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-email-brand", user?.id] });
+      toast({ title: "Branding saved", description: "Future sends will use the updated email wrapper." });
+    },
+    onError: (error) => toast({ title: "Unable to save branding", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }),
+  });
+
+  const saveScheduleMutation = useMutation({
+    mutationFn: () => {
+      if (!user) throw new Error("Sign in first.");
+      const input: AdminEmailScheduleInput = {
+        name: scheduleForm.name.trim(),
+        template_id: scheduleForm.template_id,
+        is_active: scheduleForm.is_active,
+        cron_expression: scheduleForm.cron_expression.trim(),
+        recipient_group: scheduleForm.recipient_group,
+        recipient_emails: parseRecipients(scheduleForm.recipient_emails),
+        metadata: parseJsonObject(scheduleForm.metadata),
+        category: scheduleForm.category,
+        next_run_at: scheduleForm.next_run_at ? new Date(scheduleForm.next_run_at).toISOString() : null,
+      };
+      if (!input.name || !input.template_id) throw new Error("Add a schedule name and choose an email.");
+      return scheduleId ? updateAdminEmailSchedule(user, scheduleId, input) : createAdminEmailSchedule(user, input);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-email-schedules", user?.id] });
+      setScheduleId(null);
+      setScheduleForm((current) => ({ ...current, name: "", recipient_emails: "", metadata: "{}", next_run_at: "" }));
+      toast({ title: "Recurring email saved", description: "The cron definition is now in Admin Emails." });
+    },
+    onError: (error) => toast({ title: "Unable to save recurring email", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }),
+  });
+
+  const saveTriggerMutation = useMutation({
+    mutationFn: () => {
+      if (!user) throw new Error("Sign in first.");
+      const input: AdminEmailTriggerRuleInput = {
+        name: triggerForm.name.trim(),
+        trigger_event: triggerForm.trigger_event,
+        template_id: triggerForm.template_id,
+        is_active: triggerForm.is_active,
+        delay_minutes: Number(triggerForm.delay_minutes) || 0,
+        conditions: parseJsonObject(triggerForm.conditions),
+      };
+      if (!input.name || !input.template_id) throw new Error("Add a trigger name and choose an email.");
+      return triggerRuleId ? updateAdminEmailTriggerRule(user, triggerRuleId, input) : createAdminEmailTriggerRule(user, input);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-email-trigger-rules", user?.id] });
+      setTriggerRuleId(null);
+      setTriggerForm((current) => ({ ...current, name: "", conditions: "{}", delay_minutes: 0 }));
+      toast({ title: "Trigger saved", description: "The event-driven email rule is now configured." });
+    },
+    onError: (error) => toast({ title: "Unable to save trigger", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }),
+  });
+
+  const handlePreviewAudience = () => {
+    const validation = validateAudience();
+    if (validation) {
+      toast({ title: "Audience needs details", description: validation, variant: "destructive" });
+      return;
+    }
+    previewMutation.mutate();
   };
 
-  const engagement = engagementQuery.data ?? [];
-  const deliveries = deliveriesQuery.data ?? [];
+  const handleSendTest = () => {
+    const validation = validateSavedTemplate();
+    if (validation) {
+      toast({ title: "Save first", description: validation, variant: "destructive" });
+      return;
+    }
+    sendMutation.mutate("test");
+  };
+
+  const handleSendManual = () => {
+    const validation = validateAudience();
+    if (validation) {
+      toast({ title: "Audience needs details", description: validation, variant: "destructive" });
+      return;
+    }
+    sendMutation.mutate("manual");
+  };
+
+  const editSchedule = (schedule: AdminEmailScheduleRecord) => {
+    setScheduleId(schedule.id);
+    setScheduleForm({
+      name: schedule.name,
+      template_id: schedule.template_id,
+      cron_expression: schedule.cron_expression,
+      recipient_group: schedule.recipient_group,
+      recipient_emails: schedule.recipient_emails.join(", "),
+      metadata: JSON.stringify(schedule.metadata, null, 2),
+      category: schedule.category,
+      next_run_at: schedule.next_run_at ? schedule.next_run_at.slice(0, 16) : "",
+      is_active: schedule.is_active,
+    });
+  };
+
+  const editTriggerRule = (rule: AdminEmailTriggerRuleRecord) => {
+    setTriggerRuleId(rule.id);
+    setTriggerForm({
+      name: rule.name,
+      trigger_event: rule.trigger_event,
+      template_id: rule.template_id,
+      delay_minutes: rule.delay_minutes,
+      conditions: JSON.stringify(rule.conditions, null, 2),
+      is_active: rule.is_active,
+    });
+  };
+
   const totalOpens = deliveries.filter((delivery) => delivery.opened_at).length;
   const totalClicks = deliveries.filter((delivery) => delivery.clicked_at).length;
+  const sentCampaigns = campaigns.filter((campaign) => campaign.status === "SENT").length;
+  const activeAutomations = schedules.filter((schedule) => schedule.is_active).length + triggerRules.filter((rule) => rule.is_active).length;
 
   return (
     <div>
-      <PageHeader title="Emails" description="Create reusable templates, test copy, send targeted messages, and track engagement.">
-        <Button variant="outline" onClick={startNewTemplate}>
-          <Plus className="mr-2 h-4 w-4" />New Template
-        </Button>
+      <PageHeader title="Emails" description="Send campaigns, manage recurring emails, configure triggers, and control email branding.">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={startNewTemplate}><Plus className="mr-2 h-4 w-4" />New Email</Button>
+          <Button onClick={handleSendManual} disabled={sendMutation.isPending || !draft}><Send className="mr-2 h-4 w-4" />Send</Button>
+        </div>
       </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Sendable preview</p><p className="text-2xl font-semibold">{previewCount}</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Suppressed</p><p className="text-2xl font-semibold">{suppressedCount}</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Tracked opens</p><p className="text-2xl font-semibold">{totalOpens}</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Tracked clicks</p><p className="text-2xl font-semibold">{totalClicks}</p></CardContent></Card>
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
+        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Campaigns sent</p><p className="text-2xl font-semibold">{sentCampaigns}</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Sendable preview</p><p className="text-2xl font-semibold">{previewCount}</p><p className="text-xs text-muted-foreground">{suppressedCount} suppressed</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Automations active</p><p className="text-2xl font-semibold">{activeAutomations}</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Tracked engagement</p><p className="text-2xl font-semibold">{totalOpens}/{totalClicks}</p><p className="text-xs text-muted-foreground">opens / clicks</p></CardContent></Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 font-display"><Mail className="h-5 w-5" />Templates</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {templatesQuery.isLoading ? <p className="text-sm text-muted-foreground">Loading templates...</p> : null}
-            {templatesQuery.isError ? <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">Unable to load templates. Refresh your session and confirm this account has Admin access.</p> : null}
-            {!templatesQuery.isLoading && !templatesQuery.isError && !templates.length ? (
-              <div className="rounded-md border p-3 text-sm">
-                <p className="text-muted-foreground">No templates are visible yet. Use New Template to create one.</p>
-                <Button className="mt-3 w-full" variant="outline" onClick={startNewTemplate}>
-                  <Plus className="mr-2 h-4 w-4" />New Template
-                </Button>
-              </div>
-            ) : null}
-            {draft?.id === "new-template" ? (
-              <button type="button" className="w-full rounded-lg border border-primary bg-primary/5 p-3 text-left text-sm">
-                <span className="font-medium">New email template</span>
-                <p className="mt-1 text-xs text-muted-foreground">Unsaved draft</p>
-              </button>
-            ) : null}
-            {templates.map((template) => (
-              <button key={template.id} type="button" onClick={() => setSelectedTemplateId(template.id)} className={`w-full rounded-lg border p-3 text-left text-sm transition hover:border-primary ${template.id === selectedTemplateId ? "border-primary bg-primary/5" : "border-border"}`}>
-                <div className="flex items-start justify-between gap-2"><span className="font-medium">{template.name}</span><Badge variant={template.is_active ? "default" : "secondary"}>{template.is_active ? "Active" : "Off"}</Badge></div>
-                <p className="mt-1 text-xs text-muted-foreground">{template.description}</p>
-                <p className="mt-2 text-xs text-muted-foreground">{categories.find((item) => item.value === template.category)?.label ?? template.category}</p>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="send" className="space-y-4">
+        <TabsList className="flex h-auto flex-wrap justify-start">
+          <TabsTrigger value="send"><Megaphone className="mr-2 h-4 w-4" />Send</TabsTrigger>
+          <TabsTrigger value="automations"><Workflow className="mr-2 h-4 w-4" />Automations</TabsTrigger>
+          <TabsTrigger value="brand"><Sparkles className="mr-2 h-4 w-4" />Brand & Assets</TabsTrigger>
+          <TabsTrigger value="results"><MousePointerClick className="mr-2 h-4 w-4" />Results</TabsTrigger>
+        </TabsList>
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader><CardTitle className="font-display">Template editor</CardTitle></CardHeader>
-            <CardContent className="space-y-5">
-              {!draft ? <p className="text-sm text-muted-foreground">Choose a template to start composing.</p> : (
-                <>
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="space-y-2"><Label>Name</Label><Input value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} /></div>
-                    <div className="space-y-2"><Label>Recipient group</Label><Select value={draft.recipient_group} onValueChange={(value) => updateDraft("recipient_group", value as AdminEmailRecipientGroup)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{recipientGroups.map((group) => <SelectItem key={group.value} value={group.value}>{group.label}</SelectItem>)}</SelectContent></Select></div>
-                  </div>
-                  <div className="grid gap-4 lg:grid-cols-3">
-                    <div className="space-y-2"><Label>Trigger</Label><Select value={draft.trigger_event ?? "MANUAL"} onValueChange={(value) => updateDraft("trigger_event", value as AdminEmailTriggerEvent)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{triggerEvents.map((trigger) => <SelectItem key={trigger.value} value={trigger.value}>{trigger.label}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Category</Label><Select value={draft.category} onValueChange={(value) => updateDraft("category", value as AdminEmailCategory)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categories.map((category) => <SelectItem key={category.value} value={category.value}>{category.label}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="flex items-center justify-between rounded-md border px-3 py-2"><Label>Active</Label><Switch checked={draft.is_active} onCheckedChange={(checked) => updateDraft("is_active", checked)} /></div>
-                  </div>
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="space-y-2"><Label>Reply-to</Label><Input value={draft.reply_to ?? ""} onChange={(event) => updateDraft("reply_to", event.target.value)} placeholder="bums@trustedbums.com" /></div>
-                    <div className="space-y-2"><Label>Test recipient</Label><Input value={testRecipientEmail} onChange={(event) => setTestRecipientEmail(event.target.value)} /></div>
-                  </div>
-                  <div className="space-y-2"><Label>Subject</Label><Input value={draft.subject} onChange={(event) => updateDraft("subject", event.target.value)} /></div>
-                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
-                    <div className="space-y-2"><Label>Body</Label><Textarea rows={13} value={draft.body} onChange={(event) => updateDraft("body", event.target.value)} /></div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Label>Live email preview</Label>
-                        <Badge variant="secondary" className="max-w-[220px] truncate">To {livePreview?.to}</Badge>
-                      </div>
-                      <div className="overflow-hidden rounded-lg border bg-background shadow-sm">
-                        <div className="border-b bg-muted/40 px-4 py-3">
-                          <p className="truncate text-xs text-muted-foreground">To {livePreview?.to}</p>
-                          <p className="mt-1 truncate font-medium">{livePreview?.subject || "(No subject)"}</p>
-                        </div>
-                        <div className="max-h-[420px] overflow-auto bg-white p-4 text-slate-950">
-                          <div className="mx-auto max-w-[640px] rounded-md border border-slate-200 bg-white shadow-sm">
-                            <div className="border-b border-slate-200 px-5 py-4">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">Trusted Bums</p>
-                              <h3 className="mt-2 text-lg font-semibold leading-tight text-slate-950">{livePreview?.subject || "(No subject)"}</h3>
-                            </div>
-                            <div className="whitespace-pre-wrap px-5 py-4 text-sm leading-6 text-slate-800">{livePreview?.body || "Email body will appear here."}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-2"><Label>Metadata fields</Label><Input value={draft.metadata_fields.join(", ")} onChange={(event) => updateDraft("metadata_fields", event.target.value.split(",").map((field) => field.trim()).filter(Boolean))} /></div>
-                  {draft.recipient_group === "CLIENT_COMPANY" ? (
-                    <div className="space-y-2">
-                      <Label>Client company for audience preview</Label>
-                      <Select
-                        value={metadata.company_id ?? ""}
-                        onValueChange={(value) => {
-                          const company = companies.find((item) => item.id === value);
-                          setMetadata((current) => ({ ...current, company_id: value, client_name: current.client_name || company?.name || "" }));
-                        }}
-                      >
-                        <SelectTrigger><SelectValue placeholder={companiesQuery.isLoading ? "Loading companies..." : "Choose a client company"} /></SelectTrigger>
-                        <SelectContent>{companies.map((company) => <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                  ) : null}
-                  {draft.recipient_group === "CUSTOM" ? <div className="space-y-2"><Label>Custom recipients</Label><Textarea rows={3} value={customRecipients} onChange={(event) => setCustomRecipients(event.target.value)} placeholder="one@example.com, two@example.com" /></div> : null}
-                  {draft.metadata_fields.length ? <div className="grid gap-3 md:grid-cols-2">{draft.metadata_fields.map((field) => <div key={field} className="space-y-2"><Label>{field}</Label><Input value={metadata[field] ?? ""} onChange={(event) => setMetadata((current) => ({ ...current, [field]: event.target.value }))} /></div>)}</div> : null}
-                  <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}><Save className="mr-2 h-4 w-4" />{draft.id === "new-template" ? "Create Template" : "Save Template"}</Button><Button variant="outline" onClick={handleSendTest} disabled={sendMutation.isPending}><ShieldAlert className="mr-2 h-4 w-4" />Send Test</Button></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={handlePreviewAudience} disabled={previewMutation.isPending}><Eye className="mr-2 h-4 w-4" />Preview Audience</Button><Button onClick={handleSendManual} disabled={sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send Manually</Button></div></div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="send" className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2 font-display"><Mail className="h-5 w-5" />Emails</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {templatesQuery.isLoading ? <p className="text-sm text-muted-foreground">Loading emails...</p> : null}
+                {draft?.id === "new-template" ? <button type="button" className="w-full rounded-md border border-primary bg-primary/5 p-3 text-left text-sm"><span className="font-medium">New email</span><p className="mt-1 text-xs text-muted-foreground">Unsaved draft</p></button> : null}
+                {templates.map((template) => (
+                  <button key={template.id} type="button" onClick={() => setSelectedTemplateId(template.id)} className={"w-full rounded-md border p-3 text-left text-sm transition hover:border-primary " + (template.id === selectedTemplateId ? "border-primary bg-primary/5" : "border-border")}>
+                    <div className="flex items-start justify-between gap-2"><span className="font-medium">{template.name}</span><Badge variant={template.is_active ? "default" : "secondary"}>{template.is_active ? "Active" : "Off"}</Badge></div>
+                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{template.description || "No description"}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{categories.find((item) => item.value === template.category)?.label ?? template.category}</p>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
 
+            <div className="space-y-4">
+              <Card>
+                <CardHeader><CardTitle className="font-display">Campaign setup</CardTitle></CardHeader>
+                <CardContent className="space-y-5">
+                  {!draft ? <p className="text-sm text-muted-foreground">Choose or create an email to start.</p> : (
+                    <>
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="space-y-2"><Label>Name</Label><Input value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} /></div>
+                        <div className="space-y-2"><Label>Audience</Label><Select value={draft.recipient_group} onValueChange={(value) => updateDraft("recipient_group", value as AdminEmailRecipientGroup)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{recipientGroups.map((group) => <SelectItem key={group.value} value={group.value}>{group.label}</SelectItem>)}</SelectContent></Select></div>
+                      </div>
+                      <div className="grid gap-4 lg:grid-cols-3">
+                        <div className="space-y-2"><Label>Category</Label><Select value={draft.category} onValueChange={(value) => updateDraft("category", value as AdminEmailCategory)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categories.map((category) => <SelectItem key={category.value} value={category.value}>{category.label}</SelectItem>)}</SelectContent></Select></div>
+                        <div className="space-y-2"><Label>Trigger default</Label><Select value={draft.trigger_event ?? "MANUAL"} onValueChange={(value) => updateDraft("trigger_event", value as AdminEmailTriggerEvent)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MANUAL">Manual only</SelectItem>{triggerEvents.map((trigger) => <SelectItem key={trigger.value} value={trigger.value}>{trigger.label}</SelectItem>)}</SelectContent></Select></div>
+                        <div className="flex items-center justify-between rounded-md border px-3 py-2"><Label>Active</Label><Switch checked={draft.is_active} onCheckedChange={(checked) => updateDraft("is_active", checked)} /></div>
+                      </div>
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="space-y-2"><Label>Reply-to</Label><Input value={draft.reply_to ?? ""} onChange={(event) => updateDraft("reply_to", event.target.value)} placeholder="bums@trustedbums.com" /></div>
+                        <div className="space-y-2"><Label>Test recipient</Label><Input value={testRecipientEmail} onChange={(event) => setTestRecipientEmail(event.target.value)} /></div>
+                      </div>
+                      {draft.recipient_group === "CLIENT_COMPANY" ? <div className="space-y-2"><Label>Client company</Label><Select value={metadata.company_id ?? ""} onValueChange={(value) => { const company = companies.find((item) => item.id === value); setMetadata((current) => ({ ...current, company_id: value, client_name: current.client_name || company?.name || "" })); }}><SelectTrigger><SelectValue placeholder="Choose a client company" /></SelectTrigger><SelectContent>{companies.map((company) => <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>)}</SelectContent></Select></div> : null}
+                      {draft.recipient_group === "CUSTOM" ? <div className="space-y-2"><Label>Custom recipients</Label><Textarea rows={3} value={customRecipients} onChange={(event) => setCustomRecipients(event.target.value)} placeholder="one@example.com, two@example.com" /></div> : null}
+                      <div className="space-y-2"><Label>Subject</Label><Input value={draft.subject} onChange={(event) => updateDraft("subject", event.target.value)} /></div>
+                      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2"><Label>Body</Label><div className="flex gap-2"><Button type="button" variant="outline" size="sm" onClick={() => insertBodySnippet("![Trusted Bums logo](" + brandDraft.logo_url + ")")}><Image className="mr-2 h-4 w-4" />Logo</Button><Button type="button" variant="outline" size="sm" onClick={() => imageUrl ? insertBodySnippet("![Email image](" + imageUrl + ")") : toast({ title: "Add image URL", description: "Paste an image URL in Brand & Assets first.", variant: "destructive" })}><Image className="mr-2 h-4 w-4" />Image</Button></div></div>
+                          <Textarea rows={16} value={draft.body} onChange={(event) => updateDraft("body", event.target.value)} />
+                        </div>
+                        <div className="space-y-2"><div className="flex items-center justify-between gap-2"><Label>Preview</Label><Badge variant="secondary" className="max-w-[220px] truncate">To {livePreview?.to}</Badge></div><div className="overflow-hidden rounded-md border bg-white"><div className="border-b bg-muted/40 px-4 py-3"><p className="truncate text-xs text-muted-foreground">{livePreview?.to}</p><p className="mt-1 truncate font-medium text-slate-950">{livePreview?.subject || "(No subject)"}</p></div><div className="max-h-[520px] overflow-auto" dangerouslySetInnerHTML={{ __html: renderPreviewHtml(livePreview?.body || "", brandDraft) }} /></div></div>
+                      </div>
+                      <div className="space-y-2"><Label>Merge fields</Label><Input value={draft.metadata_fields.join(", ")} onChange={(event) => updateDraft("metadata_fields", event.target.value.split(",").map((field) => field.trim()).filter(Boolean))} /></div>
+                      {draft.metadata_fields.length ? <div className="grid gap-3 md:grid-cols-2">{draft.metadata_fields.map((field) => <div key={field} className="space-y-2"><Label>{field}</Label><Input value={metadata[field] ?? ""} onChange={(event) => setMetadata((current) => ({ ...current, [field]: event.target.value }))} /></div>)}</div> : null}
+                      <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => saveTemplateMutation.mutate()} disabled={saveTemplateMutation.isPending}><Save className="mr-2 h-4 w-4" />Save Email</Button><Button variant="outline" onClick={handleSendTest} disabled={sendMutation.isPending}><ShieldAlert className="mr-2 h-4 w-4" />Send Test</Button></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={handlePreviewAudience} disabled={previewMutation.isPending}><Eye className="mr-2 h-4 w-4" />Preview Audience</Button><Button onClick={handleSendManual} disabled={sendMutation.isPending}><Send className="mr-2 h-4 w-4" />Send Now</Button></div></div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="font-display">Audience preview</CardTitle></CardHeader>
+                <CardContent><div className="max-h-72 overflow-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>Recipient</TableHead><TableHead>Status</TableHead></TableRow></TableHeader><TableBody>{previewRecipients.map((recipient) => <TableRow key={recipient.email}><TableCell>{recipient.name ? recipient.name + " · " + recipient.email : recipient.email}</TableCell><TableCell><Badge variant={recipient.suppressed ? "destructive" : "default"}>{recipient.suppressed ? recipient.suppressionReason ?? "Suppressed" : "Sendable"}</Badge></TableCell></TableRow>)}{!previewRecipients.length ? <TableRow><TableCell colSpan={2} className="text-sm text-muted-foreground">Preview an audience before sending.</TableCell></TableRow> : null}</TableBody></Table></div></CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="automations" className="space-y-4">
           <div className="grid gap-4 xl:grid-cols-2">
             <Card>
-              <CardHeader><CardTitle className="font-display">Audience preview</CardTitle></CardHeader>
-              <CardContent><div className="max-h-72 overflow-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>Recipient</TableHead><TableHead>Status</TableHead></TableRow></TableHeader><TableBody>{previewRecipients.map((recipient) => <TableRow key={recipient.email}><TableCell>{recipient.name ? `${recipient.name} · ${recipient.email}` : recipient.email}</TableCell><TableCell><Badge variant={recipient.suppressed ? "destructive" : "default"}>{recipient.suppressed ? recipient.suppressionReason ?? "Suppressed" : "Sendable"}</Badge></TableCell></TableRow>)}{!previewRecipients.length ? <TableRow><TableCell colSpan={2} className="text-sm text-muted-foreground">Preview an audience before sending.</TableCell></TableRow> : null}</TableBody></Table></div></CardContent>
+              <CardHeader><CardTitle className="flex items-center gap-2 font-display"><CalendarClock className="h-5 w-5" />Recurring emails</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2"><div className="space-y-2"><Label>Name</Label><Input value={scheduleForm.name} onChange={(event) => setScheduleForm((current) => ({ ...current, name: event.target.value }))} placeholder="Weekly Bum digest" /></div><div className="space-y-2"><Label>Email</Label><Select value={scheduleForm.template_id} onValueChange={(value) => setScheduleForm((current) => ({ ...current, template_id: value }))}><SelectTrigger><SelectValue placeholder="Choose email" /></SelectTrigger><SelectContent>{templates.map((template) => <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>)}</SelectContent></Select></div></div>
+                <div className="grid gap-4 md:grid-cols-3"><div className="space-y-2"><Label>Cron</Label><Input value={scheduleForm.cron_expression} onChange={(event) => setScheduleForm((current) => ({ ...current, cron_expression: event.target.value }))} /></div><div className="space-y-2"><Label>Audience</Label><Select value={scheduleForm.recipient_group} onValueChange={(value) => setScheduleForm((current) => ({ ...current, recipient_group: value as AdminEmailRecipientGroup }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{recipientGroups.map((group) => <SelectItem key={group.value} value={group.value}>{group.label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label>Next run</Label><Input type="datetime-local" value={scheduleForm.next_run_at} onChange={(event) => setScheduleForm((current) => ({ ...current, next_run_at: event.target.value }))} /></div></div>
+                {scheduleForm.recipient_group === "CUSTOM" ? <div className="space-y-2"><Label>Custom recipients</Label><Textarea rows={2} value={scheduleForm.recipient_emails} onChange={(event) => setScheduleForm((current) => ({ ...current, recipient_emails: event.target.value }))} /></div> : null}
+                <div className="space-y-2"><Label>Metadata JSON</Label><Textarea rows={4} value={scheduleForm.metadata} onChange={(event) => setScheduleForm((current) => ({ ...current, metadata: event.target.value }))} /></div>
+                <div className="flex items-center justify-between rounded-md border px-3 py-2"><Label>Active</Label><Switch checked={scheduleForm.is_active} onCheckedChange={(checked) => setScheduleForm((current) => ({ ...current, is_active: checked }))} /></div>
+                <Button onClick={() => saveScheduleMutation.mutate()} disabled={saveScheduleMutation.isPending}><Save className="mr-2 h-4 w-4" />{scheduleId ? "Update Recurring Email" : "Create Recurring Email"}</Button>
+                <div className="rounded-md border"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Schedule</TableHead><TableHead>Status</TableHead></TableRow></TableHeader><TableBody>{schedules.map((schedule) => <TableRow key={schedule.id} className="cursor-pointer" onClick={() => editSchedule(schedule)}><TableCell><p className="font-medium">{schedule.name}</p><p className="text-xs text-muted-foreground">{schedule.admin_email_templates?.name}</p></TableCell><TableCell>{summarizeCron(schedule.cron_expression)}</TableCell><TableCell><Badge variant={schedule.is_active ? "default" : "secondary"}>{schedule.is_active ? "Active" : "Off"}</Badge></TableCell></TableRow>)}{!schedules.length ? <TableRow><TableCell colSpan={3} className="text-sm text-muted-foreground">No recurring emails yet.</TableCell></TableRow> : null}</TableBody></Table></div>
+              </CardContent>
             </Card>
+
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2 font-display"><MousePointerClick className="h-5 w-5" />Most engaged</CardTitle></CardHeader>
-              <CardContent><div className="max-h-72 overflow-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>Person</TableHead><TableHead>Role</TableHead><TableHead>Score</TableHead><TableHead>Last</TableHead></TableRow></TableHeader><TableBody>{engagement.slice(0, 10).map((row) => <TableRow key={row.recipient_email}><TableCell><p>{row.full_name ?? row.recipient_email}</p><p className="text-xs text-muted-foreground">{row.company_name ?? row.recipient_email}</p></TableCell><TableCell>{row.role ?? "-"}</TableCell><TableCell>{row.engagement_score}</TableCell><TableCell>{row.last_engaged_at ? formatDateTimeForTimeZone(row.last_engaged_at, timeZone) : "-"}</TableCell></TableRow>)}{!engagement.length ? <TableRow><TableCell colSpan={4} className="text-sm text-muted-foreground">No tracked engagement yet.</TableCell></TableRow> : null}</TableBody></Table></div></CardContent>
+              <CardHeader><CardTitle className="flex items-center gap-2 font-display"><Workflow className="h-5 w-5" />Triggered emails</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2"><div className="space-y-2"><Label>Name</Label><Input value={triggerForm.name} onChange={(event) => setTriggerForm((current) => ({ ...current, name: event.target.value }))} placeholder="New claim client alert" /></div><div className="space-y-2"><Label>Event</Label><Select value={triggerForm.trigger_event} onValueChange={(value) => setTriggerForm((current) => ({ ...current, trigger_event: value as TriggerRuleEvent }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{triggerEvents.map((event) => <SelectItem key={event.value} value={event.value}>{event.label}</SelectItem>)}</SelectContent></Select></div></div>
+                <div className="grid gap-4 md:grid-cols-2"><div className="space-y-2"><Label>Email</Label><Select value={triggerForm.template_id} onValueChange={(value) => setTriggerForm((current) => ({ ...current, template_id: value }))}><SelectTrigger><SelectValue placeholder="Choose email" /></SelectTrigger><SelectContent>{templates.map((template) => <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label>Delay minutes</Label><Input type="number" min={0} value={triggerForm.delay_minutes} onChange={(event) => setTriggerForm((current) => ({ ...current, delay_minutes: Number(event.target.value) }))} /></div></div>
+                <div className="space-y-2"><Label>Conditions JSON</Label><Textarea rows={4} value={triggerForm.conditions} onChange={(event) => setTriggerForm((current) => ({ ...current, conditions: event.target.value }))} /></div>
+                <div className="flex items-center justify-between rounded-md border px-3 py-2"><Label>Active</Label><Switch checked={triggerForm.is_active} onCheckedChange={(checked) => setTriggerForm((current) => ({ ...current, is_active: checked }))} /></div>
+                <Button onClick={() => saveTriggerMutation.mutate()} disabled={saveTriggerMutation.isPending}><Save className="mr-2 h-4 w-4" />{triggerRuleId ? "Update Trigger" : "Create Trigger"}</Button>
+                <div className="rounded-md border"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Event</TableHead><TableHead>Status</TableHead></TableRow></TableHeader><TableBody>{triggerRules.map((rule) => <TableRow key={rule.id} className="cursor-pointer" onClick={() => editTriggerRule(rule)}><TableCell><p className="font-medium">{rule.name}</p><p className="text-xs text-muted-foreground">{rule.admin_email_templates?.name}</p></TableCell><TableCell>{triggerEvents.find((event) => event.value === rule.trigger_event)?.label ?? rule.trigger_event}</TableCell><TableCell><Badge variant={rule.is_active ? "default" : "secondary"}>{rule.is_active ? "Active" : "Off"}</Badge></TableCell></TableRow>)}{!triggerRules.length ? <TableRow><TableCell colSpan={3} className="text-sm text-muted-foreground">No trigger rules yet.</TableCell></TableRow> : null}</TableBody></Table></div>
+              </CardContent>
             </Card>
           </div>
+        </TabsContent>
 
-          <Card>
-            <CardHeader><CardTitle className="font-display">Recent deliveries</CardTitle></CardHeader>
-            <CardContent><Table><TableHeader><TableRow><TableHead>Recipient</TableHead><TableHead>Template</TableHead><TableHead>Status</TableHead><TableHead>Engagement</TableHead><TableHead>Created</TableHead></TableRow></TableHeader><TableBody>{deliveries.map((delivery) => <TableRow key={delivery.id}><TableCell>{delivery.recipient_email}</TableCell><TableCell>{delivery.template_slug ?? "Custom"}{delivery.is_test ? <Badge className="ml-2" variant="secondary">Test</Badge> : null}</TableCell><TableCell><Badge variant={delivery.status === "SENT" ? "default" : delivery.status === "FAILED" ? "destructive" : "secondary"}>{delivery.status}</Badge></TableCell><TableCell><div className="flex gap-2 text-xs"><span className={delivery.opened_at ? "text-foreground" : "text-muted-foreground"}>open</span><span className={delivery.clicked_at ? "text-foreground" : "text-muted-foreground"}>click</span><span>{delivery.engagement_score}</span></div></TableCell><TableCell>{formatDateTimeForTimeZone(delivery.created_at, timeZone)}</TableCell></TableRow>)}{!deliveriesQuery.isLoading && !deliveries.length ? <TableRow><TableCell colSpan={5} className="text-sm text-muted-foreground">No email deliveries have been logged yet.</TableCell></TableRow> : null}</TableBody></Table></CardContent>
-          </Card>
-        </div>
-      </div>
+        <TabsContent value="brand" className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]">
+            <Card><CardHeader><CardTitle className="font-display">Brand settings</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid gap-4 md:grid-cols-2"><div className="space-y-2"><Label>Sender name</Label><Input value={brandDraft.sender_name} onChange={(event) => setBrandDraft((current) => ({ ...current, sender_name: event.target.value }))} /></div><div className="space-y-2"><Label>Accent color</Label><Input type="color" value={brandDraft.accent_color} onChange={(event) => setBrandDraft((current) => ({ ...current, accent_color: event.target.value }))} /></div></div><div className="space-y-2"><Label>Logo URL</Label><Input value={brandDraft.logo_url} onChange={(event) => setBrandDraft((current) => ({ ...current, logo_url: event.target.value }))} /></div><div className="space-y-2"><Label>Reusable image URL</Label><Input value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://..." /></div><div className="space-y-2"><Label>Footer text</Label><Textarea rows={3} value={brandDraft.footer_text} onChange={(event) => setBrandDraft((current) => ({ ...current, footer_text: event.target.value }))} /></div><div className="space-y-2"><Label>Physical address</Label><Input value={brandDraft.physical_address ?? ""} onChange={(event) => setBrandDraft((current) => ({ ...current, physical_address: event.target.value }))} /></div><div className="flex flex-wrap gap-2"><Button onClick={() => saveBrandMutation.mutate()} disabled={saveBrandMutation.isPending}><Save className="mr-2 h-4 w-4" />Save Branding</Button><Button variant="outline" onClick={() => insertBodySnippet("![Trusted Bums logo](" + brandDraft.logo_url + ")")} disabled={!draft}><Image className="mr-2 h-4 w-4" />Insert Logo</Button><Button variant="outline" onClick={() => imageUrl && insertBodySnippet("![Email image](" + imageUrl + ")")} disabled={!draft || !imageUrl}><Image className="mr-2 h-4 w-4" />Insert Image</Button></div></CardContent></Card>
+            <Card><CardHeader><CardTitle className="font-display">Email wrapper preview</CardTitle></CardHeader><CardContent><div className="overflow-hidden rounded-md border bg-white" dangerouslySetInnerHTML={{ __html: renderPreviewHtml(livePreview?.body || "Hi {{recipient_name}},\n\nYour branded email preview will appear here.", brandDraft) }} /></CardContent></Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="results" className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Card><CardHeader><CardTitle className="font-display">Campaigns</CardTitle></CardHeader><CardContent><div className="max-h-80 overflow-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Status</TableHead><TableHead>Recipients</TableHead><TableHead>Sent</TableHead></TableRow></TableHeader><TableBody>{campaigns.map((campaign) => <TableRow key={campaign.id}><TableCell><p className="font-medium">{campaign.name}</p><p className="text-xs text-muted-foreground">{campaign.template_slug}</p></TableCell><TableCell><Badge variant={campaign.status === "SENT" ? "default" : campaign.status === "FAILED" ? "destructive" : "secondary"}>{campaign.status}</Badge></TableCell><TableCell>{campaign.recipient_count}</TableCell><TableCell>{campaign.sent_at ? formatDateTimeForTimeZone(campaign.sent_at, timeZone) : "-"}</TableCell></TableRow>)}{!campaigns.length ? <TableRow><TableCell colSpan={4} className="text-sm text-muted-foreground">No campaigns yet.</TableCell></TableRow> : null}</TableBody></Table></div></CardContent></Card>
+            <Card><CardHeader><CardTitle className="flex items-center gap-2 font-display"><MousePointerClick className="h-5 w-5" />Most engaged</CardTitle></CardHeader><CardContent><div className="max-h-80 overflow-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>Person</TableHead><TableHead>Role</TableHead><TableHead>Score</TableHead><TableHead>Last</TableHead></TableRow></TableHeader><TableBody>{engagement.slice(0, 10).map((row) => <TableRow key={row.recipient_email}><TableCell><p>{row.full_name ?? row.recipient_email}</p><p className="text-xs text-muted-foreground">{row.company_name ?? row.recipient_email}</p></TableCell><TableCell>{row.role ?? "-"}</TableCell><TableCell>{row.engagement_score}</TableCell><TableCell>{row.last_engaged_at ? formatDateTimeForTimeZone(row.last_engaged_at, timeZone) : "-"}</TableCell></TableRow>)}{!engagement.length ? <TableRow><TableCell colSpan={4} className="text-sm text-muted-foreground">No tracked engagement yet.</TableCell></TableRow> : null}</TableBody></Table></div></CardContent></Card>
+          </div>
+          <Card><CardHeader><CardTitle className="font-display">Recent deliveries</CardTitle></CardHeader><CardContent><div className="overflow-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>Recipient</TableHead><TableHead>Email</TableHead><TableHead>Status</TableHead><TableHead>Engagement</TableHead><TableHead>Created</TableHead></TableRow></TableHeader><TableBody>{deliveries.map((delivery) => <TableRow key={delivery.id}><TableCell>{delivery.recipient_email}</TableCell><TableCell>{delivery.template_slug ?? "Custom"}{delivery.is_test ? <Badge className="ml-2" variant="secondary">Test</Badge> : null}</TableCell><TableCell><Badge variant={delivery.status === "SENT" ? "default" : delivery.status === "FAILED" ? "destructive" : "secondary"}>{delivery.status}</Badge></TableCell><TableCell><div className="flex gap-2 text-xs"><span className={delivery.opened_at ? "text-foreground" : "text-muted-foreground"}>open</span><span className={delivery.clicked_at ? "text-foreground" : "text-muted-foreground"}>click</span><span>{delivery.engagement_score}</span></div></TableCell><TableCell>{formatDateTimeForTimeZone(delivery.created_at, timeZone)}</TableCell></TableRow>)}{!deliveriesQuery.isLoading && !deliveries.length ? <TableRow><TableCell colSpan={5} className="text-sm text-muted-foreground">No email deliveries have been logged yet.</TableCell></TableRow> : null}</TableBody></Table></div></CardContent></Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

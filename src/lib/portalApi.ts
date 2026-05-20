@@ -241,6 +241,75 @@ export interface AdminEmailEngagementSummaryRecord {
   last_engaged_at: string | null;
 }
 
+export type AdminEmailCampaignStatus = "DRAFT" | "SENT" | "FAILED" | "CANCELLED";
+
+export interface AdminEmailCampaignRecord {
+  id: string;
+  template_id: string | null;
+  template_slug: string | null;
+  name: string;
+  status: AdminEmailCampaignStatus;
+  recipient_group: AdminEmailRecipientGroup;
+  recipient_count: number;
+  category: AdminEmailCategory;
+  subject_snapshot: string;
+  body_snapshot: string;
+  metadata: Record<string, unknown>;
+  created_by: string | null;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminEmailTriggerRuleRecord {
+  id: string;
+  name: string;
+  trigger_event: Exclude<AdminEmailTriggerEvent, "MANUAL">;
+  template_id: string;
+  is_active: boolean;
+  delay_minutes: number;
+  conditions: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  admin_email_templates?: Pick<AdminEmailTemplateRecord, "id" | "name" | "slug"> | null;
+}
+
+export interface AdminEmailScheduleRecord {
+  id: string;
+  name: string;
+  template_id: string;
+  is_active: boolean;
+  cron_expression: string;
+  recipient_group: AdminEmailRecipientGroup;
+  recipient_emails: string[];
+  metadata: Record<string, unknown>;
+  category: AdminEmailCategory;
+  next_run_at: string | null;
+  last_run_at: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+  admin_email_templates?: Pick<AdminEmailTemplateRecord, "id" | "name" | "slug"> | null;
+}
+
+export interface AdminEmailBrandSettingsRecord {
+  id: boolean;
+  sender_name: string;
+  logo_url: string;
+  accent_color: string;
+  footer_text: string;
+  physical_address: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AdminEmailScheduleInput = Pick<AdminEmailScheduleRecord, "name" | "template_id" | "is_active" | "cron_expression" | "recipient_group" | "recipient_emails" | "metadata" | "category" | "next_run_at">;
+export type AdminEmailTriggerRuleInput = Pick<AdminEmailTriggerRuleRecord, "name" | "trigger_event" | "template_id" | "is_active" | "delay_minutes" | "conditions">;
+export type AdminEmailBrandSettingsInput = Pick<AdminEmailBrandSettingsRecord, "sender_name" | "logo_url" | "accent_color" | "footer_text" | "physical_address">;
+
 export interface ProspectRecommendationRecord {
   id: string;
   company_id: string;
@@ -3260,6 +3329,170 @@ export async function listAdminEmailEngagementSummary() {
   }
 
   return data ?? [];
+}
+
+export async function listAdminEmailCampaigns() {
+  const { data, error } = await supabase
+    .from("admin_email_campaigns")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50)
+    .returns<AdminEmailCampaignRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listAdminEmailTriggerRules() {
+  const { data, error } = await supabase
+    .from("admin_email_trigger_rules")
+    .select("*, admin_email_templates(id, name, slug)")
+    .order("created_at", { ascending: false })
+    .returns<AdminEmailTriggerRuleRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createAdminEmailTriggerRule(user: AuthUser, input: AdminEmailTriggerRuleInput) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can create email trigger rules.");
+  }
+
+  const { data, error } = await supabase
+    .from("admin_email_trigger_rules")
+    .insert({ ...input, created_by: user.id })
+    .select("*, admin_email_templates(id, name, slug)")
+    .single<AdminEmailTriggerRuleRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "admin_email_trigger_rule_created", "admin_email_trigger_rules", data.id, { trigger_event: data.trigger_event });
+  return data;
+}
+
+export async function updateAdminEmailTriggerRule(user: AuthUser, id: string, input: AdminEmailTriggerRuleInput) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can update email trigger rules.");
+  }
+
+  const { data, error } = await supabase
+    .from("admin_email_trigger_rules")
+    .update(input)
+    .eq("id", id)
+    .select("*, admin_email_templates(id, name, slug)")
+    .single<AdminEmailTriggerRuleRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "admin_email_trigger_rule_updated", "admin_email_trigger_rules", data.id, { trigger_event: data.trigger_event, is_active: data.is_active });
+  return data;
+}
+
+export async function listAdminEmailSchedules() {
+  const { data, error } = await supabase
+    .from("admin_email_schedules")
+    .select("*, admin_email_templates(id, name, slug)")
+    .order("created_at", { ascending: false })
+    .returns<AdminEmailScheduleRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createAdminEmailSchedule(user: AuthUser, input: AdminEmailScheduleInput) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can create recurring emails.");
+  }
+
+  const { data, error } = await supabase
+    .from("admin_email_schedules")
+    .insert({ ...input, created_by: user.id, updated_by: user.id })
+    .select("*, admin_email_templates(id, name, slug)")
+    .single<AdminEmailScheduleRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "admin_email_schedule_created", "admin_email_schedules", data.id, { cron_expression: data.cron_expression, template_id: data.template_id });
+  return data;
+}
+
+export async function updateAdminEmailSchedule(user: AuthUser, id: string, input: AdminEmailScheduleInput) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can update recurring emails.");
+  }
+
+  const { data, error } = await supabase
+    .from("admin_email_schedules")
+    .update({ ...input, updated_by: user.id })
+    .eq("id", id)
+    .select("*, admin_email_templates(id, name, slug)")
+    .single<AdminEmailScheduleRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "admin_email_schedule_updated", "admin_email_schedules", data.id, { cron_expression: data.cron_expression, is_active: data.is_active });
+  return data;
+}
+
+export async function getAdminEmailBrandSettings() {
+  const { data, error } = await supabase
+    .from("admin_email_brand_settings")
+    .select("*")
+    .eq("id", true)
+    .maybeSingle<AdminEmailBrandSettingsRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? {
+    id: true,
+    sender_name: "Trusted Bums",
+    logo_url: "https://trustedbums.com/logo-mark.svg",
+    accent_color: "#ea580c",
+    footer_text: "Trusted Bums connects relationship-led sellers with companies that need warm introductions.",
+    physical_address: null,
+    updated_by: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export async function saveAdminEmailBrandSettings(user: AuthUser, input: AdminEmailBrandSettingsInput) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can update email branding.");
+  }
+
+  const { data, error } = await supabase
+    .from("admin_email_brand_settings")
+    .upsert({ id: true, ...input, updated_by: user.id }, { onConflict: "id" })
+    .select("*")
+    .single<AdminEmailBrandSettingsRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "admin_email_brand_settings_updated", "admin_email_brand_settings", undefined, { sender_name: data.sender_name });
+  return data;
 }
 
 export async function sendAdminEmail(input: AdminEmailSendInput) {
