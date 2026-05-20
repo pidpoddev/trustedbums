@@ -81,6 +81,7 @@ const microsoftClientId = Deno.env.get("MICROSOFT_CLIENT_ID");
 const microsoftClientSecret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
 const microsoftOrganizerEmail = Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
 const microsoftLogoUrl = Deno.env.get("MICROSOFT_LOGO_URL") ?? "https://trustedbums.com/logo-light.jpg";
+const onlineMeetingRetryDelaysMs = [1_000, 2_500, 5_000, 10_000, 15_000];
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -98,6 +99,10 @@ function json(status: number, payload: Record<string, unknown>) {
     status,
     headers: corsHeaders,
   });
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function getBearerToken(request: Request) {
@@ -387,11 +392,9 @@ async function resolveOnlineMeetingId(teamsJoinUrl: string | null, accessToken: 
     return null;
   }
 
-  const params = new URLSearchParams({
-    $filter: `JoinWebUrl eq '${escapeODataString(teamsJoinUrl)}'`,
-  });
+  const filter = encodeURIComponent(`JoinWebUrl eq '${escapeODataString(teamsJoinUrl)}'`);
   const payload = await graphGetJson<GraphCollection<GraphOnlineMeeting>>(
-    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings?${params.toString()}`,
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings?$filter=${filter}`,
     accessToken,
     "Resolve Teams online meeting from join URL",
   );
@@ -409,6 +412,7 @@ async function configureOnlineMeetingOptions(onlineMeetingId: string, accessToke
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        allowRecording: true,
         allowTranscription: true,
         lobbyBypassSettings: {
           isDialInBypassEnabled: true,
@@ -423,6 +427,57 @@ async function configureOnlineMeetingOptions(onlineMeetingId: string, accessToke
     const payload = (await response.json().catch(() => ({}))) as GraphErrorPayload;
     throw new Error(microsoftGraphErrorMessage(payload, "Configure Teams meeting recording/transcription options", response.status));
   }
+}
+
+async function resolveOnlineMeetingIdWithRetry(teamsJoinUrl: string | null, accessToken: string) {
+  if (!teamsJoinUrl) {
+    return null;
+  }
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= onlineMeetingRetryDelaysMs.length; attempt += 1) {
+    try {
+      const onlineMeetingId = await resolveOnlineMeetingId(teamsJoinUrl, accessToken);
+
+      if (onlineMeetingId) {
+        return onlineMeetingId;
+      }
+
+      lastError = new Error("Microsoft Graph returned no online meeting for the Teams join URL.");
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Unable to resolve Teams online meeting.");
+    }
+
+    const delayMs = onlineMeetingRetryDelaysMs[attempt];
+
+    if (delayMs) {
+      await sleep(delayMs);
+    }
+  }
+
+  throw lastError ?? new Error("Unable to resolve Teams online meeting.");
+}
+
+async function configureOnlineMeetingOptionsWithRetry(onlineMeetingId: string, accessToken: string) {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= onlineMeetingRetryDelaysMs.length; attempt += 1) {
+    try {
+      await configureOnlineMeetingOptions(onlineMeetingId, accessToken);
+      return;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Unable to configure Teams meeting options.");
+    }
+
+    const delayMs = onlineMeetingRetryDelaysMs[attempt];
+
+    if (delayMs) {
+      await sleep(delayMs);
+    }
+  }
+
+  throw lastError ?? new Error("Unable to configure Teams meeting options.");
 }
 
 async function findOpportunityRegistrationId(target: CustomerTargetRow) {
@@ -517,13 +572,13 @@ Deno.serve(async (request: Request) => {
     let meetingOptionsWarning: string | null = null;
 
     try {
-      microsoftOnlineMeetingId = microsoftOnlineMeetingId ?? (await resolveOnlineMeetingId(teamsJoinUrl, accessToken));
+      microsoftOnlineMeetingId = (await resolveOnlineMeetingIdWithRetry(teamsJoinUrl, accessToken)) ?? microsoftOnlineMeetingId;
 
       if (!microsoftOnlineMeetingId) {
         throw new Error("Microsoft Graph did not return an online meeting ID for meeting option updates.");
       }
 
-      await configureOnlineMeetingOptions(microsoftOnlineMeetingId, accessToken);
+      await configureOnlineMeetingOptionsWithRetry(microsoftOnlineMeetingId, accessToken);
       meetingOptionsConfigured = true;
     } catch (error) {
       meetingOptionsWarning =
