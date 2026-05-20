@@ -45,6 +45,9 @@ verify_jwt = false
 [functions.sync-teams-attendees]
 verify_jwt = false
 
+[functions.sync-teams-transcripts]
+verify_jwt = false
+
 [functions.sync-clerk-users]
 verify_jwt = false
 

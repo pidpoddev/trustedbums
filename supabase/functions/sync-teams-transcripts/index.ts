@@ -60,6 +60,7 @@ const microsoftTenantId = Deno.env.get("MICROSOFT_TENANT_ID");
 const microsoftClientId = Deno.env.get("MICROSOFT_CLIENT_ID");
 const microsoftClientSecret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
 const microsoftOrganizerEmail = Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
+const onlineMeetingRetryDelaysMs = [1_000, 2_500, 5_000, 10_000, 15_000];
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -77,6 +78,10 @@ function json(status: number, payload: Record<string, unknown>) {
     status,
     headers: corsHeaders,
   });
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function clampBatchSize(value: unknown) {
@@ -231,11 +236,9 @@ async function resolveOnlineMeetingId(meeting: TeamsMeetingRow, accessToken: str
     throw new Error("Meeting does not have a Teams join URL.");
   }
 
-  const params = new URLSearchParams({
-    $filter: `JoinWebUrl eq '${escapeODataString(meeting.teams_join_url)}'`,
-  });
+  const filter = encodeURIComponent(`JoinWebUrl eq '${escapeODataString(meeting.teams_join_url)}'`);
   const payload = await graphGetJson<GraphCollection<GraphOnlineMeeting>>(
-    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings?${params.toString()}`,
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftOrganizerEmail)}/onlineMeetings?$filter=${filter}`,
     accessToken,
     "Resolve Teams online meeting from join URL",
   );
@@ -253,6 +256,25 @@ async function resolveOnlineMeetingId(meeting: TeamsMeetingRow, accessToken: str
     .eq("id", meeting.id);
 
   return onlineMeetingId;
+}
+
+async function resolveOnlineMeetingIdWithRetry(meeting: TeamsMeetingRow, accessToken: string) {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= onlineMeetingRetryDelaysMs.length; attempt += 1) {
+    try {
+      return await resolveOnlineMeetingId(meeting, accessToken);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Unable to resolve Teams online meeting.");
+    }
+
+    const delayMs = onlineMeetingRetryDelaysMs[attempt];
+    if (delayMs) {
+      await sleep(delayMs);
+    }
+  }
+
+  throw lastError ?? new Error("Unable to resolve Teams online meeting.");
 }
 
 async function listTranscripts(onlineMeetingId: string, accessToken: string) {
@@ -363,7 +385,7 @@ Deno.serve(async (request: Request) => {
     for (const meeting of meetings) {
       try {
         const opportunityRegistrationId = await resolveOpportunityRegistrationId(meeting);
-        const onlineMeetingId = await resolveOnlineMeetingId(meeting, accessToken);
+        const onlineMeetingId = await resolveOnlineMeetingIdWithRetry(meeting, accessToken);
         const transcripts = await listTranscripts(onlineMeetingId, accessToken);
 
         if (!transcripts.length) {
