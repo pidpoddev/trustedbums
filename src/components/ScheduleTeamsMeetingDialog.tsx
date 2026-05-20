@@ -334,15 +334,16 @@ export function ScheduleTeamsMeetingDialog({
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <DialogHeader className="border-b px-4 py-4 pr-10 sm:px-6">
           <DialogTitle className="font-display">Schedule a Teams intro</DialogTitle>
           <DialogDescription>
             Create a Teams calendar invite from bums@trustedbums.com for {clientName} and {targetName}.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4">
+        <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto px-4 py-4 sm:px-6">
+          <div className="grid gap-4">
           <div className="rounded-xl border bg-muted/20 p-3 text-sm text-muted-foreground">
             Meeting preview: {previewStartTime || "Pick a start time"}.
           </div>
@@ -480,9 +481,10 @@ export function ScheduleTeamsMeetingDialog({
               placeholder="Agenda, customer context, and anything the invitees should know."
             />
           </div>
+          </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2 border-t bg-background px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:gap-2 sm:px-6">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
