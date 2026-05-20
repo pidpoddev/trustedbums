@@ -1,8 +1,9 @@
-import { RefreshCw, Video } from "lucide-react";
+import { ExternalLink, FileText, RefreshCw, Video } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { TeamsMeetingAttendee, TeamsMeetingRecord } from "@/lib/portalApi";
+import { listMeetingTranscripts, type MeetingTranscriptRecord, type TeamsMeetingAttendee, type TeamsMeetingRecord } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
 function responseLabel(response?: string | null) {
@@ -76,9 +77,62 @@ function attendeeSummary(attendees: TeamsMeetingAttendee[]) {
   return { accepted, declined, pending, total: normalized.length };
 }
 
+function transcriptPreview(text: string | null) {
+  if (!text) {
+    return "Transcript content is stored externally.";
+  }
+
+  return text.length > 220 ? text.slice(0, 220) + "..." : text;
+}
+
+function MeetingTranscriptSummary({ meetingId, timeZone }: { meetingId: string; timeZone: string }) {
+  const transcriptsQuery = useQuery({
+    queryKey: ["meeting-transcripts", "teams-meeting", meetingId],
+    queryFn: () => listMeetingTranscripts({ teamsMeetingId: meetingId }),
+  });
+  const transcripts = transcriptsQuery.data ?? [];
+
+  if (transcriptsQuery.isLoading) {
+    return <p className="mt-4 text-xs text-muted-foreground">Loading transcripts...</p>;
+  }
+
+  if (!transcripts.length) {
+    return <p className="mt-4 text-xs text-muted-foreground">No transcript is available for this meeting yet.</p>;
+  }
+
+  return (
+    <div className="mt-4 space-y-2 border-t pt-4">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        <FileText className="h-4 w-4 text-primary" />
+        Meeting transcripts
+      </div>
+      {transcripts.map((transcript: MeetingTranscriptRecord) => (
+        <div key={transcript.id} className="rounded-md border bg-muted/20 p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium">{transcript.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatDateTimeForTimeZone(transcript.captured_at ?? transcript.created_at, timeZone)}
+              </p>
+            </div>
+            {transcript.transcript_url ? (
+              <a href={transcript.transcript_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                <ExternalLink className="h-3 w-3" />
+                Open
+              </a>
+            ) : null}
+          </div>
+          <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{transcriptPreview(transcript.transcript_text)}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function MeetingCard({ meeting, showClient, timeZone }: { meeting: TeamsMeetingRecord; showClient?: boolean; timeZone: string }) {
   const attendees = meeting.attendees ?? [];
   const summary = attendeeSummary(attendees);
+  const isPastMeeting = new Date(meeting.end_time).getTime() < Date.now();
 
   return (
     <div className="rounded-xl border p-4">
@@ -120,6 +174,7 @@ function MeetingCard({ meeting, showClient, timeZone }: { meeting: TeamsMeetingR
               <p className="text-xs text-muted-foreground">No attendees are recorded for this meeting.</p>
             )}
           </div>
+          {isPastMeeting ? <MeetingTranscriptSummary meetingId={meeting.id} timeZone={timeZone} /> : null}
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
           {meeting.teams_join_url ? (
