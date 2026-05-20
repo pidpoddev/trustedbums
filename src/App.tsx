@@ -17,6 +17,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import LegalDocumentPage from "./pages/LegalDocumentPage";
 import AdminLayout from "./layouts/AdminLayout";
 import ClientLayout from "./layouts/ClientLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/login" element={<Login />} />
                 <Route path="/sign-in" element={<ClerkTicketHandler />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/legal/:slug" element={<LegalDocumentPage />} />
                 <Route element={<ProtectedRoute allowedRoles={["ADMIN", "CLIENT", "BUM"]} />}>
                   <Route path="/dashboard" element={<RoleDashboardRedirect />} />
                 </Route>

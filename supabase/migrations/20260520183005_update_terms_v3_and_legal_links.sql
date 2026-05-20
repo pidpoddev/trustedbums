@@ -1,10 +1,13 @@
-export const DEFAULT_COMMISSION_DURATION =
-  "For so long as Client receives revenue from the Introduced Account or substantially related opportunity";
+update public.terms_versions
+set is_active = false
+where is_active = true
+  and version <> 'bum-v1';
 
-export const ACTIVE_TERMS_VERSION = "v3";
-export const ACTIVE_TERMS_TITLE = "Trusted Bums Partner Terms";
-
-export const PARTNER_TERMS_BODY = `Trusted Bums provides business development support, strategic introductions, relationship facilitation, account access, and related services. By using the Client Portal, requesting introductions, registering opportunities, or accepting support from Trusted Bums, Client agrees that Trusted Bums’ introductions, account access, and relationship support create commercial value and may result in commission obligations as described below.
+insert into public.terms_versions (version, title, body, faq_body, is_active)
+values (
+  'v3',
+  'Trusted Bums Partner Terms',
+  $tb$Trusted Bums provides business development support, strategic introductions, relationship facilitation, account access, and related services. By using the Client Portal, requesting introductions, registering opportunities, or accepting support from Trusted Bums, Client agrees that Trusted Bums’ introductions, account access, and relationship support create commercial value and may result in commission obligations as described below.
 
 1. Services
 
@@ -68,9 +71,8 @@ These terms are governed by the laws of the State of Delaware unless a separate 
 
 15. Custom Terms
 
-The parties may agree to custom commission plans, account-specific terms, enterprise schedules, or other written overrides. If an approved assigned commission plan or separate signed agreement conflicts with these Partner Terms, the approved assigned commission plan or separate signed agreement controls for that specific opportunity.`;
-
-export const PARTNER_FAQ_BODY = `Q: Why does Trusted Bums receive commissions?
+The parties may agree to custom commission plans, account-specific terms, enterprise schedules, or other written overrides. If an approved assigned commission plan or separate signed agreement conflicts with these Partner Terms, the approved assigned commission plan or separate signed agreement controls for that specific opportunity.$tb$,
+  $tb$Q: Why does Trusted Bums receive commissions?
 A: Trusted Bums creates value by helping clients access strategic accounts, build credibility, navigate relationships, and increase the likelihood of commercial success. When that support leads to revenue, Trusted Bums participates in the upside.
 
 Q: What counts as an introduced opportunity?
@@ -98,21 +100,17 @@ Q: What happens if we terminate our portal account?
 A: Termination stops future participation but does not eliminate commission obligations for opportunities already introduced, registered, or materially supported by Trusted Bums.
 
 Q: Can meetings be recorded or transcribed?
-A: Yes. Meetings may be recorded or transcribed when enabled, and participants should join only if they are authorized to participate and consent where required.`;
+A: Yes. Meetings may be recorded or transcribed when enabled, and participants should join only if they are authorized to participate and consent where required.$tb$,
+  true
+)
+on conflict (version) do update
+set title = excluded.title,
+    body = excluded.body,
+    faq_body = excluded.faq_body,
+    is_active = excluded.is_active;
 
-export const FALLBACK_TERMS_VERSION = {
-  id: "00000000-0000-0000-0000-000000000001",
-  version: ACTIVE_TERMS_VERSION,
-  title: ACTIVE_TERMS_TITLE,
-  body: PARTNER_TERMS_BODY,
-  faq_body: PARTNER_FAQ_BODY,
-  is_active: true,
-  created_at: "2026-05-02T00:00:00.000Z",
-};
-
-export const BUM_TERMS_VERSION = "bum-v1";
-export const BUM_TERMS_TITLE = "Trusted Bums Connector Agreement";
-export const BUM_TERMS_BODY = `Trusted Bums allows approved connectors, introducers, and relationship owners to participate in the platform as "Bums." By using the Bum Portal, joining opportunities, or making introductions, you agree to the terms below.
+update public.terms_versions
+set body = $tb$Trusted Bums allows approved connectors, introducers, and relationship owners to participate in the platform as "Bums." By using the Bum Portal, joining opportunities, or making introductions, you agree to the terms below.
 
 1. Role of a Bum
 
@@ -160,9 +158,8 @@ Trusted Bums is not liable for indirect, incidental, special, punitive, or conse
 
 12. Updates
 
-Trusted Bums may update this Connector Agreement from time to time. Continued use of the platform after acceptance of updated terms constitutes agreement to the updated version.`;
-
-export const BUM_TERMS_FAQ_BODY = `Q: What is a Bum in Trusted Bums?
+Trusted Bums may update this Connector Agreement from time to time. Continued use of the platform after acceptance of updated terms constitutes agreement to the updated version.$tb$,
+    faq_body = $tb$Q: What is a Bum in Trusted Bums?
 A: A Bum is a connector or introduction partner who helps create access, context, or meetings between clients and target accounts.
 
 Q: Am I guaranteed payouts if I create an account?
@@ -175,43 +172,5 @@ Q: What if I am unsure whether I can make an introduction?
 A: If you are uncertain because of employer rules, contractual limits, or confidentiality restrictions, you should not proceed until you are confident you are allowed to do so.
 
 Q: Can Trusted Bums remove my access?
-A: Yes. Trusted Bums may suspend or terminate access for misuse, compliance concerns, inaccurate information, or other platform risk reasons.`;
-
-export const BUM_FALLBACK_TERMS_VERSION = {
-  id: "00000000-0000-0000-0000-000000000002",
-  version: BUM_TERMS_VERSION,
-  title: BUM_TERMS_TITLE,
-  body: BUM_TERMS_BODY,
-  faq_body: BUM_TERMS_FAQ_BODY,
-  is_active: true,
-  created_at: "2026-05-16T00:00:00.000Z",
-};
-
-export type TermsFallbackVersion = typeof FALLBACK_TERMS_VERSION | typeof BUM_FALLBACK_TERMS_VERSION;
-
-export function parseFaq(faqBody: string) {
-  return faqBody
-    .split(/\n\n(?=Q: )/g)
-    .map((entry) => {
-      const [questionLine, ...answerLines] = entry.split("\n");
-      return {
-        question: questionLine.replace(/^Q:\s*/, "").trim(),
-        answer: answerLines.join("\n").replace(/^A:\s*/, "").trim(),
-      };
-    })
-    .filter((item) => item.question && item.answer);
-}
-
-export function splitTermsSections(body: string) {
-  const [overview, ...sections] = body.split(/\n\n(?=\d+\.\s)/g);
-  return {
-    overview,
-    sections: sections.map((section) => {
-      const [heading, ...paragraphs] = section.split("\n\n");
-      return {
-        heading,
-        body: paragraphs.join("\n\n"),
-      };
-    }),
-  };
-}
+A: Yes. Trusted Bums may suspend or terminate access for misuse, compliance concerns, inaccurate information, or other platform risk reasons.$tb$
+where version = 'bum-v1';

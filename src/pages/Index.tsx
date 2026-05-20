@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
 import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
 import { type ContactInterest, submitContactSubmission } from "@/lib/contactApi";
+import { footerLegalLinks } from "@/data/legalDocuments";
 
 const storyCards = [
   {
@@ -570,12 +571,14 @@ const Index = () => {
       </main>
 
       <footer className="border-t bg-[#08111f] text-white">
-        <div className="container mx-auto flex flex-col gap-5 px-6 py-8 text-sm text-white/62 md:flex-row md:items-center md:justify-between">
+        <div className="container mx-auto grid gap-6 px-6 py-8 text-sm text-white/62 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start lg:justify-between">
           <BrandLogo to="/" theme="dark" imageClassName="h-12" />
-          <div className="flex flex-wrap items-center gap-4">
-            <Link to="/privacy-policy" className="hover:text-white">
-              Privacy Policy
-            </Link>
+          <div className="flex flex-col gap-4 lg:items-end">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 lg:justify-end">
+              {footerLegalLinks.map((link) => (
+                <Link key={link.to} to={link.to} className="hover:text-white">{link.label}</Link>
+              ))}
+            </div>
             <p>© 2026 Trusted Bums. All rights reserved.</p>
           </div>
         </div>

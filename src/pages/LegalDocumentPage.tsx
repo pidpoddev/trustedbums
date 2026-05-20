@@ -1,0 +1,59 @@
+import { Link, Navigate, useParams } from "react-router-dom";
+import { AccessibilityMenu } from "@/components/AccessibilityMenu";
+import { BrandLogo } from "@/components/BrandLogo";
+import { footerLegalLinks, getLegalDocument } from "@/data/legalDocuments";
+
+export default function LegalDocumentPage() {
+  const { slug } = useParams();
+  const document = getLegalDocument(slug);
+
+  if (!document) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card/80 backdrop-blur-sm">
+        <div className="container mx-auto flex h-16 items-center justify-between px-6">
+          <BrandLogo to="/" imageClassName="h-12" />
+          <div className="flex items-center gap-3">
+            <AccessibilityMenu />
+            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">Back to Home</Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto grid max-w-6xl gap-8 px-6 py-12 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-md border bg-card p-4">
+            <p className="text-sm font-semibold">Legal</p>
+            <nav className="mt-3 grid gap-2 text-sm">
+              {footerLegalLinks.map((link) => (
+                <Link key={link.to} to={link.to} className={link.to.endsWith(document.slug) ? "font-medium text-primary" : "text-muted-foreground hover:text-foreground"}>
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </aside>
+
+        <article className="rounded-md border bg-card p-8 md:p-12">
+          <div className="max-w-3xl">
+            <p className="text-sm font-medium text-primary">Effective Date: {document.effectiveDate}</p>
+            <h1 className="mt-3 font-display text-4xl font-bold">{document.title}</h1>
+            <p className="mt-4 text-base leading-7 text-muted-foreground">{document.description}</p>
+          </div>
+
+          <div className="mt-10 space-y-8">
+            {document.sections.map((section) => (
+              <section key={section.title} className="space-y-3">
+                <h2 className="font-display text-2xl font-bold">{section.title}</h2>
+                {section.body.map((paragraph) => <p key={paragraph} className="leading-7 text-muted-foreground">{paragraph}</p>)}
+              </section>
+            ))}
+          </div>
+        </article>
+      </main>
+    </div>
+  );
+}

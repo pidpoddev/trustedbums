@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { createConsentRecord, defaultConsentPreferences, readConsentRecord, writeConsentRecord } from "@/lib/consent";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { BrandLogo } from "@/components/BrandLogo";
+import { footerLegalLinks } from "@/data/legalDocuments";
 
 const sections = [
   {
@@ -98,6 +99,15 @@ export default function PrivacyPolicy() {
               >
                 Review privacy choices
               </Button>
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-md border bg-background p-4">
+            <h2 className="font-display text-xl font-bold">Related Legal Links</h2>
+            <div className="mt-4 flex flex-wrap gap-3 text-sm">
+              {footerLegalLinks.filter((link) => link.to !== "/privacy-policy").map((link) => (
+                <Link key={link.to} to={link.to} className="text-primary hover:underline">{link.label}</Link>
+              ))}
             </div>
           </div>
 
