@@ -46,6 +46,60 @@ const initialForm = {
   notes: "",
 };
 
+
+const CLIENT_OPPORTUNITY_DRAFT_PREFIX = "trustedbums:client-opportunity-registration-draft:";
+
+interface ClientOpportunityDraft {
+  form: typeof initialForm;
+  savedAt: string;
+}
+
+function clientOpportunityDraftKey(clientId: string) {
+  return `${CLIENT_OPPORTUNITY_DRAFT_PREFIX}${clientId}`;
+}
+
+function canUseBrowserStorage() {
+  try {
+    return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  } catch {
+    return false;
+  }
+}
+
+function readClientOpportunityDraft(clientId?: string | null) {
+  if (!clientId || !canUseBrowserStorage()) {
+    return null;
+  }
+
+  try {
+    const rawDraft = window.localStorage.getItem(clientOpportunityDraftKey(clientId));
+    if (!rawDraft) {
+      return null;
+    }
+
+    const draft = JSON.parse(rawDraft) as Partial<ClientOpportunityDraft>;
+    return draft.form && draft.savedAt ? (draft as ClientOpportunityDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeClientOpportunityDraft(clientId: string, draft: ClientOpportunityDraft) {
+  if (!canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(clientOpportunityDraftKey(clientId), JSON.stringify(draft));
+}
+
+function clearClientOpportunityDraft(clientId?: string | null) {
+  if (!clientId || !canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(clientOpportunityDraftKey(clientId));
+}
+
 const initialRequestForm = {
   name: "",
   year_1_rate: "",
@@ -187,13 +241,56 @@ export default function ClientOpportunityNew() {
   const [activeTab, setActiveTab] = useState(location.pathname.endsWith("/new") ? "register" : "pipeline");
   const [isRegisterOpen, setIsRegisterOpen] = useState(location.pathname.endsWith("/new"));
   const [isRequestPlanOpen, setIsRequestPlanOpen] = useState(false);
+  const [isRegistrationDraftDirty, setIsRegistrationDraftDirty] = useState(false);
+  const [restoredRegistrationDraftAt, setRestoredRegistrationDraftAt] = useState<string | null>(null);
+  const [localRegistrationDraftSavedAt, setLocalRegistrationDraftSavedAt] = useState<string | null>(null);
 
   const updateField = (field: keyof typeof initialForm, value: string) => {
+    setIsRegistrationDraftDirty(true);
+    setRestoredRegistrationDraftAt(null);
     setForm((current) => ({ ...current, [field]: value }));
   };
   const updateRequestField = (field: keyof typeof initialRequestForm, value: string) => {
     setRequestForm((current) => ({ ...current, [field]: value }));
   };
+
+  useEffect(() => {
+    const draft = readClientOpportunityDraft(user?.clientId);
+    if (!draft) {
+      return;
+    }
+
+    setForm(draft.form);
+    setIsRegistrationDraftDirty(true);
+    setRestoredRegistrationDraftAt(draft.savedAt);
+    setLocalRegistrationDraftSavedAt(draft.savedAt);
+    setActiveTab("register");
+    setIsRegisterOpen(true);
+  }, [user?.clientId]);
+
+  useEffect(() => {
+    if (!isRegistrationDraftDirty || !user?.clientId) {
+      return;
+    }
+
+    const savedAt = new Date().toISOString();
+    writeClientOpportunityDraft(user.clientId, { form, savedAt });
+    setLocalRegistrationDraftSavedAt(savedAt);
+  }, [form, isRegistrationDraftDirty, user?.clientId]);
+
+  useEffect(() => {
+    if (!isRegistrationDraftDirty) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isRegistrationDraftDirty]);
 
   useEffect(() => {
     if (location.pathname.endsWith("/new")) {
@@ -304,6 +401,7 @@ export default function ClientOpportunityNew() {
       await queryClient.invalidateQueries({ queryKey: ["client-pay-programs", user?.clientId] });
       await queryClient.invalidateQueries({ queryKey: ["admin-commission-plans"] });
       setRequestForm(initialRequestForm);
+      setIsRegistrationDraftDirty(true);
       setForm((current) => ({ ...current, pay_program_id: plan.id }));
       setIsRequestPlanOpen(false);
       toast({
@@ -378,6 +476,10 @@ export default function ClientOpportunityNew() {
         status: "Submitted",
       });
       setSubmittedId(opportunity.id);
+      clearClientOpportunityDraft(user?.clientId);
+      setIsRegistrationDraftDirty(false);
+      setRestoredRegistrationDraftAt(null);
+      setLocalRegistrationDraftSavedAt(null);
       setForm(initialForm);
       setIsRegisterOpen(false);
       setActiveTab("pipeline");
@@ -570,6 +672,21 @@ export default function ClientOpportunityNew() {
         </CardHeader>
         <CardContent>
           <form className="grid gap-5" onSubmit={submitOpportunity}>
+            {restoredRegistrationDraftAt ? (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
+                <p className="font-medium text-warning">Unsaved opportunity draft restored</p>
+                <p className="mt-1 text-muted-foreground">
+                  We recovered the opportunity registration saved in this browser at {formatDateForTimeZone(restoredRegistrationDraftAt, timeZone)}.
+                </p>
+              </div>
+            ) : null}
+
+            {isRegistrationDraftDirty ? (
+              <div className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Unsaved changes are being kept in this browser{localRegistrationDraftSavedAt ? `, last saved at ${formatDateForTimeZone(localRegistrationDraftSavedAt, timeZone)}` : ""}.
+              </div>
+            ) : null}
+
             <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="targetAccount">Customer account name</Label>

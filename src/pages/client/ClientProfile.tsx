@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,71 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { getOwnClientCompany, updateOwnClientCompanyProfile } from "@/lib/portalApi";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
 function listToText(values?: string[] | null) {
   return (values ?? []).join(", ");
+}
+
+const CLIENT_PROFILE_DRAFT_PREFIX = "trustedbums:client-company-profile-draft:";
+
+interface ClientCompanyProfileDraft {
+  companyName: string;
+  website: string;
+  linkedinCompanyUrl: string;
+  description: string;
+  targetIndustries: string;
+  targetRegions: string;
+  idealCustomerProfile: string;
+  savedAt: string;
+}
+
+function clientProfileDraftKey(clientId: string) {
+  return `${CLIENT_PROFILE_DRAFT_PREFIX}${clientId}`;
+}
+
+function canUseBrowserStorage() {
+  try {
+    return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  } catch {
+    return false;
+  }
+}
+
+function readClientProfileDraft(clientId?: string | null) {
+  if (!clientId || !canUseBrowserStorage()) {
+    return null;
+  }
+
+  try {
+    const rawDraft = window.localStorage.getItem(clientProfileDraftKey(clientId));
+    if (!rawDraft) {
+      return null;
+    }
+
+    const draft = JSON.parse(rawDraft) as Partial<ClientCompanyProfileDraft>;
+    return draft.savedAt ? (draft as ClientCompanyProfileDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeClientProfileDraft(clientId: string, draft: ClientCompanyProfileDraft) {
+  if (!canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(clientProfileDraftKey(clientId), JSON.stringify(draft));
+}
+
+function clearClientProfileDraft(clientId?: string | null) {
+  if (!clientId || !canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(clientProfileDraftKey(clientId));
 }
 
 function textToList(value: string) {
@@ -30,6 +91,7 @@ function textToList(value: string) {
 export default function ClientProfile() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
+  const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
@@ -38,6 +100,11 @@ export default function ClientProfile() {
   const [targetIndustries, setTargetIndustries] = useState("");
   const [targetRegions, setTargetRegions] = useState("");
   const [idealCustomerProfile, setIdealCustomerProfile] = useState("");
+  const [hasHydratedForm, setHasHydratedForm] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [restoredDraftAt, setRestoredDraftAt] = useState<string | null>(null);
+  const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
+  const previousClientId = useRef<string | null>(null);
 
   const companyQuery = useQuery({
     queryKey: ["own-client-company", user?.clientId],
@@ -46,23 +113,86 @@ export default function ClientProfile() {
   });
 
   useEffect(() => {
-    setCompanyName(companyQuery.data?.name ?? user?.companyName ?? "");
-    setWebsite(companyQuery.data?.website ?? "");
-    setLinkedinCompanyUrl(companyQuery.data?.linkedin_company_url ?? "");
-    setDescription(companyQuery.data?.description ?? "");
-    setTargetIndustries(listToText(companyQuery.data?.target_industries));
-    setTargetRegions(listToText(companyQuery.data?.target_regions));
-    setIdealCustomerProfile(companyQuery.data?.ideal_customer_profile ?? "");
-  }, [
-    companyQuery.data?.description,
-    companyQuery.data?.ideal_customer_profile,
-    companyQuery.data?.linkedin_company_url,
-    companyQuery.data?.name,
-    companyQuery.data?.target_industries,
-    companyQuery.data?.target_regions,
-    companyQuery.data?.website,
-    user?.companyName,
-  ]);
+    if (!user?.clientId || previousClientId.current === user.clientId) {
+      return;
+    }
+
+    previousClientId.current = user.clientId;
+    setHasHydratedForm(false);
+    setIsDirty(false);
+    setRestoredDraftAt(null);
+    setLocalDraftSavedAt(null);
+  }, [user?.clientId]);
+
+  useEffect(() => {
+    if (!companyQuery.isSuccess || hasHydratedForm) {
+      return;
+    }
+
+    if (!isDirty) {
+      const draft = readClientProfileDraft(user?.clientId);
+      if (draft) {
+        setCompanyName(draft.companyName);
+        setWebsite(draft.website);
+        setLinkedinCompanyUrl(draft.linkedinCompanyUrl);
+        setDescription(draft.description);
+        setTargetIndustries(draft.targetIndustries);
+        setTargetRegions(draft.targetRegions);
+        setIdealCustomerProfile(draft.idealCustomerProfile);
+        setRestoredDraftAt(draft.savedAt);
+        setLocalDraftSavedAt(draft.savedAt);
+        setIsDirty(true);
+      } else {
+        setCompanyName(companyQuery.data?.name ?? user?.companyName ?? "");
+        setWebsite(companyQuery.data?.website ?? "");
+        setLinkedinCompanyUrl(companyQuery.data?.linkedin_company_url ?? "");
+        setDescription(companyQuery.data?.description ?? "");
+        setTargetIndustries(listToText(companyQuery.data?.target_industries));
+        setTargetRegions(listToText(companyQuery.data?.target_regions));
+        setIdealCustomerProfile(companyQuery.data?.ideal_customer_profile ?? "");
+      }
+    }
+
+    setHasHydratedForm(true);
+  }, [companyQuery.data, companyQuery.isSuccess, hasHydratedForm, isDirty, user?.clientId, user?.companyName]);
+
+  useEffect(() => {
+    if (!isDirty || !hasHydratedForm || !user?.clientId) {
+      return;
+    }
+
+    const savedAt = new Date().toISOString();
+    writeClientProfileDraft(user.clientId, {
+      companyName,
+      website,
+      linkedinCompanyUrl,
+      description,
+      targetIndustries,
+      targetRegions,
+      idealCustomerProfile,
+      savedAt,
+    });
+    setLocalDraftSavedAt(savedAt);
+  }, [companyName, description, hasHydratedForm, idealCustomerProfile, isDirty, linkedinCompanyUrl, targetIndustries, targetRegions, user?.clientId, website]);
+
+  useEffect(() => {
+    if (!isDirty) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  const markDirty = () => {
+    setIsDirty(true);
+    setRestoredDraftAt(null);
+  };
 
   const readinessItems = useMemo(
     () => [
@@ -95,7 +225,18 @@ export default function ClientProfile() {
         ideal_customer_profile: idealCustomerProfile,
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (company) => {
+      clearClientProfileDraft(user?.clientId);
+      setCompanyName(company.name ?? "");
+      setWebsite(company.website ?? "");
+      setLinkedinCompanyUrl(company.linkedin_company_url ?? "");
+      setDescription(company.description ?? "");
+      setTargetIndustries(listToText(company.target_industries));
+      setTargetRegions(listToText(company.target_regions));
+      setIdealCustomerProfile(company.ideal_customer_profile ?? "");
+      setIsDirty(false);
+      setRestoredDraftAt(null);
+      setLocalDraftSavedAt(null);
       await queryClient.invalidateQueries({ queryKey: ["own-client-company", user?.clientId] });
       await queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
       await refreshUser();
@@ -130,37 +271,51 @@ export default function ClientProfile() {
                 saveMutation.mutate();
               }}
             >
+              {restoredDraftAt ? (
+                <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
+                  <p className="font-medium text-warning">Unsaved draft restored</p>
+                  <p className="mt-1 text-muted-foreground">
+                    We recovered company profile work saved in this browser at {formatDateTimeForTimeZone(restoredDraftAt, timeZone)}. Save the company profile to make it permanent.
+                  </p>
+                </div>
+              ) : null}
+
+              {isDirty ? (
+                <div className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
+                  Unsaved changes are being kept in this browser{localDraftSavedAt ? `, last saved at ${formatDateTimeForTimeZone(localDraftSavedAt, timeZone)}` : ""}.
+                </div>
+              ) : null}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="client-company-name">Company Name</Label>
-                  <Input id="client-company-name" value={companyName} onChange={(event) => setCompanyName(event.target.value)} disabled={isLoading} />
+                  <Input id="client-company-name" value={companyName} onChange={(event) => { markDirty(); setCompanyName(event.target.value); }} disabled={isLoading} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="client-company-website">Website</Label>
-                  <Input id="client-company-website" value={website} onChange={(event) => setWebsite(event.target.value)} disabled={isLoading} placeholder="https://yourcompany.com" />
+                  <Input id="client-company-website" value={website} onChange={(event) => { markDirty(); setWebsite(event.target.value); }} disabled={isLoading} placeholder="https://yourcompany.com" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="client-company-linkedin">LinkedIn Page</Label>
-                <Input id="client-company-linkedin" value={linkedinCompanyUrl} onChange={(event) => setLinkedinCompanyUrl(event.target.value)} disabled={isLoading} placeholder="https://www.linkedin.com/company/your-company" />
+                <Input id="client-company-linkedin" value={linkedinCompanyUrl} onChange={(event) => { markDirty(); setLinkedinCompanyUrl(event.target.value); }} disabled={isLoading} placeholder="https://www.linkedin.com/company/your-company" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="client-company-description">Company Description</Label>
-                <Textarea id="client-company-description" rows={4} value={description} onChange={(event) => setDescription(event.target.value)} disabled={isLoading} placeholder="How should Trusted Bums describe your company?" />
+                <Textarea id="client-company-description" rows={4} value={description} onChange={(event) => { markDirty(); setDescription(event.target.value); }} disabled={isLoading} placeholder="How should Trusted Bums describe your company?" />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="client-target-industries">Target Industries</Label>
-                  <Textarea id="client-target-industries" rows={3} value={targetIndustries} onChange={(event) => setTargetIndustries(event.target.value)} disabled={isLoading} placeholder="SaaS, Healthcare, FinTech" />
+                  <Textarea id="client-target-industries" rows={3} value={targetIndustries} onChange={(event) => { markDirty(); setTargetIndustries(event.target.value); }} disabled={isLoading} placeholder="SaaS, Healthcare, FinTech" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="client-target-regions">Target Regions</Label>
-                  <Textarea id="client-target-regions" rows={3} value={targetRegions} onChange={(event) => setTargetRegions(event.target.value)} disabled={isLoading} placeholder="North America, EMEA" />
+                  <Textarea id="client-target-regions" rows={3} value={targetRegions} onChange={(event) => { markDirty(); setTargetRegions(event.target.value); }} disabled={isLoading} placeholder="North America, EMEA" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="client-ideal-customer-profile">Ideal Customer Profile</Label>
-                <Textarea id="client-ideal-customer-profile" rows={4} value={idealCustomerProfile} onChange={(event) => setIdealCustomerProfile(event.target.value)} disabled={isLoading} placeholder="Buyer titles, company size, triggers, technologies, or customer traits that make a strong match." />
+                <Textarea id="client-ideal-customer-profile" rows={4} value={idealCustomerProfile} onChange={(event) => { markDirty(); setIdealCustomerProfile(event.target.value); }} disabled={isLoading} placeholder="Buyer titles, company size, triggers, technologies, or customer traits that make a strong match." />
               </div>
               <Button type="submit" disabled={isLoading || saveMutation.isPending}>
                 {saveMutation.isPending ? "Saving..." : "Save Company Profile"}

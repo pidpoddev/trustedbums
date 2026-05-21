@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Plus, Search, Target } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -14,6 +14,8 @@ import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSectio
 import { useAuth } from "@/contexts/AuthContext";
 import { getPageItems } from "@/lib/pagination";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
 import {
   createCustomerTarget,
   listCustomerTargets,
@@ -39,6 +41,60 @@ const initialForm = {
   status: "PROSPECT" as CustomerTargetStatus,
 };
 
+
+const CLIENT_TARGET_DRAFT_PREFIX = "trustedbums:client-target-draft:";
+
+interface ClientTargetDraft {
+  form: typeof initialForm;
+  savedAt: string;
+}
+
+function clientTargetDraftKey(clientId: string) {
+  return `${CLIENT_TARGET_DRAFT_PREFIX}${clientId}`;
+}
+
+function canUseBrowserStorage() {
+  try {
+    return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  } catch {
+    return false;
+  }
+}
+
+function readClientTargetDraft(clientId?: string | null) {
+  if (!clientId || !canUseBrowserStorage()) {
+    return null;
+  }
+
+  try {
+    const rawDraft = window.localStorage.getItem(clientTargetDraftKey(clientId));
+    if (!rawDraft) {
+      return null;
+    }
+
+    const draft = JSON.parse(rawDraft) as Partial<ClientTargetDraft>;
+    return draft.form && draft.savedAt ? (draft as ClientTargetDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeClientTargetDraft(clientId: string, draft: ClientTargetDraft) {
+  if (!canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(clientTargetDraftKey(clientId), JSON.stringify(draft));
+}
+
+function clearClientTargetDraft(clientId?: string | null) {
+  if (!clientId || !canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(clientTargetDraftKey(clientId));
+}
+
 function statusLabel(status: CustomerTargetStatus) {
   return status.replaceAll("_", " ");
 }
@@ -56,12 +112,16 @@ const customerTargetTypeFilters: { value: CustomerTargetTypeFilter; label: strin
 export default function ClientTargets() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<CustomerTargetTypeFilter>("ALL");
   const [targetPage, setTargetPage] = useState(1);
   const [isAddTargetOpen, setIsAddTargetOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [isDraftDirty, setIsDraftDirty] = useState(false);
+  const [restoredDraftAt, setRestoredDraftAt] = useState<string | null>(null);
+  const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
 
   const targetsQuery = useQuery({
     queryKey: ["client-targets", user?.clientId],
@@ -81,7 +141,11 @@ export default function ClientTargets() {
         title: "Target account saved",
         description: "Your customer prospect has been added to the target account pipeline.",
       });
+      clearClientTargetDraft(user?.clientId);
       setForm(initialForm);
+      setIsDraftDirty(false);
+      setRestoredDraftAt(null);
+      setLocalDraftSavedAt(null);
       setIsAddTargetOpen(false);
     },
     onError: (error) => {
@@ -93,7 +157,46 @@ export default function ClientTargets() {
     },
   });
 
+  useEffect(() => {
+    const draft = readClientTargetDraft(user?.clientId);
+    if (!draft) {
+      return;
+    }
+
+    setForm(draft.form);
+    setIsDraftDirty(true);
+    setIsAddTargetOpen(true);
+    setRestoredDraftAt(draft.savedAt);
+    setLocalDraftSavedAt(draft.savedAt);
+  }, [user?.clientId]);
+
+  useEffect(() => {
+    if (!isDraftDirty || !user?.clientId) {
+      return;
+    }
+
+    const savedAt = new Date().toISOString();
+    writeClientTargetDraft(user.clientId, { form, savedAt });
+    setLocalDraftSavedAt(savedAt);
+  }, [form, isDraftDirty, user?.clientId]);
+
+  useEffect(() => {
+    if (!isDraftDirty) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDraftDirty]);
+
   const updateField = (field: keyof typeof initialForm, value: string) => {
+    setIsDraftDirty(true);
+    setRestoredDraftAt(null);
     setForm((current) => ({ ...current, [field]: value }));
   };
 
@@ -166,6 +269,20 @@ export default function ClientTargets() {
               createMutation.mutate();
             }}
           >
+            {restoredDraftAt ? (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
+                <p className="font-medium text-warning">Unsaved target draft restored</p>
+                <p className="mt-1 text-muted-foreground">
+                  We recovered the target account draft saved in this browser at {formatDateTimeForTimeZone(restoredDraftAt, timeZone)}.
+                </p>
+              </div>
+            ) : null}
+
+            {isDraftDirty ? (
+              <div className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Unsaved changes are being kept in this browser{localDraftSavedAt ? `, last saved at ${formatDateTimeForTimeZone(localDraftSavedAt, timeZone)}` : ""}.
+              </div>
+            ) : null}
             <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="target-name">Target account name</Label>
