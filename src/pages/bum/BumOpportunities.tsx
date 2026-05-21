@@ -97,6 +97,7 @@ export default function BumOpportunities() {
   const [marketplacePage, setMarketplacePage] = useState(1);
   const [responseForm, setResponseForm] = useState(responseFormInitial);
   const [expandedOpportunityIds, setExpandedOpportunityIds] = useState<Set<string>>(new Set());
+  const [expandedTargetIds, setExpandedTargetIds] = useState<Set<string>>(new Set());
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
     queryFn: listMarketplaceOpportunities,
@@ -313,6 +314,7 @@ export default function BumOpportunities() {
       <div className="grid gap-4">
         {visibleTargets.map((targetAccount) => {
           const isHearted = savedTargetIds.has(targetAccount.id);
+          const isExpanded = expandedTargetIds.has(targetAccount.id);
 
           return (
           <Card key={`target-${targetAccount.id}`} className="transition-shadow hover:shadow-md">
@@ -332,7 +334,7 @@ export default function BumOpportunities() {
                   <p className="mt-1 text-sm text-muted-foreground">
                     {targetAccount.client_companies?.name ?? "Client pending"} • {targetAccount.priority} priority
                   </p>
-                  <p className="mt-2 line-clamp-2 text-sm">
+                  <p className={cn("mt-2 text-sm", !isExpanded && "line-clamp-2")}>
                     {targetAccount.notes ?? targetAccount.expected_product_service ?? "Client is looking for a path into this target account."}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
@@ -350,6 +352,36 @@ export default function BumOpportunities() {
                       {targetAccount.expected_timeline?.trim() || "Timeline to be confirmed"}
                     </span>
                   </div>
+                  {isExpanded ? (
+                    <div className="mt-4 grid gap-3 rounded-md border bg-muted/20 p-4 text-sm md:grid-cols-2">
+                      <div>
+                        <p className="font-medium">Product or service</p>
+                        <p className="text-muted-foreground">{targetAccount.expected_product_service ?? "Not specified"}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Priority</p>
+                        <p className="text-muted-foreground">{targetAccount.priority}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Timeline</p>
+                        <p className="text-muted-foreground">{targetAccount.expected_timeline?.trim() || "To be confirmed"}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Estimated value</p>
+                        <p className="text-muted-foreground">
+                          {targetAccount.estimated_deal_value ? `$${Number(targetAccount.estimated_deal_value).toLocaleString()}` : "Value pending"}
+                        </p>
+                      </div>
+                      {targetAccount.key_contact_name || targetAccount.key_contact_title || targetAccount.key_contact_email ? (
+                        <div className="md:col-span-2">
+                          <p className="font-medium">Known target contact</p>
+                          <p className="text-muted-foreground">
+                            {[targetAccount.key_contact_name, targetAccount.key_contact_title, targetAccount.key_contact_email].filter(Boolean).join(" · ")}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 flex-row gap-2 md:flex-col md:items-end">
                   <Button
@@ -360,6 +392,25 @@ export default function BumOpportunities() {
                     onClick={() => saveMutation.mutate({ itemType: "CUSTOMER_TARGET", itemId: targetAccount.id, saved: !isHearted })}
                   >
                     <Heart className={cn("h-4 w-4", isHearted && "fill-current")} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    aria-expanded={isExpanded}
+                    onClick={() =>
+                      setExpandedTargetIds((current) => {
+                        const next = new Set(current);
+                        if (next.has(targetAccount.id)) {
+                          next.delete(targetAccount.id);
+                        } else {
+                          next.add(targetAccount.id);
+                        }
+                        return next;
+                      })
+                    }
+                  >
+                    {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+                    Details
                   </Button>
                   <Button size="sm" onClick={() => setSelectedTarget(targetAccount)}>
                     <Handshake className="mr-2 h-4 w-4" />
