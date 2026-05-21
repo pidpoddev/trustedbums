@@ -131,7 +131,12 @@ export function ConversationDock() {
     },
   });
 
-  const openDock = () => {
+  const handleChatButtonClick = () => {
+    if (isOpen) {
+      setIsMinimized((current) => !current);
+      return;
+    }
+
     setIsOpen(true);
     setIsMinimized(false);
     void queryClient.invalidateQueries({ queryKey: CONVERSATION_QUERY_KEY });
@@ -313,7 +318,7 @@ export function ConversationDock() {
         </div>
       ) : null}
 
-      <Button type="button" className="rounded-full shadow-lg" onClick={openDock}>
+      <Button type="button" className="rounded-full shadow-lg" onClick={handleChatButtonClick}>
         <MessageSquare className="mr-2 h-4 w-4" />
         Chat{threads.length ? ` (${threads.length})` : ""}
       </Button>
