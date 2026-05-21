@@ -12,11 +12,12 @@ import {
   listClaimInvoices,
   listClientReverseOpportunities,
   listCustomerPaymentReports,
+  listCustomerTargetResponses,
   listCustomerTargets,
   listOpportunityRegistrations,
 } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
-import { Target, FileCheck, Clock, PlusCircle, ArrowRight, CreditCard, Download } from "lucide-react";
+import { Target, FileCheck, Clock, PlusCircle, ArrowRight, CreditCard, Download, Handshake } from "lucide-react";
 
 type DashboardAction = {
   title: string;
@@ -80,9 +81,16 @@ export default function ClientDashboard() {
     queryFn: () => listClientReverseOpportunities(user!),
     enabled: Boolean(user?.clientId) && !isFinanceUser,
   });
+  const targetResponsesQuery = useQuery({
+    queryKey: ["client-target-responses", user?.clientId],
+    queryFn: () => listCustomerTargetResponses(user!),
+    enabled: Boolean(user?.clientId) && !isFinanceUser,
+  });
   const opportunities = opportunitiesQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
   const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
+  const targetResponses = targetResponsesQuery.data ?? [];
+  const pendingTargetResponses = targetResponses.filter((response) => response.status === "PROPOSED");
   const paymentReports = reportsQuery.data ?? [];
   const invoices = invoicesQuery.data ?? [];
   const activeCount = opportunities.filter((opportunity) =>
@@ -124,6 +132,9 @@ export default function ClientDashboard() {
     targets.length
       ? { title: "Register an opportunity", description: "Submit a deal for review and commission tracking.", to: "/client/opportunities/new", primary: !activeCount }
       : { title: "Add first target account", description: "Start with the customer company you want to sell into.", to: "/client/targets", primary: true },
+    pendingTargetResponses.length
+      ? { title: "Review Bum responses", description: `${pendingTargetResponses.length} Bum response${pendingTargetResponses.length === 1 ? "" : "s"} awaiting approval.`, to: "/client/opportunities?tab=responses", primary: true }
+      : null,
     reverseOpportunities.length
       ? { title: "Review inbound requests", description: `${reverseOpportunities.length} Bum-initiated request${reverseOpportunities.length === 1 ? "" : "s"} need review.`, to: "/client/requests" }
       : null,
@@ -263,6 +274,7 @@ export default function ClientDashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Target Accounts" value={targets.length} icon={Target} to="/client/targets" />
+        <StatCard title="Bum Responses" value={pendingTargetResponses.length} icon={Handshake} to="/client/opportunities?tab=responses" />
         <StatCard title="Inbound Requests" value={reverseOpportunities.length} icon={Clock} to="/client/requests" />
         <StatCard title="Active Opportunities" value={activeCount} icon={Target} to="/client/opportunities" />
         <StatCard title="Accepted" value={acceptedCount} icon={FileCheck} to="/client/opportunities" />
@@ -270,6 +282,31 @@ export default function ClientDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-6">
+          {pendingTargetResponses.length ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display">Bum responses awaiting approval</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {pendingTargetResponses.slice(0, 4).map((response) => (
+                <div key={response.id} className="flex flex-col gap-3 border-b py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium">{response.customer_targets?.target_companies?.name ?? response.customer_targets?.target_account_name ?? "Target account"}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {response.profiles?.full_name ?? response.profiles?.email ?? "A Bum"} knows {response.contact_name} · {response.relationship_strength}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Submitted {formatDateTimeForTimeZone(response.created_at, timeZone)}</p>
+                  </div>
+                  <Button asChild size="sm">
+                    <Link to={`/client/opportunities?tab=responses&targetResponseId=${response.id}`}>Review</Link>
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ) : null}
+
         <Card>
           <CardHeader>
             <CardTitle className="font-display">Target Accounts</CardTitle>
@@ -301,7 +338,8 @@ export default function ClientDashboard() {
               </div>
             )}
           </CardContent>
-        </Card>
+          </Card>
+        </div>
 
         <div className="space-y-6">
           <NextActionsCard actions={clientNextActions} />

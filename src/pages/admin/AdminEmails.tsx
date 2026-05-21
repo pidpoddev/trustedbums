@@ -76,6 +76,7 @@ const triggerEvents: Array<{ value: TriggerRuleEvent; label: string }> = [
   { value: "OPPORTUNITY_CLAIM_CREATED", label: "Opportunity claim created" },
   { value: "OPPORTUNITY_CLAIM_ACCEPTED", label: "Opportunity claim accepted" },
   { value: "OPPORTUNITY_CLAIM_STATUS_CHANGED", label: "Claim status changed" },
+  { value: "CUSTOMER_TARGET_RESPONSE_CREATED", label: "Bum knows someone" },
   { value: "CLIENT_CREATED", label: "Client created" },
   { value: "CLIENT_TARGET_CREATED", label: "Client target created" },
   { value: "CONTACT_SUBMISSION_CREATED", label: "Contact form submitted" },

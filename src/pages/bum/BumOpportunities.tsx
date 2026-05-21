@@ -20,6 +20,7 @@ import {
   listBumSavedItems,
   listCustomerTargets,
   listMarketplaceOpportunities,
+  listOpportunityClaimSummaries,
   setBumSavedItem,
   type CustomerTargetRecord,
   type CustomerTargetResponseStrength,
@@ -113,6 +114,10 @@ export default function BumOpportunities() {
     queryFn: () => listBumSavedItems(user!.id),
     enabled: Boolean(user?.id),
   });
+  const claimSummariesQuery = useQuery({
+    queryKey: ["marketplace-claim-summaries"],
+    queryFn: listOpportunityClaimSummaries,
+  });
   const opportunities = opportunitiesQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
   const savedOpportunityIds = new Set(
@@ -127,6 +132,15 @@ export default function BumOpportunities() {
       .map((item) => item.customer_target_id)
       .filter(Boolean),
   );
+  const activeClaimByOpportunityId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const claim of claimSummariesQuery.data ?? []) {
+      if (["PROPOSED", "APPROVED", "SCHEDULED", "MEETING_HELD"].includes(claim.status) && !map.has(claim.opportunity_registration_id)) {
+        map.set(claim.opportunity_registration_id, claim.bum_display_name);
+      }
+    }
+    return map;
+  }, [claimSummariesQuery.data]);
   const allIndustries = Array.from(
     new Set(
       [
@@ -452,6 +466,7 @@ export default function BumOpportunities() {
         {visibleOpportunities.map((opportunity) => {
           const isHearted = savedOpportunityIds.has(opportunity.id);
           const isExpanded = expandedOpportunityIds.has(opportunity.id);
+          const claimedBy = activeClaimByOpportunityId.get(opportunity.id);
 
           return (
           <Card key={opportunity.id} className="transition-shadow hover:shadow-md">
@@ -463,11 +478,14 @@ export default function BumOpportunities() {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-display text-lg font-bold">{opportunity.target_account_name}</h3>
-                    <StatusBadge label="Open" variant="success" />
+                    <StatusBadge label={claimedBy ? "Already claimed" : "Open"} variant={claimedBy ? "warning" : "success"} />
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {opportunity.companies?.name ?? "Client pending"} • {opportunity.commission_rate}% commission
                   </p>
+                  {claimedBy ? (
+                    <p className="mt-2 text-sm font-medium text-warning">Already claimed by {claimedBy}</p>
+                  ) : null}
                   <p className={cn("mt-2 text-sm", !isExpanded && "line-clamp-2")}>{opportunity.opportunity_description ?? "No description provided yet."}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                     {opportunity.expected_product_service ? (

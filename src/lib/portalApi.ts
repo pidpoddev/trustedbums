@@ -147,6 +147,7 @@ export type AdminEmailTriggerEvent =
   | "OPPORTUNITY_CLAIM_ACCEPTED"
   | "OPPORTUNITY_CLAIM_STATUS_CHANGED"
   | "OPPORTUNITY_QUESTION_CREATED"
+  | "CUSTOMER_TARGET_RESPONSE_CREATED"
   | "CLIENT_CREATED"
   | "CLIENT_TARGET_CREATED"
   | "CONTACT_SUBMISSION_CREATED";
@@ -616,6 +617,8 @@ export interface CustomerTargetResponseRecord {
   customer_target_id: string;
   client_company_id: string;
   bum_user_id: string;
+  opportunity_registration_id: string | null;
+  opportunity_claim_id: string | null;
   contact_name: string;
   contact_email: string | null;
   relationship_strength: CustomerTargetResponseStrength;
@@ -623,6 +626,11 @@ export interface CustomerTargetResponseRecord {
   status: "PROPOSED" | "ACCEPTED" | "DECLINED" | "CONTACTED" | "MEETING_SET";
   created_at: string;
   updated_at: string;
+  customer_targets?: Pick<CustomerTargetRecord, "id" | "target_account_name" | "business_unit" | "expected_product_service" | "estimated_deal_value" | "expected_timeline" | "notes" | "key_contact_name" | "key_contact_email"> & {
+    client_companies?: Pick<CompanyRecord, "id" | "name"> | null;
+    target_companies?: Pick<CompanyRecord, "id" | "name" | "website" | "linkedin_company_url"> | null;
+  } | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
 
 export interface CustomerTargetResponseInput {
@@ -631,6 +639,24 @@ export interface CustomerTargetResponseInput {
   contactEmail?: string;
   relationshipStrength: CustomerTargetResponseStrength;
   note?: string;
+}
+
+export interface CustomerTargetResponseFormalizeInput {
+  payProgramId: string;
+  estimatedDealValue?: number | null;
+  expectedTimeline?: string;
+  notes?: string;
+}
+
+export interface OpportunityClaimSummaryRecord {
+  id: string;
+  opportunity_registration_id: string;
+  company_id: string | null;
+  bum_user_id: string;
+  bum_display_name: string;
+  status: OpportunityClaimStatus;
+  created_at: string;
+  updated_at: string;
 }
 
 export type ClientBumIntroRequestStatus = "SUBMITTED" | "IN_REVIEW" | "INTRO_REQUESTED" | "CLOSED";
@@ -1877,7 +1903,7 @@ export async function acceptPartnerTerms(user: AuthUser, terms: TermsVersion, us
 }
 
 export async function createOpportunityRegistration(user: AuthUser, input: OpportunityInput) {
-  const status = input.status ?? "Submitted";
+  const status = input.status ?? "Accepted";
   let commissionRate = input.commission_rate ?? 10;
   let commissionDuration = input.commission_duration?.trim() || DEFAULT_COMMISSION_DURATION;
 
@@ -1946,9 +1972,15 @@ export async function createOpportunityRegistration(user: AuthUser, input: Oppor
     target_account_name: data.target_account_name,
     status,
   });
-  await createAuditEvent(user, "admin_notification_queued", "opportunity_registrations", data.id, {
-    message: "New opportunity registration submitted for admin review.",
-  });
+  if (status === "Submitted") {
+    await createAuditEvent(user, "admin_notification_queued", "opportunity_registrations", data.id, {
+      message: "New opportunity registration submitted for admin review.",
+    });
+  } else if (status === "Accepted") {
+    await createAuditEvent(user, "opportunity_auto_accepted", "opportunity_registrations", data.id, {
+      message: "New opportunity registration auto-approved and published.",
+    });
+  }
 
   return data;
 }
@@ -2843,6 +2875,26 @@ export async function updateBumPayout(user: AuthUser, payout: BumPayoutRecord, u
   return data;
 }
 
+async function upsertOpportunityClaimPublicSummary(claim: OpportunityClaimRecord, displayName?: string | null) {
+  const bumDisplayName = displayName || claim.profiles?.full_name || claim.profiles?.email || "Trusted Bum";
+  const { error } = await supabase.from("opportunity_claim_public_summaries").upsert(
+    {
+      id: claim.id,
+      opportunity_registration_id: claim.opportunity_registration_id,
+      company_id: claim.company_id,
+      bum_user_id: claim.bum_user_id,
+      bum_display_name: bumDisplayName,
+      status: claim.status,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "id" },
+  );
+
+  if (error) {
+    console.error("Unable to update opportunity claim public summary", error);
+  }
+}
+
 const ACTIVE_CLAIM_STATUSES: OpportunityClaimStatus[] = [
   "PROPOSED",
   "APPROVED",
@@ -3103,6 +3155,7 @@ export async function updateAdminOpportunityClaim(
   }
 
   await rebalanceOpportunityClaimShares(data.opportunity_registration_id);
+  await upsertOpportunityClaimPublicSummary(data);
   await createAuditEvent(user, "opportunity_claim_updated", "opportunity_claims", data.id, {
     fields: Object.keys(payload),
   });
@@ -3157,6 +3210,7 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
   }
 
   await rebalanceOpportunityClaimShares(opportunity.id);
+  await upsertOpportunityClaimPublicSummary(data, user.name || user.email);
 
   await createAuditEvent(user, "opportunity_claim_created", "opportunity_claims", data.id, {
     opportunity_registration_id: opportunity.id,
@@ -3349,6 +3403,7 @@ export async function updateOpportunityClaimStatus(user: AuthUser, claimId: stri
   }
 
   await rebalanceOpportunityClaimShares(data.opportunity_registration_id);
+  await upsertOpportunityClaimPublicSummary(data);
 
   await createAuditEvent(user, "opportunity_claim_status_changed", "opportunity_claims", data.id, {
     status,
@@ -4588,6 +4643,186 @@ export async function createClientBumIntroRequest(user: AuthUser, input: ClientB
   return data;
 }
 
+const CUSTOMER_TARGET_RESPONSE_SELECT = "*, customer_targets(id, target_account_name, business_unit, expected_product_service, estimated_deal_value, expected_timeline, notes, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url)), profiles(id, full_name, email)";
+
+export async function listCustomerTargetResponses(user: AuthUser) {
+  if (user.role !== "CLIENT" && user.role !== "ADMIN") {
+    throw new Error("Only Clients and Admins can load Bum target responses.");
+  }
+
+  let query = supabase
+    .from("customer_target_responses")
+    .select(CUSTOMER_TARGET_RESPONSE_SELECT)
+    .order("created_at", { ascending: false });
+
+  if (user.role === "CLIENT") {
+    if (!user.clientId) {
+      throw new Error("Your client account is not linked to a company.");
+    }
+    query = query.eq("client_company_id", user.clientId);
+  }
+
+  const { data, error } = await query.returns<CustomerTargetResponseRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function updateCustomerTargetResponseStatus(
+  user: AuthUser,
+  responseId: string,
+  status: Pick<CustomerTargetResponseRecord, "status">["status"],
+) {
+  if (user.role !== "CLIENT" && user.role !== "ADMIN") {
+    throw new Error("Only Clients and Admins can update Bum target responses.");
+  }
+
+  const { data: response, error: responseError } = await supabase
+    .from("customer_target_responses")
+    .select("id, client_company_id, status")
+    .eq("id", responseId)
+    .maybeSingle<Pick<CustomerTargetResponseRecord, "id" | "client_company_id" | "status">>();
+
+  if (responseError) {
+    throw responseError;
+  }
+
+  if (!response) {
+    throw new Error("That Bum response could not be found.");
+  }
+
+  if (user.role === "CLIENT" && response.client_company_id !== user.clientId) {
+    throw new Error("That Bum response is not assigned to your company.");
+  }
+
+  const { data, error } = await supabase
+    .from("customer_target_responses")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", responseId)
+    .select(CUSTOMER_TARGET_RESPONSE_SELECT)
+    .single<CustomerTargetResponseRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "customer_target_response_status_changed", "customer_target_responses", data.id, { status });
+
+  return data;
+}
+
+function mapTargetResponseStrength(strength: CustomerTargetResponseStrength): OpportunityClaimStrength {
+  if (strength === "strong" || strength === "advisor") {
+    return "STRONG";
+  }
+  if (strength === "unknown") {
+    return "WEAK";
+  }
+  return "MODERATE";
+}
+
+export async function formalizeCustomerTargetResponse(
+  user: AuthUser,
+  responseId: string,
+  input: CustomerTargetResponseFormalizeInput,
+) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users linked to a company can formalize Bum responses.");
+  }
+
+  if (!input.payProgramId) {
+    throw new Error("Choose a commission plan before approving this Bum response.");
+  }
+
+  const { data: response, error: responseError } = await supabase
+    .from("customer_target_responses")
+    .select(CUSTOMER_TARGET_RESPONSE_SELECT)
+    .eq("id", responseId)
+    .maybeSingle<CustomerTargetResponseRecord>();
+
+  if (responseError) {
+    throw responseError;
+  }
+
+  if (!response?.customer_targets) {
+    throw new Error("That Bum response could not be found.");
+  }
+
+  if (response.client_company_id !== user.clientId) {
+    throw new Error("That Bum response is not assigned to your company.");
+  }
+
+  if (response.status !== "PROPOSED") {
+    throw new Error("Only proposed Bum responses can be formalized.");
+  }
+
+  const target = response.customer_targets;
+  const targetAccountName = target.target_companies?.name ?? target.target_account_name;
+  const opportunity = await createOpportunityRegistration(user, {
+    pay_program_id: input.payProgramId,
+    target_account_name: targetAccountName,
+    business_unit: target.business_unit ?? undefined,
+    opportunity_description: target.notes ?? "Bum-submitted relationship path for " + targetAccountName + ".",
+    client_contact: target.key_contact_name ?? undefined,
+    trusted_bums_contact: response.profiles?.full_name ?? response.profiles?.email ?? undefined,
+    expected_product_service: target.expected_product_service ?? undefined,
+    estimated_deal_value: input.estimatedDealValue ?? target.estimated_deal_value ?? null,
+    expected_timeline: input.expectedTimeline ?? target.expected_timeline ?? undefined,
+    notes: input.notes ?? response.note ?? undefined,
+    status: "Accepted",
+  });
+
+  const { data: claim, error: claimError } = await supabase
+    .from("opportunity_claims")
+    .insert({
+      opportunity_registration_id: opportunity.id,
+      company_id: user.clientId,
+      bum_user_id: response.bum_user_id,
+      bum_share_percent: DEFAULT_BUM_COMMISSION_POOL_PERCENT,
+      share_manually_set: false,
+      contact_name: response.contact_name,
+      contact_company: targetAccountName,
+      contact_email: response.contact_email,
+      relationship_strength: mapTargetResponseStrength(response.relationship_strength),
+      note: response.note,
+      status: "APPROVED",
+    })
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, client_pay_programs(*)), profiles(id, full_name, email)")
+    .single<OpportunityClaimRecord>();
+
+  if (claimError) {
+    throw claimError;
+  }
+
+  await rebalanceOpportunityClaimShares(opportunity.id);
+  await upsertOpportunityClaimPublicSummary(claim, response.profiles?.full_name ?? response.profiles?.email);
+
+  const { error: updateError } = await supabase
+    .from("customer_target_responses")
+    .update({
+      status: "ACCEPTED",
+      opportunity_registration_id: opportunity.id,
+      opportunity_claim_id: claim.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", response.id);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  await createAuditEvent(user, "customer_target_response_formalized", "customer_target_responses", response.id, {
+    opportunity_registration_id: opportunity.id,
+    opportunity_claim_id: claim.id,
+    bum_user_id: response.bum_user_id,
+  });
+
+  return { opportunity, claim };
+}
+
 export async function createCustomerTargetResponse(user: AuthUser, input: CustomerTargetResponseInput) {
   if (user.role !== "BUM") {
     throw new Error("Only Bums can respond to target account opportunities.");
@@ -4595,9 +4830,9 @@ export async function createCustomerTargetResponse(user: AuthUser, input: Custom
 
   const { data: target, error: targetError } = await supabase
     .from("customer_targets")
-    .select("id, client_company_id")
+    .select("id, client_company_id, target_account_name")
     .eq("id", input.customerTargetId)
-    .maybeSingle<Pick<CustomerTargetRecord, "id" | "client_company_id">>();
+    .maybeSingle<Pick<CustomerTargetRecord, "id" | "client_company_id" | "target_account_name">>();
 
   if (targetError) {
     throw targetError;
@@ -4619,7 +4854,7 @@ export async function createCustomerTargetResponse(user: AuthUser, input: Custom
       note: toNullableString(input.note),
       status: "PROPOSED",
     })
-    .select("*")
+    .select(CUSTOMER_TARGET_RESPONSE_SELECT)
     .single<CustomerTargetResponseRecord>();
 
   if (error) {
@@ -4632,7 +4867,39 @@ export async function createCustomerTargetResponse(user: AuthUser, input: Custom
     relationship_strength: data.relationship_strength,
   });
 
+  await sendAdminEmail({
+    mode: "action",
+    templateSlug: "customer_target_response_created_client",
+    metadata: {
+      company_id: target.client_company_id,
+      target_account_name: data.customer_targets?.target_companies?.name ?? target.target_account_name,
+      contact_name: data.contact_name,
+      contact_email: data.contact_email ?? "",
+      relationship_strength: data.relationship_strength,
+      bum_name: user.name || user.email,
+      response_note: data.note ?? "",
+      response_url: getPortalOrigin() + "/client/opportunities?tab=responses&targetResponseId=" + data.id,
+    },
+    triggeredBy: "CUSTOMER_TARGET_RESPONSE_CREATED",
+  }).catch((error) => {
+    console.error("Unable to send customer target response notification", error);
+  });
+
   return data;
+}
+
+export async function listOpportunityClaimSummaries() {
+  const { data, error } = await supabase
+    .from("opportunity_claim_public_summaries")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .returns<OpportunityClaimSummaryRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
 }
 
 export async function scheduleTeamsMeeting(input: ScheduleTeamsMeetingInput) {

@@ -20,13 +20,17 @@ import { getPageItems } from "@/lib/pagination";
 import {
   createClientPayProgramRequest,
   createOpportunityRegistration,
+  formalizeCustomerTargetResponse,
   listClientOpportunityQuestions,
+  listCustomerTargetResponses,
   listOpportunityClaims,
   listOwnOpportunityRegistrations,
   listSelectableClientPayPrograms,
   respondToOpportunityQuestion,
+  updateCustomerTargetResponseStatus,
   updateOwnOpportunityRegistration,
   type ClientPayProgramApprovalStatus,
+  type CustomerTargetResponseRecord,
   type OpportunityClaimRecord,
   type OpportunityQuestionRecord,
   type OpportunityQuestionVisibility,
@@ -241,6 +245,7 @@ export default function ClientOpportunityNew() {
   const [editNotes, setEditNotes] = useState("");
   const [questionResponses, setQuestionResponses] = useState<Record<string, string>>({});
   const [questionVisibilities, setQuestionVisibilities] = useState<Record<string, OpportunityQuestionVisibility>>({});
+  const [responsePayProgramIds, setResponsePayProgramIds] = useState<Record<string, string>>({});
   const [isRequestingPlan, setIsRequestingPlan] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [registeredPage, setRegisteredPage] = useState(1);
@@ -307,8 +312,9 @@ export default function ClientOpportunityNew() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get("tab") === "questions") {
-      setActiveTab("questions");
+    const tab = params.get("tab");
+    if (tab === "questions" || tab === "responses") {
+      setActiveTab(tab);
     }
   }, [location.search]);
 
@@ -328,10 +334,51 @@ export default function ClientOpportunityNew() {
     queryFn: () => listOpportunityClaims(),
     enabled: Boolean(user?.clientId),
   });
+  const targetResponsesQuery = useQuery({
+    queryKey: ["client-target-responses", user?.clientId],
+    queryFn: () => listCustomerTargetResponses(user!),
+    enabled: Boolean(user?.clientId),
+  });
   const questionsQuery = useQuery({
     queryKey: ["client-opportunity-questions", user?.clientId],
     queryFn: () => listClientOpportunityQuestions(user!),
     enabled: Boolean(user?.clientId),
+  });
+
+  const formalizeResponseMutation = useMutation({
+    mutationFn: ({ response, payProgramId }: { response: CustomerTargetResponseRecord; payProgramId: string }) =>
+      formalizeCustomerTargetResponse(user!, response.id, { payProgramId }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["client-target-responses", user?.clientId] });
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-claims", user?.clientId] });
+      toast({
+        title: "Bum response approved",
+        description: "The target response is now a formal accepted opportunity with an approved Bum claim.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to approve response",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectResponseMutation = useMutation({
+    mutationFn: (response: CustomerTargetResponseRecord) => updateCustomerTargetResponseStatus(user!, response.id, "DECLINED"),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["client-target-responses", user?.clientId] });
+      toast({ title: "Bum response rejected", description: "The response has been closed without creating an opportunity." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to reject response",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const answerQuestionMutation = useMutation({
@@ -520,7 +567,7 @@ export default function ClientOpportunityNew() {
         ...form,
         pay_program_id: form.pay_program_id || null,
         estimated_deal_value: form.estimated_deal_value ? Number(form.estimated_deal_value) : null,
-        status: "Submitted",
+        status: "Accepted",
       });
       setSubmittedId(opportunity.id);
       clearClientOpportunityDraft(user?.clientId);
@@ -548,8 +595,10 @@ export default function ClientOpportunityNew() {
 
   const payPrograms = payProgramsQuery.data ?? [];
   const opportunities = opportunitiesQuery.data ?? [];
-  const questions = questionsQuery.data ?? [];
+  const questions = useMemo(() => questionsQuery.data ?? [], [questionsQuery.data]);
+  const targetResponses = useMemo(() => targetResponsesQuery.data ?? [], [targetResponsesQuery.data]);
   const linkedOpportunityId = new URLSearchParams(location.search).get("opportunityId");
+  const linkedTargetResponseId = new URLSearchParams(location.search).get("targetResponseId");
   const sortedQuestions = useMemo(() => {
     return [...questions].sort((a, b) => {
       const aLinked = linkedOpportunityId && a.opportunity_registration_id === linkedOpportunityId ? 1 : 0;
@@ -562,6 +611,18 @@ export default function ClientOpportunityNew() {
     });
   }, [linkedOpportunityId, questions]);
   const openQuestionCount = questions.filter((question) => question.status === "OPEN").length;
+  const pendingTargetResponseCount = targetResponses.filter((response) => response.status === "PROPOSED").length;
+  const sortedTargetResponses = useMemo(() => {
+    return [...targetResponses].sort((a, b) => {
+      const aLinked = linkedTargetResponseId && a.id === linkedTargetResponseId ? 1 : 0;
+      const bLinked = linkedTargetResponseId && b.id === linkedTargetResponseId ? 1 : 0;
+      if (aLinked !== bLinked) return bLinked - aLinked;
+      const aOpen = a.status === "PROPOSED" ? 1 : 0;
+      const bOpen = b.status === "PROPOSED" ? 1 : 0;
+      if (aOpen !== bOpen) return bOpen - aOpen;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [linkedTargetResponseId, targetResponses]);
   const claimsByOpportunity = useMemo(() => {
     const grouped = new Map<string, OpportunityClaimRecord[]>();
 
@@ -613,8 +674,8 @@ export default function ClientOpportunityNew() {
             <div className="flex items-center gap-3">
               <CheckCircle className="h-5 w-5 text-success" />
               <div>
-                <p className="font-medium">Registration submitted</p>
-                <p className="text-sm text-muted-foreground">Audit record created. Admin review is now pending.</p>
+                <p className="font-medium">Opportunity published</p>
+                <p className="text-sm text-muted-foreground">The opportunity is live and available for connector matching.</p>
               </div>
             </div>
             <Button asChild variant="outline">
@@ -627,10 +688,100 @@ export default function ClientOpportunityNew() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="flex h-auto flex-wrap justify-start">
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          <TabsTrigger value="responses">Bum Responses{pendingTargetResponseCount ? " (" + pendingTargetResponseCount + ")" : ""}</TabsTrigger>
           <TabsTrigger value="questions">Questions{openQuestionCount ? ` (${openQuestionCount})` : ""}</TabsTrigger>
           <TabsTrigger value="register">Register Opportunity</TabsTrigger>
           <TabsTrigger value="commission-plan">Commission Plan</TabsTrigger>
         </TabsList>
+
+
+        <TabsContent value="responses">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Bum responses
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {sortedTargetResponses.map((response) => {
+                const isLinked = linkedTargetResponseId === response.id;
+                const selectedPlanId = responsePayProgramIds[response.id] ?? "";
+                const targetName = response.customer_targets?.target_companies?.name ?? response.customer_targets?.target_account_name ?? "Target account";
+                const canAct = response.status === "PROPOSED";
+
+                return (
+                  <div key={response.id} className={"rounded-md border p-4 " + (isLinked ? "border-primary/50 bg-primary/5" : "")}>
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StatusBadge label={response.status === "PROPOSED" ? "Awaiting client approval" : response.status.replaceAll("_", " ")} variant={response.status === "PROPOSED" ? "warning" : response.status === "ACCEPTED" ? "success" : response.status === "DECLINED" ? "destructive" : "info"} />
+                          <StatusBadge label={response.relationship_strength.replaceAll("_", " ")} variant="secondary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{targetName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {response.profiles?.full_name ?? response.profiles?.email ?? "A Bum"} knows {response.contact_name}
+                            {response.contact_email ? " · " + response.contact_email : ""}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Submitted {formatDateForTimeZone(response.created_at, timeZone)}</p>
+                        </div>
+                        {response.note ? <p className="text-sm">{response.note}</p> : null}
+                      </div>
+                    </div>
+
+                    {canAct ? (
+                      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
+                        <div className="space-y-2">
+                          <Label>Commission plan</Label>
+                          <Select value={selectedPlanId} onValueChange={(value) => setResponsePayProgramIds((current) => ({ ...current, [response.id]: value }))}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose plan for the formal opportunity" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {payPrograms.map((plan) => (
+                                <SelectItem key={plan.id} value={plan.id}>
+                                  {plan.name} · {commissionScheduleSummary(plan)} · {plan.approval_status.toLowerCase()}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          type="button"
+                          disabled={!selectedPlanId || formalizeResponseMutation.isPending}
+                          onClick={() => formalizeResponseMutation.mutate({ response, payProgramId: selectedPlanId })}
+                        >
+                          Approve and formalize
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={rejectResponseMutation.isPending}
+                          onClick={() => rejectResponseMutation.mutate(response)}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    ) : response.opportunity_registration_id ? (
+                      <div className="mt-4">
+                        <Button asChild variant="outline" size="sm">
+                          <Link to="/client/opportunities">View opportunity</Link>
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+
+              {!sortedTargetResponses.length ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  No Bums have submitted "I know someone" responses for this company's target accounts yet.
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="questions">
           <Card>
