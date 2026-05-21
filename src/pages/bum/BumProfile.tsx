@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Download, FileCheck, FileUp, Linkedin, ShieldCheck } from "lucide-react";
@@ -70,6 +70,77 @@ function arrayToLines(values?: string[]) {
   return values?.join("\n") ?? "";
 }
 
+const BUM_PROFILE_DRAFT_PREFIX = "trustedbums:bum-profile-draft:";
+
+interface BumProfileDraftState {
+  form: BumProfileFormState;
+  pendingLinkedInImportedAt: string | null;
+  importNotes: string[];
+  savedAt: string;
+  profileUpdatedAt: string | null;
+}
+
+function draftKey(userId: string) {
+  return `${BUM_PROFILE_DRAFT_PREFIX}${userId}`;
+}
+
+function canUseBrowserStorage() {
+  try {
+    return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  } catch {
+    return false;
+  }
+}
+
+function readProfileDraft(userId?: string | null) {
+  if (!userId || !canUseBrowserStorage()) {
+    return null;
+  }
+
+  try {
+    const rawDraft = window.localStorage.getItem(draftKey(userId));
+    if (!rawDraft) {
+      return null;
+    }
+
+    const draft = JSON.parse(rawDraft) as Partial<BumProfileDraftState>;
+    return draft.form && draft.savedAt ? (draft as BumProfileDraftState) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeProfileDraft(userId: string, draft: BumProfileDraftState) {
+  if (!canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(draftKey(userId), JSON.stringify(draft));
+}
+
+function clearProfileDraft(userId?: string | null) {
+  if (!userId || !canUseBrowserStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(draftKey(userId));
+}
+
+function shouldRestoreDraft(draft: BumProfileDraftState, profile: Awaited<ReturnType<typeof getOwnBumProfile>>) {
+  if (!profile?.updated_at) {
+    return true;
+  }
+
+  const draftSavedAt = Date.parse(draft.savedAt);
+  const profileUpdatedAt = Date.parse(profile.updated_at);
+
+  if (Number.isNaN(draftSavedAt) || Number.isNaN(profileUpdatedAt)) {
+    return true;
+  }
+
+  return draftSavedAt >= profileUpdatedAt;
+}
+
 function toFormState(profile: Awaited<ReturnType<typeof getOwnBumProfile>>): BumProfileFormState {
   if (!profile) {
     return defaultForm;
@@ -107,6 +178,9 @@ export default function BumProfile() {
   const [importNotes, setImportNotes] = useState<string[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [pendingLinkedInImportedAt, setPendingLinkedInImportedAt] = useState<string | null>(null);
+  const [restoredDraftAt, setRestoredDraftAt] = useState<string | null>(null);
+  const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
+  const previousUserId = useRef<string | null>(null);
   const { terms, acceptance, hasAcceptedCurrentTerms, isLoading: isTermsLoading } = useCurrentTermsState();
 
   const profileQuery = useQuery({
@@ -116,28 +190,82 @@ export default function BumProfile() {
   });
 
   useEffect(() => {
+    if (!user?.id || previousUserId.current === user.id) {
+      return;
+    }
+
+    previousUserId.current = user.id;
     setForm(defaultForm);
     setHasHydratedForm(false);
     setIsDirty(false);
     setLinkedInFiles({});
     setImportNotes([]);
     setPendingLinkedInImportedAt(null);
+    setRestoredDraftAt(null);
+    setLocalDraftSavedAt(null);
   }, [user?.id]);
 
   useEffect(() => {
-    if (profileQuery.isSuccess && !hasHydratedForm) {
-      if (!isDirty) {
+    if (!profileQuery.isSuccess || hasHydratedForm) {
+      return;
+    }
+
+    if (!isDirty) {
+      const draft = readProfileDraft(user?.id);
+
+      if (draft && shouldRestoreDraft(draft, profileQuery.data)) {
+        setForm(draft.form);
+        setPendingLinkedInImportedAt(draft.pendingLinkedInImportedAt ?? null);
+        setImportNotes(draft.importNotes ?? []);
+        setRestoredDraftAt(draft.savedAt);
+        setLocalDraftSavedAt(draft.savedAt);
+        setIsDirty(true);
+      } else {
+        if (draft) {
+          clearProfileDraft(user?.id);
+        }
         setForm(toFormState(profileQuery.data));
         setPendingLinkedInImportedAt(profileQuery.data?.last_linkedin_imported_at ?? null);
       }
-      setHasHydratedForm(true);
     }
-  }, [hasHydratedForm, isDirty, profileQuery.data, profileQuery.isSuccess]);
+
+    setHasHydratedForm(true);
+  }, [hasHydratedForm, isDirty, profileQuery.data, profileQuery.isSuccess, user?.id]);
 
   function updateForm(updater: (current: BumProfileFormState) => BumProfileFormState) {
     setIsDirty(true);
     setForm(updater);
   }
+
+  useEffect(() => {
+    if (!isDirty || !hasHydratedForm || !user?.id) {
+      return;
+    }
+
+    const savedAt = new Date().toISOString();
+    writeProfileDraft(user.id, {
+      form,
+      pendingLinkedInImportedAt,
+      importNotes,
+      savedAt,
+      profileUpdatedAt: profileQuery.data?.updated_at ?? null,
+    });
+    setLocalDraftSavedAt(savedAt);
+  }, [form, hasHydratedForm, importNotes, isDirty, pendingLinkedInImportedAt, profileQuery.data?.updated_at, user?.id]);
+
+  useEffect(() => {
+    if (!isDirty) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -161,7 +289,11 @@ export default function BumProfile() {
         last_linkedin_imported_at: pendingLinkedInImportedAt,
       }),
     onSuccess: async (profile) => {
+      clearProfileDraft(user?.id);
+      setForm(toFormState(profile));
       setIsDirty(false);
+      setRestoredDraftAt(null);
+      setLocalDraftSavedAt(null);
       setPendingLinkedInImportedAt(profile.last_linkedin_imported_at ?? null);
       await queryClient.invalidateQueries({ queryKey: ["bum-profile", user?.id] });
       await queryClient.invalidateQueries({ queryKey: ["admin-bum-profiles"] });
@@ -296,6 +428,21 @@ export default function BumProfile() {
               <StatusBadge label={profileStatus.verification} variant={profileQuery.data?.verification_status === "verified" ? "success" : profileQuery.data?.verification_status === "reviewed" ? "info" : "secondary"} />
               <StatusBadge label={profileStatus.visibility} variant={form.is_visible_to_clients ? "success" : "warning"} />
             </div>
+
+            {restoredDraftAt ? (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
+                <p className="font-medium text-warning">Unsaved draft restored</p>
+                <p className="mt-1 text-muted-foreground">
+                  We recovered the profile work saved in this browser at {formatDateTimeForTimeZone(restoredDraftAt, timeZone)}. Save the profile to make it permanent.
+                </p>
+              </div>
+            ) : null}
+
+            {isDirty ? (
+              <div className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Unsaved changes are being kept in this browser{localDraftSavedAt ? `, last saved at ${formatDateTimeForTimeZone(localDraftSavedAt, timeZone)}` : ""}.
+              </div>
+            ) : null}
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
