@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, Eye, HelpCircle, Image, Mail, Megaphone, MousePointerClick, Plus, Save, Send, ShieldAlert, Sparkles, Workflow } from "lucide-react";
+import { CalendarClock, Eye, HelpCircle, Image, Mail, Megaphone, MousePointerClick, Pencil, Plus, Save, Send, ShieldAlert, Sparkles, Workflow } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -184,6 +184,11 @@ function summarizeCron(value: string) {
   return known[value.trim()] ?? value;
 }
 
+function triggerEventLabel(value?: AdminEmailTriggerEvent | null) {
+  if (!value || value === "MANUAL") return "Manual";
+  return triggerEvents.find((event) => event.value === value)?.label ?? value;
+}
+
 export default function AdminEmails() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -208,6 +213,7 @@ export default function AdminEmails() {
   const triggerRules = triggerRulesQuery.data ?? [];
   const companies = companiesQuery.data ?? [];
 
+  const [activeTab, setActiveTab] = useState("send");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [draft, setDraft] = useState<AdminEmailTemplateRecord | null>(null);
   const [metadata, setMetadata] = useState<Record<string, string>>({});
@@ -229,6 +235,7 @@ export default function AdminEmails() {
   }, [selectedTemplateId, templates]);
 
   const startNewTemplate = () => {
+    setActiveTab("send");
     setSelectedTemplateId("new-template");
     setDraft(createBlankTemplate());
     setMetadata({ headline: "", recipient_name: "", message: "" });
@@ -271,6 +278,11 @@ export default function AdminEmails() {
 
   const insertBodySnippet = (snippet: string) => {
     setDraft((current) => current ? { ...current, body: current.body.trimEnd() + "\n\n" + snippet } : current);
+  };
+
+  const editEmailTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setActiveTab("send");
   };
 
   const livePreview = useMemo(() => {
@@ -492,7 +504,7 @@ export default function AdminEmails() {
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Tracked engagement</p><p className="text-2xl font-semibold">{totalOpens}/{totalClicks}</p><p className="text-xs text-muted-foreground">opens / clicks</p></CardContent></Card>
       </div>
 
-      <Tabs defaultValue="send" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="flex h-auto flex-wrap justify-start">
           <TabsTrigger value="send"><Megaphone className="mr-2 h-4 w-4" />Send</TabsTrigger>
           <TabsTrigger value="automations"><Workflow className="mr-2 h-4 w-4" />Automations</TabsTrigger>
@@ -511,7 +523,7 @@ export default function AdminEmails() {
                   <button key={template.id} type="button" onClick={() => setSelectedTemplateId(template.id)} className={"w-full rounded-md border p-3 text-left text-sm transition hover:border-primary " + (template.id === selectedTemplateId ? "border-primary bg-primary/5" : "border-border")}>
                     <div className="flex items-start justify-between gap-2"><span className="font-medium">{template.name}</span><Badge variant={template.is_active ? "default" : "secondary"}>{template.is_active ? "Active" : "Off"}</Badge></div>
                     <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{template.description || "No description"}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">{categories.find((item) => item.value === template.category)?.label ?? template.category}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-muted-foreground"><Badge variant="outline">{categories.find((item) => item.value === template.category)?.label ?? template.category}</Badge><Badge variant={template.trigger_event && template.trigger_event !== "MANUAL" ? "secondary" : "outline"}>{triggerEventLabel(template.trigger_event)}</Badge></div>
                   </button>
                 ))}
               </CardContent>
@@ -585,7 +597,7 @@ export default function AdminEmails() {
                 <div className="space-y-2"><FieldLabel label="Conditions JSON" help="Optional filters for this trigger, stored as JSON for future automation logic. Use an empty JSON object when no extra conditions are needed." /><Textarea rows={4} value={triggerForm.conditions} onChange={(event) => setTriggerForm((current) => ({ ...current, conditions: event.target.value }))} /><p className="text-xs leading-5 text-muted-foreground">Use <span className="font-mono">{'{}'}</span> unless this trigger needs a future filter, such as company type or claim status.</p></div>
                 <div className="flex items-center justify-between rounded-md border px-3 py-2"><Label>Active</Label><Switch checked={triggerForm.is_active} onCheckedChange={(checked) => setTriggerForm((current) => ({ ...current, is_active: checked }))} /></div>
                 <Button onClick={() => saveTriggerMutation.mutate()} disabled={saveTriggerMutation.isPending}><Save className="mr-2 h-4 w-4" />{triggerRuleId ? "Update Trigger" : "Create Trigger"}</Button>
-                <div className="rounded-md border"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Event</TableHead><TableHead>Status</TableHead></TableRow></TableHeader><TableBody>{triggerRules.map((rule) => <TableRow key={rule.id} className="cursor-pointer" onClick={() => editTriggerRule(rule)}><TableCell><p className="font-medium">{rule.name}</p><p className="text-xs text-muted-foreground">{rule.admin_email_templates?.name}</p></TableCell><TableCell>{triggerEvents.find((event) => event.value === rule.trigger_event)?.label ?? rule.trigger_event}</TableCell><TableCell><Badge variant={rule.is_active ? "default" : "secondary"}>{rule.is_active ? "Active" : "Off"}</Badge></TableCell></TableRow>)}{!triggerRules.length ? <TableRow><TableCell colSpan={3} className="text-sm text-muted-foreground">No trigger rules yet.</TableCell></TableRow> : null}</TableBody></Table></div>
+                <div className="rounded-md border"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Event</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Email</TableHead></TableRow></TableHeader><TableBody>{triggerRules.map((rule) => <TableRow key={rule.id} className="cursor-pointer" onClick={() => editTriggerRule(rule)}><TableCell><p className="font-medium">{rule.name}</p><p className="text-xs text-muted-foreground">{rule.admin_email_templates?.name}</p></TableCell><TableCell>{triggerEventLabel(rule.trigger_event)}</TableCell><TableCell><Badge variant={rule.is_active ? "default" : "secondary"}>{rule.is_active ? "Active" : "Off"}</Badge></TableCell><TableCell className="text-right"><Button type="button" size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); editEmailTemplate(rule.template_id); }}><Pencil className="mr-2 h-4 w-4" />Edit email</Button></TableCell></TableRow>)}{!triggerRules.length ? <TableRow><TableCell colSpan={4} className="text-sm text-muted-foreground">No trigger rules yet.</TableCell></TableRow> : null}</TableBody></Table></div>
               </CardContent>
             </Card>
           </div>
