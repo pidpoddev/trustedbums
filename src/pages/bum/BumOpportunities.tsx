@@ -26,7 +26,7 @@ import {
   type BumSavedItemType,
 } from "@/lib/portalApi";
 import { cn } from "@/lib/utils";
-import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart } from "lucide-react";
+import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const MARKETPLACE_PAGE_SIZE = 6;
@@ -96,6 +96,7 @@ export default function BumOpportunities() {
   const [selectedTarget, setSelectedTarget] = useState<CustomerTargetRecord | null>(null);
   const [marketplacePage, setMarketplacePage] = useState(1);
   const [responseForm, setResponseForm] = useState(responseFormInitial);
+  const [expandedOpportunityIds, setExpandedOpportunityIds] = useState<Set<string>>(new Set());
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
     queryFn: listMarketplaceOpportunities,
@@ -373,6 +374,7 @@ export default function BumOpportunities() {
 
         {visibleOpportunities.map((opportunity) => {
           const isHearted = savedOpportunityIds.has(opportunity.id);
+          const isExpanded = expandedOpportunityIds.has(opportunity.id);
 
           return (
           <Card key={opportunity.id} className="transition-shadow hover:shadow-md">
@@ -389,7 +391,7 @@ export default function BumOpportunities() {
                   <p className="text-sm text-muted-foreground mt-1">
                     {opportunity.companies?.name ?? "Client pending"} • {opportunity.commission_rate}% commission
                   </p>
-                  <p className="mt-2 line-clamp-2 text-sm">{opportunity.opportunity_description ?? "No description provided yet."}</p>
+                  <p className={cn("mt-2 text-sm", !isExpanded && "line-clamp-2")}>{opportunity.opportunity_description ?? "No description provided yet."}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                     {opportunity.expected_product_service ? (
                       <Badge variant="secondary">{opportunity.expected_product_service}</Badge>
@@ -405,6 +407,34 @@ export default function BumOpportunities() {
                       {opportunity.expected_timeline?.trim() || "Timeline to be confirmed"}
                     </span>
                   </div>
+                  {isExpanded ? (
+                    <div className="mt-4 grid gap-3 rounded-md border bg-muted/20 p-4 text-sm md:grid-cols-2">
+                      <div>
+                        <p className="font-medium">Product or service</p>
+                        <p className="text-muted-foreground">{opportunity.expected_product_service ?? "Not specified"}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Business unit</p>
+                        <p className="text-muted-foreground">{opportunity.business_unit ?? "Not specified"}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Timeline</p>
+                        <p className="text-muted-foreground">{opportunity.expected_timeline ?? "To be confirmed"}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Commission duration</p>
+                        <p className="text-muted-foreground">{opportunity.commission_duration}</p>
+                      </div>
+                      {opportunity.client_pay_programs ? (
+                        <div className="md:col-span-2">
+                          <p className="font-medium">Commission structure</p>
+                          <p className="text-muted-foreground">
+                            {opportunity.client_pay_programs.name}: {opportunity.client_pay_programs.commission_basis ?? `${opportunity.commission_rate}% commission`}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 flex-row gap-2 md:flex-col md:items-end">
                   <Button
@@ -416,8 +446,30 @@ export default function BumOpportunities() {
                   >
                     <Heart className={cn("h-4 w-4", isHearted && "fill-current")} />
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    aria-expanded={isExpanded}
+                    onClick={() =>
+                      setExpandedOpportunityIds((current) => {
+                        const next = new Set(current);
+                        if (next.has(opportunity.id)) {
+                          next.delete(opportunity.id);
+                        } else {
+                          next.add(opportunity.id);
+                        }
+                        return next;
+                      })
+                    }
+                  >
+                    {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+                    Details
+                  </Button>
                   <Button size="sm" asChild>
-                    <Link to={`/bum/opportunities/${opportunity.id}`}>View opportunity</Link>
+                    <Link to={`/bum/opportunities/${opportunity.id}?ask=1`}>
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Ask question
+                    </Link>
                   </Button>
                 </div>
               </div>

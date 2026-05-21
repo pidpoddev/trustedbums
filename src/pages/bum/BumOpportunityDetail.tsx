@@ -23,14 +23,16 @@ import {
   buildTopLineShareSchedule,
   calculateTopLineSharePercent,
   createOpportunityClaim,
+  createOpportunityQuestion,
   DEFAULT_BUM_COMMISSION_POOL_PERCENT,
   deriveDefaultBumSharePercent,
   getMarketplaceOpportunity,
   listOpportunityClaims,
+  listOpportunityQuestionsForBum,
   updateOpportunityClaimStatus,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { ArrowLeft, Plus, Activity } from "lucide-react";
+import { ArrowLeft, Plus, Activity, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 interface ActivityEntry {
@@ -56,8 +58,14 @@ export default function BumOpportunityDetail() {
     queryFn: () => listOpportunityClaims(id),
     enabled: Boolean(id),
   });
+  const questionsQuery = useQuery({
+    queryKey: ["opportunity-questions", id, user?.id],
+    queryFn: () => listOpportunityQuestionsForBum(id!),
+    enabled: Boolean(id),
+  });
   const opp = opportunityQuery.data;
   const claims = claimsQuery.data ?? [];
+  const questions = questionsQuery.data ?? [];
   const myClaims = claims.filter((claim) => claim.bum_user_id === user?.id);
   const defaultSoloSchedule = buildTopLineShareSchedule(
     opp?.client_pay_programs,
@@ -73,6 +81,7 @@ export default function BumOpportunityDetail() {
   const [contactEmail, setContactEmail] = useState("");
   const [strength, setStrength] = useState<RelationshipStrength>("MODERATE");
   const [note, setNote] = useState("");
+  const [questionText, setQuestionText] = useState("");
 
   const [updateClaimId, setUpdateClaimId] = useState("");
   const [updateStatus, setUpdateStatus] = useState<ClaimStatus>("SCHEDULED");
@@ -98,6 +107,22 @@ export default function BumOpportunityDetail() {
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Unable to request claim");
+    },
+  });
+
+  const questionMutation = useMutation({
+    mutationFn: () =>
+      createOpportunityQuestion(user!, {
+        opportunityId: opp!.id,
+        question: questionText,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["opportunity-questions", id, user?.id] });
+      toast.success("Question sent to the client team");
+      setQuestionText("");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Unable to send question");
     },
   });
 
@@ -145,6 +170,15 @@ export default function BumOpportunityDetail() {
       return;
     }
     createClaimMutation.mutate();
+  };
+
+  const submitQuestion = () => {
+    if (!questionText.trim()) {
+      toast.error("Add a question before sending it");
+      return;
+    }
+
+    questionMutation.mutate();
   };
 
   const submitUpdate = () => {
@@ -227,6 +261,63 @@ export default function BumOpportunityDetail() {
                 </p>
               )}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" /> Request more information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="opportunity-question">Question for the client</Label>
+            <Textarea
+              id="opportunity-question"
+              rows={4}
+              value={questionText}
+              onChange={(event) => setQuestionText(event.target.value)}
+              placeholder="Ask what you need to know before deciding whether to pursue or claim this opportunity."
+            />
+          </div>
+          <Button onClick={submitQuestion} disabled={questionMutation.isPending || !questionText.trim()}>
+            {questionMutation.isPending ? "Sending..." : "Send question"}
+          </Button>
+
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Questions and answers</p>
+            {questions.map((question) => {
+              const isMine = question.bum_user_id === user?.id;
+              const isPublic = question.response_visibility === "PUBLIC";
+
+              return (
+                <div key={question.id} className="rounded-md border p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge label={question.status === "ANSWERED" ? "Answered" : "Waiting on client"} variant={question.status === "ANSWERED" ? "success" : "warning"} />
+                    {isPublic ? <StatusBadge label="Shared with all Bums" variant="info" /> : null}
+                    {!isPublic && isMine && question.response ? <StatusBadge label="Only visible to you" variant="secondary" /> : null}
+                  </div>
+                  <p className="mt-3 text-sm font-medium">{question.question}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Asked {formatDateForTimeZone(question.created_at, timeZone)}{isMine ? " by you" : " by another Bum"}
+                  </p>
+                  {question.response ? (
+                    <div className="mt-3 rounded-md bg-muted/30 p-3 text-sm">
+                      <p className="font-medium">Client response</p>
+                      <p className="mt-1 text-muted-foreground">{question.response}</p>
+                      {question.responded_at ? (
+                        <p className="mt-2 text-xs text-muted-foreground">Answered {formatDateForTimeZone(question.responded_at, timeZone)}</p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+            {!questions.length ? (
+              <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">No one has asked a question about this opportunity yet.</p>
+            ) : null}
           </div>
         </CardContent>
       </Card>

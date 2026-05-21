@@ -146,6 +146,7 @@ export type AdminEmailTriggerEvent =
   | "OPPORTUNITY_CLAIM_CREATED"
   | "OPPORTUNITY_CLAIM_ACCEPTED"
   | "OPPORTUNITY_CLAIM_STATUS_CHANGED"
+  | "OPPORTUNITY_QUESTION_CREATED"
   | "CLIENT_CREATED"
   | "CLIENT_TARGET_CREATED"
   | "CONTACT_SUBMISSION_CREATED";
@@ -875,6 +876,39 @@ export interface OpportunityClaimInput {
   contactEmail?: string;
   relationshipStrength: OpportunityClaimStrength;
   note?: string;
+}
+
+export type OpportunityQuestionStatus = "OPEN" | "ANSWERED" | "CLOSED";
+export type OpportunityQuestionVisibility = "BUM_ONLY" | "PUBLIC";
+
+export interface OpportunityQuestionRecord {
+  id: string;
+  opportunity_registration_id: string;
+  company_id: string;
+  bum_user_id: string;
+  question: string;
+  status: OpportunityQuestionStatus;
+  response: string | null;
+  response_visibility: OpportunityQuestionVisibility | null;
+  responded_by: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  responded_by_profile?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name" | "company_id" | "status"> & {
+    companies?: Pick<CompanyRecord, "name"> | null;
+  } | null;
+}
+
+export interface OpportunityQuestionInput {
+  opportunityId: string;
+  question: string;
+}
+
+export interface OpportunityQuestionResponseInput {
+  response: string;
+  visibility: OpportunityQuestionVisibility;
 }
 
 export type CustomerPaymentReportStatus = "REPORTED" | "INVOICE_GENERATED" | "DISPUTED" | "VOID";
@@ -3120,6 +3154,152 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
     triggeredBy: "OPPORTUNITY_CLAIM_CREATED",
   }).catch((error) => {
     console.error("Unable to send opportunity claim notification", error);
+  });
+
+  return data;
+}
+
+const OPPORTUNITY_QUESTION_SELECT = "*, profiles:profiles!opportunity_questions_bum_user_id_fkey(id, full_name, email), responded_by_profile:profiles!opportunity_questions_responded_by_fkey(id, full_name, email), opportunity_registrations(id, target_account_name, company_id, status, companies(name))";
+
+function getPortalOrigin() {
+  if (typeof window !== "undefined" && window.location.origin) {
+    return window.location.origin;
+  }
+
+  return "https://trustedbums.com";
+}
+
+export async function listOpportunityQuestionsForBum(opportunityId: string) {
+  const { data, error } = await supabase
+    .from("opportunity_questions")
+    .select(OPPORTUNITY_QUESTION_SELECT)
+    .eq("opportunity_registration_id", opportunityId)
+    .order("created_at", { ascending: false })
+    .returns<OpportunityQuestionRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listClientOpportunityQuestions(user: AuthUser) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users can load opportunity questions.");
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_questions")
+    .select(OPPORTUNITY_QUESTION_SELECT)
+    .eq("company_id", user.clientId)
+    .order("created_at", { ascending: false })
+    .returns<OpportunityQuestionRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createOpportunityQuestion(user: AuthUser, input: OpportunityQuestionInput) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can request more information about opportunities.");
+  }
+
+  const question = input.question.trim();
+  if (!question) {
+    throw new Error("Add your question before sending the request.");
+  }
+
+  const { data: opportunity, error: opportunityError } = await supabase
+    .from("opportunity_registrations")
+    .select("id, company_id, target_account_name")
+    .eq("id", input.opportunityId)
+    .eq("status", "Accepted")
+    .maybeSingle<Pick<OpportunityRegistration, "id" | "company_id" | "target_account_name">>();
+
+  if (opportunityError) {
+    throw opportunityError;
+  }
+
+  if (!opportunity?.company_id) {
+    throw new Error("That opportunity is no longer available for questions.");
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_questions")
+    .insert({
+      opportunity_registration_id: opportunity.id,
+      company_id: opportunity.company_id,
+      bum_user_id: user.id,
+      question,
+      status: "OPEN",
+    })
+    .select(OPPORTUNITY_QUESTION_SELECT)
+    .single<OpportunityQuestionRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "opportunity_question_created", "opportunity_questions", data.id, {
+    opportunity_registration_id: opportunity.id,
+    target_account_name: opportunity.target_account_name,
+  });
+
+  const opportunityUrl = `${getPortalOrigin()}/client/opportunities?tab=questions&opportunityId=${encodeURIComponent(opportunity.id)}`;
+  await sendAdminEmail({
+    mode: "action",
+    templateSlug: "opportunity_question_created_client",
+    metadata: {
+      company_id: opportunity.company_id,
+      client_name: "client team",
+      target_account_name: opportunity.target_account_name,
+      bum_name: user.name || user.email,
+      question,
+      opportunity_url: opportunityUrl,
+    },
+    triggeredBy: "OPPORTUNITY_QUESTION_CREATED",
+  }).catch((error) => {
+    console.error("Unable to send opportunity question notification", error);
+  });
+
+  return data;
+}
+
+export async function respondToOpportunityQuestion(user: AuthUser, questionId: string, input: OpportunityQuestionResponseInput) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users can answer opportunity questions.");
+  }
+
+  const response = input.response.trim();
+  if (!response) {
+    throw new Error("Add a response before sending it.");
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_questions")
+    .update({
+      response,
+      response_visibility: input.visibility,
+      responded_by: user.id,
+      responded_at: new Date().toISOString(),
+      status: "ANSWERED",
+    })
+    .eq("id", questionId)
+    .eq("company_id", user.clientId)
+    .select(OPPORTUNITY_QUESTION_SELECT)
+    .single<OpportunityQuestionRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "opportunity_question_answered", "opportunity_questions", data.id, {
+    opportunity_registration_id: data.opportunity_registration_id,
+    response_visibility: data.response_visibility,
   });
 
   return data;

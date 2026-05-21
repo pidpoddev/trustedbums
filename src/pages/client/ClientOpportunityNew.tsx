@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
-import { CheckCircle, FileUp, PlusCircle, Send, Sparkles, X } from "lucide-react";
+import { CheckCircle, FileUp, MessageSquare, PlusCircle, Send, Sparkles, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,16 @@ import { getPageItems } from "@/lib/pagination";
 import {
   createClientPayProgramRequest,
   createOpportunityRegistration,
+  listClientOpportunityQuestions,
   listOpportunityClaims,
   listOwnOpportunityRegistrations,
   listSelectableClientPayPrograms,
+  respondToOpportunityQuestion,
   updateOwnOpportunityRegistration,
   type ClientPayProgramApprovalStatus,
   type OpportunityClaimRecord,
+  type OpportunityQuestionRecord,
+  type OpportunityQuestionVisibility,
   type OpportunityRegistration,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
@@ -235,6 +239,8 @@ export default function ClientOpportunityNew() {
   const [editPayProgramId, setEditPayProgramId] = useState("");
   const [editExpectedTimeline, setEditExpectedTimeline] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [questionResponses, setQuestionResponses] = useState<Record<string, string>>({});
+  const [questionVisibilities, setQuestionVisibilities] = useState<Record<string, OpportunityQuestionVisibility>>({});
   const [isRequestingPlan, setIsRequestingPlan] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [registeredPage, setRegisteredPage] = useState(1);
@@ -299,6 +305,13 @@ export default function ClientOpportunityNew() {
     }
   }, [location.pathname]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("tab") === "questions") {
+      setActiveTab("questions");
+    }
+  }, [location.search]);
+
   const importPreviewRows = useMemo(() => importRows.slice(0, 5), [importRows]);
   const payProgramsQuery = useQuery({
     queryKey: ["client-pay-programs", user?.clientId],
@@ -314,6 +327,40 @@ export default function ClientOpportunityNew() {
     queryKey: ["client-opportunity-claims", user?.clientId],
     queryFn: () => listOpportunityClaims(),
     enabled: Boolean(user?.clientId),
+  });
+  const questionsQuery = useQuery({
+    queryKey: ["client-opportunity-questions", user?.clientId],
+    queryFn: () => listClientOpportunityQuestions(user!),
+    enabled: Boolean(user?.clientId),
+  });
+
+  const answerQuestionMutation = useMutation({
+    mutationFn: ({ question, response, visibility }: { question: OpportunityQuestionRecord; response: string; visibility: OpportunityQuestionVisibility }) =>
+      respondToOpportunityQuestion(user!, question.id, { response, visibility }),
+    onSuccess: (question) => {
+      queryClient.invalidateQueries({ queryKey: ["client-opportunity-questions", user?.clientId] });
+      setQuestionResponses((current) => {
+        const next = { ...current };
+        delete next[question.id];
+        return next;
+      });
+      setQuestionVisibilities((current) => {
+        const next = { ...current };
+        delete next[question.id];
+        return next;
+      });
+      toast({
+        title: "Response saved",
+        description: question.response_visibility === "PUBLIC" ? "The answer is now part of the opportunity detail for all Bums." : "The answer is visible to the Bum who asked.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to save response",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const loadImportFile = async (file: File | null) => {
@@ -501,6 +548,20 @@ export default function ClientOpportunityNew() {
 
   const payPrograms = payProgramsQuery.data ?? [];
   const opportunities = opportunitiesQuery.data ?? [];
+  const questions = questionsQuery.data ?? [];
+  const linkedOpportunityId = new URLSearchParams(location.search).get("opportunityId");
+  const sortedQuestions = useMemo(() => {
+    return [...questions].sort((a, b) => {
+      const aLinked = linkedOpportunityId && a.opportunity_registration_id === linkedOpportunityId ? 1 : 0;
+      const bLinked = linkedOpportunityId && b.opportunity_registration_id === linkedOpportunityId ? 1 : 0;
+      if (aLinked !== bLinked) return bLinked - aLinked;
+      const aOpen = a.status === "OPEN" ? 1 : 0;
+      const bOpen = b.status === "OPEN" ? 1 : 0;
+      if (aOpen !== bOpen) return bOpen - aOpen;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [linkedOpportunityId, questions]);
+  const openQuestionCount = questions.filter((question) => question.status === "OPEN").length;
   const claimsByOpportunity = useMemo(() => {
     const grouped = new Map<string, OpportunityClaimRecord[]>();
 
@@ -555,10 +616,101 @@ export default function ClientOpportunityNew() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="flex h-auto flex-wrap justify-start">
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          <TabsTrigger value="questions">Questions{openQuestionCount ? ` (${openQuestionCount})` : ""}</TabsTrigger>
           <TabsTrigger value="register">Register Opportunity</TabsTrigger>
           <TabsTrigger value="import">Import</TabsTrigger>
           <TabsTrigger value="commission-plan">Commission Plan</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="questions">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Opportunity questions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {sortedQuestions.map((question) => {
+                const responseValue = questionResponses[question.id] ?? question.response ?? "";
+                const visibilityValue = questionVisibilities[question.id] ?? question.response_visibility ?? "BUM_ONLY";
+                const isLinked = linkedOpportunityId === question.opportunity_registration_id;
+
+                return (
+                  <div
+                    key={question.id}
+                    className={`rounded-md border p-4 ${isLinked ? "border-primary/50 bg-primary/5" : ""}`}
+                  >
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StatusBadge label={question.status === "ANSWERED" ? "Answered" : "Waiting on response"} variant={question.status === "ANSWERED" ? "success" : "warning"} />
+                          {question.response_visibility === "PUBLIC" ? <StatusBadge label="Published to opportunity" variant="info" /> : null}
+                          {question.response_visibility === "BUM_ONLY" ? <StatusBadge label="Bum only" variant="secondary" /> : null}
+                        </div>
+                        <div>
+                          <p className="font-medium">{question.opportunity_registrations?.target_account_name ?? "Opportunity"}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Asked by {question.profiles?.full_name ?? question.profiles?.email ?? "a Bum"} on {formatDateForTimeZone(question.created_at, timeZone)}
+                          </p>
+                        </div>
+                        <p className="text-sm">{question.question}</p>
+                      </div>
+                      {question.opportunity_registrations?.target_account_name ? (
+                        <Button type="button" variant="outline" size="sm" asChild>
+                          <Link to={`/client/opportunities?tab=questions&opportunityId=${question.opportunity_registration_id}`}>Open</Link>
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-end">
+                      <div className="space-y-2">
+                        <Label htmlFor={`question-response-${question.id}`}>Response</Label>
+                        <Textarea
+                          id={`question-response-${question.id}`}
+                          rows={3}
+                          value={responseValue}
+                          onChange={(event) => setQuestionResponses((current) => ({ ...current, [question.id]: event.target.value }))}
+                          placeholder="Answer the Bum’s question with enough detail to move the opportunity forward."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Visibility</Label>
+                        <Select
+                          value={visibilityValue}
+                          onValueChange={(value: OpportunityQuestionVisibility) =>
+                            setQuestionVisibilities((current) => ({ ...current, [question.id]: value }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="BUM_ONLY">Only this Bum</SelectItem>
+                            <SelectItem value="PUBLIC">Add to opportunity</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        disabled={!responseValue.trim() || answerQuestionMutation.isPending}
+                        onClick={() => answerQuestionMutation.mutate({ question, response: responseValue, visibility: visibilityValue })}
+                      >
+                        {question.status === "ANSWERED" ? "Update answer" : "Send answer"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {!sortedQuestions.length ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  No Bum questions are waiting on this company’s opportunities.
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="import">
           <Card>
