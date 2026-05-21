@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.clerk-user-tools]
 verify_jwt = false
+
+[functions.client-team]
+verify_jwt = false

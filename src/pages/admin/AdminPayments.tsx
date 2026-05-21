@@ -11,12 +11,37 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { createClaimInvoice, createCustomerPaymentReport, listClaimInvoices, listCustomerPaymentReports, listOpportunityClaims, updateClaimInvoiceStatus, type ClaimInvoiceRecord } from "@/lib/portalApi";
+import {
+  buildTieredCommissionSummary,
+  calculateTrustedBumsCommission,
+  createClaimInvoice,
+  createCustomerPaymentReport,
+  getCommissionPlanInvoiceBlockReason,
+  listClaimInvoices,
+  listCustomerPaymentReports,
+  listOpportunityClaims,
+  updateClaimInvoiceStatus,
+  type ClaimInvoiceRecord,
+  type OpportunityClaimRecord,
+} from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
 import { FilePlus2, Search } from "lucide-react";
 
 function money(value: number | null | undefined) {
   return `$${Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function getClaimCommissionPlan(claim: OpportunityClaimRecord) {
+  return claim.opportunity_registrations?.client_pay_programs ?? null;
+}
+
+function isInvoiceReadyClaim(claim: OpportunityClaimRecord) {
+  return !getCommissionPlanInvoiceBlockReason(getClaimCommissionPlan(claim));
+}
+
+function numberFromInput(value: string, fallback = 0) {
+  const parsed = Number(value || fallback);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 type InvoiceTypeFilter = "ALL" | "GENERATED" | "SENT" | "PAID";
@@ -59,6 +84,8 @@ export default function AdminPayments() {
     () => (claimsQuery.data ?? []).filter((claim) => ["APPROVED", "SCHEDULED", "MEETING_HELD", "CLOSED"].includes(claim.status)),
     [claimsQuery.data],
   );
+  const invoiceReadyClaims = useMemo(() => claims.filter(isInvoiceReadyClaim), [claims]);
+  const blockedClaimCount = claims.length - invoiceReadyClaims.length;
   const reports = reportsQuery.data ?? [];
   const invoices = invoicesQuery.data ?? [];
   const filteredInvoices = useMemo(() => {
@@ -97,16 +124,30 @@ export default function AdminPayments() {
     });
   }, [paymentQuery, paymentTypeFilter, reports]);
 
-  const selectedClaim = claims.find((claim) => claim.id === claimId);
+  const selectedClaim = invoiceReadyClaims.find((claim) => claim.id === claimId);
+  const selectedProgram = selectedClaim ? getClaimCommissionPlan(selectedClaim) : null;
+  const selectedCommissionableAmount = numberFromInput(commissionableAmount || grossAmount, 0);
+  const selectedCommissionPreview = selectedProgram
+    ? calculateTrustedBumsCommission(
+        selectedProgram,
+        selectedClaim?.opportunity_registrations?.commission_schedule_start_at,
+        receivedAt,
+        selectedCommissionableAmount,
+      )
+    : null;
 
   const generateInvoiceMutation = useMutation({
     mutationFn: async () => {
+      if (!selectedClaim) {
+        throw new Error("Choose a claim with an approved active commission plan before generating an invoice.");
+      }
+
       const report = await createCustomerPaymentReport(user!, {
-        claimId,
+        claimId: selectedClaim.id,
         customerName,
-        grossAmount: Number(grossAmount || 0),
-        commissionableAmount: Number(commissionableAmount || grossAmount || 0),
-        excludedAmount: Number(excludedAmount || 0),
+        grossAmount: numberFromInput(grossAmount, 0),
+        commissionableAmount: numberFromInput(commissionableAmount || grossAmount, 0),
+        excludedAmount: excludedAmount.trim() ? numberFromInput(excludedAmount, 0) : undefined,
         customerPaymentReceivedAt: receivedAt,
         notes,
       });
@@ -168,7 +209,7 @@ export default function AdminPayments() {
                   <SelectValue placeholder="Select the claim tied to this customer payment" />
                 </SelectTrigger>
                 <SelectContent>
-                  {claims.map((claim) => (
+                  {invoiceReadyClaims.map((claim) => (
                     <SelectItem key={claim.id} value={claim.id}>
                       {claim.opportunity_registrations?.target_account_name ?? claim.contact_company} - {claim.contact_name}
                     </SelectItem>
@@ -177,6 +218,10 @@ export default function AdminPayments() {
               </Select>
               {!claims.length ? (
                 <p className="text-xs text-muted-foreground">No approved claims are ready for invoice generation yet.</p>
+              ) : !invoiceReadyClaims.length ? (
+                <p className="text-xs text-warning">Approved claims exist, but none have an approved active commission plan yet.</p>
+              ) : blockedClaimCount ? (
+                <p className="text-xs text-muted-foreground">{blockedClaimCount} approved claim{blockedClaimCount === 1 ? "" : "s"} hidden until commission terms are approved.</p>
               ) : null}
             </div>
             <div className="space-y-2">
@@ -211,12 +256,27 @@ export default function AdminPayments() {
               <Input type="number" value={excludedAmount} onChange={(event) => setExcludedAmount(event.target.value)} />
             </div>
           </div>
+          {selectedProgram && selectedCommissionPreview ? (
+            <div className="rounded-xl border bg-muted/30 p-4 text-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium">Trusted Bums commission preview</p>
+                  <p className="mt-1 text-muted-foreground">{selectedProgram.name} · {buildTieredCommissionSummary(selectedProgram)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-display text-xl font-bold">{money(selectedCommissionPreview.invoiceAmount)}</p>
+                  <p className="text-xs text-muted-foreground">{selectedCommissionPreview.commissionRate}% of {money(selectedCommissionableAmount)}</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <Label>Notes / exclusions</Label>
             <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} />
           </div>
           <div className="flex justify-end">
-            <Button disabled={!claimId || !grossAmount || generateInvoiceMutation.isPending} onClick={() => generateInvoiceMutation.mutate()}>
+            <Button disabled={!selectedClaim || !grossAmount || generateInvoiceMutation.isPending} onClick={() => generateInvoiceMutation.mutate()}>
               {generateInvoiceMutation.isPending ? "Generating..." : "Generate invoice"}
             </Button>
           </div>

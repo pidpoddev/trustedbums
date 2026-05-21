@@ -42,6 +42,7 @@ import ClientOpportunityNew from "./pages/client/ClientOpportunityNew";
 import ClientTargets from "./pages/client/ClientTargets";
 import ClientProfile from "./pages/client/ClientProfile";
 import ClientUserProfile from "./pages/client/ClientUserProfile";
+import ClientTeam from "./pages/client/ClientTeam";
 import ClientBums from "./pages/client/ClientBums";
 import ClientTrainings from "./pages/client/ClientTrainings";
 import ClientRequests from "./pages/client/ClientRequests";
@@ -121,6 +122,9 @@ const App = () => (
                       <Route path="profile" element={<ClientProfile />} />
                       <Route path="user-profile" element={<ClientUserProfile />} />
                       <Route path="reports" element={<ClientReports />} />
+                      <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN"]} />}>
+                        <Route path="team" element={<ClientTeam />} />
+                      </Route>
                       <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN", "CLIENT_MEMBER"]} />}>
                         <Route path="targets" element={<ClientTargets />} />
                         <Route path="opportunities" element={<ClientOpportunityNew />} />

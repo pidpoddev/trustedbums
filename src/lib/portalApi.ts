@@ -1,6 +1,6 @@
 import { BUM_FALLBACK_TERMS_VERSION, FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, type TermsFallbackVersion } from "@/data/partnerTerms";
 import { getSupabaseAccessToken, supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
-import type { AuthUser } from "@/data/authData";
+import { DEFAULT_CLIENT_ACCESS_ROLE, type AuthUser, type ClientAccessRole } from "@/data/authData";
 import { normalizeDateFormat, normalizeTimeZone } from "@/lib/timezone";
 
 export type RegistrationStatus =
@@ -66,6 +66,7 @@ export interface ProfileRecord {
   email: string | null;
   role: string | null;
   is_admin: boolean;
+  client_access_role: string | null;
   last_sign_in_at: string | null;
   time_zone: string | null;
   date_format: string | null;
@@ -860,7 +861,7 @@ export interface OpportunityClaimRecord {
   meeting_locked?: boolean;
   opportunity_registrations?: Pick<
     OpportunityRegistration,
-    "id" | "target_account_name" | "commission_rate" | "company_id"
+    "id" | "target_account_name" | "commission_rate" | "company_id" | "pay_program_id" | "commission_schedule_start_at"
   > & {
     client_pay_programs?: ClientPayProgramRecord | null;
   } | null;
@@ -1077,6 +1078,49 @@ export interface BumInviteResult {
   invitationId: string | null;
   status: string | null;
   email: string;
+}
+
+export interface ClientTeamMemberRecord {
+  id: string;
+  company_id: string;
+  full_name: string | null;
+  email: string | null;
+  role: "CLIENT";
+  is_admin: boolean;
+  client_access_role: ClientAccessRole;
+  last_sign_in_at: string | null;
+  created_at: string;
+}
+
+export interface ClientTeamInvitationRecord {
+  id: string;
+  company_id: string;
+  email: string;
+  full_name: string | null;
+  client_access_role: ClientAccessRole;
+  status: "pending" | "accepted" | "revoked" | "failed";
+  invited_by: string | null;
+  clerk_invitation_id: string | null;
+  error_message: string | null;
+  accepted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientTeamResponse {
+  members: ClientTeamMemberRecord[];
+  invitations: ClientTeamInvitationRecord[];
+}
+
+export interface ClientTeamInviteInput {
+  email: string;
+  name?: string;
+  clientAccessRole: ClientAccessRole;
+}
+
+export interface ClientTeamRoleInput {
+  profileId: string;
+  clientAccessRole: ClientAccessRole;
 }
 
 interface ImpersonationFunctionProfile {
@@ -1421,6 +1465,9 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
         email: user.email,
         role: user.role,
         is_admin: user.role === "ADMIN",
+        client_access_role: user.role === "CLIENT"
+          ? existing?.client_access_role ?? user.clientAccessRole ?? DEFAULT_CLIENT_ACCESS_ROLE
+          : existing?.client_access_role ?? DEFAULT_CLIENT_ACCESS_ROLE,
         last_sign_in_at: new Date().toISOString(),
         time_zone: normalizeTimeZone(user.timeZone),
         date_format: existing?.date_format ?? normalizeDateFormat(user.dateFormat),
@@ -2109,7 +2156,7 @@ export function deriveDefaultBumSharePercent(activeClaimCount: number) {
   return Number((DEFAULT_BUM_COMMISSION_POOL_PERCENT / activeClaimCount).toFixed(4));
 }
 
-function buildTieredCommissionSummary(
+export function buildTieredCommissionSummary(
   program: Pick<
     ClientPayProgramRecord,
     "year_1_rate" | "year_2_rate" | "year_3_rate" | "year_4_rate" | "year_5_rate" | "year_6_plus_rate"
@@ -2148,7 +2195,7 @@ function buildProgramDisplayTerms(
   return parts.join(". ");
 }
 
-function resolveTieredCommissionRate(
+export function resolveTieredCommissionRate(
   program: Pick<
     ClientPayProgramRecord,
     "year_1_rate" | "year_2_rate" | "year_3_rate" | "year_4_rate" | "year_5_rate" | "year_6_plus_rate"
@@ -2189,6 +2236,43 @@ function resolveTieredCommissionRate(
   }
 
   return Number(program.year_6_plus_rate);
+}
+
+export function getCommissionPlanInvoiceBlockReason(
+  program:
+    | Pick<ClientPayProgramRecord, "status" | "approval_status">
+    | null
+    | undefined,
+) {
+  if (!program) {
+    return "This deal does not have a commission plan assigned.";
+  }
+
+  if (program.approval_status !== "APPROVED") {
+    return "This deal's commission plan is not approved yet.";
+  }
+
+  if (program.status !== "ACTIVE") {
+    return "This deal's commission plan is not active.";
+  }
+
+  return null;
+}
+
+export function calculateTrustedBumsCommission(
+  program: Pick<
+    ClientPayProgramRecord,
+    "year_1_rate" | "year_2_rate" | "year_3_rate" | "year_4_rate" | "year_5_rate" | "year_6_plus_rate"
+  >,
+  scheduleStartAt: string | null | undefined,
+  customerPaymentReceivedAt: string | null | undefined,
+  commissionableAmount: number,
+) {
+  const commissionRate = resolveTieredCommissionRate(program, scheduleStartAt, customerPaymentReceivedAt);
+  return {
+    commissionRate,
+    invoiceAmount: Number(((Number(commissionableAmount || 0) * commissionRate) / 100).toFixed(2)),
+  };
 }
 
 export async function listClientPayPrograms(companyId?: string | null) {
@@ -2332,7 +2416,7 @@ export async function reviewClientPayProgram(
 export async function listOpportunityClaims(opportunityId?: string) {
   let query = supabase
     .from("opportunity_claims")
-    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, client_pay_programs(*)), profiles(id, full_name, email)")
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, client_pay_programs(*)), profiles(id, full_name, email)")
     .order("created_at", { ascending: false });
 
   if (opportunityId) {
@@ -2444,6 +2528,25 @@ export async function createCustomerPaymentReport(user: AuthUser, input: Custome
     throw new Error("That claim is not available for payment reporting.");
   }
 
+  if (user.role === "CLIENT" && user.clientId !== claim.company_id) {
+    throw new Error("That claim is not assigned to your company.");
+  }
+
+  const { data: opportunity, error: opportunityError } = await supabase
+    .from("opportunity_registrations")
+    .select("id, client_pay_programs(*)")
+    .eq("id", claim.opportunity_registration_id)
+    .maybeSingle<Pick<OpportunityRegistration, "id"> & { client_pay_programs?: ClientPayProgramRecord | null }>();
+
+  if (opportunityError) {
+    throw opportunityError;
+  }
+
+  const commissionPlanBlockReason = getCommissionPlanInvoiceBlockReason(opportunity?.client_pay_programs);
+  if (commissionPlanBlockReason) {
+    throw new Error(`${commissionPlanBlockReason} Assign an approved active commission plan before reporting a payment for invoice generation.`);
+  }
+
   const { data, error } = await supabase
     .from("customer_payment_reports")
     .insert({
@@ -2515,15 +2618,22 @@ export async function createClaimInvoice(user: AuthUser, paymentReportId: string
     throw new Error("That payment report is not available for invoicing.");
   }
 
+  if (user.role === "CLIENT" && user.clientId !== report.company_id) {
+    throw new Error("That payment report is not assigned to your company.");
+  }
+
   const program = report.opportunity_registrations.client_pay_programs;
-  const commissionRate = program
-    ? resolveTieredCommissionRate(
-        program,
-        report.opportunity_registrations.commission_schedule_start_at,
-        report.customer_payment_received_at,
-      )
-    : Number(report.opportunity_registrations.commission_rate ?? 0);
-  const invoiceAmount = Number(((Number(report.commissionable_amount) * commissionRate) / 100).toFixed(2));
+  const commissionPlanBlockReason = getCommissionPlanInvoiceBlockReason(program);
+  if (commissionPlanBlockReason || !program) {
+    throw new Error(`${commissionPlanBlockReason ?? "This deal does not have a commission plan assigned."} Assign an approved active commission plan before generating an invoice.`);
+  }
+
+  const { commissionRate, invoiceAmount } = calculateTrustedBumsCommission(
+    program,
+    report.opportunity_registrations.commission_schedule_start_at,
+    report.customer_payment_received_at,
+    Number(report.commissionable_amount),
+  );
 
   const { data, error } = await supabase
     .from("claim_invoices")
@@ -2925,7 +3035,7 @@ export async function updateAdminOpportunityClaim(
     .from("opportunity_claims")
     .update(payload)
     .eq("id", claimId)
-    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, client_pay_programs(*)), profiles(id, full_name, email)")
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, client_pay_programs(*)), profiles(id, full_name, email)")
     .single<OpportunityClaimRecord>();
 
   if (error) {
@@ -3025,7 +3135,7 @@ export async function updateOpportunityClaimStatus(user: AuthUser, claimId: stri
     .from("opportunity_claims")
     .update(payload)
     .eq("id", claimId)
-    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, client_pay_programs(*)), profiles(id, full_name, email)")
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, client_pay_programs(*)), profiles(id, full_name, email)")
     .single<OpportunityClaimRecord>();
 
   if (error) {
@@ -4701,6 +4811,58 @@ export async function deleteTrainingMaterial(user: AuthUser, material: TrainingM
     title: material.title,
     company_id: material.company_id,
     attachment_count: attachments.length,
+  });
+}
+
+async function invokeClientTeamFunction<T>(body: Record<string, unknown>) {
+  const token = await getSupabaseAccessToken();
+  const response = await fetch(`${supabaseUrl}/functions/v1/client-team`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token ?? supabasePublishableKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as T & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Unable to manage this client team.");
+  }
+
+  return payload;
+}
+
+export async function getClientTeam(user: AuthUser) {
+  if (user.role !== "CLIENT" || user.clientAccessRole !== "CLIENT_ADMIN") {
+    throw new Error("Only client admins can view team management.");
+  }
+
+  return invokeClientTeamFunction<ClientTeamResponse>({ action: "list" });
+}
+
+export async function inviteClientTeamMember(user: AuthUser, input: ClientTeamInviteInput) {
+  if (user.role !== "CLIENT" || user.clientAccessRole !== "CLIENT_ADMIN") {
+    throw new Error("Only client admins can invite team members.");
+  }
+
+  return invokeClientTeamFunction<ClientTeamResponse & { invited?: boolean; existingUser?: boolean }>({
+    action: "invite",
+    ...input,
+    redirectUrl: new URL(`${import.meta.env.BASE_URL || "/"}login`, window.location.origin).toString(),
+  });
+}
+
+export async function updateClientTeamMemberRole(user: AuthUser, input: ClientTeamRoleInput) {
+  if (user.role !== "CLIENT" || user.clientAccessRole !== "CLIENT_ADMIN") {
+    throw new Error("Only client admins can update team roles.");
+  }
+
+  return invokeClientTeamFunction<ClientTeamResponse & { updated?: boolean }>({
+    action: "update_role",
+    ...input,
   });
 }
 

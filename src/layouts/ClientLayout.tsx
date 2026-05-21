@@ -54,6 +54,7 @@ const navGroups: Array<{
   { title: "Reports", url: "/client/reports", icon: BarChart3 },
   ] },
   { label: "Account", items: [
+  { title: "Team Management", url: "/client/team", icon: Users, allowedAccessRoles: ["CLIENT_ADMIN"] },
   { title: "Company Profile", url: "/client/profile", icon: Building2 },
   { title: "User Profile", url: "/client/user-profile", icon: User },
   { title: "Partner Terms", url: "/client/terms", icon: FileCheck },

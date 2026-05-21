@@ -165,6 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ...baseUser,
           timeZone: profile.time_zone ?? baseUser.timeZone,
           dateFormat: normalizeDateFormat(profile.date_format ?? baseUser.dateFormat),
+          clientAccessRole: baseUser.role === "CLIENT"
+            ? readClientAccessRole(profile.client_access_role) ?? baseUser.clientAccessRole
+            : undefined,
           clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
           companyName: profile.companies?.name ?? baseUser.companyName,
         });
@@ -226,6 +229,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ...baseUser,
             timeZone: profile.time_zone ?? baseUser.timeZone,
             dateFormat: normalizeDateFormat(profile.date_format ?? baseUser.dateFormat),
+            clientAccessRole: baseUser.role === "CLIENT"
+              ? readClientAccessRole(profile.client_access_role) ?? baseUser.clientAccessRole
+              : undefined,
             clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
             companyName: profile.companies?.name ?? baseUser.companyName,
           });
