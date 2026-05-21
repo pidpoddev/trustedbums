@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
-import { UserAppearanceCard } from "@/components/UserAppearanceCard";
-import { UserTimeZoneCard } from "@/components/UserTimeZoneCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -13,7 +10,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { getOwnClientCompany, getOwnProfileSettings, updateOwnClientCompanyProfile, updateOwnProfileSettings } from "@/lib/portalApi";
+import { getOwnClientCompany, updateOwnClientCompanyProfile } from "@/lib/portalApi";
 
 function listToText(values?: string[] | null) {
   return (values ?? []).join(", ");
@@ -34,7 +31,6 @@ export default function ClientProfile() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
   const [linkedinCompanyUrl, setLinkedinCompanyUrl] = useState("");
@@ -42,23 +38,12 @@ export default function ClientProfile() {
   const [targetIndustries, setTargetIndustries] = useState("");
   const [targetRegions, setTargetRegions] = useState("");
   const [idealCustomerProfile, setIdealCustomerProfile] = useState("");
-  const [invitedToCustomerIntroductions, setInvitedToCustomerIntroductions] = useState(true);
 
-  const profileQuery = useQuery({
-    queryKey: ["own-profile-settings", user?.id],
-    queryFn: () => getOwnProfileSettings(user!.id),
-    enabled: Boolean(user?.id),
-  });
   const companyQuery = useQuery({
     queryKey: ["own-client-company", user?.clientId],
     queryFn: () => getOwnClientCompany(user!),
     enabled: Boolean(user?.id && user?.role === "CLIENT" && user?.clientId),
   });
-
-  useEffect(() => {
-    setFullName(profileQuery.data?.full_name ?? user?.name ?? "");
-    setInvitedToCustomerIntroductions(profileQuery.data?.invited_to_customer_introductions ?? true);
-  }, [profileQuery.data?.full_name, profileQuery.data?.invited_to_customer_introductions, user?.name]);
 
   useEffect(() => {
     setCompanyName(companyQuery.data?.name ?? user?.companyName ?? "");
@@ -97,10 +82,9 @@ export default function ClientProfile() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!user) {
-        throw new Error("Sign in before updating your profile.");
+        throw new Error("Sign in before updating your company profile.");
       }
 
-      await updateOwnProfileSettings(user, { fullName, invitedToCustomerIntroductions });
       return updateOwnClientCompanyProfile(user, {
         name: companyName,
         website,
@@ -112,38 +96,32 @@ export default function ClientProfile() {
       });
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["own-profile-settings", user?.id] });
       await queryClient.invalidateQueries({ queryKey: ["own-client-company", user?.clientId] });
       await queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
       await refreshUser();
       toast({
-        title: "Profile saved",
-        description: "Your company profile was updated from live database records.",
+        title: "Company profile saved",
+        description: "Your company matching profile was updated from live database records.",
       });
     },
     onError: (error) => {
       toast({
-        title: "Unable to save profile",
+        title: "Unable to save company profile",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  const isLoading = profileQuery.isLoading || companyQuery.isLoading;
+  const isLoading = companyQuery.isLoading;
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Company Profile" description="Manage the live company and matching details tied to your client account." />
-
-      <div className="grid max-w-4xl gap-4 lg:grid-cols-2">
-        <UserTimeZoneCard description="Pick the time zone that should be used for meeting scheduling and timestamp display throughout the client portal." />
-        <UserAppearanceCard />
-      </div>
+      <PageHeader title="Company Profile" description="Manage the company and matching details Bums use to understand client fit." />
 
       <div className="grid max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <Card>
-          <CardHeader><CardTitle className="font-display">Profile Details</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-display">Company Details</CardTitle></CardHeader>
           <CardContent>
             <form
               className="space-y-4"
@@ -152,24 +130,6 @@ export default function ClientProfile() {
                 saveMutation.mutate();
               }}
             >
-              <div className="space-y-2">
-                <Label htmlFor="client-profile-name">Your Name</Label>
-                <Input id="client-profile-name" value={fullName} onChange={(event) => setFullName(event.target.value)} disabled={isLoading} />
-              </div>
-              <div className="flex items-center space-x-2 rounded-md border p-4">
-                <Checkbox
-                  id="client-invited-to-introductions"
-                  checked={invitedToCustomerIntroductions}
-                  onCheckedChange={(checked) => setInvitedToCustomerIntroductions(checked === true)}
-                  disabled={isLoading}
-                />
-                <div className="space-y-1">
-                  <Label htmlFor="client-invited-to-introductions">Invited to Customer Introductions</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Keep this on if this person should be prefilled on customer introduction meeting invites. Turn it off for finance, operations, or other contacts who should not join intro calls by default.
-                  </p>
-                </div>
-              </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="client-company-name">Company Name</Label>
@@ -203,7 +163,7 @@ export default function ClientProfile() {
                 <Textarea id="client-ideal-customer-profile" rows={4} value={idealCustomerProfile} onChange={(event) => setIdealCustomerProfile(event.target.value)} disabled={isLoading} placeholder="Buyer titles, company size, triggers, technologies, or customer traits that make a strong match." />
               </div>
               <Button type="submit" disabled={isLoading || saveMutation.isPending}>
-                {saveMutation.isPending ? "Saving..." : "Save Profile"}
+                {saveMutation.isPending ? "Saving..." : "Save Company Profile"}
               </Button>
             </form>
           </CardContent>

@@ -245,6 +245,17 @@ export default function ClientTrainings() {
     setShowForm(true);
   };
 
+  const handleAttachmentChange = (files: File[]) => {
+    setAttachments(files);
+
+    if (!form.title.trim() && files.length === 1) {
+      const suggestedTitle = files[0].name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+      if (suggestedTitle) {
+        setForm((current) => ({ ...current, title: current.title.trim() ? current.title : suggestedTitle }));
+      }
+    }
+  };
+
   const trainingsQuery = useQuery({
     queryKey: ["training-assets", user?.role, user?.clientId],
     queryFn: () => listTrainingMaterialsForUser(user!),
@@ -399,7 +410,7 @@ export default function ClientTrainings() {
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="trainingAttachments">Attachments</Label>
-                <Input id="trainingAttachments" type="file" multiple onChange={(event) => setAttachments(Array.from(event.target.files ?? []))} accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.png,.jpg,.jpeg" />
+                <Input id="trainingAttachments" type="file" multiple onChange={(event) => handleAttachmentChange(Array.from(event.target.files ?? []))} accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.png,.jpg,.jpeg" />
                 {attachments.length ? (
                   <div className="grid gap-3 rounded-md border bg-muted/30 p-3 sm:grid-cols-2 lg:grid-cols-3">
                     {attachments.map((file, index) => (

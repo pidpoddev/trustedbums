@@ -20,7 +20,7 @@ function getProfilePath(role?: string) {
   }
 
   if (role === "CLIENT") {
-    return "/client/profile";
+    return "/client/user-profile";
   }
 
   if (role === "BUM") {
@@ -41,7 +41,7 @@ function getInitials(name?: string | null, email?: string | null) {
 export function PortalHeaderActions() {
   const { user, signOut } = useAuth();
   const profilePath = getProfilePath(user?.role);
-  const profileLabel = user?.role === "CLIENT" ? "Company Profile" : "Profile settings";
+  const profileLabel = user?.role === "CLIENT" ? "User Profile" : "Profile settings";
 
   return (
     <div className="ml-auto flex items-center gap-3">

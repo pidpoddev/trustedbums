@@ -4435,13 +4435,41 @@ function sanitizeAttachmentFileName(fileName: string) {
   return sanitized || "attachment";
 }
 
+function getTrainingAttachmentContentType(file: File) {
+  const fileType = file.type.trim().toLowerCase();
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  const isGenericType = !fileType || fileType === "application/octet-stream" || fileType === "binary/octet-stream";
+
+  if (fileType === "application/pdf" || fileType === "application/x-pdf" || (isGenericType && extension === "pdf")) {
+    return "application/pdf";
+  }
+
+  const extensionTypes: Record<string, string> = {
+    csv: "text/csv",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    jpeg: "image/jpeg",
+    jpg: "image/jpeg",
+    pdf: "application/pdf",
+    png: "image/png",
+    ppt: "application/vnd.ms-powerpoint",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    txt: "text/plain",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  };
+
+  return isGenericType && extension ? extensionTypes[extension] ?? fileType : fileType || "application/octet-stream";
+}
+
 async function uploadTrainingMaterialAttachment(user: AuthUser, material: TrainingMaterial, file: File) {
   const storageScope = material.company_id ?? "corporate";
   const storagePath = `${storageScope}/${material.id}/${crypto.randomUUID()}-${sanitizeAttachmentFileName(file.name)}`;
+  const contentType = getTrainingAttachmentContentType(file);
   const { error: uploadError } = await supabase.storage
     .from(TRAINING_MATERIAL_ATTACHMENTS_BUCKET)
     .upload(storagePath, file, {
-      contentType: file.type || "application/octet-stream",
+      contentType,
       upsert: false,
     });
 
@@ -4456,7 +4484,7 @@ async function uploadTrainingMaterialAttachment(user: AuthUser, material: Traini
       company_id: material.company_id,
       uploaded_by: user.id,
       file_name: file.name || "Attachment",
-      file_type: file.type || null,
+      file_type: contentType,
       file_size: file.size,
       storage_bucket: TRAINING_MATERIAL_ATTACHMENTS_BUCKET,
       storage_path: storagePath,

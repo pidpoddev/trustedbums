@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
+  Building2,
   FileCheck,
   User,
   GraduationCap,
@@ -53,7 +54,8 @@ const navGroups: Array<{
   { title: "Reports", url: "/client/reports", icon: BarChart3 },
   ] },
   { label: "Account", items: [
-  { title: "Company Profile", url: "/client/profile", icon: User },
+  { title: "Company Profile", url: "/client/profile", icon: Building2 },
+  { title: "User Profile", url: "/client/user-profile", icon: User },
   { title: "Partner Terms", url: "/client/terms", icon: FileCheck },
   { title: "Agreements", url: "/client/agreements", icon: FileCheck },
   ] },
