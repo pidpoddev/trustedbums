@@ -198,8 +198,8 @@ export default function ClientDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Target Accounts" value={targets.length} icon={Target} to="/client/targets" />
         <StatCard title="Inbound Requests" value={reverseOpportunities.length} icon={Clock} to="/client/requests" />
-        <StatCard title="Active Opportunities" value={activeCount} icon={Target} to="/client/opportunities/new" />
-        <StatCard title="Accepted" value={acceptedCount} icon={FileCheck} to="/client/opportunities/new" />
+        <StatCard title="Active Opportunities" value={activeCount} icon={Target} to="/client/opportunities" />
+        <StatCard title="Accepted" value={acceptedCount} icon={FileCheck} to="/client/opportunities" />
         <StatCard title="Target Prospects" value={targetProspectCount} icon={Clock} to="/client/targets" />
       </div>
 
@@ -273,7 +273,7 @@ export default function ClientDashboard() {
                 <Link to="/client/targets">Add target account</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link to="/client/opportunities/new">Register formal opportunity</Link>
+                <Link to="/client/opportunities">Register formal opportunity</Link>
               </Button>
               {canManagePayments ? (
                 <Button asChild variant="outline">

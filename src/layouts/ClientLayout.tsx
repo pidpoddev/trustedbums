@@ -25,7 +25,7 @@ import {
   MessageSquarePlus,
   Download,
   BarChart3,
-  PlusCircle,
+  Briefcase,
   Users,
   Target,
   CreditCard,
@@ -43,7 +43,7 @@ const navGroups: Array<{
   { label: "Workspace", items: [
   { title: "Dashboard", url: "/client/dashboard", icon: LayoutDashboard },
   { title: "Target Accounts", url: "/client/targets", icon: Target, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
-  { title: "Register Opportunity", url: "/client/opportunities/new", icon: PlusCircle, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
+  { title: "Opportunities", url: "/client/opportunities", icon: Briefcase, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Bums", url: "/client/bum-directory", icon: Users, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Training & Assets", url: "/client/trainings", icon: GraduationCap, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Requests", url: "/client/requests", icon: MessageSquarePlus, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },

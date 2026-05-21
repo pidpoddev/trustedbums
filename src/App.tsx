@@ -123,6 +123,7 @@ const App = () => (
                       <Route path="reports" element={<ClientReports />} />
                       <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN", "CLIENT_MEMBER"]} />}>
                         <Route path="targets" element={<ClientTargets />} />
+                        <Route path="opportunities" element={<ClientOpportunityNew />} />
                         <Route path="opportunities/new" element={<ClientOpportunityNew />} />
                         <Route path="bum-directory" element={<ClientBums />} />
                         <Route path="trainings" element={<ClientTrainings />} />

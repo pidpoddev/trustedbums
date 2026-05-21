@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { CheckCircle, FileUp, PlusCircle, Send, Sparkles, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -12,18 +12,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { getPageItems } from "@/lib/pagination";
 import {
   createClientPayProgramRequest,
   createOpportunityRegistration,
+  listOpportunityClaims,
   listOwnOpportunityRegistrations,
   listSelectableClientPayPrograms,
   updateOwnOpportunityRegistration,
   type ClientPayProgramApprovalStatus,
+  type OpportunityClaimRecord,
   type OpportunityRegistration,
 } from "@/lib/portalApi";
+import { formatDateForTimeZone } from "@/lib/timezone";
 import { parseOpportunityImportFile, toOpportunityInput, type OpportunityImportRow } from "@/lib/opportunityImport";
 
 const REGISTERED_OPPORTUNITIES_PAGE_SIZE = 6;
@@ -78,9 +83,91 @@ function commissionScheduleSummary(plan: {
   return `Y1 ${plan.year_1_rate}% · Y2 ${plan.year_2_rate}% · Y3 ${plan.year_3_rate}% · Y4 ${plan.year_4_rate}% · Y5 ${plan.year_5_rate}% · Y6+ ${plan.year_6_plus_rate}%`;
 }
 
+function registrationVariant(status: string) {
+  if (["Accepted", "Closed Won"].includes(status)) {
+    return "success" as const;
+  }
+
+  if (["Rejected", "Closed Lost"].includes(status)) {
+    return "destructive" as const;
+  }
+
+  if (["Needs Clarification", "Disputed"].includes(status)) {
+    return "warning" as const;
+  }
+
+  return "info" as const;
+}
+
+function formatMoney(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return "TBD";
+  }
+
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(Number(value));
+}
+
+function getAssignedClaim(claims: OpportunityClaimRecord[]) {
+  return (
+    claims.find((claim) => ["APPROVED", "SCHEDULED", "MEETING_HELD", "CLOSED"].includes(claim.status)) ??
+    claims.find((claim) => claim.status === "PROPOSED") ??
+    null
+  );
+}
+
+function connectorName(claim: OpportunityClaimRecord | null) {
+  if (!claim) {
+    return "Unassigned";
+  }
+
+  return claim.profiles?.full_name ?? claim.profiles?.email ?? "Connector assigned";
+}
+
+function nextStepForOpportunity(opportunity: OpportunityRegistration, assignedClaim: OpportunityClaimRecord | null) {
+  if (opportunity.status === "Submitted") {
+    return "Trusted Bums review";
+  }
+
+  if (opportunity.status === "Needs Clarification") {
+    return "Clarify details";
+  }
+
+  if (opportunity.status === "Accepted") {
+    if (!assignedClaim) {
+      return "Assign connector";
+    }
+
+    if (assignedClaim.status === "SCHEDULED") {
+      return "Hold meeting";
+    }
+
+    if (assignedClaim.status === "MEETING_HELD") {
+      return "Track outcome";
+    }
+
+    return "Connector outreach";
+  }
+
+  if (opportunity.status === "Disputed") {
+    return "Resolve dispute";
+  }
+
+  if (opportunity.status === "Closed Won") {
+    return "Report payment";
+  }
+
+  if (opportunity.status === "Closed Lost" || opportunity.status === "Rejected") {
+    return "Closed";
+  }
+
+  return opportunity.expected_timeline ?? "Set next step";
+}
+
 export default function ClientOpportunityNew() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const location = useLocation();
+  const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initialForm);
   const [requestForm, setRequestForm] = useState(initialRequestForm);
@@ -97,7 +184,8 @@ export default function ClientOpportunityNew() {
   const [isRequestingPlan, setIsRequestingPlan] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [registeredPage, setRegisteredPage] = useState(1);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(location.pathname.endsWith("/new") ? "register" : "pipeline");
+  const [isRegisterOpen, setIsRegisterOpen] = useState(location.pathname.endsWith("/new"));
   const [isRequestPlanOpen, setIsRequestPlanOpen] = useState(false);
 
   const updateField = (field: keyof typeof initialForm, value: string) => {
@@ -106,6 +194,13 @@ export default function ClientOpportunityNew() {
   const updateRequestField = (field: keyof typeof initialRequestForm, value: string) => {
     setRequestForm((current) => ({ ...current, [field]: value }));
   };
+
+  useEffect(() => {
+    if (location.pathname.endsWith("/new")) {
+      setActiveTab("register");
+      setIsRegisterOpen(true);
+    }
+  }, [location.pathname]);
 
   const importPreviewRows = useMemo(() => importRows.slice(0, 5), [importRows]);
   const payProgramsQuery = useQuery({
@@ -116,6 +211,11 @@ export default function ClientOpportunityNew() {
   const opportunitiesQuery = useQuery({
     queryKey: ["client-opportunity-registrations", user?.clientId],
     queryFn: () => listOwnOpportunityRegistrations(user!),
+    enabled: Boolean(user?.clientId),
+  });
+  const claimsQuery = useQuery({
+    queryKey: ["client-opportunity-claims", user?.clientId],
+    queryFn: () => listOpportunityClaims(),
     enabled: Boolean(user?.clientId),
   });
 
@@ -280,6 +380,7 @@ export default function ClientOpportunityNew() {
       setSubmittedId(opportunity.id);
       setForm(initialForm);
       setIsRegisterOpen(false);
+      setActiveTab("pipeline");
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       toast({
         title: "Opportunity submitted",
@@ -298,14 +399,39 @@ export default function ClientOpportunityNew() {
 
   const payPrograms = payProgramsQuery.data ?? [];
   const opportunities = opportunitiesQuery.data ?? [];
+  const claimsByOpportunity = useMemo(() => {
+    const grouped = new Map<string, OpportunityClaimRecord[]>();
+
+    for (const claim of claimsQuery.data ?? []) {
+      const current = grouped.get(claim.opportunity_registration_id) ?? [];
+      current.push(claim);
+      grouped.set(claim.opportunity_registration_id, current);
+    }
+
+    return grouped;
+  }, [claimsQuery.data]);
   const visibleOpportunities = getPageItems(opportunities, registeredPage, REGISTERED_OPPORTUNITIES_PAGE_SIZE);
+  const openPipelineCount = opportunities.filter((opportunity) => !["Closed Won", "Closed Lost", "Rejected"].includes(opportunity.status)).length;
+  const totalPipelineValue = opportunities.reduce((sum, opportunity) => sum + Number(opportunity.estimated_deal_value ?? 0), 0);
+  const acceptedCount = opportunities.filter((opportunity) => opportunity.status === "Accepted").length;
 
   return (
     <div>
       <PageHeader
-        title="Register Opportunity"
-        description="Use this after a target account becomes a real deal pursuit and you need a formal registration with commission terms."
-      />
+        title="Opportunities"
+        description="Manage the client opportunity pipeline, registration status, connector assignment, value, next step, and commission plan."
+      >
+        <Button
+          type="button"
+          onClick={() => {
+            setActiveTab("register");
+            setIsRegisterOpen(true);
+          }}
+        >
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Register Opportunity
+        </Button>
+      </PageHeader>
 
       {submittedId && (
         <Card className="mb-6 border-success/40 bg-success/5">
@@ -324,12 +450,12 @@ export default function ClientOpportunityNew() {
         </Card>
       )}
 
-      <Tabs defaultValue="register" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="flex h-auto flex-wrap justify-start">
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="register">Register</TabsTrigger>
           <TabsTrigger value="import">Import</TabsTrigger>
           <TabsTrigger value="commission-plan">Commission Plan</TabsTrigger>
-          <TabsTrigger value="registered">Registered</TabsTrigger>
         </TabsList>
 
         <TabsContent value="import">
@@ -751,48 +877,105 @@ export default function ClientOpportunityNew() {
 
         </TabsContent>
 
-        <TabsContent value="registered">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-display">Registered opportunities</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {visibleOpportunities.map((opportunity) => (
-            <Card key={opportunity.id} className="border-border/70">
+        <TabsContent value="pipeline">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
               <CardContent className="pt-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-display text-lg font-bold">{opportunity.target_account_name}</p>
-                      <StatusBadge label={opportunity.status} variant="info" />
-                      {opportunity.client_pay_programs ? (
-                        <StatusBadge
-                          label={`${opportunity.client_pay_programs.name} · ${opportunity.client_pay_programs.approval_status.toLowerCase()}`}
-                          variant={approvalVariant(opportunity.client_pay_programs.approval_status)}
-                        />
-                      ) : null}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Estimated value:{" "}
-                      {opportunity.estimated_deal_value
-                        ? `$${Number(opportunity.estimated_deal_value).toLocaleString()}`
-                        : "Not set"}
-                      {" · "}
-                      Timeline: {opportunity.expected_timeline ?? "Not set"}
-                    </p>
-                    {opportunity.notes ? <p className="text-sm">{opportunity.notes}</p> : null}
-                  </div>
-                  <Button type="button" variant="outline" onClick={() => startEditing(opportunity)}>
-                    Edit
-                  </Button>
-                </div>
+                <p className="text-sm text-muted-foreground">Open pipeline</p>
+                <p className="font-display mt-1 text-3xl font-bold">{openPipelineCount}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">Estimated value</p>
+                <p className="font-display mt-1 text-3xl font-bold">{formatMoney(totalPipelineValue)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">Accepted</p>
+                <p className="font-display mt-1 text-3xl font-bold">{acceptedCount}</p>
+              </CardContent>
+            </Card>
+          </div>
 
-                {editingOpportunityId === opportunity.id ? (
-                  <div className="mt-5 grid gap-4 rounded-xl border bg-muted/20 p-4 md:grid-cols-2">
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="font-display">Pipeline</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Opportunity</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Activity</TableHead>
+                    <TableHead>Next Step</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Assigned Connector</TableHead>
+                    <TableHead>Commission Plan</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleOpportunities.map((opportunity) => {
+                    const opportunityClaims = claimsByOpportunity.get(opportunity.id) ?? [];
+                    const assignedClaim = getAssignedClaim(opportunityClaims);
+                    const plan = opportunity.client_pay_programs;
+
+                    return (
+                      <TableRow key={opportunity.id}>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="font-medium">{opportunity.target_account_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {opportunity.expected_product_service ?? opportunity.business_unit ?? "No product or business unit set"}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge label={opportunity.status} variant={registrationVariant(opportunity.status)} />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {formatDateForTimeZone(opportunity.updated_at ?? opportunity.created_at, timeZone)}
+                        </TableCell>
+                        <TableCell>{nextStepForOpportunity(opportunity, assignedClaim)}</TableCell>
+                        <TableCell className="font-medium">{formatMoney(opportunity.estimated_deal_value)}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p>{connectorName(assignedClaim)}</p>
+                            {assignedClaim ? <p className="text-xs text-muted-foreground">{assignedClaim.status.replaceAll("_", " ").toLowerCase()}</p> : null}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p>{plan?.name ?? "No plan"}</p>
+                            {plan ? <StatusBadge label={plan.approval_status.toLowerCase()} variant={approvalVariant(plan.approval_status)} /> : null}
+                          </div>
+                        </TableCell>
+                        <TableCell>{opportunity.client_contact ?? opportunity.trusted_bums_contact ?? "Client team"}</TableCell>
+                        <TableCell className="text-right">
+                          <Button type="button" variant="outline" size="sm" onClick={() => startEditing(opportunity)}>
+                            Edit
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+
+              {editingOpportunityId ? (
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardHeader>
+                    <CardTitle className="font-display text-lg">Edit opportunity</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor={`edit-value-${opportunity.id}`}>Estimated value</Label>
+                      <Label htmlFor="pipeline-edit-value">Estimated value</Label>
                       <Input
-                        id={`edit-value-${opportunity.id}`}
+                        id="pipeline-edit-value"
                         type="number"
                         min="0"
                         step="1000"
@@ -801,9 +984,9 @@ export default function ClientOpportunityNew() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor={`edit-plan-${opportunity.id}`}>Commission plan</Label>
+                      <Label htmlFor="pipeline-edit-plan">Commission plan</Label>
                       <Select value={editPayProgramId} onValueChange={setEditPayProgramId}>
-                        <SelectTrigger id={`edit-plan-${opportunity.id}`}>
+                        <SelectTrigger id="pipeline-edit-plan">
                           <SelectValue placeholder="Select a plan" />
                         </SelectTrigger>
                         <SelectContent>
@@ -816,47 +999,36 @@ export default function ClientOpportunityNew() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor={`edit-timeline-${opportunity.id}`}>Expected timeline</Label>
-                      <Input
-                        id={`edit-timeline-${opportunity.id}`}
-                        value={editExpectedTimeline}
-                        onChange={(event) => setEditExpectedTimeline(event.target.value)}
-                      />
+                      <Label htmlFor="pipeline-edit-timeline">Expected timeline</Label>
+                      <Input id="pipeline-edit-timeline" value={editExpectedTimeline} onChange={(event) => setEditExpectedTimeline(event.target.value)} />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor={`edit-notes-${opportunity.id}`}>Notes</Label>
-                      <Textarea
-                        id={`edit-notes-${opportunity.id}`}
-                        rows={3}
-                        value={editNotes}
-                        onChange={(event) => setEditNotes(event.target.value)}
-                      />
+                      <Label htmlFor="pipeline-edit-notes">Notes</Label>
+                      <Textarea id="pipeline-edit-notes" rows={3} value={editNotes} onChange={(event) => setEditNotes(event.target.value)} />
                     </div>
                     <div className="flex justify-end gap-2 md:col-span-2">
                       <Button type="button" variant="outline" onClick={() => setEditingOpportunityId(null)}>
                         Cancel
                       </Button>
-                      <Button type="button" onClick={() => void saveOpportunityEdit()} disabled={isSavingEdit || !editPayProgramId}>
+                      <Button type="button" onClick={() => void saveOpportunityEdit()} disabled={isSavingEdit}>
                         {isSavingEdit ? "Saving..." : "Save changes"}
                       </Button>
                     </div>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          ))}
+                  </CardContent>
+                </Card>
+              ) : null}
 
-          <PaginationControls page={registeredPage} pageSize={REGISTERED_OPPORTUNITIES_PAGE_SIZE} totalItems={opportunities.length} onPageChange={setRegisteredPage} />
+              <PaginationControls page={registeredPage} pageSize={REGISTERED_OPPORTUNITIES_PAGE_SIZE} totalItems={opportunities.length} onPageChange={setRegisteredPage} />
 
-          {!opportunities.length ? (
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-              No opportunity registrations yet. Submit one above, then come back here any time to adjust estimated
-              value and commission plan.
-            </div>
-          ) : null}
-        </CardContent>
+              {!opportunities.length ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  No opportunities are registered yet. Use Register Opportunity when a target account becomes an active deal pursuit.
+                </div>
+              ) : null}
+            </CardContent>
           </Card>
         </TabsContent>
+
       </Tabs>
     </div>
   );
