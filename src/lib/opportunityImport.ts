@@ -129,6 +129,6 @@ export function toOpportunityInput(row: OpportunityImportRow): OpportunityInput 
     commission_rate: row.commission_rate,
     commission_duration: row.commission_duration,
     notes: row.notes,
-    status: "Submitted",
+    status: "Accepted",
   };
 }

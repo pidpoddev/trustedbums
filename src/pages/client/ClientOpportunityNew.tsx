@@ -579,8 +579,8 @@ export default function ClientOpportunityNew() {
       setActiveTab("pipeline");
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       toast({
-        title: "Opportunity submitted",
-        description: "Trusted Bums admin has been notified for review.",
+        title: "Opportunity published",
+        description: "The opportunity is live for connector matching.",
       });
     } catch (error) {
       toast({

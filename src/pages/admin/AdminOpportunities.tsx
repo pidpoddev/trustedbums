@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, HelpCircle, PlusCircle, Search, Sparkles, Target, Users, X } from "lucide-react";
+import { Building2, HelpCircle, PlusCircle, Search, Sparkles, Target, Trash2, Users, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPanel } from "@/components/FilterPanel";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -25,9 +25,11 @@ import {
   listCustomerTargets,
   listAdminReverseOpportunities,
   listOpportunityRegistrations,
+  updateOpportunityRegistration,
   updateReverseOpportunityStatus,
   type CustomerTargetStatus,
   type RegistrationStatus,
+  type OpportunityRegistration,
   type ReverseOpportunityStatus,
 } from "@/lib/portalApi";
 
@@ -176,13 +178,13 @@ export default function AdminOpportunities() {
       estimated_deal_value: newOpportunity.estimated_deal_value ? Number(newOpportunity.estimated_deal_value) : null,
       expected_timeline: newOpportunity.expected_timeline,
       notes: newOpportunity.notes,
-      status: "Submitted",
+      status: "Accepted",
     }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-opportunities"] });
       setNewOpportunity({ company_id: "", pay_program_id: "", target_account_name: "", business_unit: "", opportunity_description: "", client_contact: "", trusted_bums_contact: "", expected_product_service: "", estimated_deal_value: "", expected_timeline: "", notes: "" });
       setIsCreateOpportunityOpen(false);
-      toast({ title: "Opportunity created", description: "The client opportunity was submitted for tracking." });
+      toast({ title: "Opportunity created", description: "The client opportunity is active for connector matching." });
     },
     onError: (error) => {
       toast({
@@ -255,9 +257,9 @@ export default function AdminOpportunities() {
       const matchesType =
         registrationTypeFilter === "ALL" ||
         (registrationTypeFilter === "OPEN" &&
-          ["Submitted", "Accepted"].includes(registration.status)) ||
+          registration.status === "Accepted") ||
         (registrationTypeFilter === "NEEDS_ATTENTION" &&
-          ["Needs Clarification", "Disputed", "Draft"].includes(registration.status)) ||
+          ["Submitted", "Needs Clarification", "Disputed", "Draft"].includes(registration.status)) ||
         (registrationTypeFilter === "CLOSED" &&
           ["Closed Won", "Closed Lost", "Rejected"].includes(registration.status));
 
@@ -275,6 +277,26 @@ export default function AdminOpportunities() {
       return matchesType && matchesQuery;
     });
   }, [registrationQuery, registrationTypeFilter, registrations]);
+  const removeOpportunityMutation = useMutation({
+    mutationFn: (registration: OpportunityRegistration) =>
+      updateOpportunityRegistration(user!, registration, { status: "Rejected" }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-opportunities"] });
+      await queryClient.invalidateQueries({ queryKey: ["bum-marketplace-opportunities"] });
+      toast({
+        title: "Opportunity removed",
+        description: "The opportunity was removed from the active marketplace.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to remove opportunity",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const filteredReverseOpportunities = useMemo(() => {
     return reverseOpportunities.filter((opportunity) => {
       const matchesType =
@@ -303,7 +325,7 @@ export default function AdminOpportunities() {
 
   const priorityItems = useMemo(() => {
     const registrationItems = registrations
-      .filter((registration) => ["Needs Clarification", "Disputed", "Draft", "Submitted"].includes(registration.status))
+      .filter((registration) => ["Needs Clarification", "Disputed", "Draft"].includes(registration.status))
       .map((item) => ({ type: "registration" as const, id: item.id, title: item.target_account_name, status: item.status, detail: item.companies?.name ?? "Company pending" }));
     const targetItems = targets
       .filter((target) => ["INTRO_REQUESTED", "INTRO_IN_PROGRESS", "MEETING_SET", "OPEN_OPPORTUNITY"].includes(target.status))
@@ -612,6 +634,23 @@ export default function AdminOpportunities() {
                             : "TBD"}
                         </p>
                         <p className="text-xs text-muted-foreground">Estimated value</p>
+                        {registration.status !== "Rejected" ? (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="mt-3"
+                            disabled={removeOpportunityMutation.isPending}
+                            onClick={() => {
+                              if (window.confirm(`Remove ${registration.target_account_name} from active opportunities?`)) {
+                                removeOpportunityMutation.mutate(registration);
+                              }
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Remove
+                          </Button>
+                        ) : null}
                       </div>
                     </div>
                     <div className="mt-5">
