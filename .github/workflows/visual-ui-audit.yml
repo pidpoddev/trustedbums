@@ -7,6 +7,10 @@ on:
         description: URL to visually audit
         required: true
         default: https://trustedbums.com
+      roles:
+        description: Comma-separated roles to audit (ADMIN, CLIENT_ADMIN, CLIENT_FINANCE, BUM)
+        required: true
+        default: ADMIN,CLIENT_ADMIN,CLIENT_FINANCE,BUM
 
 jobs:
   visual-audit:
@@ -36,6 +40,7 @@ jobs:
       - name: Run authenticated visual audit
         env:
           QA_BASE_URL: ${{ inputs.target_url }}
+          QA_VISUAL_ROLES: ${{ inputs.roles }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}

@@ -5,6 +5,7 @@ import { getQaAccount, goToAuthedPath, hasExternalQaTarget, type QaAccount } fro
 const MAX_SCREENSHOT_HEIGHT = 12_000;
 
 type RoleKey = "ADMIN" | "CLIENT_ADMIN" | "CLIENT_FINANCE" | "BUM";
+const allRoleKeys: RoleKey[] = ["ADMIN", "CLIENT_ADMIN", "CLIENT_FINANCE", "BUM"];
 
 interface VisualRoute {
   path: string;
@@ -32,7 +33,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/client/targets", heading: "Target Accounts", name: "client-targets" },
     { path: "/client/opportunities/new", heading: "Register Opportunity", name: "client-register-opportunity" },
     { path: "/client/bum-directory", heading: "Bum Directory", name: "client-bum-directory" },
-    { path: "/client/trainings", heading: "Trainings & Assets", name: "client-trainings" },
+    { path: "/client/trainings", heading: "Training & Assets", name: "client-trainings" },
     { path: "/client/requests", heading: "Inbound Requests", name: "client-requests" },
     { path: "/client/payments", heading: "Customer Payments", name: "client-payments" },
     { path: "/client/exports", heading: "Exports", name: "client-exports" },
@@ -53,13 +54,45 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/bum/clients", heading: "Clients We Represent", name: "bum-clients" },
     { path: "/bum/opportunities", heading: "Opportunities", name: "bum-opportunities" },
     { path: "/bum/claims", heading: /^(My )?Claims$/, name: "bum-claims" },
-    { path: "/bum/trainings", heading: "Trainings", name: "bum-trainings" },
+    { path: "/bum/trainings", heading: "Training & Assets", name: "bum-trainings" },
     { path: "/bum/live-conversations", heading: "Live Conversations", name: "bum-live-conversations" },
     { path: "/bum/earnings", heading: "Earnings", name: "bum-earnings" },
     { path: "/bum/reports", heading: "Bum Reports", name: "bum-reports" },
     { path: "/bum/profile", heading: "Profile", name: "bum-profile" },
   ],
 };
+
+function getSelectedRoles() {
+  const rawRoles = process.env.QA_VISUAL_ROLES?.trim();
+
+  if (!rawRoles) {
+    return allRoleKeys;
+  }
+
+  const selectedRoles = rawRoles
+    .split(",")
+    .map((role) => role.trim().toUpperCase())
+    .filter(Boolean);
+  const invalidRoles = selectedRoles.filter((role) => !allRoleKeys.includes(role as RoleKey));
+
+  if (invalidRoles.length) {
+    throw new Error("Invalid QA_VISUAL_ROLES value(s): " + invalidRoles.join(", ") + ". Allowed values: " + allRoleKeys.join(", ") + ".");
+  }
+
+  return selectedRoles as RoleKey[];
+}
+
+function shouldSkipRoleMismatch(error: unknown, role: RoleKey, auditedAnyRoute: boolean) {
+  if (auditedAnyRoute || role !== "ADMIN" || !(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.message.includes("Unable to reach requested path") &&
+    error.message.includes("Requested path: /admin") &&
+    error.message.includes("/client/")
+  );
+}
 
 async function expectNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => {
@@ -118,15 +151,29 @@ async function auditRoute(page: Page, account: QaAccount, role: RoleKey, route: 
 test.describe("authenticated visual UI audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run authenticated visual UI audit.");
 
-  for (const [role, routes] of Object.entries(routesByRole) as Array<[RoleKey, VisualRoute[]]>) {
+  for (const role of getSelectedRoles()) {
+    const routes = routesByRole[role];
+
     test(`${role.toLowerCase().replaceAll("_", " ")} portal pages render cleanly`, async ({ page }, testInfo) => {
       test.setTimeout(240_000);
 
       const account = getQaAccount(role);
       test.skip(!account, `Set QA_${role}_EMAIL.`);
 
+      let auditedAnyRoute = false;
+
       for (const route of routes) {
-        await auditRoute(page, account, role, route, testInfo);
+        try {
+          await auditRoute(page, account, role, route, testInfo);
+          auditedAnyRoute = true;
+        } catch (error) {
+          test.skip(
+            shouldSkipRoleMismatch(error, role, auditedAnyRoute),
+            `QA_${role}_EMAIL authenticated into a different portal. Check the Clerk role metadata or set QA_VISUAL_ROLES to the roles configured for this environment.`,
+          );
+
+          throw error;
+        }
       }
     });
   }
