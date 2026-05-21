@@ -41,6 +41,7 @@ const responseFormInitial = {
 type ValueFilter = "ALL" | "UNDER_50K" | "50K_250K" | "250K_PLUS" | "UNKNOWN";
 type TermFilter = "ALL" | "SHORT" | "MEDIUM" | "LONG" | "UNKNOWN";
 type OpportunityTypeFilter = "ALL" | "TARGET_ACCOUNT" | "OPPORTUNITY";
+type TargetDialogMode = "connection" | "question";
 
 const valueFilters: { value: ValueFilter; label: string }[] = [
   { value: "ALL", label: "All values" },
@@ -94,6 +95,7 @@ export default function BumOpportunities() {
   const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
   const [termFilter, setTermFilter] = useState<TermFilter>("ALL");
   const [selectedTarget, setSelectedTarget] = useState<CustomerTargetRecord | null>(null);
+  const [targetDialogMode, setTargetDialogMode] = useState<TargetDialogMode>("connection");
   const [marketplacePage, setMarketplacePage] = useState(1);
   const [responseForm, setResponseForm] = useState(responseFormInitial);
   const [expandedOpportunityIds, setExpandedOpportunityIds] = useState<Set<string>>(new Set());
@@ -135,20 +137,25 @@ export default function BumOpportunities() {
   );
 
   const responseMutation = useMutation({
-    mutationFn: () =>
-      createCustomerTargetResponse(user!, {
+    mutationFn: () => {
+      const targetName = selectedTarget?.target_companies?.name ?? selectedTarget?.target_account_name ?? "this target";
+      return createCustomerTargetResponse(user!, {
         customerTargetId: selectedTarget!.id,
-        contactName: responseForm.contactName,
-        contactEmail: responseForm.contactEmail,
-        relationshipStrength: responseForm.relationshipStrength,
+        contactName: targetDialogMode === "question" ? `Question about ${targetName}` : responseForm.contactName,
+        contactEmail: targetDialogMode === "question" ? "" : responseForm.contactEmail,
+        relationshipStrength: targetDialogMode === "question" ? "unknown" : responseForm.relationshipStrength,
         note: responseForm.note,
-      }),
+      });
+    },
     onSuccess: () => {
       toast({
-        title: "Response sent",
-        description: "Trusted Bums now has your relationship context for this client target.",
+        title: targetDialogMode === "question" ? "Question sent" : "Response sent",
+        description: targetDialogMode === "question"
+          ? "The client team can review your question about this target."
+          : "Trusted Bums now has your relationship context for this client target.",
       });
       setSelectedTarget(null);
+      setTargetDialogMode("connection");
       setResponseForm(responseFormInitial);
     },
     onError: (error) => {
@@ -412,7 +419,26 @@ export default function BumOpportunities() {
                     {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
                     Details
                   </Button>
-                  <Button size="sm" onClick={() => setSelectedTarget(targetAccount)}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setTargetDialogMode("question");
+                      setResponseForm(responseFormInitial);
+                      setSelectedTarget(targetAccount);
+                    }}
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    I have a question
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setTargetDialogMode("connection");
+                      setResponseForm(responseFormInitial);
+                      setSelectedTarget(targetAccount);
+                    }}
+                  >
                     <Handshake className="mr-2 h-4 w-4" />
                     I know someone
                   </Button>
@@ -519,7 +545,7 @@ export default function BumOpportunities() {
                   <Button size="sm" asChild>
                     <Link to={`/bum/opportunities/${opportunity.id}?ask=1`}>
                       <MessageSquare className="mr-2 h-4 w-4" />
-                      Ask question
+                      I have a question
                     </Link>
                   </Button>
                 </div>
@@ -543,73 +569,95 @@ export default function BumOpportunities() {
         />
       </div>
 
-      <Dialog open={Boolean(selectedTarget)} onOpenChange={(open) => !open && setSelectedTarget(null)}>
+      <Dialog
+        open={Boolean(selectedTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedTarget(null);
+            setTargetDialogMode("connection");
+            setResponseForm(responseFormInitial);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display">Tell us who you know</DialogTitle>
+            <DialogTitle className="font-display">{targetDialogMode === "question" ? "Ask a question" : "Tell us who you know"}</DialogTitle>
             <DialogDescription>
-              Share the person or path you have into {selectedTarget?.target_companies?.name ?? selectedTarget?.target_account_name}.
+              {targetDialogMode === "question"
+                ? `Ask what you need to know about ${selectedTarget?.target_companies?.name ?? selectedTarget?.target_account_name}.`
+                : `Share the person or path you have into ${selectedTarget?.target_companies?.name ?? selectedTarget?.target_account_name}.`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
+            {targetDialogMode === "connection" ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="target-contact-name">Contact or path</Label>
+                  <Input
+                    id="target-contact-name"
+                    value={responseForm.contactName}
+                    onChange={(event) => setResponseForm((current) => ({ ...current, contactName: event.target.value }))}
+                    placeholder="Jane Doe, CIO or former colleague who can intro"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="target-contact-email">Email if known</Label>
+                  <Input
+                    id="target-contact-email"
+                    type="email"
+                    value={responseForm.contactEmail}
+                    onChange={(event) => setResponseForm((current) => ({ ...current, contactEmail: event.target.value }))}
+                    placeholder="jane@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Relationship strength</Label>
+                  <Select
+                    value={responseForm.relationshipStrength}
+                    onValueChange={(value: CustomerTargetResponseStrength) =>
+                      setResponseForm((current) => ({ ...current, relationshipStrength: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="strong">Strong direct relationship</SelectItem>
+                      <SelectItem value="warm">Warm path</SelectItem>
+                      <SelectItem value="advisor">Can advise on account</SelectItem>
+                      <SelectItem value="unknown">Unsure, but worth exploring</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            ) : null}
             <div className="space-y-2">
-              <Label htmlFor="target-contact-name">Contact or path</Label>
-              <Input
-                id="target-contact-name"
-                value={responseForm.contactName}
-                onChange={(event) => setResponseForm((current) => ({ ...current, contactName: event.target.value }))}
-                placeholder="Jane Doe, CIO or former colleague who can intro"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="target-contact-email">Email if known</Label>
-              <Input
-                id="target-contact-email"
-                type="email"
-                value={responseForm.contactEmail}
-                onChange={(event) => setResponseForm((current) => ({ ...current, contactEmail: event.target.value }))}
-                placeholder="jane@example.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Relationship strength</Label>
-              <Select
-                value={responseForm.relationshipStrength}
-                onValueChange={(value: CustomerTargetResponseStrength) =>
-                  setResponseForm((current) => ({ ...current, relationshipStrength: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="strong">Strong direct relationship</SelectItem>
-                  <SelectItem value="warm">Warm path</SelectItem>
-                  <SelectItem value="advisor">Can advise on account</SelectItem>
-                  <SelectItem value="unknown">Unsure, but worth exploring</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="target-response-note">Context</Label>
+              <Label htmlFor="target-response-note">{targetDialogMode === "question" ? "Question" : "Context"}</Label>
               <Textarea
                 id="target-response-note"
                 rows={4}
                 value={responseForm.note}
                 onChange={(event) => setResponseForm((current) => ({ ...current, note: event.target.value }))}
-                placeholder="How you know them, whether an intro is appropriate, and any caveats."
+                placeholder={targetDialogMode === "question" ? "What would you like the client to clarify?" : "How you know them, whether an intro is appropriate, and any caveats."}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedTarget(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedTarget(null);
+                setTargetDialogMode("connection");
+                setResponseForm(responseFormInitial);
+              }}
+            >
               Cancel
             </Button>
             <Button
-              disabled={!responseForm.contactName.trim() || responseMutation.isPending}
+              disabled={(targetDialogMode === "question" ? !responseForm.note.trim() : !responseForm.contactName.trim()) || responseMutation.isPending}
               onClick={() => responseMutation.mutate()}
             >
-              Send response
+              {targetDialogMode === "question" ? "Send question" : "Send response"}
             </Button>
           </DialogFooter>
         </DialogContent>
