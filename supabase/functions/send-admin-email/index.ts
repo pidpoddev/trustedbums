@@ -52,6 +52,11 @@ async function getCurrentProfile(token: string) { const payload = parseJwtPayloa
 function isAdmin(profile: ProfileRow) { return profile.is_admin || profile.role?.toUpperCase() === "ADMIN" }
 function cleanString(value: unknown, maxLength: number) { return typeof value === "string" ? value.trim().slice(0, maxLength) : "" }
 function isEmail(value: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) }
+function isSelfOnlyCustomAction(input: SendAdminEmailRequest, currentProfile: ProfileRow) {
+  const currentEmail = currentProfile.email?.trim().toLowerCase();
+  const recipients = (input.recipientEmails ?? []).map((email) => email.trim().toLowerCase()).filter(isEmail);
+  return Boolean(currentEmail && recipients.length === 1 && recipients[0] === currentEmail);
+}
 function normalizeMetadata(metadata?: Record<string, unknown>) { return Object.fromEntries(Object.entries(metadata ?? {}).map(([key, value]) => [key, typeof value === "string" ? value.trim() : String(value ?? "")])) }
 function renderTemplate(template: string, metadata: Record<string, string>) { return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_match, key: string) => metadata[key] ?? "") }
 function escapeHtml(value: string) { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;") }
@@ -340,7 +345,7 @@ Deno.serve(async (request) => {
     const group = input.recipientGroup ?? template.recipient_group;
     if ((mode === "manual" || mode === "preview" || mode === "test") && !isAdmin(currentProfile)) return json(403, { error: "Only admins can use manual messaging tools." });
     if (mode === "action" && template.trigger_event === "MANUAL") return json(403, { error: "Manual-only templates cannot be action triggered." });
-    if (mode === "action" && template.recipient_group === "CUSTOM" && !isAdmin(currentProfile)) return json(403, { error: "Custom action-triggered email requires an admin." });
+    if (mode === "action" && template.recipient_group === "CUSTOM" && !isAdmin(currentProfile) && !isSelfOnlyCustomAction(input, currentProfile)) return json(403, { error: "Custom action-triggered email requires an admin." });
     if (mode === "action" && input.recipientGroup && input.recipientGroup !== template.recipient_group) return json(400, { error: "Action-triggered email cannot override the template recipient group." });
     const subjectTemplate = mode === "manual" || mode === "preview" || mode === "test" ? cleanString(input.subject, 240) || template.subject : template.subject;
     const bodyTemplate = mode === "manual" || mode === "preview" || mode === "test" ? cleanString(input.body, 8000) || template.body : template.body;

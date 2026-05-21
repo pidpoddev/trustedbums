@@ -1450,21 +1450,39 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
         ? "CLIENT_USER_CREATED"
         : "CLIENT_SIGNUP_CREATED";
 
+    const signupMetadata = {
+      company_id: data.company_id ?? "",
+      client_company_name: data.companies?.name ?? user.companyName ?? "",
+      client_name: data.companies?.name ?? user.companyName ?? "",
+      user_name: data.full_name ?? user.name,
+      user_email: data.email ?? user.email,
+      bum_name: data.full_name ?? user.name,
+      recipient_name: data.full_name ?? user.name,
+    };
+
     if (templateSlug) {
       await sendAdminEmail({
         mode: "action",
         templateSlug,
-        metadata: {
-          company_id: data.company_id ?? "",
-          client_company_name: data.companies?.name ?? user.companyName ?? "",
-          client_name: data.companies?.name ?? user.companyName ?? "",
-          user_name: data.full_name ?? user.name,
-          user_email: data.email ?? user.email,
-          bum_name: data.full_name ?? user.name,
-        },
+        metadata: signupMetadata,
         triggeredBy,
       }).catch((error) => {
         console.error("Unable to send signup notification", error);
+      });
+    }
+
+    const welcomeTemplateSlug = user.role === "BUM" ? "bum_signup_welcome" : user.role === "CLIENT" ? "client_signup_welcome" : null;
+    const recipientEmail = data.email ?? user.email;
+
+    if (welcomeTemplateSlug && recipientEmail) {
+      await sendAdminEmail({
+        mode: "action",
+        templateSlug: welcomeTemplateSlug,
+        recipientEmails: [recipientEmail],
+        metadata: signupMetadata,
+        triggeredBy,
+      }).catch((error) => {
+        console.error("Unable to send signup welcome email", error);
       });
     }
   }
