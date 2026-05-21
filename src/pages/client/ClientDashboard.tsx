@@ -18,6 +18,36 @@ import {
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 import { Target, FileCheck, Clock, PlusCircle, ArrowRight, CreditCard, Download } from "lucide-react";
 
+type DashboardAction = {
+  title: string;
+  description: string;
+  to: string;
+  primary?: boolean;
+};
+
+function NextActionsCard({ actions }: { actions: DashboardAction[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-display">Next Actions</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        {actions.map((action) => (
+          <Button key={action.title} asChild variant={action.primary ? "default" : "outline"} className="h-auto justify-between gap-3 py-3 text-left">
+            <Link to={action.to}>
+              <span>
+                <span className="block font-medium">{action.title}</span>
+                <span className="block text-xs font-normal opacity-80">{action.description}</span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0" />
+            </Link>
+          </Button>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ClientDashboard() {
   const { user } = useAuth();
   const timeZone = useUserTimeZone();
@@ -70,6 +100,40 @@ export default function ClientDashboard() {
     (sum, invoice) => sum + Number(invoice.invoice_amount ?? 0),
     0,
   );
+  const pendingPaymentReports = paymentReports.filter((report) => report.status !== "INVOICE_GENERATED").length;
+  const unpaidInvoices = invoices.filter((invoice) => !["PAID", "VOID"].includes(invoice.status)).length;
+  const financeNextActions: DashboardAction[] = [
+    !hasAcceptedCurrentTerms
+      ? { title: "Review partner terms", description: "Terms need acceptance before the workspace is current.", to: "/client/terms", primary: true }
+      : null,
+    paymentReports.length
+      ? { title: "Import next payment file", description: "Add the latest customer payment CSV.", to: "/client/payments", primary: !pendingPaymentReports && !unpaidInvoices }
+      : { title: "Import first payment file", description: "Generate Trusted Bums invoices from paid customer deals.", to: "/client/payments", primary: true },
+    pendingPaymentReports
+      ? { title: "Review pending payment records", description: `${pendingPaymentReports} payment record${pendingPaymentReports === 1 ? "" : "s"} still need invoice review.`, to: "/client/payments" }
+      : null,
+    unpaidInvoices
+      ? { title: "Review outstanding invoices", description: `${unpaidInvoices} Trusted Bums invoice${unpaidInvoices === 1 ? "" : "s"} not marked paid.`, to: "/client/payments" }
+      : null,
+    { title: "Export finance data", description: "Download payments, meetings, and account CSVs.", to: "/client/exports" },
+  ].filter(Boolean) as DashboardAction[];
+  const clientNextActions: DashboardAction[] = [
+    !hasAcceptedCurrentTerms
+      ? { title: "Review partner terms", description: "Accept the current terms before working new activity.", to: "/client/terms", primary: true }
+      : null,
+    targets.length
+      ? { title: "Register an opportunity", description: "Submit a deal for review and commission tracking.", to: "/client/opportunities/new", primary: !activeCount }
+      : { title: "Add first target account", description: "Start with the customer company you want to sell into.", to: "/client/targets", primary: true },
+    reverseOpportunities.length
+      ? { title: "Review inbound requests", description: `${reverseOpportunities.length} Bum-initiated request${reverseOpportunities.length === 1 ? "" : "s"} need review.`, to: "/client/requests" }
+      : null,
+    activeCount
+      ? { title: "Check active opportunities", description: `${activeCount} active opportunit${activeCount === 1 ? "y" : "ies"} need progress tracking.`, to: "/client/opportunities" }
+      : null,
+    canManagePayments
+      ? { title: "Record customer payment", description: "Generate a Trusted Bums invoice from a paid deal.", to: "/client/payments" }
+      : null,
+  ].filter(Boolean) as DashboardAction[];
 
   if (isFinanceUser) {
     return (
@@ -122,7 +186,7 @@ export default function ClientDashboard() {
                 <div className="rounded-md border border-dashed p-6 text-center">
                   <p className="font-medium">No invoices generated yet</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Import your first customer payment report to generate invoices for AP.
+                    Import your first customer payment CSV to generate invoices for AP.
                   </p>
                   <Button asChild className="mt-4">
                     <Link to="/client/payments">Go to Payments</Link>
@@ -133,6 +197,8 @@ export default function ClientDashboard() {
           </Card>
 
           <div className="space-y-6">
+            <NextActionsCard actions={financeNextActions} />
+
             <Card>
               <CardHeader>
                 <CardTitle className="font-display">Partner Terms</CardTitle>
@@ -238,6 +304,8 @@ export default function ClientDashboard() {
         </Card>
 
         <div className="space-y-6">
+          <NextActionsCard actions={clientNextActions} />
+
           <Card>
             <CardHeader>
               <CardTitle className="font-display">Partner Terms</CardTitle>
@@ -277,7 +345,7 @@ export default function ClientDashboard() {
               </Button>
               {canManagePayments ? (
                 <Button asChild variant="outline">
-                  <Link to="/client/payments">Report customer payment</Link>
+                  <Link to="/client/payments">Record customer payment</Link>
                 </Button>
               ) : null}
               <Button asChild variant="outline">

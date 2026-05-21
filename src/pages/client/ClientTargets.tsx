@@ -60,6 +60,7 @@ export default function ClientTargets() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<CustomerTargetTypeFilter>("ALL");
   const [targetPage, setTargetPage] = useState(1);
+  const [isAddTargetOpen, setIsAddTargetOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
 
   const targetsQuery = useQuery({
@@ -81,6 +82,7 @@ export default function ClientTargets() {
         description: "Your customer prospect has been added to the target account pipeline.",
       });
       setForm(initialForm);
+      setIsAddTargetOpen(false);
     },
     onError: (error) => {
       toast({
@@ -135,15 +137,28 @@ export default function ClientTargets() {
       <PageHeader
         title="Target Accounts"
         description="Track the customer companies you want to sell into without mixing them with Trusted Bums client prospects."
-      />
+      >
+        <Button type="button" onClick={() => setIsAddTargetOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Target Account
+        </Button>
+      </PageHeader>
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-display flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" /> Add target account
-          </CardTitle>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="font-display flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" /> Add target account
+            </CardTitle>
+            {isAddTargetOpen ? (
+              <Button type="button" variant="secondary" onClick={() => setIsAddTargetOpen(false)}>
+                Close
+              </Button>
+            ) : null}
+          </div>
         </CardHeader>
-        <CardContent>
+        {isAddTargetOpen ? (
+          <CardContent>
           <form
             className="grid gap-5"
             onSubmit={(event) => {
@@ -296,6 +311,15 @@ export default function ClientTargets() {
             </div>
           </form>
         </CardContent>
+        ) : (
+          <CardContent className="flex flex-col gap-4 pt-0 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">Add a customer company when you are ready to track outreach, contacts, and transcript context.</p>
+            <Button type="button" variant="outline" onClick={() => setIsAddTargetOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add target account
+            </Button>
+          </CardContent>
+        )}
       </Card>
 
       <Card>
@@ -394,7 +418,7 @@ export default function ClientTargets() {
         {!targetsQuery.isLoading && !targets.length ? (
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground">
-              No target accounts yet. Add the customer companies you want to sell into above.
+              No target accounts yet. Add the customer companies you want to sell into.
             </CardContent>
           </Card>
         ) : null}

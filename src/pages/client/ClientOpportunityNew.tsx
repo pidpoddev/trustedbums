@@ -429,7 +429,7 @@ export default function ClientOpportunityNew() {
           }}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
-          Register Opportunity
+          Register New Opportunity
         </Button>
       </PageHeader>
 
@@ -453,7 +453,7 @@ export default function ClientOpportunityNew() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="flex h-auto flex-wrap justify-start">
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-          <TabsTrigger value="register">Register</TabsTrigger>
+          <TabsTrigger value="register">Register Opportunity</TabsTrigger>
           <TabsTrigger value="import">Import</TabsTrigger>
           <TabsTrigger value="commission-plan">Commission Plan</TabsTrigger>
         </TabsList>
@@ -551,14 +551,17 @@ export default function ClientOpportunityNew() {
             <div className="flex justify-end">
               <Button onClick={() => setIsRegisterOpen(true)}>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Create opportunity
+                Start registration
               </Button>
             </div>
           ) : (
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <CardTitle className="font-display">Opportunity details</CardTitle>
+                <div>
+                  <CardTitle className="font-display">Register a new opportunity</CardTitle>
+                  <p className="mt-1 text-sm text-muted-foreground">Submit the customer deal you want Trusted Bums to review, assign, and track against the selected commission plan.</p>
+                </div>
                 <Button type="button" variant="secondary" onClick={() => setIsRegisterOpen(false)}>
                   <X className="mr-2 h-4 w-4" />
                   Close
@@ -569,7 +572,7 @@ export default function ClientOpportunityNew() {
           <form className="grid gap-5" onSubmit={submitOpportunity}>
             <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="targetAccount">Target account name</Label>
+                <Label htmlFor="targetAccount">Customer account name</Label>
                 <Input
                   id="targetAccount"
                   required
@@ -586,7 +589,7 @@ export default function ClientOpportunityNew() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="clientContact">Client contact</Label>
+                <Label htmlFor="clientContact">Your internal contact</Label>
                 <Input
                   id="clientContact"
                   value={form.client_contact}
@@ -594,7 +597,7 @@ export default function ClientOpportunityNew() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tbContact">Trusted Bums contact</Label>
+                <Label htmlFor="tbContact">Trusted Bums owner</Label>
                 <Input
                   id="tbContact"
                   value={form.trusted_bums_contact}
@@ -630,7 +633,7 @@ export default function ClientOpportunityNew() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="payProgram">Commission plan</Label>
+                <Label htmlFor="payProgram">Commission structure</Label>
                 <Select value={form.pay_program_id} onValueChange={(value) => updateField("pay_program_id", value)}>
                   <SelectTrigger id="payProgram">
                     <SelectValue placeholder="Select a commission plan" />
@@ -669,7 +672,7 @@ export default function ClientOpportunityNew() {
             <div className="sticky bottom-3 z-10 flex justify-end rounded-lg border bg-background/95 p-3 shadow-sm backdrop-blur">
               <Button disabled={isSubmitting}>
                 <Send className="mr-2 h-4 w-4" />
-                Submit Registration
+                Submit Opportunity Registration
               </Button>
             </div>
           </form>

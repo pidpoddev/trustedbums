@@ -1,17 +1,22 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Users } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
 import { PageHeader } from "@/components/PageHeader";
+import { PaginationControls } from "@/components/PaginationControls";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getPageItems } from "@/lib/pagination";
 import { listVisibleBumProfiles } from "@/lib/portalApi";
 
 function searchableText(values: Array<string | null | undefined>) {
   return values.filter(Boolean).join(" ").toLowerCase();
 }
+
+const CLIENT_BUMS_PAGE_SIZE = 4;
 
 type BumDirectoryTypeFilter =
   | "ALL"
@@ -31,16 +36,27 @@ const bumDirectoryTypeFilters: { value: BumDirectoryTypeFilter; label: string }[
 export default function ClientBums() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<BumDirectoryTypeFilter>("ALL");
+  const [profilePage, setProfilePage] = useState(1);
+  const [shortlistedIds, setShortlistedIds] = useState<string[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const bumProfilesQuery = useQuery({
     queryKey: ["client-visible-bum-profiles"],
     queryFn: listVisibleBumProfiles,
   });
 
+  useEffect(() => {
+    setProfilePage(1);
+  }, [deferredSearch, typeFilter, hiddenIds.length]);
+
   const filteredProfiles = useMemo(() => {
     const profiles = bumProfilesQuery.data ?? [];
 
     return profiles.filter((profile) => {
+      if (hiddenIds.includes(profile.user_id)) {
+        return false;
+      }
+
       const matchesType =
         typeFilter === "ALL" ||
         (typeFilter === "VERIFIED" && profile.verification_status === "verified") ||
@@ -69,7 +85,19 @@ export default function ClientBums() {
 
       return matchesType && matchesSearch;
     });
-  }, [bumProfilesQuery.data, deferredSearch, typeFilter]);
+  }, [bumProfilesQuery.data, deferredSearch, hiddenIds, typeFilter]);
+
+  const visibleProfiles = getPageItems(filteredProfiles, profilePage, CLIENT_BUMS_PAGE_SIZE);
+
+  const toggleShortlist = (profileId: string) => {
+    setShortlistedIds((current) =>
+      current.includes(profileId) ? current.filter((id) => id !== profileId) : [...current, profileId],
+    );
+  };
+
+  const hideProfile = (profileId: string) => {
+    setHiddenIds((current) => (current.includes(profileId) ? current : [...current, profileId]));
+  };
 
   return (
     <div className="space-y-6">
@@ -79,7 +107,7 @@ export default function ClientBums() {
       />
 
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="space-y-4 pt-6">
           <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)] md:items-end">
             <div className="relative min-w-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -104,6 +132,20 @@ export default function ClientBums() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4 text-sm text-muted-foreground">
+            <span>
+              Showing {filteredProfiles.length ? (profilePage - 1) * CLIENT_BUMS_PAGE_SIZE + 1 : 0}-{Math.min(profilePage * CLIENT_BUMS_PAGE_SIZE, filteredProfiles.length)} of {filteredProfiles.length} matching profiles
+              {hiddenIds.length ? `, ${hiddenIds.length} hidden` : ""}.
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {shortlistedIds.length ? <span>{shortlistedIds.length} shortlisted</span> : null}
+              {hiddenIds.length ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setHiddenIds([])}>
+                  Restore hidden
+                </Button>
+              ) : null}
             </div>
           </div>
         </CardContent>
@@ -146,9 +188,23 @@ export default function ClientBums() {
       ) : null}
 
       <div className="grid gap-4">
-        {filteredProfiles.map((profile) => (
-          <BumProfileCard key={profile.user_id} profile={profile} />
+        {visibleProfiles.map((profile) => (
+          <BumProfileCard
+            key={profile.user_id}
+            profile={profile}
+            showClientActions
+            isShortlisted={shortlistedIds.includes(profile.user_id)}
+            onShortlist={() => toggleShortlist(profile.user_id)}
+            onHide={() => hideProfile(profile.user_id)}
+          />
         ))}
+
+        <PaginationControls
+          page={profilePage}
+          pageSize={CLIENT_BUMS_PAGE_SIZE}
+          totalItems={filteredProfiles.length}
+          onPageChange={setProfilePage}
+        />
       </div>
     </div>
   );

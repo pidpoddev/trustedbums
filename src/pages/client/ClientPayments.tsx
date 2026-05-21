@@ -18,12 +18,76 @@ import {
   listClaimInvoices,
   listCustomerPaymentReports,
   listOpportunityClaims,
+  type OpportunityClaimRecord,
 } from "@/lib/portalApi";
 import { parsePaymentImportFile, type PaymentImportRow } from "@/lib/paymentImport";
 import { formatDateForTimeZone } from "@/lib/timezone";
 
 type ClientInvoiceTypeFilter = "ALL" | "OUTSTANDING" | "PAID" | "HIGH_VALUE";
 type ClientReportTypeFilter = "ALL" | "INVOICED" | "PENDING_INVOICE" | "HAS_EXCLUSIONS";
+type PaymentEntryMode = "import" | "manual";
+
+type CommissionProgram = NonNullable<NonNullable<OpportunityClaimRecord["opportunity_registrations"]>["client_pay_programs"]>;
+
+function buildTieredCommissionSummary(
+  program: Pick<CommissionProgram, "year_1_rate" | "year_2_rate" | "year_3_rate" | "year_4_rate" | "year_5_rate" | "year_6_plus_rate">,
+) {
+  return `Y1 ${program.year_1_rate}% / Y2 ${program.year_2_rate}% / Y3 ${program.year_3_rate}% / Y4 ${program.year_4_rate}% / Y5 ${program.year_5_rate}% / Y6+ ${program.year_6_plus_rate}%`;
+}
+
+function getScheduleStartAt(claim: OpportunityClaimRecord | null | undefined) {
+  return (claim?.opportunity_registrations as { commission_schedule_start_at?: string | null } | null | undefined)
+    ?.commission_schedule_start_at;
+}
+
+function resolveTieredCommissionRate(program: CommissionProgram, scheduleStartAt: string | null | undefined, paidAt: string | null | undefined) {
+  if (!scheduleStartAt || !paidAt) {
+    return Number(program.year_1_rate);
+  }
+
+  const start = new Date(scheduleStartAt);
+  const paid = new Date(paidAt);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(paid.getTime()) || paid < start) {
+    return Number(program.year_1_rate);
+  }
+
+  const elapsedYears = Math.floor((paid.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  if (elapsedYears < 1) return Number(program.year_1_rate);
+  if (elapsedYears < 2) return Number(program.year_2_rate);
+  if (elapsedYears < 3) return Number(program.year_3_rate);
+  if (elapsedYears < 4) return Number(program.year_4_rate);
+  if (elapsedYears < 5) return Number(program.year_5_rate);
+  return Number(program.year_6_plus_rate);
+}
+
+function calculateTrustedBumsCommission(
+  program: CommissionProgram,
+  scheduleStartAt: string | null | undefined,
+  customerPaymentReceivedAt: string | null | undefined,
+  commissionableAmount: number,
+) {
+  const commissionRate = resolveTieredCommissionRate(program, scheduleStartAt, customerPaymentReceivedAt);
+  return {
+    commissionRate,
+    invoiceAmount: Number(((Number(commissionableAmount || 0) * commissionRate) / 100).toFixed(2)),
+  };
+}
+
+function getCommissionPlanInvoiceBlockReason(program: CommissionProgram | null | undefined) {
+  if (!program) {
+    return "This deal does not have a commission structure assigned.";
+  }
+
+  if (program.approval_status !== "APPROVED") {
+    return "This deal's commission structure is not approved yet.";
+  }
+
+  if (program.status !== "ACTIVE") {
+    return "This deal's commission structure is not active.";
+  }
+
+  return null;
+}
 
 const clientInvoiceTypeFilters: { value: ClientInvoiceTypeFilter; label: string }[] = [
   { value: "ALL", label: "All invoices" },
@@ -41,6 +105,19 @@ const clientReportTypeFilters: { value: ClientReportTypeFilter; label: string }[
 
 function money(value: number | null | undefined) {
   return `$${Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function getClaimCommissionPlan(claim: OpportunityClaimRecord) {
+  return claim.opportunity_registrations?.client_pay_programs ?? null;
+}
+
+function isInvoiceReadyClaim(claim: OpportunityClaimRecord) {
+  return !getCommissionPlanInvoiceBlockReason(getClaimCommissionPlan(claim));
+}
+
+function numberFromInput(value: string, fallback = 0) {
+  const parsed = Number(value || fallback);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 export default function ClientPayments() {
@@ -62,6 +139,7 @@ export default function ClientPayments() {
   const [invoiceTypeFilter, setInvoiceTypeFilter] = useState<ClientInvoiceTypeFilter>("ALL");
   const [reportQuery, setReportQuery] = useState("");
   const [reportTypeFilter, setReportTypeFilter] = useState<ClientReportTypeFilter>("ALL");
+  const [paymentEntryMode, setPaymentEntryMode] = useState<PaymentEntryMode>("import");
 
   const claimsQuery = useQuery({ queryKey: ["client-opportunity-claims"], queryFn: () => listOpportunityClaims() });
   const reportsQuery = useQuery({
@@ -79,6 +157,19 @@ export default function ClientPayments() {
     () => (claimsQuery.data ?? []).filter((claim) => ["APPROVED", "SCHEDULED", "MEETING_HELD", "CLOSED"].includes(claim.status)),
     [claimsQuery.data],
   );
+  const invoiceReadyClaims = useMemo(() => claims.filter(isInvoiceReadyClaim), [claims]);
+  const blockedClaimCount = claims.length - invoiceReadyClaims.length;
+  const selectedClaim = invoiceReadyClaims.find((claim) => claim.id === claimId);
+  const selectedProgram = selectedClaim ? getClaimCommissionPlan(selectedClaim) : null;
+  const selectedCommissionableAmount = numberFromInput(commissionableAmount || grossAmount, 0);
+  const selectedCommissionPreview = selectedProgram
+    ? calculateTrustedBumsCommission(
+        selectedProgram,
+        getScheduleStartAt(selectedClaim),
+        receivedAt,
+        selectedCommissionableAmount,
+      )
+    : null;
   const reports = reportsQuery.data ?? [];
   const invoices = invoicesQuery.data ?? [];
   const filteredInvoices = useMemo(() => {
@@ -135,12 +226,16 @@ export default function ClientPayments() {
 
   const reportMutation = useMutation({
     mutationFn: async () => {
+      if (!selectedClaim) {
+        throw new Error("Choose a claim with an approved active commission structure before generating an invoice.");
+      }
+
       const report = await createCustomerPaymentReport(user!, {
-        claimId,
+        claimId: selectedClaim.id,
         customerName,
-        grossAmount: Number(grossAmount || 0),
-        commissionableAmount: Number(commissionableAmount || grossAmount || 0),
-        excludedAmount: Number(excludedAmount || 0),
+        grossAmount: numberFromInput(grossAmount, 0),
+        commissionableAmount: numberFromInput(commissionableAmount || grossAmount, 0),
+        excludedAmount: excludedAmount.trim() ? numberFromInput(excludedAmount, 0) : undefined,
         customerPaymentReceivedAt: receivedAt,
         notes,
       });
@@ -238,8 +333,6 @@ export default function ClientPayments() {
     },
   });
 
-  const selectedClaim = claims.find((claim) => claim.id === claimId);
-
   async function handleImportFileChange(file: File | null) {
     if (!file) {
       setImportRows([]);
@@ -249,7 +342,7 @@ export default function ClientPayments() {
     }
 
     try {
-      const parsedRows = await parsePaymentImportFile(file, claims);
+      const parsedRows = await parsePaymentImportFile(file, invoiceReadyClaims);
       setImportRows(parsedRows);
       setImportFileName(file.name);
 
@@ -289,34 +382,60 @@ export default function ClientPayments() {
     <div className="space-y-6">
       <PageHeader
         title="Customer Payments"
-        description="Import monthly customer payments from finance or report them one by one to generate the Trusted Bums invoice(s) tied to approved claims."
+        description="Record customer payments and generate Trusted Bums invoices from approved deals with active commission structures."
       />
 
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <div className="space-y-6">
           <Card>
+            <CardContent className="grid gap-2 pt-6 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant={paymentEntryMode === "import" ? "default" : "outline"}
+                onClick={() => setPaymentEntryMode("import")}
+              >
+                Import payment CSV
+              </Button>
+              <Button
+                type="button"
+                variant={paymentEntryMode === "manual" ? "default" : "outline"}
+                onClick={() => setPaymentEntryMode("manual")}
+              >
+                Record one payment
+              </Button>
+            </CardContent>
+          </Card>
+
+          {paymentEntryMode === "import" ? (
+          <Card>
             <CardHeader>
-              <CardTitle className="font-display">Import monthly payment report</CardTitle>
+              <CardTitle className="font-display">Import customer payment CSV</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="payment-import-file">Finance CSV</Label>
+                <Label htmlFor="payment-import-file">Payment CSV</Label>
                 <Input
                   key={importInputKey}
                   id="payment-import-file"
                   type="file"
                   accept=".csv,text/csv"
-                  disabled={claimsQuery.isLoading}
+                  disabled={claimsQuery.isLoading || !invoiceReadyClaims.length}
                   onChange={(event) => handleImportFileChange(event.target.files?.[0] ?? null)}
                 />
                 <p className="text-xs text-muted-foreground">
                   Recommended columns: <code>claim_id</code> or <code>account_name</code>, plus <code>payment_date</code>,
-                  <code>gross_amount</code>, optional <code>commissionable_amount</code>, and optional <code>invoice_number</code>.
+                  <code>gross_amount</code>, optional <code>commissionable_amount</code>, and optional <code>invoice_number</code>. Rows only match approved deals with active commission structures.
                 </p>
                 {claimsQuery.isLoading ? (
-                  <p className="text-xs text-muted-foreground">Loading approved claims so we can match your CSV rows.</p>
+                  <p className="text-xs text-muted-foreground">Loading approved deals and commission structures so we can match your CSV rows.</p>
                 ) : null}
               </div>
+
+              {!claimsQuery.isLoading && blockedClaimCount ? (
+                <p className="text-xs text-warning">
+                  {blockedClaimCount} approved deal{blockedClaimCount === 1 ? "" : "s"} cannot be invoiced until an approved active commission structure is assigned.
+                </p>
+              ) : null}
 
               {importFileName ? (
                 <div className="rounded-xl border bg-muted/30 p-4">
@@ -375,10 +494,21 @@ export default function ClientPayments() {
                           </Badge>
                         </div>
 
-                        <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
-                          <div><span className="text-muted-foreground">Gross</span><br />{money(row.grossAmount)}</div>
-                          <div><span className="text-muted-foreground">Commissionable</span><br />{money(row.commissionableAmount)}</div>
+                        <div className="mt-3 grid gap-2 text-sm sm:grid-cols-4">
+                          <div><span className="text-muted-foreground">Gross revenue</span><br />{money(row.grossAmount)}</div>
+                          <div><span className="text-muted-foreground">Commissionable revenue</span><br />{money(row.commissionableAmount)}</div>
                           <div><span className="text-muted-foreground">Paid on</span><br />{row.customerPaymentReceivedAt || "Missing"}</div>
+                          {row.matchedClaim?.opportunity_registrations?.client_pay_programs ? (
+                            <div>
+                              <span className="text-muted-foreground">Trusted Bums commission</span><br />
+                              {money(calculateTrustedBumsCommission(
+                                row.matchedClaim.opportunity_registrations.client_pay_programs,
+                                getScheduleStartAt(row.matchedClaim),
+                                row.customerPaymentReceivedAt,
+                                row.commissionableAmount,
+                              ).invoiceAmount)}
+                            </div>
+                          ) : null}
                         </div>
 
                         <p className="mt-3 text-xs text-muted-foreground">{row.matchMessage}</p>
@@ -391,26 +521,28 @@ export default function ClientPayments() {
                     disabled={!matchedImportRows.length || importMutation.isPending}
                     onClick={() => importMutation.mutate()}
                   >
-                    {importMutation.isPending ? "Importing payments..." : `Import ${matchedImportRows.length} payment${matchedImportRows.length === 1 ? "" : "s"}`}
+                    {importMutation.isPending ? "Importing payments..." : `Import ${matchedImportRows.length} payment${matchedImportRows.length === 1 ? "" : "s"} and generate invoices`}
                   </Button>
                 </div>
               ) : null}
             </CardContent>
           </Card>
+          ) : null}
 
+          {paymentEntryMode === "manual" ? (
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Report customer payment</CardTitle>
+              <CardTitle className="font-display">Record one customer payment</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Label>Approved claim</Label>
+                <Label>Approved deal / intro claim</Label>
                 <Select value={claimId} onValueChange={setClaimId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select the claim tied to this payment" />
                   </SelectTrigger>
                   <SelectContent>
-                    {claims.map((claim) => (
+                    {invoiceReadyClaims.map((claim) => (
                       <SelectItem key={claim.id} value={claim.id}>
                         {claim.opportunity_registrations?.target_account_name ?? claim.contact_company} - {claim.contact_name}
                       </SelectItem>
@@ -418,7 +550,11 @@ export default function ClientPayments() {
                   </SelectContent>
                 </Select>
                 {!claims.length ? (
-                  <p className="text-xs text-muted-foreground">No approved claims are ready for payment reporting yet.</p>
+                  <p className="text-xs text-muted-foreground">No approved deals are ready for payment reporting yet.</p>
+                ) : !invoiceReadyClaims.length ? (
+                  <p className="text-xs text-warning">Approved deal / intro claims exist, but none have an approved active commission structure yet.</p>
+                ) : blockedClaimCount ? (
+                  <p className="text-xs text-muted-foreground">{blockedClaimCount} approved deal{blockedClaimCount === 1 ? "" : "s"} hidden until commission terms are approved.</p>
                 ) : null}
               </div>
 
@@ -433,11 +569,11 @@ export default function ClientPayments() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="grid gap-2">
-                  <Label>Gross amount received</Label>
+                  <Label>Gross revenue received</Label>
                   <Input type="number" value={grossAmount} onChange={(event) => setGrossAmount(event.target.value)} />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Commissionable amount</Label>
+                  <Label>Commissionable revenue</Label>
                   <Input
                     type="number"
                     value={commissionableAmount}
@@ -449,35 +585,51 @@ export default function ClientPayments() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="grid gap-2">
-                  <Label>Excluded amount</Label>
+                  <Label>Non-commissionable amount</Label>
                   <Input type="number" value={excludedAmount} onChange={(event) => setExcludedAmount(event.target.value)} />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Customer paid you on</Label>
+                  <Label>Customer payment date</Label>
                   <Input type="date" value={receivedAt} onChange={(event) => setReceivedAt(event.target.value)} />
                 </div>
               </div>
 
+              {selectedProgram && selectedCommissionPreview ? (
+                <div className="rounded-xl border bg-muted/30 p-4 text-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">Trusted Bums invoice preview</p>
+                      <p className="mt-1 text-muted-foreground">{selectedProgram.name} · {buildTieredCommissionSummary(selectedProgram)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display text-xl font-bold">{money(selectedCommissionPreview.invoiceAmount)}</p>
+                      <p className="text-xs text-muted-foreground">{selectedCommissionPreview.commissionRate}% of {money(selectedCommissionableAmount)}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="grid gap-2">
-                <Label>Notes / exclusions</Label>
+                <Label>Notes / non-commissionable details</Label>
                 <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} />
               </div>
 
               <Button
                 className="w-full"
-                disabled={!claimId || !grossAmount || reportMutation.isPending}
+                disabled={!selectedClaim || !grossAmount || reportMutation.isPending}
                 onClick={() => reportMutation.mutate()}
               >
-                Report payment and generate invoice
+                Record payment and generate Trusted Bums invoice
               </Button>
             </CardContent>
           </Card>
+          ) : null}
         </div>
 
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Generated invoices</CardTitle>
+              <CardTitle className="font-display">Trusted Bums invoices</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)] md:items-end">
@@ -517,7 +669,7 @@ export default function ClientPayments() {
                     <StatusBadge label={invoice.status} variant={invoice.status === "PAID" ? "success" : "info"} />
                   </div>
                   <p className="mt-3 font-display text-xl font-bold">{money(invoice.invoice_amount)}</p>
-                  <p className="text-xs text-muted-foreground">{invoice.commission_rate}% of reported commissionable revenue</p>
+                  <p className="text-xs text-muted-foreground">{invoice.commission_rate}% of commissionable revenue</p>
                 </div>
               ))}
               {!invoices.length ? <p className="text-sm text-muted-foreground">No invoices generated yet.</p> : null}
@@ -529,7 +681,7 @@ export default function ClientPayments() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Reported customer payments</CardTitle>
+              <CardTitle className="font-display">Recorded customer payments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)] md:items-end">
@@ -569,13 +721,13 @@ export default function ClientPayments() {
                     <StatusBadge label={report.status.replaceAll("_", " ")} variant={report.status === "INVOICE_GENERATED" ? "success" : "info"} />
                   </div>
                   <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
-                    <div><span className="text-muted-foreground">Gross</span><br />{money(report.gross_amount)}</div>
-                    <div><span className="text-muted-foreground">Commissionable</span><br />{money(report.commissionable_amount)}</div>
-                    <div><span className="text-muted-foreground">Excluded</span><br />{money(report.excluded_amount)}</div>
+                    <div><span className="text-muted-foreground">Gross revenue</span><br />{money(report.gross_amount)}</div>
+                    <div><span className="text-muted-foreground">Commissionable revenue</span><br />{money(report.commissionable_amount)}</div>
+                    <div><span className="text-muted-foreground">Non-commissionable</span><br />{money(report.excluded_amount)}</div>
                   </div>
                 </div>
               ))}
-              {!reports.length ? <p className="text-sm text-muted-foreground">No customer payments reported yet.</p> : null}
+              {!reports.length ? <p className="text-sm text-muted-foreground">No customer payments recorded yet.</p> : null}
               {reports.length > 0 && !filteredReports.length ? (
                 <p className="text-sm text-muted-foreground">No payment reports match your current filters.</p>
               ) : null}

@@ -1,5 +1,6 @@
-import { ExternalLink, Link2, MapPin, ShieldCheck, Star, BriefcaseBusiness } from "lucide-react";
+import { ExternalLink, Link2, MapPin, ShieldCheck, Star, BriefcaseBusiness, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
@@ -18,6 +19,10 @@ interface BumProfileCardProps {
     lastLoggedInAt?: string | null;
   };
   showAdminMeta?: boolean;
+  showClientActions?: boolean;
+  isShortlisted?: boolean;
+  onShortlist?: () => void;
+  onHide?: () => void;
 }
 
 function formatList(items: string[] | undefined, emptyLabel: string) {
@@ -92,9 +97,12 @@ function profileName(profile: BumProfileCardProps["profile"]) {
   );
 }
 
-export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCardProps) {
+export function BumProfileCard({ profile, showAdminMeta = false, showClientActions = false, isShortlisted = false, onShortlist, onHide }: BumProfileCardProps) {
   const timeZone = useUserTimeZone();
   const acceptedTerms = profile.acceptedTerms ?? [];
+  const displayName = profileName(profile);
+  const requestSubject = encodeURIComponent(`Trusted Bums intro request: ${displayName}`);
+  const questionSubject = encodeURIComponent(`Question about Trusted Bum: ${displayName}`);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -102,7 +110,7 @@ export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCar
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-display text-lg font-bold">{profileName(profile)}</h3>
+              <h3 className="font-display text-lg font-bold">{displayName}</h3>
               <StatusBadge label={availabilityLabel(profile.availability_status)} variant="info" />
               <StatusBadge
                 label={profile.verification_status === "verified" ? "Verified" : profile.verification_status === "reviewed" ? "Reviewed" : "Self reported"}
@@ -244,6 +252,23 @@ export function BumProfileCard({ profile, showAdminMeta = false }: BumProfileCar
                 </div>
               </div>
             ) : null}
+          </div>
+        ) : null}
+
+        {showClientActions ? (
+          <div className="flex flex-wrap gap-2 border-t pt-4">
+            <Button type="button" size="sm" variant={isShortlisted ? "secondary" : "outline"} onClick={onShortlist}>
+              {isShortlisted ? "Shortlisted" : "Shortlist"}
+            </Button>
+            <Button size="sm" asChild>
+              <a href={`mailto:bums@trustedbums.com?subject=${requestSubject}`}>Request intro</a>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <a href={`mailto:bums@trustedbums.com?subject=${questionSubject}`}>Ask Trusted Bums</a>
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={onHide}>
+              <EyeOff className="mr-2 h-4 w-4" /> Hide
+            </Button>
           </div>
         ) : null}
       </CardContent>
