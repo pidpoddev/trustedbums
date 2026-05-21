@@ -3268,18 +3268,30 @@ export async function publishLegalDocument(
   return data;
 }
 
-export async function listAdminEmailTemplates() {
-  const { data, error } = await supabase
-    .from("admin_email_templates")
-    .select("*")
-    .order("name", { ascending: true })
-    .returns<AdminEmailTemplateRecord[]>();
+type AdminEmailOperationResponse<T> = { data?: T; error?: string };
+
+async function invokeAdminEmailOperation<T>(operation: string, payload?: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke<AdminEmailOperationResponse<T>>("send-admin-email", {
+    body: { operation, payload: payload ?? {} },
+  });
 
   if (error) {
     throw error;
   }
 
-  return data ?? [];
+  if (!data) {
+    throw new Error("Email function returned no response.");
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data.data as T;
+}
+
+export async function listAdminEmailTemplates() {
+  return await invokeAdminEmailOperation<AdminEmailTemplateRecord[]>("list_templates");
 }
 
 function slugifyEmailTemplateName(value: string) {
@@ -3302,38 +3314,20 @@ export async function createAdminEmailTemplate(
     throw new Error("Only admins can create email templates.");
   }
 
-  const { data, error } = await supabase
-    .from("admin_email_templates")
-    .insert({
-      slug: input.slug?.trim() || slugifyEmailTemplateName(input.name),
-      name: input.name.trim(),
-      description: toNullableString(input.description),
-      recipient_group: input.recipient_group,
-      trigger_event: input.trigger_event,
-      subject: input.subject.trim(),
-      body: input.body.trim(),
-      metadata_fields: input.metadata_fields,
-      category: input.category,
-      reply_to: toNullableString(input.reply_to),
-      rate_limit_per_hour: input.rate_limit_per_hour,
-      is_active: input.is_active,
-      created_by: user.id,
-      updated_by: user.id,
-    })
-    .select("*")
-    .single<AdminEmailTemplateRecord>();
-
-  if (error) {
-    throw error;
-  }
-
-  await createAuditEvent(user, "admin_email_template_created", "admin_email_templates", data.id, {
-    slug: data.slug,
-    recipient_group: data.recipient_group,
-    trigger_event: data.trigger_event,
+  return await invokeAdminEmailOperation<AdminEmailTemplateRecord>("create_template", {
+    slug: input.slug?.trim() || slugifyEmailTemplateName(input.name),
+    name: input.name,
+    description: input.description,
+    recipient_group: input.recipient_group,
+    trigger_event: input.trigger_event,
+    subject: input.subject,
+    body: input.body,
+    metadata_fields: input.metadata_fields,
+    category: input.category,
+    reply_to: input.reply_to,
+    rate_limit_per_hour: input.rate_limit_per_hour,
+    is_active: input.is_active,
   });
-
-  return data;
 }
 
 export async function saveAdminEmailTemplate(user: AuthUser, template: AdminEmailTemplateRecord) {
@@ -3341,96 +3335,36 @@ export async function saveAdminEmailTemplate(user: AuthUser, template: AdminEmai
     throw new Error("Only admins can edit email templates.");
   }
 
-  const { data, error } = await supabase
-    .from("admin_email_templates")
-    .update({
-      name: template.name.trim(),
-      description: toNullableString(template.description),
-      recipient_group: template.recipient_group,
-      trigger_event: template.trigger_event,
-      subject: template.subject.trim(),
-      body: template.body.trim(),
-      metadata_fields: template.metadata_fields,
-      category: template.category,
-      reply_to: toNullableString(template.reply_to),
-      rate_limit_per_hour: template.rate_limit_per_hour,
-      is_active: template.is_active,
-      updated_by: user.id,
-    })
-    .eq("id", template.id)
-    .select("*")
-    .single<AdminEmailTemplateRecord>();
-
-  if (error) {
-    throw error;
-  }
-
-  await createAuditEvent(user, "admin_email_template_updated", "admin_email_templates", data.id, {
-    slug: data.slug,
-    recipient_group: data.recipient_group,
-    trigger_event: data.trigger_event,
+  return await invokeAdminEmailOperation<AdminEmailTemplateRecord>("update_template", {
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    recipient_group: template.recipient_group,
+    trigger_event: template.trigger_event,
+    subject: template.subject,
+    body: template.body,
+    metadata_fields: template.metadata_fields,
+    category: template.category,
+    reply_to: template.reply_to,
+    rate_limit_per_hour: template.rate_limit_per_hour,
+    is_active: template.is_active,
   });
-
-  return data;
 }
 
 export async function listAdminEmailDeliveries() {
-  const { data, error } = await supabase
-    .from("admin_email_deliveries")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(50)
-    .returns<AdminEmailDeliveryRecord[]>();
-
-  if (error) {
-    throw error;
-  }
-
-  return data ?? [];
+  return await invokeAdminEmailOperation<AdminEmailDeliveryRecord[]>("list_deliveries");
 }
 
 export async function listAdminEmailEngagementSummary() {
-  const { data, error } = await supabase
-    .from("admin_email_engagement_summary")
-    .select("*")
-    .order("engagement_score", { ascending: false })
-    .limit(50)
-    .returns<AdminEmailEngagementSummaryRecord[]>();
-
-  if (error) {
-    throw error;
-  }
-
-  return data ?? [];
+  return await invokeAdminEmailOperation<AdminEmailEngagementSummaryRecord[]>("list_engagement");
 }
 
 export async function listAdminEmailCampaigns() {
-  const { data, error } = await supabase
-    .from("admin_email_campaigns")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(50)
-    .returns<AdminEmailCampaignRecord[]>();
-
-  if (error) {
-    throw error;
-  }
-
-  return data ?? [];
+  return await invokeAdminEmailOperation<AdminEmailCampaignRecord[]>("list_campaigns");
 }
 
 export async function listAdminEmailTriggerRules() {
-  const { data, error } = await supabase
-    .from("admin_email_trigger_rules")
-    .select("*, admin_email_templates(id, name, slug)")
-    .order("created_at", { ascending: false })
-    .returns<AdminEmailTriggerRuleRecord[]>();
-
-  if (error) {
-    throw error;
-  }
-
-  return data ?? [];
+  return await invokeAdminEmailOperation<AdminEmailTriggerRuleRecord[]>("list_trigger_rules");
 }
 
 export async function createAdminEmailTriggerRule(user: AuthUser, input: AdminEmailTriggerRuleInput) {
@@ -3438,18 +3372,7 @@ export async function createAdminEmailTriggerRule(user: AuthUser, input: AdminEm
     throw new Error("Only admins can create email trigger rules.");
   }
 
-  const { data, error } = await supabase
-    .from("admin_email_trigger_rules")
-    .insert({ ...input, created_by: user.id })
-    .select("*, admin_email_templates(id, name, slug)")
-    .single<AdminEmailTriggerRuleRecord>();
-
-  if (error) {
-    throw error;
-  }
-
-  await createAuditEvent(user, "admin_email_trigger_rule_created", "admin_email_trigger_rules", data.id, { trigger_event: data.trigger_event });
-  return data;
+  return await invokeAdminEmailOperation<AdminEmailTriggerRuleRecord>("create_trigger_rule", input);
 }
 
 export async function updateAdminEmailTriggerRule(user: AuthUser, id: string, input: AdminEmailTriggerRuleInput) {
@@ -3457,33 +3380,11 @@ export async function updateAdminEmailTriggerRule(user: AuthUser, id: string, in
     throw new Error("Only admins can update email trigger rules.");
   }
 
-  const { data, error } = await supabase
-    .from("admin_email_trigger_rules")
-    .update(input)
-    .eq("id", id)
-    .select("*, admin_email_templates(id, name, slug)")
-    .single<AdminEmailTriggerRuleRecord>();
-
-  if (error) {
-    throw error;
-  }
-
-  await createAuditEvent(user, "admin_email_trigger_rule_updated", "admin_email_trigger_rules", data.id, { trigger_event: data.trigger_event, is_active: data.is_active });
-  return data;
+  return await invokeAdminEmailOperation<AdminEmailTriggerRuleRecord>("update_trigger_rule", { id, ...input });
 }
 
 export async function listAdminEmailSchedules() {
-  const { data, error } = await supabase
-    .from("admin_email_schedules")
-    .select("*, admin_email_templates(id, name, slug)")
-    .order("created_at", { ascending: false })
-    .returns<AdminEmailScheduleRecord[]>();
-
-  if (error) {
-    throw error;
-  }
-
-  return data ?? [];
+  return await invokeAdminEmailOperation<AdminEmailScheduleRecord[]>("list_schedules");
 }
 
 export async function createAdminEmailSchedule(user: AuthUser, input: AdminEmailScheduleInput) {
@@ -3491,18 +3392,7 @@ export async function createAdminEmailSchedule(user: AuthUser, input: AdminEmail
     throw new Error("Only admins can create recurring emails.");
   }
 
-  const { data, error } = await supabase
-    .from("admin_email_schedules")
-    .insert({ ...input, created_by: user.id, updated_by: user.id })
-    .select("*, admin_email_templates(id, name, slug)")
-    .single<AdminEmailScheduleRecord>();
-
-  if (error) {
-    throw error;
-  }
-
-  await createAuditEvent(user, "admin_email_schedule_created", "admin_email_schedules", data.id, { cron_expression: data.cron_expression, template_id: data.template_id });
-  return data;
+  return await invokeAdminEmailOperation<AdminEmailScheduleRecord>("create_schedule", input);
 }
 
 export async function updateAdminEmailSchedule(user: AuthUser, id: string, input: AdminEmailScheduleInput) {
@@ -3510,43 +3400,11 @@ export async function updateAdminEmailSchedule(user: AuthUser, id: string, input
     throw new Error("Only admins can update recurring emails.");
   }
 
-  const { data, error } = await supabase
-    .from("admin_email_schedules")
-    .update({ ...input, updated_by: user.id })
-    .eq("id", id)
-    .select("*, admin_email_templates(id, name, slug)")
-    .single<AdminEmailScheduleRecord>();
-
-  if (error) {
-    throw error;
-  }
-
-  await createAuditEvent(user, "admin_email_schedule_updated", "admin_email_schedules", data.id, { cron_expression: data.cron_expression, is_active: data.is_active });
-  return data;
+  return await invokeAdminEmailOperation<AdminEmailScheduleRecord>("update_schedule", { id, ...input });
 }
 
 export async function getAdminEmailBrandSettings() {
-  const { data, error } = await supabase
-    .from("admin_email_brand_settings")
-    .select("*")
-    .eq("id", true)
-    .maybeSingle<AdminEmailBrandSettingsRecord>();
-
-  if (error) {
-    throw error;
-  }
-
-  return data ?? {
-    id: true,
-    sender_name: "Trusted Bums",
-    logo_url: "https://trustedbums.com/logo-mark.svg",
-    accent_color: "#ea580c",
-    footer_text: "Trusted Bums connects relationship-led sellers with companies that need warm introductions.",
-    physical_address: null,
-    updated_by: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  return await invokeAdminEmailOperation<AdminEmailBrandSettingsRecord>("get_brand_settings");
 }
 
 export async function saveAdminEmailBrandSettings(user: AuthUser, input: AdminEmailBrandSettingsInput) {
@@ -3554,18 +3412,7 @@ export async function saveAdminEmailBrandSettings(user: AuthUser, input: AdminEm
     throw new Error("Only admins can update email branding.");
   }
 
-  const { data, error } = await supabase
-    .from("admin_email_brand_settings")
-    .upsert({ id: true, ...input, updated_by: user.id }, { onConflict: "id" })
-    .select("*")
-    .single<AdminEmailBrandSettingsRecord>();
-
-  if (error) {
-    throw error;
-  }
-
-  await createAuditEvent(user, "admin_email_brand_settings_updated", "admin_email_brand_settings", undefined, { sender_name: data.sender_name });
-  return data;
+  return await invokeAdminEmailOperation<AdminEmailBrandSettingsRecord>("save_brand_settings", input);
 }
 
 export async function sendAdminEmail(input: AdminEmailSendInput) {

@@ -11,8 +11,23 @@ interface BumProfileRow { user_id: string; industries: string[] | null; profiles
 type RecipientGroup = "ALL_USERS" | "CLIENT_COMPANY" | "ALL_CLIENTS" | "ALL_BUMS" | "BUM_INDUSTRY_MATCH" | "ADMINS" | "CUSTOM";
 type EmailCategory = "transactional" | "opportunity_updates" | "client_alerts" | "bum_marketplace_alerts" | "admin_announcements" | "onboarding" | "marketing";
 type SendMode = "manual" | "action" | "preview" | "test";
+type AdminEmailOperation =
+  | "list_templates"
+  | "create_template"
+  | "update_template"
+  | "list_deliveries"
+  | "list_engagement"
+  | "list_campaigns"
+  | "list_trigger_rules"
+  | "create_trigger_rule"
+  | "update_trigger_rule"
+  | "list_schedules"
+  | "create_schedule"
+  | "update_schedule"
+  | "get_brand_settings"
+  | "save_brand_settings";
 
-interface SendAdminEmailRequest { mode?: SendMode; templateId?: string; templateSlug?: string; recipientGroup?: RecipientGroup; recipientEmails?: string[]; testRecipientEmail?: string; subject?: string; body?: string; metadata?: Record<string, unknown>; triggeredBy?: string }
+interface SendAdminEmailRequest { operation?: AdminEmailOperation; payload?: Record<string, unknown>; mode?: SendMode; templateId?: string; templateSlug?: string; recipientGroup?: RecipientGroup; recipientEmails?: string[]; testRecipientEmail?: string; subject?: string; body?: string; metadata?: Record<string, unknown>; triggeredBy?: string }
 interface Recipient { profileId?: string | null; email: string; name?: string | null; suppressed?: boolean; suppressionReason?: string }
 
 const corsHeaders = { "Access-Control-Allow-Headers": "authorization, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" };
@@ -130,12 +145,195 @@ async function resolveRecipients(group: RecipientGroup, input: SendAdminEmailReq
 async function applySuppressions(recipients: Recipient[], category: EmailCategory, includeSuppressed: boolean) { if (!recipients.length || category === "transactional") return recipients; const emails = recipients.map((recipient) => recipient.email); const [{ data: suppressions, error: suppressionError }, { data: preferences, error: preferenceError }] = await Promise.all([supabaseAdmin.from("admin_email_suppressions").select("email, reason").in("email", emails), supabaseAdmin.from("admin_email_preferences").select("email, category").eq("category", category).eq("opted_out", true).in("email", emails)]); if (suppressionError) throw suppressionError; if (preferenceError) throw preferenceError; const suppressionByEmail = new Map((suppressions ?? []).map((row) => [row.email.toLowerCase(), row.reason])); const optedOutEmails = new Set((preferences ?? []).map((row) => row.email.toLowerCase())); return recipients.map((recipient) => { const reason = suppressionByEmail.get(recipient.email) ?? (optedOutEmails.has(recipient.email) ? "OPTED_OUT" : undefined); return reason ? { ...recipient, suppressed: true, suppressionReason: reason } : recipient }).filter((recipient) => includeSuppressed || !recipient.suppressed) }
 async function sendMicrosoftEmail(accessToken: string, recipient: string, subject: string, body: string, deliveryId: string, replyTo: string | null, brand: BrandSettingsRow) { const response = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftSenderEmail)}/sendMail`, { method: "POST", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: { subject, body: { contentType: "HTML", content: htmlFromText(body, deliveryId, brand) }, toRecipients: [{ emailAddress: { address: recipient } }], replyTo: replyTo ? [{ emailAddress: { address: replyTo } }] : undefined }, saveToSentItems: true }) }); if (!response.ok) { const payload = await response.json().catch(() => ({})) as { error?: { code?: string; message?: string } }; const detail = [payload.error?.code, payload.error?.message].filter(Boolean).join(": "); throw new Error(detail || `Microsoft Graph sendMail failed with HTTP ${response.status}.`) } }
 
+function stringValue(value: unknown, fallback = "") { return typeof value === "string" ? value.trim() : fallback }
+function nullableString(value: unknown) { const text = stringValue(value); return text ? text : null }
+function booleanValue(value: unknown, fallback = false) { return typeof value === "boolean" ? value : fallback }
+function numberValue(value: unknown, fallback = 0) { return typeof value === "number" && Number.isFinite(value) ? value : fallback }
+function recordValue(value: unknown) { return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {} }
+function stringArrayValue(value: unknown) { return Array.isArray(value) ? value.map((item) => stringValue(item)).filter(Boolean) : [] }
+function slugifyEmailTemplateName(value: string) { return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || `template-${Date.now()}` }
+function requireId(payload: Record<string, unknown>) { const id = stringValue(payload.id); if (!id) throw new Error("A record id is required."); return id }
+function requireText(payload: Record<string, unknown>, key: string) { const value = stringValue(payload[key]); if (!value) throw new Error(`${key} is required.`); return value }
+
+async function auditAdminEmailEvent(profile: ProfileRow, eventType: string, entityType?: string, entityId?: string, eventData: Record<string, unknown> = {}) {
+  const { error } = await supabaseAdmin.from("audit_events").insert({
+    user_id: profile.id,
+    event_type: eventType,
+    entity_type: entityType ?? null,
+    entity_id: entityId ?? null,
+    event_data: eventData,
+  });
+  if (error) console.warn("Unable to write admin email audit event", error);
+}
+
+function templateInput(payload: Record<string, unknown>, profile: ProfileRow, includeCreatedBy: boolean) {
+  const name = requireText(payload, "name");
+  const values: Record<string, unknown> = {
+    name,
+    description: nullableString(payload.description),
+    recipient_group: requireText(payload, "recipient_group"),
+    trigger_event: nullableString(payload.trigger_event),
+    subject: requireText(payload, "subject"),
+    body: requireText(payload, "body"),
+    metadata_fields: stringArrayValue(payload.metadata_fields),
+    category: requireText(payload, "category"),
+    reply_to: nullableString(payload.reply_to),
+    rate_limit_per_hour: numberValue(payload.rate_limit_per_hour, 120),
+    is_active: booleanValue(payload.is_active, true),
+    updated_by: profile.id,
+  };
+  if (includeCreatedBy) {
+    values.slug = stringValue(payload.slug) || slugifyEmailTemplateName(name);
+    values.created_by = profile.id;
+  }
+  return values;
+}
+
+function triggerRuleInput(payload: Record<string, unknown>) {
+  return {
+    name: requireText(payload, "name"),
+    trigger_event: requireText(payload, "trigger_event"),
+    template_id: requireText(payload, "template_id"),
+    is_active: booleanValue(payload.is_active, true),
+    delay_minutes: numberValue(payload.delay_minutes, 0),
+    conditions: recordValue(payload.conditions),
+  };
+}
+
+function scheduleInput(payload: Record<string, unknown>, profile: ProfileRow, includeCreatedBy: boolean) {
+  const values: Record<string, unknown> = {
+    name: requireText(payload, "name"),
+    template_id: requireText(payload, "template_id"),
+    is_active: booleanValue(payload.is_active, true),
+    cron_expression: requireText(payload, "cron_expression"),
+    recipient_group: requireText(payload, "recipient_group"),
+    recipient_emails: stringArrayValue(payload.recipient_emails),
+    metadata: recordValue(payload.metadata),
+    category: requireText(payload, "category"),
+    next_run_at: nullableString(payload.next_run_at),
+    updated_by: profile.id,
+  };
+  if (includeCreatedBy) values.created_by = profile.id;
+  return values;
+}
+
+function brandSettingsDefaults() {
+  const now = new Date().toISOString();
+  return {
+    id: true,
+    sender_name: "Trusted Bums",
+    logo_url: "https://trustedbums.com/logo-mark.svg",
+    accent_color: "#ea580c",
+    footer_text: "Trusted Bums connects relationship-led sellers with companies that need warm introductions.",
+    physical_address: null,
+    updated_by: null,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+async function handleAdminEmailOperation(operation: AdminEmailOperation, payload: Record<string, unknown>, currentProfile: ProfileRow) {
+  if (!isAdmin(currentProfile)) return json(403, { error: "Only admins can manage email tools." });
+
+  switch (operation) {
+    case "list_templates": {
+      const { data, error } = await supabaseAdmin.from("admin_email_templates").select("*").order("name", { ascending: true });
+      if (error) throw error;
+      return json(200, { data: data ?? [] });
+    }
+    case "create_template": {
+      const { data, error } = await supabaseAdmin.from("admin_email_templates").insert(templateInput(payload, currentProfile, true)).select("*").single();
+      if (error) throw error;
+      await auditAdminEmailEvent(currentProfile, "admin_email_template_created", "admin_email_templates", data.id, { slug: data.slug, recipient_group: data.recipient_group, trigger_event: data.trigger_event });
+      return json(200, { data });
+    }
+    case "update_template": {
+      const id = requireId(payload);
+      const { data, error } = await supabaseAdmin.from("admin_email_templates").update(templateInput(payload, currentProfile, false)).eq("id", id).select("*").single();
+      if (error) throw error;
+      await auditAdminEmailEvent(currentProfile, "admin_email_template_updated", "admin_email_templates", data.id, { slug: data.slug, recipient_group: data.recipient_group, trigger_event: data.trigger_event });
+      return json(200, { data });
+    }
+    case "list_deliveries": {
+      const { data, error } = await supabaseAdmin.from("admin_email_deliveries").select("*").order("created_at", { ascending: false }).limit(50);
+      if (error) throw error;
+      return json(200, { data: data ?? [] });
+    }
+    case "list_engagement": {
+      const { data, error } = await supabaseAdmin.from("admin_email_engagement_summary").select("*").order("engagement_score", { ascending: false }).limit(50);
+      if (error) throw error;
+      return json(200, { data: data ?? [] });
+    }
+    case "list_campaigns": {
+      const { data, error } = await supabaseAdmin.from("admin_email_campaigns").select("*").order("created_at", { ascending: false }).limit(50);
+      if (error) throw error;
+      return json(200, { data: data ?? [] });
+    }
+    case "list_trigger_rules": {
+      const { data, error } = await supabaseAdmin.from("admin_email_trigger_rules").select("*, admin_email_templates(id, name, slug)").order("created_at", { ascending: false });
+      if (error) throw error;
+      return json(200, { data: data ?? [] });
+    }
+    case "create_trigger_rule": {
+      const { data, error } = await supabaseAdmin.from("admin_email_trigger_rules").insert({ ...triggerRuleInput(payload), created_by: currentProfile.id }).select("*, admin_email_templates(id, name, slug)").single();
+      if (error) throw error;
+      await auditAdminEmailEvent(currentProfile, "admin_email_trigger_rule_created", "admin_email_trigger_rules", data.id, { trigger_event: data.trigger_event });
+      return json(200, { data });
+    }
+    case "update_trigger_rule": {
+      const id = requireId(payload);
+      const { data, error } = await supabaseAdmin.from("admin_email_trigger_rules").update(triggerRuleInput(payload)).eq("id", id).select("*, admin_email_templates(id, name, slug)").single();
+      if (error) throw error;
+      await auditAdminEmailEvent(currentProfile, "admin_email_trigger_rule_updated", "admin_email_trigger_rules", data.id, { trigger_event: data.trigger_event, is_active: data.is_active });
+      return json(200, { data });
+    }
+    case "list_schedules": {
+      const { data, error } = await supabaseAdmin.from("admin_email_schedules").select("*, admin_email_templates(id, name, slug)").order("created_at", { ascending: false });
+      if (error) throw error;
+      return json(200, { data: data ?? [] });
+    }
+    case "create_schedule": {
+      const { data, error } = await supabaseAdmin.from("admin_email_schedules").insert(scheduleInput(payload, currentProfile, true)).select("*, admin_email_templates(id, name, slug)").single();
+      if (error) throw error;
+      await auditAdminEmailEvent(currentProfile, "admin_email_schedule_created", "admin_email_schedules", data.id, { cron_expression: data.cron_expression, template_id: data.template_id });
+      return json(200, { data });
+    }
+    case "update_schedule": {
+      const id = requireId(payload);
+      const { data, error } = await supabaseAdmin.from("admin_email_schedules").update(scheduleInput(payload, currentProfile, false)).eq("id", id).select("*, admin_email_templates(id, name, slug)").single();
+      if (error) throw error;
+      await auditAdminEmailEvent(currentProfile, "admin_email_schedule_updated", "admin_email_schedules", data.id, { cron_expression: data.cron_expression, is_active: data.is_active });
+      return json(200, { data });
+    }
+    case "get_brand_settings": {
+      const { data, error } = await supabaseAdmin.from("admin_email_brand_settings").select("*").eq("id", true).maybeSingle();
+      if (error) throw error;
+      return json(200, { data: data ?? brandSettingsDefaults() });
+    }
+    case "save_brand_settings": {
+      const { data, error } = await supabaseAdmin.from("admin_email_brand_settings").upsert({
+        id: true,
+        sender_name: requireText(payload, "sender_name"),
+        logo_url: requireText(payload, "logo_url"),
+        accent_color: requireText(payload, "accent_color"),
+        footer_text: requireText(payload, "footer_text"),
+        physical_address: nullableString(payload.physical_address),
+        updated_by: currentProfile.id,
+      }, { onConflict: "id" }).select("*").single();
+      if (error) throw error;
+      await auditAdminEmailEvent(currentProfile, "admin_email_brand_settings_updated", "admin_email_brand_settings", undefined, { sender_name: data.sender_name });
+      return json(200, { data });
+    }
+  }
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json(405, { error: "Method not allowed." });
   try {
     const input = await request.json().catch(() => ({})) as SendAdminEmailRequest;
     const currentProfile = await getCurrentProfile(getBearerToken(request));
+    if (input.operation) return await handleAdminEmailOperation(input.operation, recordValue(input.payload), currentProfile);
     const mode: SendMode = input.mode === "action" || input.mode === "preview" || input.mode === "test" ? input.mode : "manual";
     const template = await getTemplate(input);
     const metadata = normalizeMetadata(input.metadata);
@@ -171,7 +369,7 @@ Deno.serve(async (request) => {
     await supabaseAdmin.from("admin_email_campaigns").update({ status: failed ? "FAILED" : "SENT", sent_at: new Date().toISOString() }).eq("id", campaign.id);
     return json(200, { mode, campaignId: campaign.id, sent: results.filter((result) => result.status === "SENT").length, failed, suppressed: suppressedCount, results });
   } catch (error) {
-    console.error("Unable to send admin email", error);
-    return json(500, { error: error instanceof Error ? error.message : "Unable to send admin email." });
+    console.error("Unable to process admin email request", error);
+    return json(500, { error: error instanceof Error ? error.message : "Unable to process admin email request." });
   }
 });
