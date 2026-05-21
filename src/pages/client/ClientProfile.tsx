@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
+import { ArrowRight, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +12,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { getOwnClientCompany, updateOwnClientCompanyProfile } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
@@ -92,6 +95,7 @@ export default function ClientProfile() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const timeZone = useUserTimeZone();
+  const { terms, acceptance, hasAcceptedCurrentTerms } = useCurrentTermsState();
   const queryClient = useQueryClient();
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
@@ -323,6 +327,40 @@ export default function ClientProfile() {
             </form>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display flex items-center gap-2 text-lg">
+              <FileCheck className="h-5 w-5 text-primary" />
+              Partner Terms
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className={hasAcceptedCurrentTerms ? "rounded-md bg-success/10 p-4 text-sm" : "rounded-md bg-warning/10 p-4 text-sm"}>
+              <p className={hasAcceptedCurrentTerms ? "font-medium text-success" : "font-medium text-warning"}>
+                {hasAcceptedCurrentTerms ? "Current terms accepted" : "New partner terms need review"}
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "Acceptance pending"} · Version {terms?.version ?? "current"}
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Button asChild variant={hasAcceptedCurrentTerms ? "outline" : "default"} className="w-full justify-between">
+                <Link to="/client/terms">
+                  {hasAcceptedCurrentTerms ? "Review terms" : "Review and accept terms"}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full justify-between">
+                <Link to="/client/agreements">
+                  View agreement records
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
 
         <Card>
           <CardHeader>

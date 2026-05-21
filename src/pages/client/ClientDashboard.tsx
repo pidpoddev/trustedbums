@@ -55,7 +55,7 @@ export default function ClientDashboard() {
   const clientAccessRole = user?.role === "CLIENT" ? user.clientAccessRole ?? "CLIENT_ADMIN" : undefined;
   const isFinanceUser = clientAccessRole === "CLIENT_FINANCE";
   const canManagePayments = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_FINANCE";
-  const { terms, acceptance, hasAcceptedCurrentTerms } = useCurrentTermsState();
+  const { hasAcceptedCurrentTerms } = useCurrentTermsState();
   const opportunitiesQuery = useQuery({
     queryKey: ["client-opportunity-registrations", user?.id],
     queryFn: () => listOpportunityRegistrations(),
@@ -112,7 +112,7 @@ export default function ClientDashboard() {
   const unpaidInvoices = invoices.filter((invoice) => !["PAID", "VOID"].includes(invoice.status)).length;
   const financeNextActions: DashboardAction[] = [
     !hasAcceptedCurrentTerms
-      ? { title: "Review partner terms", description: "Terms need acceptance before the workspace is current.", to: "/client/terms", primary: true }
+      ? { title: "Review partner terms", description: "Terms need acceptance before the workspace is current.", to: "/client/profile", primary: true }
       : null,
     paymentReports.length
       ? { title: "Import next payment file", description: "Add the latest customer payment CSV.", to: "/client/payments", primary: !pendingPaymentReports && !unpaidInvoices }
@@ -127,7 +127,7 @@ export default function ClientDashboard() {
   ].filter(Boolean) as DashboardAction[];
   const clientNextActions: DashboardAction[] = [
     !hasAcceptedCurrentTerms
-      ? { title: "Review partner terms", description: "Accept the current terms before working new activity.", to: "/client/terms", primary: true }
+      ? { title: "Review partner terms", description: "Accept the current terms from Company Profile before working new activity.", to: "/client/profile", primary: true }
       : null,
     targets.length
       ? { title: "Register an opportunity", description: "Submit a deal for review and commission tracking.", to: "/client/opportunities/new", primary: !activeCount }
@@ -209,29 +209,6 @@ export default function ClientDashboard() {
 
           <div className="space-y-6">
             <NextActionsCard actions={financeNextActions} />
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display">Partner Terms</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className={hasAcceptedCurrentTerms ? "rounded-md bg-success/10 p-4 text-sm" : "rounded-md bg-warning/10 p-4 text-sm"}>
-                  <p className={hasAcceptedCurrentTerms ? "font-medium text-success" : "font-medium text-warning"}>
-                    {hasAcceptedCurrentTerms ? "Current terms accepted" : "New partner terms need review"}
-                  </p>
-                  <p className="text-muted-foreground mt-1">
-                    {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "Acceptance pending"} · Version{" "}
-                    {terms?.version ?? "v1"}
-                  </p>
-                </div>
-                <Button asChild variant={hasAcceptedCurrentTerms ? "outline" : "default"} className="w-full">
-                  <Link to="/client/terms">
-                    {hasAcceptedCurrentTerms ? "Review terms" : "Review and accept terms"}{" "}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
 
             <Card>
               <CardHeader>
@@ -343,29 +320,6 @@ export default function ClientDashboard() {
 
         <div className="space-y-6">
           <NextActionsCard actions={clientNextActions} />
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-display">Partner Terms</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className={hasAcceptedCurrentTerms ? "rounded-md bg-success/10 p-4 text-sm" : "rounded-md bg-warning/10 p-4 text-sm"}>
-                <p className={hasAcceptedCurrentTerms ? "font-medium text-success" : "font-medium text-warning"}>
-                  {hasAcceptedCurrentTerms ? "Current terms accepted" : "New partner terms need review"}
-                </p>
-                <p className="text-muted-foreground mt-1">
-                  {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "Acceptance pending"} · Version{" "}
-                  {terms?.version ?? "v1"}
-                </p>
-              </div>
-              <Button asChild variant={hasAcceptedCurrentTerms ? "outline" : "default"} className="w-full">
-                <Link to="/client/terms">
-                  {hasAcceptedCurrentTerms ? "Review terms" : "Review and accept terms"}{" "}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader>
