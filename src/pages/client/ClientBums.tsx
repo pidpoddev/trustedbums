@@ -1,7 +1,8 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Search, Users } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MessageSquare, Search, Users } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
+import { openConversationDock } from "@/lib/conversationDock";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,13 +15,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getPageItems } from "@/lib/pagination";
-import { createClientBumIntroRequest, listVisibleBumProfiles, type BumProfileRecord } from "@/lib/portalApi";
+import { createClientBumIntroRequest, createConversationThread, listVisibleBumProfiles, type BumProfileRecord } from "@/lib/portalApi";
 
 function searchableText(values: Array<string | null | undefined>) {
   return values.filter(Boolean).join(" ").toLowerCase();
 }
 
 const CLIENT_BUMS_PAGE_SIZE = 4;
+
+function bumDisplayName(profile: BumProfileRecord | null) {
+  return profile?.profiles?.full_name || profile?.profiles?.email || "selected Bum";
+}
 
 type BumDirectoryTypeFilter =
   | "ALL"
@@ -40,6 +45,7 @@ const bumDirectoryTypeFilters: { value: BumDirectoryTypeFilter; label: string }[
 export default function ClientBums() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<BumDirectoryTypeFilter>("ALL");
   const [profilePage, setProfilePage] = useState(1);
@@ -51,6 +57,8 @@ export default function ClientBums() {
   const [targetContactTitle, setTargetContactTitle] = useState("");
   const [introContext, setIntroContext] = useState("");
   const [introNotes, setIntroNotes] = useState("");
+  const [messageProfile, setMessageProfile] = useState<BumProfileRecord | null>(null);
+  const [messageText, setMessageText] = useState("");
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const bumProfilesQuery = useQuery({
     queryKey: ["client-visible-bum-profiles"],
@@ -131,6 +139,40 @@ export default function ClientBums() {
     onError: (error) => {
       toast({
         title: "Unable to submit intro request",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+
+  const messageMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !messageProfile) {
+        throw new Error("Sign in before starting a conversation.");
+      }
+
+      return createConversationThread(user, {
+        contextType: "GENERAL",
+        subject: `Question for ${bumDisplayName(messageProfile)}`,
+        message: messageText,
+        participantUserIds: [messageProfile.user_id],
+      });
+    },
+    onSuccess: async (thread) => {
+      const recipientName = bumDisplayName(messageProfile);
+      setMessageProfile(null);
+      setMessageText("");
+      await queryClient.invalidateQueries({ queryKey: ["conversation-threads"] });
+      openConversationDock(thread.id);
+      toast({
+        title: "Conversation started",
+        description: `${recipientName} can respond from their Bum portal.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to start conversation",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -244,6 +286,7 @@ export default function ClientBums() {
             isShortlisted={shortlistedIds.includes(profile.user_id)}
             onShortlist={() => toggleShortlist(profile.user_id)}
             onRequestIntro={() => setIntroProfile(profile)}
+            onMessage={() => setMessageProfile(profile)}
             onHide={() => hideProfile(profile.user_id)}
           />
         ))}
@@ -255,6 +298,45 @@ export default function ClientBums() {
           onPageChange={setProfilePage}
         />
       </div>
+
+      <Dialog open={Boolean(messageProfile)} onOpenChange={(open) => { if (!open) { setMessageProfile(null); setMessageText(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Message Bum</DialogTitle>
+            <DialogDescription>
+              Start a conversation with {bumDisplayName(messageProfile)}. Additional Bums, client users, or admins can be added from chat.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              messageMutation.mutate();
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="bum-message-text">Question</Label>
+              <Textarea
+                id="bum-message-text"
+                rows={4}
+                value={messageText}
+                onChange={(event) => setMessageText(event.target.value)}
+                placeholder="What would you like to ask?"
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => { setMessageProfile(null); setMessageText(""); }}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!messageText.trim() || messageMutation.isPending}>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                {messageMutation.isPending ? "Starting..." : "Start Conversation"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={Boolean(introProfile)} onOpenChange={(open) => !open && setIntroProfile(null)}>
         <DialogContent>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { openConversationDock } from "@/lib/conversationDock";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPanel } from "@/components/FilterPanel";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -16,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
+  createCustomerTargetQuestion,
   createCustomerTargetResponse,
   listBumSavedItems,
   listCustomerTargets,
@@ -152,29 +154,40 @@ export default function BumOpportunities() {
 
   const responseMutation = useMutation({
     mutationFn: () => {
-      const targetName = selectedTarget?.target_companies?.name ?? selectedTarget?.target_account_name ?? "this target";
+      if (targetDialogMode === "question") {
+        return createCustomerTargetQuestion(user!, {
+          customerTargetId: selectedTarget!.id,
+          question: responseForm.note,
+        });
+      }
+
       return createCustomerTargetResponse(user!, {
         customerTargetId: selectedTarget!.id,
-        contactName: targetDialogMode === "question" ? `Question about ${targetName}` : responseForm.contactName,
-        contactEmail: targetDialogMode === "question" ? "" : responseForm.contactEmail,
-        relationshipStrength: targetDialogMode === "question" ? "unknown" : responseForm.relationshipStrength,
+        contactName: responseForm.contactName,
+        contactEmail: responseForm.contactEmail,
+        relationshipStrength: responseForm.relationshipStrength,
         note: responseForm.note,
       });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const conversationId = result.conversation_thread_id ?? null;
       toast({
-        title: targetDialogMode === "question" ? "Question sent" : "Response sent",
+        title: targetDialogMode === "question" ? "Conversation started" : "Response sent",
         description: targetDialogMode === "question"
-          ? "The client team can review your question about this target."
+          ? "The client team can respond in chat."
           : "Trusted Bums now has your relationship context for this client target.",
       });
       setSelectedTarget(null);
       setTargetDialogMode("connection");
       setResponseForm(responseFormInitial);
+      queryClient.invalidateQueries({ queryKey: ["conversation-threads"] });
+      if (conversationId) {
+        openConversationDock(conversationId);
+      }
     },
     onError: (error) => {
       toast({
-        title: "Unable to send response",
+        title: targetDialogMode === "question" ? "Unable to start conversation" : "Unable to send response",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });

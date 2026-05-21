@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
 import { CheckCircle, FileUp, MessageSquare, PlusCircle, Send, Sparkles, X } from "lucide-react";
+import { openConversationDock } from "@/lib/conversationDock";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
@@ -386,6 +387,7 @@ export default function ClientOpportunityNew() {
       respondToOpportunityQuestion(user!, question.id, { response, visibility }),
     onSuccess: (question) => {
       queryClient.invalidateQueries({ queryKey: ["client-opportunity-questions", user?.clientId] });
+      queryClient.invalidateQueries({ queryKey: ["conversation-threads"] });
       setQuestionResponses((current) => {
         const next = { ...current };
         delete next[question.id];
@@ -829,8 +831,8 @@ export default function ClientOpportunityNew() {
                         </div>
                         {response.note ? <p className="text-sm">{response.note}</p> : null}
                       </div>
-                      <Button type="button" variant="outline" size="sm" asChild>
-                        <Link to={`/client/opportunities?tab=responses&targetResponseId=${response.id}`}>Review</Link>
+                      <Button type="button" variant="outline" size="sm" onClick={() => openConversationDock(response.conversation_thread_id ?? undefined)}>
+                        <MessageSquare className="mr-2 h-4 w-4" /> Open chat
                       </Button>
                     </div>
                   </div>
@@ -863,8 +865,8 @@ export default function ClientOpportunityNew() {
                         <p className="text-sm">{question.question}</p>
                       </div>
                       {question.opportunity_registrations?.target_account_name ? (
-                        <Button type="button" variant="outline" size="sm" asChild>
-                          <Link to={`/client/opportunities?tab=questions&opportunityId=${question.opportunity_registration_id}`}>Open</Link>
+                        <Button type="button" variant="outline" size="sm" onClick={() => openConversationDock(question.conversation_thread_id ?? undefined)}>
+                          <MessageSquare className="mr-2 h-4 w-4" /> Open chat
                         </Button>
                       ) : null}
                     </div>

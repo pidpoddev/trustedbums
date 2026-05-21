@@ -1,6 +1,7 @@
 import { BrandLogo } from "@/components/BrandLogo";
 import { NavLink } from "@/components/NavLink";
 import { PortalHeaderActions } from "@/components/PortalHeaderActions";
+import { ConversationDock } from "@/components/ConversationDock";
 import { getClientAccessLabel, type ClientAccessRole } from "@/data/authData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, Outlet } from "react-router-dom";
@@ -128,6 +129,7 @@ export default function ClientLayout() {
           <div className="p-4 sm:p-6">
             <Outlet />
           </div>
+          <ConversationDock />
         </main>
       </div>
     </SidebarProvider>

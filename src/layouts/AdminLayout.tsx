@@ -1,6 +1,7 @@
 import { BrandLogo } from "@/components/BrandLogo";
 import { NavLink } from "@/components/NavLink";
 import { PortalHeaderActions } from "@/components/PortalHeaderActions";
+import { ConversationDock } from "@/components/ConversationDock";
 import { useLocation, Outlet } from "react-router-dom";
 import {
   Sidebar,
@@ -129,6 +130,7 @@ export default function AdminLayout() {
           <div className="p-4 sm:p-6">
             <Outlet />
           </div>
+          <ConversationDock />
         </main>
       </div>
     </SidebarProvider>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "react-router-dom";
+import { openConversationDock } from "@/lib/conversationDock";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -116,10 +117,12 @@ export default function BumOpportunityDetail() {
         opportunityId: opp!.id,
         question: questionText,
       }),
-    onSuccess: () => {
+    onSuccess: (question) => {
       queryClient.invalidateQueries({ queryKey: ["opportunity-questions", id, user?.id] });
-      toast.success("Question sent to the client team");
+      queryClient.invalidateQueries({ queryKey: ["conversation-threads"] });
+      toast.success("Conversation started with the client team");
       setQuestionText("");
+      openConversationDock(question.conversation_thread_id ?? undefined);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Unable to send question");

@@ -631,6 +631,8 @@ export interface CustomerTargetResponseRecord {
     target_companies?: Pick<CompanyRecord, "id" | "name" | "website" | "linkedin_company_url"> | null;
   } | null;
   profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  conversation_thread_id?: string | null;
+  conversation_threads?: Array<{ id: string }> | { id: string } | null;
 }
 
 export interface CustomerTargetResponseInput {
@@ -639,6 +641,11 @@ export interface CustomerTargetResponseInput {
   contactEmail?: string;
   relationshipStrength: CustomerTargetResponseStrength;
   note?: string;
+}
+
+export interface CustomerTargetQuestionInput {
+  customerTargetId: string;
+  question: string;
 }
 
 export interface CustomerTargetResponseFormalizeInput {
@@ -951,6 +958,8 @@ export interface OpportunityQuestionRecord {
   opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name" | "company_id" | "status"> & {
     companies?: Pick<CompanyRecord, "name"> | null;
   } | null;
+  conversation_thread_id?: string | null;
+  conversation_threads?: Array<{ id: string }> | { id: string } | null;
 }
 
 export interface OpportunityQuestionInput {
@@ -961,6 +970,59 @@ export interface OpportunityQuestionInput {
 export interface OpportunityQuestionResponseInput {
   response: string;
   visibility: OpportunityQuestionVisibility;
+}
+
+export type ConversationContextType = "GENERAL" | "OPPORTUNITY" | "CUSTOMER_TARGET";
+export type ConversationStatus = "OPEN" | "ARCHIVED";
+
+export interface ConversationParticipantRecord {
+  conversation_id: string;
+  user_id: string;
+  added_by: string | null;
+  joined_at: string;
+  last_read_at: string | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "role"> | null;
+}
+
+export interface ConversationMessageRecord {
+  id: string;
+  conversation_id: string;
+  sender_user_id: string;
+  body: string;
+  created_at: string;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "role"> | null;
+}
+
+export interface ConversationThreadRecord {
+  id: string;
+  subject: string;
+  context_type: ConversationContextType;
+  company_id: string | null;
+  opportunity_registration_id: string | null;
+  customer_target_id: string | null;
+  opportunity_question_id: string | null;
+  customer_target_response_id: string | null;
+  created_by: string;
+  status: ConversationStatus;
+  created_at: string;
+  updated_at: string;
+  conversation_participants?: ConversationParticipantRecord[];
+  conversation_messages?: ConversationMessageRecord[];
+  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name"> | null;
+  customer_targets?: Pick<CustomerTargetRecord, "id" | "target_account_name"> & {
+    target_companies?: Pick<CompanyRecord, "id" | "name"> | null;
+  } | null;
+}
+
+export interface ConversationThreadInput {
+  subject?: string;
+  message: string;
+  contextType?: ConversationContextType;
+  opportunityId?: string;
+  customerTargetId?: string;
+  participantUserIds?: string[];
+  opportunityQuestionId?: string;
+  customerTargetResponseId?: string;
 }
 
 export type CustomerPaymentReportStatus = "REPORTED" | "INVOICE_GENERATED" | "DISPUTED" | "VOID";
@@ -3239,7 +3301,24 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
   return data;
 }
 
-const OPPORTUNITY_QUESTION_SELECT = "*, profiles:profiles!opportunity_questions_bum_user_id_fkey(id, full_name, email), responded_by_profile:profiles!opportunity_questions_responded_by_fkey(id, full_name, email), opportunity_registrations(id, target_account_name, company_id, status, companies(name))";
+const OPPORTUNITY_QUESTION_SELECT = "*, profiles:profiles!opportunity_questions_bum_user_id_fkey(id, full_name, email), responded_by_profile:profiles!opportunity_questions_responded_by_fkey(id, full_name, email), opportunity_registrations(id, target_account_name, company_id, status, companies(name)), conversation_threads(id)";
+
+function embeddedConversationThreadId(record: { conversation_thread_id?: string | null; conversation_threads?: Array<{ id: string }> | { id: string } | null }) {
+  if (record.conversation_thread_id) {
+    return record.conversation_thread_id;
+  }
+
+  const embedded = Array.isArray(record.conversation_threads) ? record.conversation_threads[0] : record.conversation_threads;
+  return embedded?.id ?? null;
+}
+
+function normalizeOpportunityQuestion(question: OpportunityQuestionRecord): OpportunityQuestionRecord {
+  return { ...question, conversation_thread_id: embeddedConversationThreadId(question) };
+}
+
+function normalizeCustomerTargetResponse(response: CustomerTargetResponseRecord): CustomerTargetResponseRecord {
+  return { ...response, conversation_thread_id: embeddedConversationThreadId(response) };
+}
 
 function getPortalOrigin() {
   if (typeof window !== "undefined" && window.location.origin) {
@@ -3247,6 +3326,224 @@ function getPortalOrigin() {
   }
 
   return "https://trustedbums.com";
+}
+
+const CONVERSATION_THREAD_SELECT = "*, conversation_participants(*, profiles(id, full_name, email, role)), conversation_messages(*, profiles(id, full_name, email, role)), opportunity_registrations(id, target_account_name), customer_targets(id, target_account_name, target_companies:companies!customer_targets_target_company_id_fkey(id, name))";
+
+function sortConversationThread(thread: ConversationThreadRecord) {
+  return {
+    ...thread,
+    conversation_messages: [...(thread.conversation_messages ?? [])].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+    conversation_participants: [...(thread.conversation_participants ?? [])].sort((a, b) => {
+      const aName = a.profiles?.full_name ?? a.profiles?.email ?? a.user_id;
+      const bName = b.profiles?.full_name ?? b.profiles?.email ?? b.user_id;
+      return aName.localeCompare(bName);
+    }),
+  };
+}
+
+async function loadConversationThread(threadId: string) {
+  const { data, error } = await supabase
+    .from("conversation_threads")
+    .select(CONVERSATION_THREAD_SELECT)
+    .eq("id", threadId)
+    .single<ConversationThreadRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  return sortConversationThread(data);
+}
+
+async function clientParticipantIds(companyId: string | null) {
+  if (!companyId) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("company_id", companyId)
+    .eq("role", "CLIENT")
+    .returns<Array<Pick<ProfileRecord, "id">>>();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((profile) => profile.id);
+}
+
+export async function listConversationThreads() {
+  const { data, error } = await supabase
+    .from("conversation_threads")
+    .select(CONVERSATION_THREAD_SELECT)
+    .eq("status", "OPEN")
+    .order("updated_at", { ascending: false })
+    .returns<ConversationThreadRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(sortConversationThread);
+}
+
+export async function createConversationThread(user: AuthUser, input: ConversationThreadInput) {
+  const message = input.message.trim();
+  if (!message) {
+    throw new Error("Add a message before starting the conversation.");
+  }
+
+  let companyId: string | null = user.clientId ?? null;
+  let subject = input.subject?.trim() || "Conversation";
+  let contextType: ConversationContextType = input.contextType ?? "GENERAL";
+  let opportunityRegistrationId: string | null = null;
+  let customerTargetId: string | null = null;
+
+  if (input.opportunityId) {
+    const { data: opportunity, error } = await supabase
+      .from("opportunity_registrations")
+      .select("id, company_id, target_account_name")
+      .eq("id", input.opportunityId)
+      .maybeSingle<Pick<OpportunityRegistration, "id" | "company_id" | "target_account_name">>();
+
+    if (error) throw error;
+    if (!opportunity?.company_id) throw new Error("That opportunity is no longer available.");
+
+    companyId = opportunity.company_id;
+    opportunityRegistrationId = opportunity.id;
+    contextType = "OPPORTUNITY";
+    subject = input.subject?.trim() || `Question: ${opportunity.target_account_name}`;
+  }
+
+  if (input.customerTargetId) {
+    const { data: target, error } = await supabase
+      .from("customer_targets")
+      .select("id, client_company_id, target_account_name, target_companies:companies!customer_targets_target_company_id_fkey(name)")
+      .eq("id", input.customerTargetId)
+      .maybeSingle<Pick<CustomerTargetRecord, "id" | "client_company_id" | "target_account_name"> & { target_companies?: Pick<CompanyRecord, "name"> | null }>();
+
+    if (error) throw error;
+    if (!target?.client_company_id) throw new Error("That target account is no longer available.");
+
+    companyId = target.client_company_id;
+    customerTargetId = target.id;
+    contextType = "CUSTOMER_TARGET";
+    subject = input.subject?.trim() || `Question: ${target.target_companies?.name ?? target.target_account_name}`;
+  }
+
+  const { data: thread, error: threadError } = await supabase
+    .from("conversation_threads")
+    .insert({
+      subject,
+      context_type: contextType,
+      company_id: companyId,
+      opportunity_registration_id: opportunityRegistrationId,
+      customer_target_id: customerTargetId,
+      opportunity_question_id: input.opportunityQuestionId ?? null,
+      customer_target_response_id: input.customerTargetResponseId ?? null,
+      created_by: user.id,
+      status: "OPEN",
+    })
+    .select("id")
+    .single<{ id: string }>();
+
+  if (threadError) {
+    throw threadError;
+  }
+
+  const participantIds = new Set<string>([user.id, ...(input.participantUserIds ?? [])]);
+  for (const clientId of await clientParticipantIds(companyId)) {
+    participantIds.add(clientId);
+  }
+
+  const participantRows = Array.from(participantIds).filter(Boolean).map((participantId) => ({
+    conversation_id: thread.id,
+    user_id: participantId,
+    added_by: user.id,
+  }));
+
+  if (participantRows.length) {
+    const { error } = await supabase.from("conversation_participants").insert(participantRows);
+    if (error && error.code !== "23505") {
+      throw error;
+    }
+  }
+
+  const { error: messageError } = await supabase.from("conversation_messages").insert({
+    conversation_id: thread.id,
+    sender_user_id: user.id,
+    body: message,
+  });
+
+  if (messageError) {
+    throw messageError;
+  }
+
+  await supabase.from("conversation_threads").update({ updated_at: new Date().toISOString() }).eq("id", thread.id);
+
+  await createAuditEvent(user, "conversation_thread_created", "conversation_threads", thread.id, {
+    context_type: contextType,
+    opportunity_registration_id: opportunityRegistrationId,
+    customer_target_id: customerTargetId,
+  });
+
+  return loadConversationThread(thread.id);
+}
+
+export async function sendConversationMessage(user: AuthUser, conversationId: string, body: string) {
+  const message = body.trim();
+  if (!message) {
+    throw new Error("Add a message before sending.");
+  }
+
+  const { error } = await supabase.from("conversation_messages").insert({
+    conversation_id: conversationId,
+    sender_user_id: user.id,
+    body: message,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  await supabase.from("conversation_threads").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+  return loadConversationThread(conversationId);
+}
+
+export async function addConversationParticipantByEmail(user: AuthUser, conversationId: string, email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    throw new Error("Enter an email address to add.");
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, email")
+    .ilike("email", normalizedEmail)
+    .maybeSingle<Pick<ProfileRecord, "id" | "email">>();
+
+  if (profileError) {
+    throw profileError;
+  }
+
+  if (!profile) {
+    throw new Error("No Trusted Bums user was found for that email.");
+  }
+
+  const { error } = await supabase.from("conversation_participants").insert({
+    conversation_id: conversationId,
+    user_id: profile.id,
+    added_by: user.id,
+  });
+
+  if (error && error.code !== "23505") {
+    throw error;
+  }
+
+  return loadConversationThread(conversationId);
 }
 
 export async function listOpportunityQuestionsForBum(opportunityId: string) {
@@ -3261,7 +3558,7 @@ export async function listOpportunityQuestionsForBum(opportunityId: string) {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).map(normalizeOpportunityQuestion);
 }
 
 export async function listClientOpportunityQuestions(user: AuthUser) {
@@ -3280,7 +3577,7 @@ export async function listClientOpportunityQuestions(user: AuthUser) {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).map(normalizeOpportunityQuestion);
 }
 
 export async function createOpportunityQuestion(user: AuthUser, input: OpportunityQuestionInput) {
@@ -3329,6 +3626,21 @@ export async function createOpportunityQuestion(user: AuthUser, input: Opportuni
     target_account_name: opportunity.target_account_name,
   });
 
+  let conversationThreadId: string | null = null;
+  await createConversationThread(user, {
+    contextType: "OPPORTUNITY",
+    opportunityId: opportunity.id,
+    opportunityQuestionId: data.id,
+    subject: `Question: ${opportunity.target_account_name}`,
+    message: question,
+  })
+    .then((thread) => {
+      conversationThreadId = thread.id;
+    })
+    .catch((error) => {
+      console.error("Unable to create opportunity question conversation", error);
+    });
+
   const opportunityUrl = `${getPortalOrigin()}/client/opportunities?tab=questions&opportunityId=${encodeURIComponent(opportunity.id)}`;
   await sendAdminEmail({
     mode: "action",
@@ -3346,7 +3658,7 @@ export async function createOpportunityQuestion(user: AuthUser, input: Opportuni
     console.error("Unable to send opportunity question notification", error);
   });
 
-  return data;
+  return normalizeOpportunityQuestion({ ...data, conversation_thread_id: conversationThreadId });
 }
 
 export async function respondToOpportunityQuestion(user: AuthUser, questionId: string, input: OpportunityQuestionResponseInput) {
@@ -3377,12 +3689,20 @@ export async function respondToOpportunityQuestion(user: AuthUser, questionId: s
     throw error;
   }
 
+  const normalizedQuestion = normalizeOpportunityQuestion(data);
+
+  if (normalizedQuestion.conversation_thread_id) {
+    await sendConversationMessage(user, normalizedQuestion.conversation_thread_id, response).catch((messageError) => {
+      console.error("Unable to add opportunity question response to conversation", messageError);
+    });
+  }
+
   await createAuditEvent(user, "opportunity_question_answered", "opportunity_questions", data.id, {
     opportunity_registration_id: data.opportunity_registration_id,
     response_visibility: data.response_visibility,
   });
 
-  return data;
+  return normalizedQuestion;
 }
 
 export async function updateOpportunityClaimStatus(user: AuthUser, claimId: string, status: OpportunityClaimStatus, note?: string) {
@@ -4643,7 +4963,7 @@ export async function createClientBumIntroRequest(user: AuthUser, input: ClientB
   return data;
 }
 
-const CUSTOMER_TARGET_RESPONSE_SELECT = "*, customer_targets(id, target_account_name, business_unit, expected_product_service, estimated_deal_value, expected_timeline, notes, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url)), profiles(id, full_name, email)";
+const CUSTOMER_TARGET_RESPONSE_SELECT = "*, customer_targets(id, target_account_name, business_unit, expected_product_service, estimated_deal_value, expected_timeline, notes, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url)), profiles(id, full_name, email), conversation_threads(id)";
 
 export async function listCustomerTargetResponses(user: AuthUser) {
   if (user.role !== "CLIENT" && user.role !== "ADMIN") {
@@ -4668,7 +4988,7 @@ export async function listCustomerTargetResponses(user: AuthUser) {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).map(normalizeCustomerTargetResponse);
 }
 
 export async function updateCustomerTargetResponseStatus(
@@ -4711,7 +5031,7 @@ export async function updateCustomerTargetResponseStatus(
 
   await createAuditEvent(user, "customer_target_response_status_changed", "customer_target_responses", data.id, { status });
 
-  return data;
+  return normalizeCustomerTargetResponse(data);
 }
 
 function mapTargetResponseStrength(strength: CustomerTargetResponseStrength): OpportunityClaimStrength {
@@ -4885,7 +5205,91 @@ export async function createCustomerTargetResponse(user: AuthUser, input: Custom
     console.error("Unable to send customer target response notification", error);
   });
 
-  return data;
+  return normalizeCustomerTargetResponse(data);
+}
+
+export async function createCustomerTargetQuestion(user: AuthUser, input: CustomerTargetQuestionInput) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can ask target account questions.");
+  }
+
+  const question = input.question.trim();
+  if (!question) {
+    throw new Error("Add your question before sending it.");
+  }
+
+  const { data: target, error: targetError } = await supabase
+    .from("customer_targets")
+    .select("id, client_company_id, target_account_name, target_companies:companies!customer_targets_target_company_id_fkey(name)")
+    .eq("id", input.customerTargetId)
+    .maybeSingle<Pick<CustomerTargetRecord, "id" | "client_company_id" | "target_account_name"> & { target_companies?: Pick<CompanyRecord, "name"> | null }>();
+
+  if (targetError) {
+    throw targetError;
+  }
+
+  if (!target?.client_company_id) {
+    throw new Error("That target account is no longer available.");
+  }
+
+  const targetName = target.target_companies?.name ?? target.target_account_name;
+  const { data, error } = await supabase
+    .from("customer_target_responses")
+    .insert({
+      customer_target_id: target.id,
+      client_company_id: target.client_company_id,
+      bum_user_id: user.id,
+      contact_name: "Question about " + targetName,
+      contact_email: null,
+      relationship_strength: "unknown",
+      note: question,
+      status: "PROPOSED",
+    })
+    .select(CUSTOMER_TARGET_RESPONSE_SELECT)
+    .single<CustomerTargetResponseRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  let conversationThreadId: string | null = null;
+  await createConversationThread(user, {
+    contextType: "CUSTOMER_TARGET",
+    customerTargetId: target.id,
+    customerTargetResponseId: data.id,
+    subject: "Question: " + targetName,
+    message: question,
+  })
+    .then((thread) => {
+      conversationThreadId = thread.id;
+    })
+    .catch((conversationError) => {
+      console.error("Unable to create customer target question conversation", conversationError);
+    });
+
+  await createAuditEvent(user, "customer_target_question_created", "customer_target_responses", data.id, {
+    customer_target_id: target.id,
+  });
+
+  await sendAdminEmail({
+    mode: "action",
+    templateSlug: "customer_target_response_created_client",
+    metadata: {
+      company_id: target.client_company_id,
+      target_account_name: targetName,
+      contact_name: "Question",
+      contact_email: "",
+      relationship_strength: "unknown",
+      bum_name: user.name || user.email,
+      response_note: question,
+      response_url: getPortalOrigin() + "/client/opportunities?tab=questions&targetResponseId=" + data.id,
+    },
+    triggeredBy: "CUSTOMER_TARGET_RESPONSE_CREATED",
+  }).catch((emailError) => {
+    console.error("Unable to send customer target question notification", emailError);
+  });
+
+  return normalizeCustomerTargetResponse({ ...data, conversation_thread_id: conversationThreadId });
 }
 
 export async function listOpportunityClaimSummaries() {

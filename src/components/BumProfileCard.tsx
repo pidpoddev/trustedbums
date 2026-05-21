@@ -1,4 +1,4 @@
-import { ExternalLink, Heart, Link2, MapPin, ShieldCheck, Star, BriefcaseBusiness, EyeOff } from "lucide-react";
+import { ExternalLink, Heart, Link2, MapPin, MessageSquare, ShieldCheck, Star, BriefcaseBusiness, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,7 @@ interface BumProfileCardProps {
   isShortlisted?: boolean;
   onShortlist?: () => void;
   onRequestIntro?: () => void;
+  onMessage?: () => void;
   onHide?: () => void;
 }
 
@@ -99,7 +100,7 @@ function profileName(profile: BumProfileCardProps["profile"]) {
   );
 }
 
-export function BumProfileCard({ profile, showAdminMeta = false, showClientActions = false, isShortlisted = false, onShortlist, onRequestIntro, onHide }: BumProfileCardProps) {
+export function BumProfileCard({ profile, showAdminMeta = false, showClientActions = false, isShortlisted = false, onShortlist, onRequestIntro, onMessage, onHide }: BumProfileCardProps) {
   const timeZone = useUserTimeZone();
   const acceptedTerms = profile.acceptedTerms ?? [];
   const displayName = profileName(profile);
@@ -273,6 +274,9 @@ export function BumProfileCard({ profile, showAdminMeta = false, showClientActio
             </Tooltip>
             <Button type="button" size="sm" onClick={onRequestIntro}>
               Request intro
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={onMessage}>
+              <MessageSquare className="mr-2 h-4 w-4" /> Message
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={onHide}>
               <EyeOff className="mr-2 h-4 w-4" /> Hide
