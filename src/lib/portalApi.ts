@@ -3328,7 +3328,7 @@ function getPortalOrigin() {
   return "https://trustedbums.com";
 }
 
-const CONVERSATION_THREAD_SELECT = "*, conversation_participants(*, profiles(id, full_name, email, role)), conversation_messages(*, profiles(id, full_name, email, role)), opportunity_registrations(id, target_account_name), customer_targets(id, target_account_name, target_companies:companies!customer_targets_target_company_id_fkey(id, name))";
+const CONVERSATION_THREAD_SELECT = "*, conversation_participants(*, profiles:profiles!conversation_participants_user_id_fkey(id, full_name, email, role)), conversation_messages(*, profiles:profiles!conversation_messages_sender_user_id_fkey(id, full_name, email, role)), opportunity_registrations(id, target_account_name), customer_targets(id, target_account_name, target_companies:companies!customer_targets_target_company_id_fkey(id, name))";
 
 function sortConversationThread(thread: ConversationThreadRecord) {
   return {
