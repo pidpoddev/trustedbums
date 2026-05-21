@@ -3397,6 +3397,24 @@ export async function createConversationThread(user: AuthUser, input: Conversati
   }
 
   let companyId: string | null = user.clientId ?? null;
+  if (!companyId && user.role === "CLIENT") {
+    const { data: ownProfile, error: ownProfileError } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", user.id)
+      .maybeSingle<Pick<ProfileRecord, "company_id">>();
+
+    if (ownProfileError) {
+      throw ownProfileError;
+    }
+
+    companyId = ownProfile?.company_id ?? null;
+  }
+
+  if (!companyId && user.role === "CLIENT") {
+    throw new Error("Your client profile is not linked to a company yet.");
+  }
+
   let subject = input.subject?.trim() || "Conversation";
   let contextType: ConversationContextType = input.contextType ?? "GENERAL";
   let opportunityRegistrationId: string | null = null;
