@@ -92,9 +92,15 @@ function firstNameFromEmail(email?: string | null) {
   return token.charAt(0).toUpperCase() + token.slice(1);
 }
 
-function profileName(profile: BumProfileCardProps["profile"]) {
+function profileName(profile: BumProfileCardProps["profile"], showFullName = false) {
+  const fullName = profile.profiles?.full_name?.trim();
+
+  if (showFullName && fullName) {
+    return fullName;
+  }
+
   return (
-    toFirstName(profile.profiles?.full_name) ||
+    toFirstName(fullName) ||
     firstNameFromEmail(profile.profiles?.email) ||
     "Connector"
   );
@@ -103,7 +109,7 @@ function profileName(profile: BumProfileCardProps["profile"]) {
 export function BumProfileCard({ profile, showAdminMeta = false, showClientActions = false, isShortlisted = false, onShortlist, onRequestIntro, onMessage, onHide }: BumProfileCardProps) {
   const timeZone = useUserTimeZone();
   const acceptedTerms = profile.acceptedTerms ?? [];
-  const displayName = profileName(profile);
+  const displayName = profileName(profile, showClientActions && profile.is_visible_to_clients === true);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
