@@ -5251,13 +5251,14 @@ export async function createCustomerTargetQuestion(user: AuthUser, input: Custom
   }
 
   const targetName = target.target_companies?.name ?? target.target_account_name;
+  const questionContactName = `Question about ${targetName} - ${new Date().toISOString()}`;
   const { data, error } = await supabase
     .from("customer_target_responses")
     .insert({
       customer_target_id: target.id,
       client_company_id: target.client_company_id,
       bum_user_id: user.id,
-      contact_name: "Question about " + targetName,
+      contact_name: questionContactName,
       contact_email: null,
       relationship_strength: "unknown",
       note: question,
