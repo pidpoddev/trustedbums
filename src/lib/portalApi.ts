@@ -3496,22 +3496,26 @@ export async function updateOwnClientCompanyProfile(
     throw new Error("Only client users linked to a company can update company profile details.");
   }
 
-  if (!input.name.trim()) {
+  const name = input.name.trim();
+  const website = toNullableString(input.website);
+
+  if (!name) {
     throw new Error("Company name is required.");
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("companies")
-    .update({
-      name: input.name.trim(),
-      website: toNullableString(input.website),
-    })
-    .eq("id", user.clientId)
-    .select("*")
-    .single<CompanyRecord>();
+    .update({ name, website })
+    .eq("id", user.clientId);
 
   if (error) {
     throw error;
+  }
+
+  const data = await getOwnClientCompany(user);
+
+  if (data.name !== name || data.website !== website) {
+    throw new Error("Your company profile could not be updated. Please contact support if this continues.");
   }
 
   await createAuditEvent(user, "client_company_profile_updated", "companies", data.id, {
