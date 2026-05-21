@@ -28,6 +28,10 @@ import {
 } from "@/lib/portalApi";
 import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 
+function formatList(values?: string[] | null) {
+  return (values ?? []).filter(Boolean).join(", ");
+}
+
 function stageVariant(stage: CompanyRelationshipStage) {
   if (stage === "CLIENT") {
     return "success" as const;
@@ -329,6 +333,10 @@ export default function AdminClients() {
       const matchesQuery = [
         company.name,
         company.primaryEmail,
+        company.description,
+        company.ideal_customer_profile,
+        formatList(company.target_industries),
+        formatList(company.target_regions),
         company.recommenderNames.join(" "),
         company.primaryContacts.map((contact) => contact.full_name).join(" "),
       ]
@@ -455,6 +463,14 @@ export default function AdminClients() {
                         {company.inviteOwners.includes("TRUSTED_BUMS") ? <Badge variant="secondary">Trusted Bums invite</Badge> : null}
                         {!company.inviteOwners.length ? <Badge variant="outline">No prospect recommendations yet</Badge> : null}
                       </div>
+
+                      {company.description ? <p className="max-w-3xl text-sm text-muted-foreground">{company.description}</p> : null}
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {(company.target_industries ?? []).map((industry) => <Badge key={industry} variant="secondary">{industry}</Badge>)}
+                        {(company.target_regions ?? []).map((region) => <Badge key={region} variant="outline">{region}</Badge>)}
+                        {!company.target_industries?.length && !company.target_regions?.length ? <Badge variant="outline">No matching tags yet</Badge> : null}
+                      </div>
+                      {company.ideal_customer_profile ? <p className="max-w-3xl text-sm text-muted-foreground">ICP: {company.ideal_customer_profile}</p> : null}
 
                       <div className="grid gap-2 text-sm text-muted-foreground">
                         <p className="inline-flex items-center gap-2">

@@ -42,6 +42,10 @@ export interface CompanyRecord {
   id: string;
   name: string;
   website: string | null;
+  description: string | null;
+  target_industries: string[];
+  target_regions: string[];
+  ideal_customer_profile: string | null;
   relationship_stage: CompanyRelationshipStage;
   linkedin_company_url: string | null;
   created_at: string;
@@ -1122,6 +1126,16 @@ function toUniqueTrimmedArray(values?: string[]) {
         .map((value) => value.trim())
         .filter(Boolean),
     ),
+  );
+}
+
+function areStringArraysEqual(left?: string[] | null, right: string[] = []) {
+  const normalizedLeft = toUniqueTrimmedArray(left ?? []);
+  const normalizedRight = toUniqueTrimmedArray(right);
+
+  return (
+    normalizedLeft.length === normalizedRight.length &&
+    normalizedLeft.every((value, index) => value === normalizedRight[index])
   );
 }
 
@@ -3490,7 +3504,15 @@ export async function getOwnClientCompany(user: AuthUser) {
 
 export async function updateOwnClientCompanyProfile(
   user: AuthUser,
-  input: { name: string; website?: string },
+  input: {
+    name: string;
+    website?: string;
+    linkedin_company_url?: string;
+    description?: string;
+    target_industries?: string[];
+    target_regions?: string[];
+    ideal_customer_profile?: string;
+  },
 ) {
   if (user.role !== "CLIENT" || !user.clientId) {
     throw new Error("Only client users linked to a company can update company profile details.");
@@ -3498,6 +3520,11 @@ export async function updateOwnClientCompanyProfile(
 
   const name = input.name.trim();
   const website = toNullableString(input.website);
+  const linkedinCompanyUrl = normalizeLinkedInCompanyUrl(input.linkedin_company_url);
+  const description = toNullableString(input.description);
+  const targetIndustries = toUniqueTrimmedArray(input.target_industries);
+  const targetRegions = toUniqueTrimmedArray(input.target_regions);
+  const idealCustomerProfile = toNullableString(input.ideal_customer_profile);
 
   if (!name) {
     throw new Error("Company name is required.");
@@ -3505,7 +3532,15 @@ export async function updateOwnClientCompanyProfile(
 
   const { error } = await supabase
     .from("companies")
-    .update({ name, website })
+    .update({
+      name,
+      website,
+      linkedin_company_url: linkedinCompanyUrl,
+      description,
+      target_industries: targetIndustries,
+      target_regions: targetRegions,
+      ideal_customer_profile: idealCustomerProfile,
+    })
     .eq("id", user.clientId);
 
   if (error) {
@@ -3514,13 +3549,26 @@ export async function updateOwnClientCompanyProfile(
 
   const data = await getOwnClientCompany(user);
 
-  if (data.name !== name || data.website !== website) {
+  if (
+    data.name !== name ||
+    data.website !== website ||
+    data.linkedin_company_url !== linkedinCompanyUrl ||
+    data.description !== description ||
+    !areStringArraysEqual(data.target_industries, targetIndustries) ||
+    !areStringArraysEqual(data.target_regions, targetRegions) ||
+    data.ideal_customer_profile !== idealCustomerProfile
+  ) {
     throw new Error("Your company profile could not be updated. Please contact support if this continues.");
   }
 
   await createAuditEvent(user, "client_company_profile_updated", "companies", data.id, {
     name: data.name,
     website: data.website,
+    linkedin_company_url: data.linkedin_company_url,
+    description: data.description,
+    target_industries: data.target_industries,
+    target_regions: data.target_regions,
+    ideal_customer_profile: data.ideal_customer_profile,
   });
 
   return data;
