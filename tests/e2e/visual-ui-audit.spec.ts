@@ -31,7 +31,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
   CLIENT_ADMIN: [
     { path: "/client/dashboard", heading: /Welcome back/i, name: "client-admin-dashboard" },
     { path: "/client/targets", heading: "Target Accounts", name: "client-targets" },
-    { path: "/client/opportunities/new", heading: "Register Opportunity", name: "client-register-opportunity" },
+    { path: "/client/opportunities/new", heading: "Opportunities", name: "client-register-opportunity" },
     { path: "/client/bum-directory", heading: "Bum Directory", name: "client-bum-directory" },
     { path: "/client/trainings", heading: "Training & Assets", name: "client-trainings" },
     { path: "/client/requests", heading: "Inbound Requests", name: "client-requests" },
