@@ -32,7 +32,7 @@ function resolveDashboardPath(role: "ADMIN" | "CLIENT" | "BUM", from?: string) {
 export default function ClientTerms() {
   const { user } = useAuth();
   const timeZone = useUserTimeZone();
-  const { terms, acceptance, requiredAssignment, hasAcceptedCurrentTerms, isLoading, refetch } = useCurrentTermsState();
+  const { terms, acceptance, requiredAssignment, hasAcceptedCurrentTerms, isLoading, error, refetch } = useCurrentTermsState();
   const [checked, setChecked] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [shouldAutoContinue, setShouldAutoContinue] = useState(false);
@@ -79,6 +79,14 @@ export default function ClientTerms() {
       setIsAccepting(false);
     }
   };
+
+  if (error) {
+    return (
+      <div className="rounded-md border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
+        Unable to load partner terms: {error instanceof Error ? error.message : "Please try again."}
+      </div>
+    );
+  }
 
   if (isLoading || !terms) {
     return <div className="text-sm text-muted-foreground">Loading partner terms...</div>;

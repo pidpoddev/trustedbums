@@ -5,12 +5,20 @@ import { useCurrentTermsState } from "@/hooks/use-current-terms";
 export function ClientTermsGate() {
   const { user } = useAuth();
   const location = useLocation();
-  const { hasAcceptedCurrentTerms, isLoading, terms } = useCurrentTermsState();
+  const { hasAcceptedCurrentTerms, isLoading, terms, error } = useCurrentTermsState();
   const isTermsRoute =
     location.pathname === "/client/terms" || location.pathname === "/bum/terms" || location.pathname === "/terms";
 
   if (!user || user.role === "ADMIN" || isTermsRoute) {
     return <Outlet />;
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-md border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
+        Unable to check partner terms: {error instanceof Error ? error.message : "Please try again."}
+      </div>
+    );
   }
 
   if (isLoading || !terms) {

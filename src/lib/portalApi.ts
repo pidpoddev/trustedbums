@@ -1605,10 +1605,17 @@ export async function getCurrentTermsAcceptance(userId: string, companyId: strin
   return data;
 }
 
+const TERMS_ASSIGNMENT_SELECT = `
+  *,
+  companies:companies!terms_assignments_assigned_company_id_fkey(id, name),
+  profiles:profiles!terms_assignments_assigned_user_id_fkey(id, full_name, email),
+  terms_versions(*)
+`;
+
 export async function listRequiredTermsAssignmentsForUser(user: AuthUser) {
   const baseQuery = supabase
     .from("terms_assignments")
-    .select("*, companies(id, name), profiles(id, full_name, email), terms_versions(*)")
+    .select(TERMS_ASSIGNMENT_SELECT)
     .eq("is_required", true)
     .order("created_at", { ascending: true });
 
@@ -3139,7 +3146,7 @@ export async function createTermsAssignment(
   const { data, error } = await supabase
     .from("terms_assignments")
     .insert({ ...input, assigned_by: user.id })
-    .select("*, companies(id, name), profiles(id, full_name, email), terms_versions(*)")
+    .select(TERMS_ASSIGNMENT_SELECT)
     .single<TermsAssignmentRecord>();
 
   if (error) {
@@ -3158,7 +3165,7 @@ export async function createTermsAssignment(
 export async function listTermsAssignments() {
   const { data, error } = await supabase
     .from("terms_assignments")
-    .select("*, companies(id, name), profiles(id, full_name, email), terms_versions(*)")
+    .select(TERMS_ASSIGNMENT_SELECT)
     .order("created_at", { ascending: false })
     .returns<TermsAssignmentRecord[]>();
 
