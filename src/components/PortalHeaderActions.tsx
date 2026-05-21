@@ -41,6 +41,7 @@ function getInitials(name?: string | null, email?: string | null) {
 export function PortalHeaderActions() {
   const { user, signOut } = useAuth();
   const profilePath = getProfilePath(user?.role);
+  const profileLabel = user?.role === "CLIENT" ? "Company Profile" : "Profile settings";
 
   return (
     <div className="ml-auto flex items-center gap-3">
@@ -66,7 +67,7 @@ export function PortalHeaderActions() {
           <DropdownMenuItem asChild>
             <Link to={profilePath}>
               <Settings className="mr-2 h-4 w-4" />
-              Profile settings
+              {profileLabel}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

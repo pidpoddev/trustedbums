@@ -53,12 +53,13 @@ const navGroups: Array<{
   { title: "Reports", url: "/client/reports", icon: BarChart3 },
   ] },
   { label: "Account", items: [
+  { title: "Company Profile", url: "/client/profile", icon: User },
   { title: "Partner Terms", url: "/client/terms", icon: FileCheck },
   { title: "Agreements", url: "/client/agreements", icon: FileCheck },
   ] },
 ];
 
-const navItems = [...navGroups.flatMap((group) => group.items), { title: "Profile settings", url: "/client/profile", icon: User }];
+const navItems = navGroups.flatMap((group) => group.items);
 
 export default function ClientLayout() {
   const location = useLocation();
