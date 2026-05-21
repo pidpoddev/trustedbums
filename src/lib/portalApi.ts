@@ -3269,22 +3269,42 @@ export async function publishLegalDocument(
 }
 
 type AdminEmailOperationResponse<T> = { data?: T; error?: string };
+type AdminEmailFunctionResponse<T> = T & { error?: string };
 
-async function invokeAdminEmailOperation<T>(operation: string, payload?: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke<AdminEmailOperationResponse<T>>("send-admin-email", {
-    body: { operation, payload: payload ?? {} },
+async function invokeAdminEmailFunction<T>(body: Record<string, unknown>, fallbackError: string) {
+  const token = await getSupabaseAccessToken("session");
+
+  if (!token) {
+    throw new Error("Sign in before using admin email tools.");
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/send-admin-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
   });
 
-  if (error) {
-    throw error;
+  const data = (await response.json().catch(() => ({}))) as AdminEmailFunctionResponse<T>;
+
+  if (!response.ok || data.error) {
+    throw new Error(data.error || fallbackError);
   }
 
-  if (!data) {
+  return data;
+}
+
+async function invokeAdminEmailOperation<T>(operation: string, payload?: Record<string, unknown>) {
+  const data = await invokeAdminEmailFunction<AdminEmailOperationResponse<T>>(
+    { operation, payload: payload ?? {} },
+    "Unable to run admin email tool.",
+  );
+
+  if (!Object.prototype.hasOwnProperty.call(data, "data")) {
     throw new Error("Email function returned no response.");
-  }
-
-  if (data.error) {
-    throw new Error(data.error);
   }
 
   return data.data as T;
@@ -3416,19 +3436,7 @@ export async function saveAdminEmailBrandSettings(user: AuthUser, input: AdminEm
 }
 
 export async function sendAdminEmail(input: AdminEmailSendInput) {
-  const { data, error } = await supabase.functions.invoke<AdminEmailSendResult>("send-admin-email", {
-    body: input,
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("Email function returned no response.");
-  }
-
-  return data;
+  return await invokeAdminEmailFunction<AdminEmailSendResult>(input, "Unable to send admin email.");
 }
 
 export async function listCompanies() {

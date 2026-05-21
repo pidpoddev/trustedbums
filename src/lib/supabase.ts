@@ -19,8 +19,8 @@ export function setSupabaseAccessTokenProvider(provider: AccessTokenProvider | n
   preferredAccessTokenMode = "session";
 }
 
-export async function getSupabaseAccessToken() {
-  return accessTokenProvider?.(preferredAccessTokenMode) ?? null;
+export async function getSupabaseAccessToken(mode: SupabaseAccessTokenMode = preferredAccessTokenMode) {
+  return accessTokenProvider?.(mode) ?? null;
 }
 
 function getAlternateAccessTokenMode(mode: SupabaseAccessTokenMode): SupabaseAccessTokenMode {

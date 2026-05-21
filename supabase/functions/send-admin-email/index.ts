@@ -30,7 +30,7 @@ type AdminEmailOperation =
 interface SendAdminEmailRequest { operation?: AdminEmailOperation; payload?: Record<string, unknown>; mode?: SendMode; templateId?: string; templateSlug?: string; recipientGroup?: RecipientGroup; recipientEmails?: string[]; testRecipientEmail?: string; subject?: string; body?: string; metadata?: Record<string, unknown>; triggeredBy?: string }
 interface Recipient { profileId?: string | null; email: string; name?: string | null; suppressed?: boolean; suppressionReason?: string }
 
-const corsHeaders = { "Access-Control-Allow-Headers": "authorization, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" };
+const corsHeaders = { "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" };
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const clerkFrontendApiUrl = Deno.env.get("CLERK_FRONTEND_API_URL");
