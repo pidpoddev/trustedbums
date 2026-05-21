@@ -131,6 +131,12 @@ export function ConversationDock() {
     },
   });
 
+  const openDock = () => {
+    setIsOpen(true);
+    setIsMinimized(false);
+    void queryClient.invalidateQueries({ queryKey: CONVERSATION_QUERY_KEY });
+  };
+
   if (!user) {
     return null;
   }
@@ -307,7 +313,7 @@ export function ConversationDock() {
         </div>
       ) : null}
 
-      <Button type="button" className="rounded-full shadow-lg" onClick={() => { setIsOpen(true); setIsMinimized(false); }}>
+      <Button type="button" className="rounded-full shadow-lg" onClick={openDock}>
         <MessageSquare className="mr-2 h-4 w-4" />
         Chat{threads.length ? ` (${threads.length})` : ""}
       </Button>
