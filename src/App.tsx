@@ -63,7 +63,14 @@ import BumTrainings from "./pages/bum/BumTrainings";
 import BumOpportunityDetail from "./pages/bum/BumOpportunityDetail";
 import BumReports from "./pages/bum/BumReports";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

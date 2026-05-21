@@ -56,12 +56,15 @@ export function ConversationDock() {
   const [draft, setDraft] = useState("");
   const [participantEmail, setParticipantEmail] = useState("");
   const [isAddingParticipant, setIsAddingParticipant] = useState(false);
+  const canPollThreads = isOpen && !draft.trim() && !participantEmail.trim();
 
   const threadsQuery = useQuery({
     queryKey: CONVERSATION_QUERY_KEY,
     queryFn: listConversationThreads,
     enabled: Boolean(user?.id),
-    refetchInterval: isOpen ? 10000 : 30000,
+    refetchInterval: canPollThreads ? 30000 : false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
   });
 
   const threads = useMemo(() => threadsQuery.data ?? [], [threadsQuery.data]);
