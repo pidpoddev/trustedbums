@@ -1,16 +1,20 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Search, Users } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { getPageItems } from "@/lib/pagination";
-import { listVisibleBumProfiles } from "@/lib/portalApi";
+import { createClientBumIntroRequest, listVisibleBumProfiles, type BumProfileRecord } from "@/lib/portalApi";
 
 function searchableText(values: Array<string | null | undefined>) {
   return values.filter(Boolean).join(" ").toLowerCase();
@@ -34,11 +38,19 @@ const bumDirectoryTypeFilters: { value: BumDirectoryTypeFilter; label: string }[
 ];
 
 export default function ClientBums() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<BumDirectoryTypeFilter>("ALL");
   const [profilePage, setProfilePage] = useState(1);
   const [shortlistedIds, setShortlistedIds] = useState<string[]>([]);
   const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [introProfile, setIntroProfile] = useState<BumProfileRecord | null>(null);
+  const [targetCompanyName, setTargetCompanyName] = useState("");
+  const [targetContactName, setTargetContactName] = useState("");
+  const [targetContactTitle, setTargetContactTitle] = useState("");
+  const [introContext, setIntroContext] = useState("");
+  const [introNotes, setIntroNotes] = useState("");
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const bumProfilesQuery = useQuery({
     queryKey: ["client-visible-bum-profiles"],
@@ -88,6 +100,42 @@ export default function ClientBums() {
   }, [bumProfilesQuery.data, deferredSearch, hiddenIds, typeFilter]);
 
   const visibleProfiles = getPageItems(filteredProfiles, profilePage, CLIENT_BUMS_PAGE_SIZE);
+
+  const introRequestMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !introProfile) {
+        throw new Error("Sign in before requesting an intro.");
+      }
+
+      return createClientBumIntroRequest(user, {
+        bumUserId: introProfile.user_id,
+        targetCompanyName,
+        targetContactName,
+        targetContactTitle,
+        introContext,
+        notes: introNotes,
+      });
+    },
+    onSuccess: () => {
+      setIntroProfile(null);
+      setTargetCompanyName("");
+      setTargetContactName("");
+      setTargetContactTitle("");
+      setIntroContext("");
+      setIntroNotes("");
+      toast({
+        title: "Intro request submitted",
+        description: "Trusted Bums can now review this request from the portal.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to submit intro request",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const toggleShortlist = (profileId: string) => {
     setShortlistedIds((current) =>
@@ -195,6 +243,7 @@ export default function ClientBums() {
             showClientActions
             isShortlisted={shortlistedIds.includes(profile.user_id)}
             onShortlist={() => toggleShortlist(profile.user_id)}
+            onRequestIntro={() => setIntroProfile(profile)}
             onHide={() => hideProfile(profile.user_id)}
           />
         ))}
@@ -206,6 +255,93 @@ export default function ClientBums() {
           onPageChange={setProfilePage}
         />
       </div>
+
+      <Dialog open={Boolean(introProfile)} onOpenChange={(open) => !open && setIntroProfile(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request Intro</DialogTitle>
+            <DialogDescription>
+              Send Trusted Bums the account and context for this Bum introduction request.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              introRequestMutation.mutate();
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="intro-bum">Bum</Label>
+              <Input
+                id="intro-bum"
+                value={introProfile?.profiles?.full_name || introProfile?.profiles?.email || "Selected Bum"}
+                readOnly
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="intro-target-company">Target Company</Label>
+              <Input
+                id="intro-target-company"
+                value={targetCompanyName}
+                onChange={(event) => setTargetCompanyName(event.target.value)}
+                placeholder="Acme Corp"
+                required
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="intro-target-contact">Target Contact</Label>
+                <Input
+                  id="intro-target-contact"
+                  value={targetContactName}
+                  onChange={(event) => setTargetContactName(event.target.value)}
+                  placeholder="Jane Smith"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="intro-target-title">Title</Label>
+                <Input
+                  id="intro-target-title"
+                  value={targetContactTitle}
+                  onChange={(event) => setTargetContactTitle(event.target.value)}
+                  placeholder="CIO"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="intro-context">Intro Context</Label>
+              <Textarea
+                id="intro-context"
+                rows={4}
+                value={introContext}
+                onChange={(event) => setIntroContext(event.target.value)}
+                placeholder="What relationship or account context should Trusted Bums evaluate?"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="intro-notes">Notes</Label>
+              <Textarea
+                id="intro-notes"
+                rows={3}
+                value={introNotes}
+                onChange={(event) => setIntroNotes(event.target.value)}
+                placeholder="Timing, product fit, or any constraints."
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIntroProfile(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={introRequestMutation.isPending}>
+                {introRequestMutation.isPending ? "Submitting..." : "Submit Request"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

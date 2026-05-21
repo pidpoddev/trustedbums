@@ -633,6 +633,32 @@ export interface CustomerTargetResponseInput {
   note?: string;
 }
 
+export type ClientBumIntroRequestStatus = "SUBMITTED" | "IN_REVIEW" | "INTRO_REQUESTED" | "CLOSED";
+
+export interface ClientBumIntroRequestRecord {
+  id: string;
+  client_company_id: string;
+  client_user_id: string;
+  bum_user_id: string;
+  target_company_name: string;
+  target_contact_name: string | null;
+  target_contact_title: string | null;
+  intro_context: string;
+  notes: string | null;
+  status: ClientBumIntroRequestStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientBumIntroRequestInput {
+  bumUserId: string;
+  targetCompanyName: string;
+  targetContactName?: string;
+  targetContactTitle?: string;
+  introContext: string;
+  notes?: string;
+}
+
 export type BumSavedItemType = "CLIENT" | "OPPORTUNITY" | "CUSTOMER_TARGET";
 
 export interface BumSavedItemRecord {
@@ -4493,6 +4519,70 @@ export async function createMeetingTranscript(user: AuthUser, input: MeetingTran
     opportunity_registration_id: data.opportunity_registration_id,
     customer_target_id: data.customer_target_id,
     source: data.source,
+  });
+
+  return data;
+}
+
+export async function createClientBumIntroRequest(user: AuthUser, input: ClientBumIntroRequestInput) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users can request Bum introductions.");
+  }
+
+  const targetCompanyName = input.targetCompanyName.trim();
+  const introContext = input.introContext.trim();
+
+  if (!input.bumUserId.trim()) {
+    throw new Error("Choose a Bum before requesting an intro.");
+  }
+
+  if (!targetCompanyName) {
+    throw new Error("Enter the target company for this intro request.");
+  }
+
+  if (!introContext) {
+    throw new Error("Add context for the requested introduction.");
+  }
+
+  const { data: bumProfile, error: bumProfileError } = await supabase
+    .from("bum_profiles")
+    .select("user_id, is_visible_to_clients")
+    .eq("user_id", input.bumUserId)
+    .eq("is_visible_to_clients", true)
+    .maybeSingle<Pick<BumProfileRecord, "user_id" | "is_visible_to_clients">>();
+
+  if (bumProfileError) {
+    throw bumProfileError;
+  }
+
+  if (!bumProfile) {
+    throw new Error("That Bum profile is no longer available.");
+  }
+
+  const { data, error } = await supabase
+    .from("client_bum_intro_requests")
+    .insert({
+      client_company_id: user.clientId,
+      client_user_id: user.id,
+      bum_user_id: input.bumUserId,
+      target_company_name: targetCompanyName,
+      target_contact_name: toNullableString(input.targetContactName),
+      target_contact_title: toNullableString(input.targetContactTitle),
+      intro_context: introContext,
+      notes: toNullableString(input.notes),
+      status: "SUBMITTED",
+    })
+    .select("*")
+    .single<ClientBumIntroRequestRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "client_bum_intro_request_created", "client_bum_intro_requests", data.id, {
+    bum_user_id: input.bumUserId,
+    target_company_name: data.target_company_name,
+    target_contact_name: data.target_contact_name,
   });
 
   return data;

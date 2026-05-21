@@ -1,8 +1,9 @@
-import { ExternalLink, Link2, MapPin, ShieldCheck, Star, BriefcaseBusiness, EyeOff } from "lucide-react";
+import { ExternalLink, Heart, Link2, MapPin, ShieldCheck, Star, BriefcaseBusiness, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import type { BumProfileRecord } from "@/lib/portalApi";
 import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
@@ -22,6 +23,7 @@ interface BumProfileCardProps {
   showClientActions?: boolean;
   isShortlisted?: boolean;
   onShortlist?: () => void;
+  onRequestIntro?: () => void;
   onHide?: () => void;
 }
 
@@ -97,12 +99,10 @@ function profileName(profile: BumProfileCardProps["profile"]) {
   );
 }
 
-export function BumProfileCard({ profile, showAdminMeta = false, showClientActions = false, isShortlisted = false, onShortlist, onHide }: BumProfileCardProps) {
+export function BumProfileCard({ profile, showAdminMeta = false, showClientActions = false, isShortlisted = false, onShortlist, onRequestIntro, onHide }: BumProfileCardProps) {
   const timeZone = useUserTimeZone();
   const acceptedTerms = profile.acceptedTerms ?? [];
   const displayName = profileName(profile);
-  const requestSubject = encodeURIComponent(`Trusted Bums intro request: ${displayName}`);
-  const questionSubject = encodeURIComponent(`Question about Trusted Bum: ${displayName}`);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -257,14 +257,22 @@ export function BumProfileCard({ profile, showAdminMeta = false, showClientActio
 
         {showClientActions ? (
           <div className="flex flex-wrap gap-2 border-t pt-4">
-            <Button type="button" size="sm" variant={isShortlisted ? "secondary" : "outline"} onClick={onShortlist}>
-              {isShortlisted ? "Shortlisted" : "Shortlist"}
-            </Button>
-            <Button size="sm" asChild>
-              <a href={`mailto:bums@trustedbums.com?subject=${requestSubject}`}>Request intro</a>
-            </Button>
-            <Button size="sm" variant="outline" asChild>
-              <a href={`mailto:bums@trustedbums.com?subject=${questionSubject}`}>Ask Trusted Bums</a>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant={isShortlisted ? "secondary" : "outline"}
+                  onClick={onShortlist}
+                  aria-label={isShortlisted ? "Remove from shortlist" : "Add to shortlist"}
+                >
+                  <Heart className={isShortlisted ? "h-4 w-4 fill-current" : "h-4 w-4"} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{isShortlisted ? "Remove from shortlist" : "Shortlist"}</TooltipContent>
+            </Tooltip>
+            <Button type="button" size="sm" onClick={onRequestIntro}>
+              Request intro
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={onHide}>
               <EyeOff className="mr-2 h-4 w-4" /> Hide
