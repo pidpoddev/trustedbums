@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, Eye, HelpCircle, Image, Mail, Megaphone, MousePointerClick, Pencil, Plus, Save, Send, ShieldAlert, Sparkles, Workflow } from "lucide-react";
+import { AlertCircle, CalendarClock, Eye, HelpCircle, Image, Mail, Megaphone, MousePointerClick, Pencil, Plus, Save, Send, ShieldAlert, Sparkles, Workflow } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -189,6 +190,10 @@ function triggerEventLabel(value?: AdminEmailTriggerEvent | null) {
   return triggerEvents.find((event) => event.value === value)?.label ?? value;
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : typeof error === "string" ? error : "Unable to load this email data.";
+}
+
 export default function AdminEmails() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -213,7 +218,7 @@ export default function AdminEmails() {
   const triggerRules = triggerRulesQuery.data ?? [];
   const companies = companiesQuery.data ?? [];
 
-  const [activeTab, setActiveTab] = useState("send");
+  const [activeTab, setActiveTab] = useState("library");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [draft, setDraft] = useState<AdminEmailTemplateRecord | null>(null);
   const [metadata, setMetadata] = useState<Record<string, string>>({});
@@ -487,6 +492,11 @@ export default function AdminEmails() {
   const totalClicks = deliveries.filter((delivery) => delivery.clicked_at).length;
   const sentCampaigns = campaigns.filter((campaign) => campaign.status === "SENT").length;
   const activeAutomations = schedules.filter((schedule) => schedule.is_active).length + triggerRules.filter((rule) => rule.is_active).length;
+  const loadErrors = [
+    templatesQuery.error ? "Email templates: " + errorMessage(templatesQuery.error) : "",
+    triggerRulesQuery.error ? "Triggered emails: " + errorMessage(triggerRulesQuery.error) : "",
+    schedulesQuery.error ? "Recurring emails: " + errorMessage(schedulesQuery.error) : "",
+  ].filter(Boolean);
 
   return (
     <div>
@@ -497,20 +507,70 @@ export default function AdminEmails() {
         </div>
       </PageHeader>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-4">
+      <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Email templates</p><p className="text-2xl font-semibold">{templates.length}</p><p className="text-xs text-muted-foreground">{triggerRules.length} triggers</p></CardContent></Card>
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Campaigns sent</p><p className="text-2xl font-semibold">{sentCampaigns}</p></CardContent></Card>
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Sendable preview</p><p className="text-2xl font-semibold">{previewCount}</p><p className="text-xs text-muted-foreground">{suppressedCount} suppressed</p></CardContent></Card>
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Automations active</p><p className="text-2xl font-semibold">{activeAutomations}</p></CardContent></Card>
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Tracked engagement</p><p className="text-2xl font-semibold">{totalOpens}/{totalClicks}</p><p className="text-xs text-muted-foreground">opens / clicks</p></CardContent></Card>
       </div>
 
+      {loadErrors.length ? (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Email data did not load</AlertTitle>
+          <AlertDescription>{loadErrors.join(" ")}</AlertDescription>
+        </Alert>
+      ) : null}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="flex h-auto flex-wrap justify-start">
+          <TabsTrigger value="library"><Mail className="mr-2 h-4 w-4" />Email Library</TabsTrigger>
           <TabsTrigger value="send"><Megaphone className="mr-2 h-4 w-4" />Send</TabsTrigger>
           <TabsTrigger value="automations"><Workflow className="mr-2 h-4 w-4" />Automations</TabsTrigger>
           <TabsTrigger value="brand"><Sparkles className="mr-2 h-4 w-4" />Brand & Assets</TabsTrigger>
           <TabsTrigger value="results"><MousePointerClick className="mr-2 h-4 w-4" />Results</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="library" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-display"><Mail className="h-5 w-5" />Email Library</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">Every saved email template lives here, including automatic triggered emails. Use Edit to change the subject, body, audience, trigger, merge fields, and active status.</p>
+              <div className="overflow-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Trigger</TableHead>
+                      <TableHead>Audience</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {templates.map((template) => (
+                      <TableRow key={template.id}>
+                        <TableCell>
+                          <p className="font-medium">{template.name}</p>
+                          <p className="max-w-xl text-xs text-muted-foreground">{template.description || template.slug}</p>
+                        </TableCell>
+                        <TableCell><Badge variant={template.trigger_event && template.trigger_event !== "MANUAL" ? "secondary" : "outline"}>{triggerEventLabel(template.trigger_event)}</Badge></TableCell>
+                        <TableCell>{recipientGroups.find((group) => group.value === template.recipient_group)?.label ?? template.recipient_group}</TableCell>
+                        <TableCell><Badge variant={template.is_active ? "default" : "secondary"}>{template.is_active ? "Active" : "Off"}</Badge></TableCell>
+                        <TableCell className="text-right"><Button type="button" size="sm" variant="outline" onClick={() => editEmailTemplate(template.id)}><Pencil className="mr-2 h-4 w-4" />Edit</Button></TableCell>
+                      </TableRow>
+                    ))}
+                    {!templatesQuery.isLoading && !templates.length ? <TableRow><TableCell colSpan={5} className="text-sm text-muted-foreground">No email templates loaded. If this account is an Admin, this usually means the browser session could not read the admin email tables.</TableCell></TableRow> : null}
+                    {templatesQuery.isLoading ? <TableRow><TableCell colSpan={5} className="text-sm text-muted-foreground">Loading email templates...</TableCell></TableRow> : null}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="send" className="space-y-4">
           <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
