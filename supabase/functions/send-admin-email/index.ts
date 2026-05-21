@@ -8,7 +8,7 @@ interface EmailTemplateRow { id: string; slug: string; name: string; recipient_g
 interface BrandSettingsRow { sender_name: string; logo_url: string; accent_color: string; footer_text: string; physical_address: string | null }
 interface BumProfileRow { user_id: string; industries: string[] | null; profiles: Pick<ProfileRow, "id" | "full_name" | "email"> | null }
 
-type RecipientGroup = "CLIENT_COMPANY" | "ALL_CLIENTS" | "ALL_BUMS" | "BUM_INDUSTRY_MATCH" | "ADMINS" | "CUSTOM";
+type RecipientGroup = "ALL_USERS" | "CLIENT_COMPANY" | "ALL_CLIENTS" | "ALL_BUMS" | "BUM_INDUSTRY_MATCH" | "ADMINS" | "CUSTOM";
 type EmailCategory = "transactional" | "opportunity_updates" | "client_alerts" | "bum_marketplace_alerts" | "admin_announcements" | "onboarding" | "marketing";
 type SendMode = "manual" | "action" | "preview" | "test";
 
@@ -83,13 +83,50 @@ function htmlFromText(value: string, deliveryId: string | undefined, brand: Bran
   const pixel = deliveryId ? '<img src="' + emailTrackingBaseUrl + '/open?d=' + encodeURIComponent(deliveryId) + '" width="1" height="1" alt="" style="display:none" />' : "";
   const address = brand.physical_address ? '<div style="margin-top:8px;">' + escapeHtml(brand.physical_address) + '</div>' : "";
 
-  return '<!doctype html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;padding:24px 12px;"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;"><tr><td style="padding:24px 28px;border-bottom:1px solid #e2e8f0;"><img src="' + escapeHtml(normalizeBrandUrl(brand.logo_url)) + '" alt="' + escapeHtml(brand.sender_name) + '" style="display:block;max-height:48px;width:auto;border:0;" /><div style="height:4px;width:56px;background:' + accent + ';border-radius:999px;margin-top:18px;"></div></td></tr><tr><td style="padding:28px;font-size:15px;line-height:1.65;color:#334155;">' + body + '</td></tr><tr><td style="padding:18px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:12px;line-height:1.5;color:#64748b;">' + escapeHtml(brand.footer_text) + address + '</td></tr></table></td></tr></table>' + pixel + '</body></html>';
+  return '<!doctype html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;padding:24px 12px;"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;"><tr><td style="background:#0f172a;padding:0;"><div style="height:6px;background:' + accent + ';"></div><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="padding:22px 28px;"><img src="' + escapeHtml(normalizeBrandUrl(brand.logo_url)) + '" alt="' + escapeHtml(brand.sender_name) + '" style="display:block;max-height:46px;width:auto;border:0;background:#ffffff;border-radius:10px;padding:8px;" /></td><td align="right" style="padding:22px 28px;color:#e2e8f0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;">Trusted Bums</td></tr></table></td></tr><tr><td style="padding:30px 28px;font-size:15px;line-height:1.65;color:#334155;">' + body + '</td></tr><tr><td style="background:#0f172a;padding:20px 28px;border-top:6px solid ' + accent + ';font-size:12px;line-height:1.55;color:#cbd5e1;">' + escapeHtml(brand.footer_text) + address + '</td></tr></table></td></tr></table>' + pixel + '</body></html>';
 }
 
 async function getMicrosoftAccessToken() { if (!microsoftTenantId || !microsoftClientId || !microsoftClientSecret) throw new Error("Microsoft Graph credentials are not configured in Supabase Edge Function secrets."); const response = await fetch(`https://login.microsoftonline.com/${microsoftTenantId}/oauth2/v2.0/token`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ client_id: microsoftClientId, client_secret: microsoftClientSecret, grant_type: "client_credentials", scope: "https://graph.microsoft.com/.default" }) }); const payload = await response.json().catch(() => ({})) as { access_token?: string; error?: string; error_description?: string }; if (!response.ok || !payload.access_token) { const detail = [payload.error, payload.error_description].filter(Boolean).join(": "); throw new Error(detail || `Microsoft rejected the email credentials with HTTP ${response.status}.`) } return payload.access_token }
 async function getTemplate(input: SendAdminEmailRequest) { let query = supabaseAdmin.from("admin_email_templates").select("*"); if (input.templateId) query = query.eq("id", input.templateId); else if (input.templateSlug) query = query.eq("slug", input.templateSlug); else throw new Error("Choose an email template."); const { data, error } = await query.maybeSingle<EmailTemplateRow>(); if (error || !data) throw new Error("Email template not found."); if (!data.is_active) throw new Error("Email template is inactive."); return data }
 function profileToRecipient(profile: Pick<ProfileRow, "id" | "full_name" | "email">): Recipient | null { const email = profile.email?.trim().toLowerCase(); if (!email || !isEmail(email)) return null; return { profileId: profile.id, email, name: profile.full_name } }
-async function resolveRecipients(group: RecipientGroup, input: SendAdminEmailRequest, metadata: Record<string, string>) { if (group === "CUSTOM") return Array.from(new Map((input.recipientEmails ?? []).map((email) => email.trim().toLowerCase()).filter(isEmail).map((email) => [email, { email } as Recipient])).values()); if (group === "CLIENT_COMPANY") { const companyId = metadata.company_id; if (!companyId) throw new Error("CLIENT_COMPANY emails require metadata.company_id."); const { data, error } = await supabaseAdmin.from("profiles").select("id, full_name, email").eq("company_id", companyId).eq("role", "CLIENT"); if (error) throw error; return (data ?? []).map(profileToRecipient).filter(Boolean) as Recipient[] } if (group === "ALL_CLIENTS" || group === "ALL_BUMS") { const role = group === "ALL_CLIENTS" ? "CLIENT" : "BUM"; const { data, error } = await supabaseAdmin.from("profiles").select("id, full_name, email").eq("role", role); if (error) throw error; return (data ?? []).map(profileToRecipient).filter(Boolean) as Recipient[] } if (group === "ADMINS") { const { data, error } = await supabaseAdmin.from("profiles").select("id, full_name, email").or("is_admin.eq.true,role.eq.ADMIN"); if (error) throw error; return (data ?? []).map(profileToRecipient).filter(Boolean) as Recipient[] } const industry = metadata.industry?.toLowerCase(); if (!industry) throw new Error("BUM_INDUSTRY_MATCH emails require metadata.industry."); const { data, error } = await supabaseAdmin.from("bum_profiles").select("user_id, industries, profiles!bum_profiles_user_id_fkey(id, full_name, email)").eq("is_visible_to_clients", true).returns<BumProfileRow[]>(); if (error) throw error; return (data ?? []).filter((bum) => (bum.industries ?? []).some((item) => item.toLowerCase() === industry)).map((bum) => bum.profiles && profileToRecipient(bum.profiles)).filter(Boolean) as Recipient[] }
+async function resolveRecipients(group: RecipientGroup, input: SendAdminEmailRequest, metadata: Record<string, string>) {
+  if (group === "CUSTOM") {
+    return Array.from(new Map((input.recipientEmails ?? []).map((email) => email.trim().toLowerCase()).filter(isEmail).map((email) => [email, { email } as Recipient])).values());
+  }
+
+  if (group === "ALL_USERS") {
+    const { data, error } = await supabaseAdmin.from("profiles").select("id, full_name, email");
+    if (error) throw error;
+    return (data ?? []).map(profileToRecipient).filter(Boolean) as Recipient[];
+  }
+
+  if (group === "CLIENT_COMPANY") {
+    const companyId = metadata.company_id;
+    if (!companyId) throw new Error("CLIENT_COMPANY emails require metadata.company_id.");
+    const { data, error } = await supabaseAdmin.from("profiles").select("id, full_name, email").eq("company_id", companyId).eq("role", "CLIENT");
+    if (error) throw error;
+    return (data ?? []).map(profileToRecipient).filter(Boolean) as Recipient[];
+  }
+
+  if (group === "ALL_CLIENTS" || group === "ALL_BUMS") {
+    const role = group === "ALL_CLIENTS" ? "CLIENT" : "BUM";
+    const { data, error } = await supabaseAdmin.from("profiles").select("id, full_name, email").eq("role", role);
+    if (error) throw error;
+    return (data ?? []).map(profileToRecipient).filter(Boolean) as Recipient[];
+  }
+
+  if (group === "ADMINS") {
+    const { data, error } = await supabaseAdmin.from("profiles").select("id, full_name, email").or("is_admin.eq.true,role.eq.ADMIN");
+    if (error) throw error;
+    return (data ?? []).map(profileToRecipient).filter(Boolean) as Recipient[];
+  }
+
+  const industry = metadata.industry?.toLowerCase();
+  if (!industry) throw new Error("BUM_INDUSTRY_MATCH emails require metadata.industry.");
+  const { data, error } = await supabaseAdmin.from("bum_profiles").select("user_id, industries, profiles!bum_profiles_user_id_fkey(id, full_name, email)").eq("is_visible_to_clients", true).returns<BumProfileRow[]>();
+  if (error) throw error;
+  return (data ?? []).filter((bum) => (bum.industries ?? []).some((item) => item.toLowerCase() === industry)).map((bum) => bum.profiles && profileToRecipient(bum.profiles)).filter(Boolean) as Recipient[];
+}
 async function applySuppressions(recipients: Recipient[], category: EmailCategory, includeSuppressed: boolean) { if (!recipients.length || category === "transactional") return recipients; const emails = recipients.map((recipient) => recipient.email); const [{ data: suppressions, error: suppressionError }, { data: preferences, error: preferenceError }] = await Promise.all([supabaseAdmin.from("admin_email_suppressions").select("email, reason").in("email", emails), supabaseAdmin.from("admin_email_preferences").select("email, category").eq("category", category).eq("opted_out", true).in("email", emails)]); if (suppressionError) throw suppressionError; if (preferenceError) throw preferenceError; const suppressionByEmail = new Map((suppressions ?? []).map((row) => [row.email.toLowerCase(), row.reason])); const optedOutEmails = new Set((preferences ?? []).map((row) => row.email.toLowerCase())); return recipients.map((recipient) => { const reason = suppressionByEmail.get(recipient.email) ?? (optedOutEmails.has(recipient.email) ? "OPTED_OUT" : undefined); return reason ? { ...recipient, suppressed: true, suppressionReason: reason } : recipient }).filter((recipient) => includeSuppressed || !recipient.suppressed) }
 async function sendMicrosoftEmail(accessToken: string, recipient: string, subject: string, body: string, deliveryId: string, replyTo: string | null, brand: BrandSettingsRow) { const response = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftSenderEmail)}/sendMail`, { method: "POST", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: { subject, body: { contentType: "HTML", content: htmlFromText(body, deliveryId, brand) }, toRecipients: [{ emailAddress: { address: recipient } }], replyTo: replyTo ? [{ emailAddress: { address: replyTo } }] : undefined }, saveToSentItems: true }) }); if (!response.ok) { const payload = await response.json().catch(() => ({})) as { error?: { code?: string; message?: string } }; const detail = [payload.error?.code, payload.error?.message].filter(Boolean).join(": "); throw new Error(detail || `Microsoft Graph sendMail failed with HTTP ${response.status}.`) } }
 

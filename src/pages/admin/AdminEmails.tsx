@@ -49,6 +49,7 @@ import {
 type TriggerRuleEvent = Exclude<AdminEmailTriggerEvent, "MANUAL">;
 
 const recipientGroups: Array<{ value: AdminEmailRecipientGroup; label: string }> = [
+  { value: "ALL_USERS", label: "All users" },
   { value: "CLIENT_COMPANY", label: "Client company users" },
   { value: "ALL_CLIENTS", label: "All clients" },
   { value: "ALL_BUMS", label: "All Bums" },
@@ -68,7 +69,11 @@ const categories: Array<{ value: AdminEmailCategory; label: string }> = [
 ];
 
 const triggerEvents: Array<{ value: TriggerRuleEvent; label: string }> = [
+  { value: "CLIENT_SIGNUP_CREATED", label: "New client signup" },
+  { value: "BUM_SIGNUP_CREATED", label: "New Bum signup" },
+  { value: "CLIENT_USER_CREATED", label: "New client user" },
   { value: "OPPORTUNITY_CLAIM_CREATED", label: "Opportunity claim created" },
+  { value: "OPPORTUNITY_CLAIM_ACCEPTED", label: "Opportunity claim accepted" },
   { value: "OPPORTUNITY_CLAIM_STATUS_CHANGED", label: "Claim status changed" },
   { value: "CLIENT_CREATED", label: "Client created" },
   { value: "CLIENT_TARGET_CREATED", label: "Client target created" },

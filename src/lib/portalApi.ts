@@ -132,10 +132,14 @@ export interface ClerkSupportLinkResult {
   expiresInSeconds: number;
 }
 
-export type AdminEmailRecipientGroup = "CLIENT_COMPANY" | "ALL_CLIENTS" | "ALL_BUMS" | "BUM_INDUSTRY_MATCH" | "ADMINS" | "CUSTOM";
+export type AdminEmailRecipientGroup = "ALL_USERS" | "CLIENT_COMPANY" | "ALL_CLIENTS" | "ALL_BUMS" | "BUM_INDUSTRY_MATCH" | "ADMINS" | "CUSTOM";
 export type AdminEmailTriggerEvent =
   | "MANUAL"
+  | "CLIENT_SIGNUP_CREATED"
+  | "BUM_SIGNUP_CREATED"
+  | "CLIENT_USER_CREATED"
   | "OPPORTUNITY_CLAIM_CREATED"
+  | "OPPORTUNITY_CLAIM_ACCEPTED"
   | "OPPORTUNITY_CLAIM_STATUS_CHANGED"
   | "CLIENT_CREATED"
   | "CLIENT_TARGET_CREATED"
@@ -1377,17 +1381,21 @@ async function ensureCompany(input: {
 
 export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
   const existing = await getProfileRecord(user.id);
+  const matchedCompanyBefore = !existing?.company_id && user.role === "CLIENT" && user.companyName
+    ? await findExistingCompanyMatch({ companyName: user.companyName, email: user.email })
+    : null;
   const company =
     existing?.company_id
       ? await getCompanyById(existing.company_id)
       : user.role === "CLIENT" && user.companyName
-        ? await ensureCompany({
+        ? matchedCompanyBefore ?? await ensureCompany({
             companyName: user.companyName,
             email: user.email,
             relationshipStage: "CLIENT",
           })
         : null;
   const companyId = existing?.company_id ?? company?.id ?? null;
+  const isNewProfile = !existing;
 
   const { data, error } = await supabase
     .from("profiles")
@@ -1425,6 +1433,39 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
     const businessDomain = getBusinessDomainFromEmail(user.email);
     if (businessDomain) {
       await upsertCompanyDomainBestEffort(data.company_id, businessDomain, true);
+    }
+  }
+
+  if (isNewProfile) {
+    const templateSlug = user.role === "BUM"
+      ? "bum_signup_admin"
+      : user.role === "CLIENT" && matchedCompanyBefore
+        ? "client_user_created_admin"
+        : user.role === "CLIENT"
+          ? "client_signup_admin"
+          : null;
+    const triggeredBy = user.role === "BUM"
+      ? "BUM_SIGNUP_CREATED"
+      : user.role === "CLIENT" && matchedCompanyBefore
+        ? "CLIENT_USER_CREATED"
+        : "CLIENT_SIGNUP_CREATED";
+
+    if (templateSlug) {
+      await sendAdminEmail({
+        mode: "action",
+        templateSlug,
+        metadata: {
+          company_id: data.company_id ?? "",
+          client_company_name: data.companies?.name ?? user.companyName ?? "",
+          client_name: data.companies?.name ?? user.companyName ?? "",
+          user_name: data.full_name ?? user.name,
+          user_email: data.email ?? user.email,
+          bum_name: data.full_name ?? user.name,
+        },
+        triggeredBy,
+      }).catch((error) => {
+        console.error("Unable to send signup notification", error);
+      });
     }
   }
 
@@ -2749,6 +2790,30 @@ export async function updateOpportunityClaimShare(user: AuthUser, claimId: strin
   return data;
 }
 
+async function notifyClaimAccepted(user: AuthUser, claim: OpportunityClaimRecord, note?: string) {
+  if (user.role !== "ADMIN" || !claim.profiles?.email) {
+    return;
+  }
+
+  const company = claim.company_id ? await getCompanyById(claim.company_id) : null;
+  await sendAdminEmail({
+    mode: "action",
+    templateSlug: "opportunity_claim_accepted_bum",
+    recipientEmails: [claim.profiles.email],
+    metadata: {
+      bum_name: claim.profiles.full_name ?? claim.profiles.email,
+      target_account_name: claim.opportunity_registrations?.target_account_name ?? "this opportunity",
+      contact_name: claim.contact_name,
+      contact_company: claim.contact_company,
+      client_name: company?.name ?? "the client",
+      admin_note: note ?? claim.note ?? "",
+    },
+    triggeredBy: "OPPORTUNITY_CLAIM_ACCEPTED",
+  }).catch((error) => {
+    console.error("Unable to send claim accepted notification", error);
+  });
+}
+
 export async function updateAdminOpportunityClaim(
   user: AuthUser,
   claimId: string,
@@ -2832,6 +2897,10 @@ export async function updateAdminOpportunityClaim(
   await createAuditEvent(user, "opportunity_claim_updated", "opportunity_claims", data.id, {
     fields: Object.keys(payload),
   });
+
+  if (updates.status === "APPROVED" && claim.status !== "APPROVED") {
+    await notifyClaimAccepted(user, data, updates.note);
+  }
 
   return data;
 }
@@ -2917,7 +2986,7 @@ export async function updateOpportunityClaimStatus(user: AuthUser, claimId: stri
     .from("opportunity_claims")
     .update(payload)
     .eq("id", claimId)
-    .select("*")
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, client_pay_programs(*)), profiles(id, full_name, email)")
     .single<OpportunityClaimRecord>();
 
   if (error) {
@@ -2929,6 +2998,10 @@ export async function updateOpportunityClaimStatus(user: AuthUser, claimId: stri
   await createAuditEvent(user, "opportunity_claim_status_changed", "opportunity_claims", data.id, {
     status,
   });
+
+  if (status === "APPROVED") {
+    await notifyClaimAccepted(user, data, note);
+  }
 
   return data;
 }
