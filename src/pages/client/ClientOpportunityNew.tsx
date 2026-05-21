@@ -599,6 +599,12 @@ export default function ClientOpportunityNew() {
   const targetResponses = useMemo(() => targetResponsesQuery.data ?? [], [targetResponsesQuery.data]);
   const linkedOpportunityId = new URLSearchParams(location.search).get("opportunityId");
   const linkedTargetResponseId = new URLSearchParams(location.search).get("targetResponseId");
+  const targetQuestionResponses = useMemo(() => {
+    return targetResponses.filter((response) => response.contact_name.toLowerCase().startsWith("question about "));
+  }, [targetResponses]);
+  const relationshipTargetResponses = useMemo(() => {
+    return targetResponses.filter((response) => !response.contact_name.toLowerCase().startsWith("question about "));
+  }, [targetResponses]);
   const sortedQuestions = useMemo(() => {
     return [...questions].sort((a, b) => {
       const aLinked = linkedOpportunityId && a.opportunity_registration_id === linkedOpportunityId ? 1 : 0;
@@ -610,10 +616,8 @@ export default function ClientOpportunityNew() {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
   }, [linkedOpportunityId, questions]);
-  const openQuestionCount = questions.filter((question) => question.status === "OPEN").length;
-  const pendingTargetResponseCount = targetResponses.filter((response) => response.status === "PROPOSED").length;
-  const sortedTargetResponses = useMemo(() => {
-    return [...targetResponses].sort((a, b) => {
+  const sortedTargetQuestions = useMemo(() => {
+    return [...targetQuestionResponses].sort((a, b) => {
       const aLinked = linkedTargetResponseId && a.id === linkedTargetResponseId ? 1 : 0;
       const bLinked = linkedTargetResponseId && b.id === linkedTargetResponseId ? 1 : 0;
       if (aLinked !== bLinked) return bLinked - aLinked;
@@ -622,7 +626,20 @@ export default function ClientOpportunityNew() {
       if (aOpen !== bOpen) return bOpen - aOpen;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [linkedTargetResponseId, targetResponses]);
+  }, [linkedTargetResponseId, targetQuestionResponses]);
+  const openQuestionCount = questions.filter((question) => question.status === "OPEN").length + targetQuestionResponses.filter((response) => response.status === "PROPOSED").length;
+  const pendingTargetResponseCount = relationshipTargetResponses.filter((response) => response.status === "PROPOSED").length;
+  const sortedTargetResponses = useMemo(() => {
+    return [...relationshipTargetResponses].sort((a, b) => {
+      const aLinked = linkedTargetResponseId && a.id === linkedTargetResponseId ? 1 : 0;
+      const bLinked = linkedTargetResponseId && b.id === linkedTargetResponseId ? 1 : 0;
+      if (aLinked !== bLinked) return bLinked - aLinked;
+      const aOpen = a.status === "PROPOSED" ? 1 : 0;
+      const bOpen = b.status === "PROPOSED" ? 1 : 0;
+      if (aOpen !== bOpen) return bOpen - aOpen;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [linkedTargetResponseId, relationshipTargetResponses]);
   const claimsByOpportunity = useMemo(() => {
     const grouped = new Map<string, OpportunityClaimRecord[]>();
 
@@ -776,7 +793,7 @@ export default function ClientOpportunityNew() {
 
               {!sortedTargetResponses.length ? (
                 <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  No Bums have submitted "I know someone" responses for this company's target accounts yet.
+                  No Bums have submitted relationship responses for this company's target accounts yet.
                 </div>
               ) : null}
             </CardContent>
@@ -792,6 +809,34 @@ export default function ClientOpportunityNew() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {sortedTargetQuestions.map((response) => {
+                const isLinked = linkedTargetResponseId === response.id;
+                const targetName = response.customer_targets?.target_companies?.name ?? response.customer_targets?.target_account_name ?? "Target account";
+
+                return (
+                  <div key={response.id} className={"rounded-md border p-4 " + (isLinked ? "border-primary/50 bg-primary/5" : "")}>
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StatusBadge label={response.status === "PROPOSED" ? "Waiting on response" : response.status.replaceAll("_", " ")} variant={response.status === "PROPOSED" ? "warning" : response.status === "DECLINED" ? "destructive" : "info"} />
+                          <StatusBadge label="Target account" variant="secondary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{targetName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Asked by {response.profiles?.full_name ?? response.profiles?.email ?? "a Bum"} on {formatDateForTimeZone(response.created_at, timeZone)}
+                          </p>
+                        </div>
+                        {response.note ? <p className="text-sm">{response.note}</p> : null}
+                      </div>
+                      <Button type="button" variant="outline" size="sm" asChild>
+                        <Link to={`/client/opportunities?tab=responses&targetResponseId=${response.id}`}>Review</Link>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+
               {sortedQuestions.map((question) => {
                 const responseValue = questionResponses[question.id] ?? question.response ?? "";
                 const visibilityValue = questionVisibilities[question.id] ?? question.response_visibility ?? "BUM_ONLY";
@@ -864,9 +909,9 @@ export default function ClientOpportunityNew() {
                 );
               })}
 
-              {!sortedQuestions.length ? (
+              {!sortedQuestions.length && !sortedTargetQuestions.length ? (
                 <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  No Bum questions are waiting on this company’s opportunities.
+                  No Bum questions are waiting on this company’s opportunities or target accounts.
                 </div>
               ) : null}
             </CardContent>
