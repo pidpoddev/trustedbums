@@ -586,6 +586,17 @@ export default function ClientOpportunityNew() {
       >
         <Button
           type="button"
+          variant="outline"
+          onClick={() => {
+            setActiveTab("import");
+            setIsRegisterOpen(false);
+          }}
+        >
+          <FileUp className="mr-2 h-4 w-4" />
+          Bulk Import
+        </Button>
+        <Button
+          type="button"
           onClick={() => {
             setActiveTab("register");
             setIsRegisterOpen(true);
@@ -618,7 +629,6 @@ export default function ClientOpportunityNew() {
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="questions">Questions{openQuestionCount ? ` (${openQuestionCount})` : ""}</TabsTrigger>
           <TabsTrigger value="register">Register Opportunity</TabsTrigger>
-          <TabsTrigger value="import">Import</TabsTrigger>
           <TabsTrigger value="commission-plan">Commission Plan</TabsTrigger>
         </TabsList>
 
