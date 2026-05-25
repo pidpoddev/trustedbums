@@ -1,0 +1,316 @@
+openapi: 3.1.0
+info:
+  title: Trusted Bums Extension API
+  version: 1.0.0
+  summary: Versioned API surface for trusted browser-extension integrations.
+  description: |
+    The Extension API is the stable boundary between Trusted Bums and browser extensions.
+    Version 1 is intentionally narrow: authenticated users can discover eligible destinations
+    and create draft page captures from user-initiated browser actions.
+
+    Compatibility rule: v1 changes must be additive. Breaking request/response changes require
+    a new Supabase Edge Function namespace such as extension-api-v2.
+servers:
+  - url: https://vaoqvtxqvbptyxddpoju.supabase.co
+    description: Trusted Bums Supabase project
+security:
+  - ClerkBearerAuth: []
+tags:
+  - name: Extension API v1
+    description: Stable v1 endpoints for Chrome extension workflows.
+paths:
+  /functions/v1/extension-api-v1/context:
+    get:
+      operationId: getExtensionContextV1
+      tags: [Extension API v1]
+      summary: List the current user and valid capture destinations.
+      description: |
+        Returns the signed-in Trusted Bums user profile and the opportunity/customer-target
+        destinations the extension may attach page captures to. The server derives visibility
+        from the Clerk session token and Trusted Bums role/profile records.
+      responses:
+        '200':
+          description: Extension context for the current user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtensionContextResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /functions/v1/extension-api-v1/page-captures:
+    post:
+      operationId: createExtensionPageCaptureV1
+      tags: [Extension API v1]
+      summary: Create a draft page capture from a user-selected browser page.
+      description: |
+        Stores a user-initiated page capture as a draft source artifact attached to exactly one
+        opportunity registration or customer target. The extension should call this only after
+        the user previews and confirms the capture. The endpoint is idempotent when
+        clientRequestId is supplied.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageCaptureCreateRequest'
+            examples:
+              linkedinProfileOpportunity:
+                summary: LinkedIn profile attached to an opportunity
+                value:
+                  destinationType: OPPORTUNITY_REGISTRATION
+                  opportunityId: 5ab7f4ba-5f12-49be-9ef0-c5bd2393b59a
+                  clientRequestId: ext-20260525-001
+                  captureType: LINKEDIN_PROFILE
+                  sourceUrl: https://www.linkedin.com/in/example-person/
+                  pageTitle: Example Person | LinkedIn
+                  selectedText: VP of Finance at Example Co
+                  note: I know them from a prior BlackCurrant project.
+                  metadata:
+                    extensionVersion: 0.1.0
+      responses:
+        '201':
+          description: Draft capture created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageCaptureResponse'
+        '200':
+          description: Existing capture returned for an idempotent clientRequestId retry.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageCaptureResponse'
+                  - type: object
+                    properties:
+                      idempotent:
+                        type: boolean
+                        const: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+components:
+  securitySchemes:
+    ClerkBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Clerk session JWT for the signed-in Trusted Bums user.
+  responses:
+    BadRequest:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing, invalid, or unverifiable Clerk session token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: The user is authenticated but cannot access the requested destination.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServerError:
+      description: Unexpected server-side failure.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ApiVersion:
+      type: string
+      enum: [v1]
+    DestinationType:
+      type: string
+      enum: [OPPORTUNITY_REGISTRATION, CUSTOMER_TARGET]
+    CaptureType:
+      type: string
+      enum: [LINKEDIN_PROFILE, LINKEDIN_COMPANY, WEB_PAGE, OTHER]
+    ExtensionProfile:
+      type: object
+      required: [id, role]
+      properties:
+        id:
+          type: string
+          description: Clerk user id mirrored in Trusted Bums profiles.
+        name:
+          type: [string, 'null']
+        email:
+          type: [string, 'null']
+          format: email
+        role:
+          type: string
+          enum: [ADMIN, CLIENT, BUM]
+        companyId:
+          type: [string, 'null']
+          format: uuid
+        clientAccessRole:
+          type: [string, 'null']
+    OpportunityDestination:
+      type: object
+      required: [id, destinationType, targetAccountName, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        destinationType:
+          type: string
+          const: OPPORTUNITY_REGISTRATION
+        companyId:
+          type: [string, 'null']
+          format: uuid
+        companyName:
+          type: [string, 'null']
+        targetAccountName:
+          type: string
+        status:
+          type: string
+    CustomerTargetDestination:
+      type: object
+      required: [id, destinationType, companyId, targetAccountName, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        destinationType:
+          type: string
+          const: CUSTOMER_TARGET
+        companyId:
+          type: string
+          format: uuid
+        clientCompanyName:
+          type: [string, 'null']
+        targetAccountName:
+          type: string
+        linkedinCompanyUrl:
+          type: [string, 'null']
+          format: uri
+        status:
+          type: string
+    ExtensionContextResponse:
+      type: object
+      required: [apiVersion, profile, destinations]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        profile:
+          $ref: '#/components/schemas/ExtensionProfile'
+        destinations:
+          type: object
+          required: [opportunities, customerTargets]
+          properties:
+            opportunities:
+              type: array
+              items:
+                $ref: '#/components/schemas/OpportunityDestination'
+            customerTargets:
+              type: array
+              items:
+                $ref: '#/components/schemas/CustomerTargetDestination'
+    PageCaptureCreateRequest:
+      type: object
+      required: [sourceUrl]
+      properties:
+        destinationType:
+          $ref: '#/components/schemas/DestinationType'
+        opportunityId:
+          type: string
+          format: uuid
+          description: Required when destinationType is OPPORTUNITY_REGISTRATION.
+        customerTargetId:
+          type: string
+          format: uuid
+          description: Required when destinationType is CUSTOMER_TARGET.
+        clientRequestId:
+          type: string
+          maxLength: 128
+          description: Optional extension-generated idempotency key unique per user.
+        captureType:
+          $ref: '#/components/schemas/CaptureType'
+        sourceUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+        pageTitle:
+          type: string
+          maxLength: 300
+        selectedText:
+          type: string
+          maxLength: 4000
+        note:
+          type: string
+          maxLength: 2000
+        metadata:
+          type: object
+          additionalProperties: true
+      oneOf:
+        - required: [opportunityId]
+        - required: [customerTargetId]
+    PageCapture:
+      type: object
+      required: [id, status, captureType, sourceUrl, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [DRAFT, REVIEWED, ARCHIVED, CONVERTED]
+        captureType:
+          $ref: '#/components/schemas/CaptureType'
+        sourceUrl:
+          type: string
+          format: uri
+        pageTitle:
+          type: [string, 'null']
+        selectedText:
+          type: [string, 'null']
+        note:
+          type: [string, 'null']
+        companyId:
+          type: [string, 'null']
+          format: uuid
+        opportunityId:
+          type: [string, 'null']
+          format: uuid
+        customerTargetId:
+          type: [string, 'null']
+          format: uuid
+        clientRequestId:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PageCaptureResponse:
+      type: object
+      required: [apiVersion, capture]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        capture:
+          $ref: '#/components/schemas/PageCapture'
+    ErrorResponse:
+      type: object
+      required: [apiVersion, error]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        error:
+          type: string

@@ -98,6 +98,19 @@ SUPABASE_SERVICE_ROLE_KEY
 
 Verification: the live Supabase project has an active Clerk metadata repair path. Edge Function logs show a successful `one-off-clerk-role-fix` Clerk metadata update before that one-off function was disabled, and the reusable `admin-user-tools` function is currently deployed with Clerk API support.
 
+
+## API Layer
+
+Trusted Bums now has a small, versioned API layer for integrations that should not call Supabase tables directly. The initial surface is the Chrome extension API:
+
+```text
+/functions/v1/extension-api-v1
+```
+
+API documentation lives in [`docs/api.md`](docs/api.md), and the OpenAPI contract lives in [`docs/openapi.yaml`](docs/openapi.yaml). Treat `docs/openapi.yaml` as the source of truth for request/response contracts. Any API behavior change must update the OpenAPI file and the API docs in the same change.
+
+Versioning policy: keep `extension-api-v1` backward-compatible with additive changes only. Breaking changes require a new Edge Function namespace such as `extension-api-v2`. Browser extensions must authenticate with a Clerk session token and must never receive Supabase service-role keys.
+
 ## Website Email
 
 Website contact notifications are sent by the deployed Supabase Edge Function `send-website-email`. The homepage contact form saves the submission to `contact_submissions`, then invokes this function as a best-effort notification. The function uses the existing Microsoft Graph client-credentials setup and sends from `MICROSOFT_ORGANIZER_EMAIL` with replies directed to the submitter.
