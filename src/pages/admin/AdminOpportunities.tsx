@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, HelpCircle, PlusCircle, Search, Sparkles, Target, Trash2, Users, X } from "lucide-react";
+import { Building2, ExternalLink, HelpCircle, PlusCircle, Search, Sparkles, Target, Trash2, Users, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPanel } from "@/components/FilterPanel";
 import { PaginationControls } from "@/components/PaginationControls";
+import { buildLinkedInFirstConnectionsUrl } from "@/lib/linkedinSearch";
 import { getPageItems } from "@/lib/pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -68,6 +70,7 @@ function targetLabel(status: CustomerTargetStatus) {
 type TargetTypeFilter = "ALL" | "EARLY_PIPELINE" | "INTRO_ACTIVE" | "CLOSED";
 type RegistrationTypeFilter = "ALL" | "OPEN" | "NEEDS_ATTENTION" | "CLOSED";
 type ReverseOpportunityTypeFilter = "ALL" | "NEW" | "ACTIVE" | "CONVERTED" | "CLOSED";
+type AdminOpportunityTab = "priority" | "targets" | "registrations" | "reverse-opportunities";
 
 const targetTypeFilters: { value: TargetTypeFilter; label: string }[] = [
   { value: "ALL", label: "All target account types" },
@@ -90,6 +93,12 @@ const reverseOpportunityTypeFilters: { value: ReverseOpportunityTypeFilter; labe
   { value: "CONVERTED", label: "Converted" },
   { value: "CLOSED", label: "Closed lost" },
 ];
+
+const adminOpportunityTabs: AdminOpportunityTab[] = ["priority", "targets", "registrations", "reverse-opportunities"];
+
+function isAdminOpportunityTab(value: string | null): value is AdminOpportunityTab {
+  return Boolean(value && adminOpportunityTabs.includes(value as AdminOpportunityTab));
+}
 
 function FieldLabel({ children, tooltip }: { children: string; tooltip: string }) {
   return (
@@ -128,6 +137,7 @@ export default function AdminOpportunities() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [targetQuery, setTargetQuery] = useState("");
   const [registrationQuery, setRegistrationQuery] = useState("");
   const [targetTypeFilter, setTargetTypeFilter] = useState<TargetTypeFilter>("ALL");
@@ -224,9 +234,37 @@ export default function AdminOpportunities() {
   const companies = (companiesQuery.data ?? []).filter((company) => company.relationship_stage === "CLIENT");
   const payPrograms = payProgramsQuery.data ?? [];
   const selectedCompanyPayPrograms = payPrograms.filter((program) => program.company_id === newOpportunity.company_id && program.status === "ACTIVE" && program.approval_status !== "DENIED");
-  const registrations = registrationsQuery.data ?? [];
-  const targets = targetsQuery.data ?? [];
-  const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
+  const registrations = useMemo(() => registrationsQuery.data ?? [], [registrationsQuery.data]);
+  const targets = useMemo(() => targetsQuery.data ?? [], [targetsQuery.data]);
+  const reverseOpportunities = useMemo(() => reverseOpportunitiesQuery.data ?? [], [reverseOpportunitiesQuery.data]);
+  const selectedRegistrationCompanyId = searchParams.get("companyId") ?? "ALL";
+  const requestedTab = searchParams.get("tab");
+  const activeTab = isAdminOpportunityTab(requestedTab)
+    ? requestedTab
+    : selectedRegistrationCompanyId !== "ALL"
+      ? "registrations"
+      : "priority";
+
+  function updateOpportunitySearchParams(updates: { tab?: AdminOpportunityTab; companyId?: string }) {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+
+      if (updates.tab) {
+        next.set("tab", updates.tab);
+      }
+
+      if (updates.companyId !== undefined) {
+        if (updates.companyId === "ALL") {
+          next.delete("companyId");
+        } else {
+          next.set("companyId", updates.companyId);
+          next.set("tab", "registrations");
+        }
+      }
+
+      return next;
+    });
+  }
   const filteredTargets = useMemo(() => {
     return targets.filter((targetAccount) => {
       const matchesType =
@@ -274,9 +312,13 @@ export default function AdminOpportunities() {
         .toLowerCase()
         .includes(registrationQuery.toLowerCase());
 
-      return matchesType && matchesQuery;
+      const matchesCompany =
+        selectedRegistrationCompanyId === "ALL" ||
+        registration.company_id === selectedRegistrationCompanyId;
+
+      return matchesType && matchesQuery && matchesCompany;
     });
-  }, [registrationQuery, registrationTypeFilter, registrations]);
+  }, [registrationQuery, registrationTypeFilter, registrations, selectedRegistrationCompanyId]);
   const removeOpportunityMutation = useMutation({
     mutationFn: (registration: OpportunityRegistration) =>
       updateOpportunityRegistration(user!, registration, { status: "Rejected" }),
@@ -447,7 +489,11 @@ export default function AdminOpportunities() {
         )}
       </>
 
-      <Tabs defaultValue="priority" className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => updateOpportunitySearchParams({ tab: value as AdminOpportunityTab })}
+        className="space-y-6"
+      >
         <TabsList className="flex h-auto flex-wrap justify-start">
           <TabsTrigger value="priority">Priority Queue</TabsTrigger>
           <TabsTrigger value="targets">Target Accounts</TabsTrigger>
@@ -541,7 +587,20 @@ export default function AdminOpportunities() {
                           : "TBD"}
                       </p>
                       <p className="text-xs text-muted-foreground">{targetAccount.expected_timeline ?? "Timeline pending"}</p>
-                      <div className="mt-3">
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                        <Button size="sm" variant="outline" asChild>
+                          <a
+                            href={buildLinkedInFirstConnectionsUrl(
+                              targetAccount.target_companies?.name ?? targetAccount.target_account_name,
+                              targetAccount.target_companies?.linkedin_company_url,
+                            )}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Find connections
+                          </a>
+                        </Button>
                         <ScheduleTeamsMeetingDialog
                           target={targetAccount}
                           onScheduled={() => {
@@ -577,7 +636,7 @@ export default function AdminOpportunities() {
 
         <TabsContent value="registrations">
           <FilterPanel className="mb-6" summary="Search and type">
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)] md:items-end">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(220px,0.7fr)_minmax(220px,0.7fr)] lg:items-end">
             <div className="relative min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -605,6 +664,28 @@ export default function AdminOpportunities() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Client</Label>
+              <Select
+                value={selectedRegistrationCompanyId}
+                onValueChange={(value) => {
+                  setRegistrationPage(1);
+                  updateOpportunitySearchParams({ companyId: value });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All clients</SelectItem>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             </div>
           </FilterPanel>
           <Card>
@@ -626,6 +707,16 @@ export default function AdminOpportunities() {
                           {registration.companies?.name ?? "Company pending"} · {registration.commission_rate}% commission
                         </p>
                         <p className="mt-2 max-w-2xl text-sm">{registration.opportunity_description}</p>
+                        <Button size="sm" variant="outline" className="mt-3" asChild>
+                          <a
+                            href={buildLinkedInFirstConnectionsUrl(registration.target_account_name)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Find connections
+                          </a>
+                        </Button>
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold font-display">

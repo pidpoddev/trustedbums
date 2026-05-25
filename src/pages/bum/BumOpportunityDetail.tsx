@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "react-router-dom";
 import { openConversationDock } from "@/lib/conversationDock";
+import { buildLinkedInFirstConnectionsUrl } from "@/lib/linkedinSearch";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ import {
   updateOpportunityClaimStatus,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { ArrowLeft, Plus, Activity, MessageSquare } from "lucide-react";
+import { ArrowLeft, Plus, Activity, MessageSquare, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 interface ActivityEntry {
@@ -202,6 +203,12 @@ export default function BumOpportunityDetail() {
         title={opp.target_account_name}
         description={`${opp.companies?.name ?? "Trusted Bums client"} • ${opp.commission_rate}% commission`}
       >
+        <Button size="sm" variant="outline" asChild>
+          <a href={buildLinkedInFirstConnectionsUrl(opp.target_account_name)} target="_blank" rel="noreferrer">
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Find connections
+          </a>
+        </Button>
         <StatusBadge label="Open" variant="success" />
       </PageHeader>
 

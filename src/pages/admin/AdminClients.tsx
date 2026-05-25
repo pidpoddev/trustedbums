@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit3, Link2, Plus, ScrollText, Search, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -517,7 +518,13 @@ export default function AdminClients() {
                     <AdminClientEditButton company={company} />
                     <div className="flex items-center gap-6">
                       <div className="text-center">
-                      <p className="text-lg font-bold font-display">{company.opportunityCount}</p>
+                      <Link
+                        to={`/admin/opportunities?tab=registrations&companyId=${company.id}`}
+                        className="font-display text-lg font-bold text-primary underline-offset-4 hover:underline"
+                        aria-label={`View ${company.opportunityCount} opportunities for ${company.name}`}
+                      >
+                        {company.opportunityCount}
+                      </Link>
                       <p className="text-xs text-muted-foreground">Opportunities</p>
                     </div>
                     <div className="text-center">

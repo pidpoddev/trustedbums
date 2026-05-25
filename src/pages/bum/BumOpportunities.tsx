@@ -4,6 +4,7 @@ import { openConversationDock } from "@/lib/conversationDock";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPanel } from "@/components/FilterPanel";
 import { PaginationControls } from "@/components/PaginationControls";
+import { buildLinkedInFirstConnectionsUrl } from "@/lib/linkedinSearch";
 import { getPageItems } from "@/lib/pagination";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,7 +30,7 @@ import {
   type BumSavedItemType,
 } from "@/lib/portalApi";
 import { cn } from "@/lib/utils";
-import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
+import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const MARKETPLACE_PAGE_SIZE = 6;
@@ -458,6 +459,19 @@ export default function BumOpportunities() {
                     <MessageSquare className="mr-2 h-4 w-4" />
                     I have a question
                   </Button>
+                  <Button size="sm" variant="outline" asChild>
+                    <a
+                      href={buildLinkedInFirstConnectionsUrl(
+                        targetAccount.target_companies?.name ?? targetAccount.target_account_name,
+                        targetAccount.target_companies?.linkedin_company_url,
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Find connections
+                    </a>
+                  </Button>
                   <Button
                     size="sm"
                     onClick={() => {
@@ -572,6 +586,16 @@ export default function BumOpportunities() {
                   >
                     {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
                     Details
+                  </Button>
+                  <Button size="sm" variant="outline" asChild>
+                    <a
+                      href={buildLinkedInFirstConnectionsUrl(opportunity.target_account_name)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Find connections
+                    </a>
                   </Button>
                   <Button size="sm" asChild>
                     <Link to={`/bum/opportunities/${opportunity.id}?ask=1`}>
