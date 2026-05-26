@@ -28,8 +28,18 @@ textarea {
 }
 
 header {
+  align-items: center;
   border-bottom: 1px solid #d7dce3;
+  display: flex;
+  gap: 10px;
   padding-bottom: 12px;
+}
+
+.logo-mark {
+  border-radius: 10px;
+  flex: 0 0 auto;
+  height: 42px;
+  width: 42px;
 }
 
 .eyebrow {

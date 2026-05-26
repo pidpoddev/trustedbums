@@ -119,24 +119,7 @@ test.describe("Trusted Bums extension", () => {
           getManifest: () => ({ version: "0.1.0" }),
           lastError: null,
         },
-        storage: {
-          local: {
-            get: async () => ({
-              apiBaseUrl: "https://api.test/functions/v1/extension-api-v1",
-            }),
-            set: async (value) => {
-              window.__trustedBumsStoredSettings = value;
-            },
-          },
-          session: {
-            get: async () => ({
-              apiToken: "test-clerk-token",
-            }),
-            set: async (value) => {
-              window.__trustedBumsStoredSession = value;
-            },
-          },
-        },
+        storage: {},
         tabs: {
           query: (_query, callback) => {
             callback([{ id: 123, url: capture.sourceUrl }]);
@@ -185,6 +168,7 @@ test.describe("Trusted Bums extension", () => {
 
     await page.goto(popupUrl);
 
+    await expect(page.locator(".logo-mark")).toHaveAttribute("src", "assets/icons/icon-48.png");
     await expect(page.locator("#status")).toContainText("Ready to send");
     await expect(page.locator("#profileName")).toHaveText("Example Person");
     await expect(page.locator("#headline")).toHaveText("VP of Finance at Example Co");

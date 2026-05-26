@@ -1,5 +1,5 @@
 import esbuild from "esbuild";
-import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -56,6 +56,8 @@ for (const fileName of ["popup.html", "popup.css"]) {
     await readFile(path.join(sourceDir, fileName), "utf8"),
   );
 }
+
+await cp(path.join(sourceDir, "assets"), path.join(outputDir, "assets"), { recursive: true });
 
 const commonBuildOptions = {
   bundle: true,

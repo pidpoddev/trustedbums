@@ -5,7 +5,6 @@ const DEFAULT_API_BASE_URL =
   "https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1";
 const DEFAULT_SYNC_HOST = process.env.TRUSTED_BUMS_EXTENSION_SYNC_HOST || "https://trustedbums.com";
 const CAPTURE_MESSAGE_TYPE = "TRUSTED_BUMS_CAPTURE_LINKEDIN_PAGE";
-const LOCAL_STORAGE_KEYS = ["apiBaseUrl"];
 const EXTENSION_URL = chrome.runtime.getURL(".");
 const POPUP_URL = `${EXTENSION_URL}popup.html`;
 
@@ -37,11 +36,9 @@ interface ExtensionContext {
 }
 
 const state: {
-  apiBaseUrl: string;
   capture: LinkedInCapture | null;
   context: ExtensionContext | null;
 } = {
-  apiBaseUrl: DEFAULT_API_BASE_URL,
   capture: null,
   context: null,
 };
@@ -55,9 +52,6 @@ const els = {
   signedInIdentity: document.querySelector("#signedInIdentity") as HTMLElement,
   signIn: document.querySelector("#signIn") as HTMLButtonElement,
   signOut: document.querySelector("#signOut") as HTMLButtonElement,
-  settings: document.querySelector("#settings") as HTMLElement,
-  apiBaseUrl: document.querySelector("#apiBaseUrl") as HTMLInputElement,
-  saveSettings: document.querySelector("#saveSettings") as HTMLButtonElement,
   capturePanel: document.querySelector("#capturePanel") as HTMLElement,
   profileName: document.querySelector("#profileName") as HTMLElement,
   headline: document.querySelector("#headline") as HTMLElement,
@@ -74,33 +68,15 @@ function setStatus(message: string, tone = "") {
 }
 
 function setBusy(isBusy: boolean) {
-  els.saveSettings.disabled = isBusy;
   els.refreshContext.disabled = isBusy;
   els.sendCapture.disabled = isBusy;
   els.signIn.disabled = isBusy;
   els.signOut.disabled = isBusy;
 }
 
-function normalizeApiBaseUrl(value: string) {
-  return String(value || DEFAULT_API_BASE_URL).trim().replace(/\/+$/, "");
-}
-
 function truncate(value: string | undefined, maxLength: number) {
   const text = String(value || "").trim();
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}...` : text;
-}
-
-async function readStorage() {
-  const stored = await chrome.storage.local.get(LOCAL_STORAGE_KEYS);
-  state.apiBaseUrl = normalizeApiBaseUrl(stored.apiBaseUrl);
-  els.apiBaseUrl.value = state.apiBaseUrl;
-}
-
-async function saveStorage() {
-  state.apiBaseUrl = normalizeApiBaseUrl(els.apiBaseUrl.value);
-  await chrome.storage.local.set({
-    apiBaseUrl: state.apiBaseUrl,
-  });
 }
 
 function getActiveLinkedInTab() {
@@ -154,7 +130,7 @@ async function fetchApi(path: string, options: RequestInit = {}) {
     throw new Error("Sign in to Trusted Bums first.");
   }
 
-  const response = await fetch(`${state.apiBaseUrl}${path}`, {
+  const response = await fetch(`${DEFAULT_API_BASE_URL}${path}`, {
     ...options,
     headers: {
       Accept: "application/json",
@@ -290,8 +266,6 @@ async function initialize() {
       throw new Error("Build the extension with CLERK_PUBLISHABLE_KEY set.");
     }
 
-    await readStorage();
-    els.settings.classList.remove("hidden");
     els.authPanel.classList.remove("hidden");
 
     await clerk.load({
@@ -324,21 +298,6 @@ els.signIn.addEventListener("click", () => {
 
 els.signOut.addEventListener("click", () => {
   void clerk.signOut({ redirectUrl: POPUP_URL });
-});
-
-els.saveSettings.addEventListener("click", async () => {
-  try {
-    setBusy(true);
-    await saveStorage();
-    if (clerk.session) {
-      await refreshContext();
-    }
-    setStatus("Settings saved.", "success");
-  } catch (error) {
-    setStatus(error instanceof Error ? error.message : "Unable to save settings.", "error");
-  } finally {
-    setBusy(false);
-  }
 });
 
 els.refreshContext.addEventListener("click", async () => {
