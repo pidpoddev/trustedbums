@@ -286,9 +286,15 @@ export default function BumContactDetail() {
                 </div>
                 <p className="text-muted-foreground">{contact?.contextLabel}</p>
                 {selectedOpportunity ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={"/bum/opportunities/" + selectedOpportunity.id}>Open opportunity</Link>
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={"/bum/opportunities/" + selectedOpportunity.id}>Open opportunity</Link>
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => unlinkMutation.mutate()} disabled={unlinkMutation.isPending}>
+                      <Link2Off className="mr-2 h-4 w-4" />
+                      Unlink opportunity
+                    </Button>
+                  </div>
                 ) : null}
               </CardContent>
             </Card>
