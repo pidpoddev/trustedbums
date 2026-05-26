@@ -3,7 +3,7 @@ import { createClerkClient } from "@clerk/chrome-extension/client";
 const DEFAULT_API_BASE_URL =
   process.env.TRUSTED_BUMS_EXTENSION_API_BASE_URL ||
   "https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1";
-const DEFAULT_SYNC_HOST = process.env.TRUSTED_BUMS_EXTENSION_SYNC_HOST || "https://trustedbums.com";
+const DEFAULT_SYNC_HOST = process.env.TRUSTED_BUMS_EXTENSION_SYNC_HOST || process.env.CLERK_FRONTEND_API || "https://clerk.trustedbums.com";
 const CAPTURE_MESSAGE_TYPE = "TRUSTED_BUMS_CAPTURE_LINKEDIN_PAGE";
 const EXTENSION_URL = chrome.runtime.getURL(".");
 const POPUP_URL = `${EXTENSION_URL}popup.html`;

@@ -34,11 +34,11 @@ Optional values:
 
 ```sh
 TRUSTED_BUMS_EXTENSION_API_BASE_URL=https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1
-PLASMO_PUBLIC_CLERK_SYNC_HOST=https://trustedbums.com
+PLASMO_PUBLIC_CLERK_SYNC_HOST=https://clerk.trustedbums.com
 CRX_PUBLIC_KEY=<stable Chrome extension public key>
 ```
 
-`PLASMO_PUBLIC_CLERK_SYNC_HOST` lets the extension sync auth state with the Trusted Bums web app. `CRX_PUBLIC_KEY` is optional for a Web Store upload because the Chrome Developer Dashboard assigns the production extension ID. It is useful when you need a stable unpacked-extension ID for pre-store testing.
+`PLASMO_PUBLIC_CLERK_SYNC_HOST` lets the extension sync auth state through Clerk. In production this should match the Clerk Frontend API host, for example `https://clerk.trustedbums.com`. `CRX_PUBLIC_KEY` is optional for a Web Store upload because the Chrome Developer Dashboard assigns the production extension ID. It is useful when you need a stable unpacked-extension ID for pre-store testing.
 
 ## Build and package
 
@@ -75,7 +75,7 @@ Clerk requires Chrome extension origins to be allowed explicitly. After the exte
 chrome-extension://eemjcjegjdmeghobmfdbaiammapaefde
 ```
 
-Also make sure the Clerk Native API is enabled and the production `CLERK_FRONTEND_API` and `PLASMO_PUBLIC_CLERK_SYNC_HOST` values are included in the built manifest `host_permissions`.
+Also make sure the Clerk Native API is enabled and the production `CLERK_FRONTEND_API` and `PLASMO_PUBLIC_CLERK_SYNC_HOST` values are included in the built manifest `host_permissions`. For the current production package, both values should point at the Clerk host.
 
 ## Chrome Web Store notes
 
