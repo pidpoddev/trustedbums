@@ -5,7 +5,7 @@ import * as jose from "jsr:@panva/jose@6";
 interface ClaimsResponse { sub?: string }
 interface ProfileRow { id: string; role: string | null; is_admin: boolean }
 interface CompanyRow { name: string | null }
-interface OpportunityRow { id: string; target_account_name: string | null; company_id: string | null; companies?: CompanyRow | null }
+interface OpportunityRow { id: string; target_account_name: string | null; company_id?: string | null; status?: string | null; companies?: CompanyRow | null }
 interface CustomerTargetRow {
   id: string;
   target_account_name: string | null;
@@ -50,6 +50,7 @@ interface TargetResponseRow {
   status: string;
   note: string | null;
   created_at: string;
+  customer_target_id: string | null;
   customer_targets?: CustomerTargetRow | null;
 }
 interface ExtensionCaptureRow {
@@ -66,6 +67,51 @@ interface ExtensionCaptureRow {
   opportunity_registrations?: OpportunityRow | null;
   customer_targets?: CustomerTargetRow | null;
 }
+interface BumContactRow {
+  id: string;
+  bum_user_id: string;
+  source_type: BumContactSource;
+  source_id: string | null;
+  extension_page_capture_id: string | null;
+  opportunity_registration_id: string | null;
+  customer_target_id: string | null;
+  full_name: string;
+  title: string | null;
+  company_name: string | null;
+  email: string | null;
+  phone_numbers: unknown;
+  linkedin_url: string | null;
+  relationship_strength: string | null;
+  status: string;
+  notes: string | null;
+  metadata: Record<string, unknown> | null;
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+  opportunity_registrations?: OpportunityRow | null;
+}
+
+type BumContactSource = "OPPORTUNITY_CLAIM" | "PROSPECT" | "TARGET_RESPONSE" | "EXTENSION_CAPTURE" | "MANUAL";
+
+type SourceContactInput = Pick<
+  BumContactRow,
+  | "source_type"
+  | "source_id"
+  | "extension_page_capture_id"
+  | "opportunity_registration_id"
+  | "customer_target_id"
+  | "full_name"
+  | "title"
+  | "company_name"
+  | "email"
+  | "linkedin_url"
+  | "relationship_strength"
+  | "status"
+  | "notes"
+  | "metadata"
+  | "last_synced_at"
+  | "created_at"
+>;
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
@@ -184,13 +230,58 @@ function extensionCaptureContextLabel(capture: ExtensionCaptureRow) {
   return "LinkedIn page capture";
 }
 
-function extensionCaptureDetailUrl(capture: ExtensionCaptureRow, companyName: string) {
-  if (capture.opportunity_registration_id) return "/bum/opportunities/" + capture.opportunity_registration_id;
-  if (capture.customer_target_id) return "/bum/opportunities?search=" + encodeURIComponent(companyName);
-  return "/bum/contacts";
+function normalizeText(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized ? normalized : null;
 }
 
-async function listContacts(userId: string) {
+function normalizePhoneNumbers(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter(Boolean)
+    .slice(0, 10);
+}
+
+function contactCompany(row: BumContactRow) {
+  return row.company_name || row.opportunity_registrations?.companies?.name || row.opportunity_registrations?.target_account_name || "Unknown company";
+}
+
+function contactContextLabel(row: BumContactRow) {
+  if (row.opportunity_registrations?.target_account_name) return "Opportunity: " + row.opportunity_registrations.target_account_name;
+  if (typeof row.metadata?.contextLabel === "string" && row.metadata.contextLabel.trim()) return row.metadata.contextLabel.trim();
+  if (row.source_type === "OPPORTUNITY_CLAIM") return "Opportunity claim";
+  if (row.source_type === "PROSPECT") return "Prospect recommendation";
+  if (row.source_type === "TARGET_RESPONSE") return "Client target response";
+  if (row.source_type === "EXTENSION_CAPTURE") return "LinkedIn page capture";
+  return "Contact";
+}
+
+function mapContact(row: BumContactRow) {
+  return {
+    id: row.id,
+    source: row.source_type,
+    name: row.full_name,
+    title: row.title,
+    email: row.email,
+    phoneNumbers: normalizePhoneNumbers(row.phone_numbers),
+    companyName: contactCompany(row),
+    relationshipStrength: row.relationship_strength,
+    status: row.status,
+    contextLabel: contactContextLabel(row),
+    detailUrl: "/bum/contacts/" + row.id,
+    linkedinUrl: row.linkedin_url,
+    note: row.notes,
+    opportunityRegistrationId: row.opportunity_registration_id,
+    customerTargetId: row.customer_target_id,
+    lastSyncedAt: row.last_synced_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+async function buildSourceContacts(userId: string): Promise<SourceContactInput[]> {
   const [claimsResult, recommendationsResult, contactsResult, targetResponsesResult, extensionCapturesResult] = await Promise.all([
     supabaseAdmin
       .from("opportunity_claims")
@@ -232,63 +323,76 @@ async function listContacts(userId: string) {
   const recommendationById = new Map(recommendations.map((recommendation) => [recommendation.id, recommendation]));
   const ownRecommendationIds = new Set(recommendations.map((recommendation) => recommendation.id));
 
-  const claimContacts = (claimsResult.data ?? []).map((claim) => ({
-    id: "claim:" + claim.id,
-    source: "OPPORTUNITY_CLAIM",
-    name: claim.contact_name,
+  const claimContacts: SourceContactInput[] = (claimsResult.data ?? []).map((claim) => ({
+    source_type: "OPPORTUNITY_CLAIM",
+    source_id: claim.id,
+    extension_page_capture_id: null,
+    opportunity_registration_id: claim.opportunity_registration_id,
+    customer_target_id: null,
+    full_name: claim.contact_name,
     title: null,
     email: claim.contact_email,
-    companyName: claim.contact_company || claim.opportunity_registrations?.companies?.name || claim.opportunity_registrations?.target_account_name || "Unknown company",
-    relationshipStrength: claim.relationship_strength,
+    company_name: claim.contact_company || claim.opportunity_registrations?.companies?.name || claim.opportunity_registrations?.target_account_name || null,
+    linkedin_url: null,
+    relationship_strength: claim.relationship_strength,
     status: claim.status,
-    contextLabel: claim.opportunity_registrations?.target_account_name ? "Opportunity: " + claim.opportunity_registrations.target_account_name : "Opportunity claim",
-    detailUrl: claim.opportunity_registration_id ? "/bum/opportunities/" + claim.opportunity_registration_id : "/bum/claims",
-    linkedinUrl: null,
-    note: claim.note,
+    notes: claim.note,
+    metadata: {
+      contextLabel: claim.opportunity_registrations?.target_account_name ? "Opportunity: " + claim.opportunity_registrations.target_account_name : "Opportunity claim",
+    },
+    last_synced_at: null,
     created_at: claim.created_at,
   }));
 
-  const prospectContacts = (contactsResult.data ?? [])
+  const prospectContacts: SourceContactInput[] = (contactsResult.data ?? [])
     .filter((contact) => contact.recommendation_id && ownRecommendationIds.has(contact.recommendation_id))
     .map((contact) => {
       const recommendation = contact.recommendation_id ? recommendationById.get(contact.recommendation_id) : null;
       return {
-        id: "prospect:" + contact.id,
-        source: "PROSPECT",
-        name: contact.full_name,
+        source_type: "PROSPECT",
+        source_id: contact.id,
+        extension_page_capture_id: null,
+        opportunity_registration_id: null,
+        customer_target_id: null,
+        full_name: contact.full_name,
         title: contact.title,
         email: contact.email,
-        companyName: recommendation?.companies?.name ?? "Prospected company",
-        relationshipStrength: contact.is_primary ? "PRIMARY" : null,
+        company_name: recommendation?.companies?.name ?? null,
+        linkedin_url: contact.linkedin_url,
+        relationship_strength: contact.is_primary ? "PRIMARY" : null,
         status: recommendation?.status ?? "PROSPECT",
-        contextLabel: "Prospect recommendation",
-        detailUrl: "/bum/prospects",
-        linkedinUrl: contact.linkedin_url,
-        note: recommendation?.notes ?? null,
+        notes: recommendation?.notes ?? null,
+        metadata: { contextLabel: "Prospect recommendation", recommendationId: contact.recommendation_id },
+        last_synced_at: null,
         created_at: contact.created_at,
       };
     });
 
-  const targetContacts = (targetResponsesResult.data ?? []).map((response) => {
-    const targetName = response.customer_targets?.target_companies?.name ?? response.customer_targets?.target_account_name ?? "Target account";
+  const targetContacts: SourceContactInput[] = (targetResponsesResult.data ?? []).map((response) => {
+    const targetName = response.customer_targets?.target_companies?.name ?? response.customer_targets?.target_account_name ?? null;
     return {
-      id: "target:" + response.id,
-      source: "TARGET_RESPONSE",
-      name: response.contact_name,
+      source_type: "TARGET_RESPONSE",
+      source_id: response.id,
+      extension_page_capture_id: null,
+      opportunity_registration_id: null,
+      customer_target_id: response.customer_target_id,
+      full_name: response.contact_name,
       title: null,
       email: response.contact_email,
-      companyName: targetName,
-      relationshipStrength: response.relationship_strength,
+      company_name: targetName,
+      linkedin_url: null,
+      relationship_strength: response.relationship_strength,
       status: response.status,
-      contextLabel: response.customer_targets?.client_companies?.name ? "Client target for " + response.customer_targets.client_companies.name : "Client target response",
-      detailUrl: "/bum/opportunities?search=" + encodeURIComponent(targetName),
-      linkedinUrl: null,
-      note: response.note,
+      notes: response.note,
+      metadata: {
+        contextLabel: response.customer_targets?.client_companies?.name ? "Client target for " + response.customer_targets.client_companies.name : "Client target response",
+      },
+      last_synced_at: null,
       created_at: response.created_at,
     };
   });
 
-  const extensionCaptureContacts = (extensionCapturesResult.data ?? []).map((capture) => {
+  const extensionCaptureContacts: SourceContactInput[] = (extensionCapturesResult.data ?? []).map((capture) => {
     const name = extensionCaptureContactName(capture);
     const headline = inferLinkedInHeadline(capture, name);
     const companyName =
@@ -297,27 +401,222 @@ async function listContacts(userId: string) {
       capture.customer_targets?.target_account_name ??
       capture.opportunity_registrations?.target_account_name ??
       capture.opportunity_registrations?.companies?.name ??
-      "LinkedIn contact";
+      null;
 
     return {
-      id: "extension:" + capture.id,
-      source: "EXTENSION_CAPTURE",
-      name,
+      source_type: "EXTENSION_CAPTURE",
+      source_id: capture.id,
+      extension_page_capture_id: capture.id,
+      opportunity_registration_id: capture.opportunity_registration_id,
+      customer_target_id: capture.customer_target_id,
+      full_name: name,
       title: headline,
       email: null,
-      companyName,
-      relationshipStrength: null,
+      company_name: companyName,
+      linkedin_url: capture.source_url,
+      relationship_strength: null,
       status: capture.status,
-      contextLabel: extensionCaptureContextLabel(capture),
-      detailUrl: extensionCaptureDetailUrl(capture, companyName),
-      linkedinUrl: capture.source_url,
-      note: capture.note ?? capture.selected_text,
+      notes: capture.note ?? capture.selected_text,
+      metadata: {
+        ...(capture.metadata ?? {}),
+        contextLabel: extensionCaptureContextLabel(capture),
+        selectedText: capture.selected_text,
+        pageTitle: capture.page_title,
+      },
+      last_synced_at: capture.created_at,
       created_at: capture.created_at,
     };
   });
 
-  return [...claimContacts, ...prospectContacts, ...targetContacts, ...extensionCaptureContacts]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return [...claimContacts, ...prospectContacts, ...targetContacts, ...extensionCaptureContacts].filter((contact) => contact.full_name.trim());
+}
+
+async function syncSourceContacts(userId: string) {
+  const sources = await buildSourceContacts(userId);
+  if (!sources.length) return;
+
+  const { data: existingRows, error: existingError } = await supabaseAdmin
+    .from("bum_contacts")
+    .select("source_type, source_id")
+    .eq("bum_user_id", userId)
+    .not("source_id", "is", null)
+    .returns<Array<Pick<BumContactRow, "source_type" | "source_id">>>();
+  if (existingError) throw existingError;
+
+  const existingKeys = new Set((existingRows ?? []).map((row) => row.source_type + ":" + row.source_id));
+  const newRows = sources
+    .filter((source) => source.source_id && !existingKeys.has(source.source_type + ":" + source.source_id))
+    .map((source) => ({
+      ...source,
+      bum_user_id: userId,
+      phone_numbers: [],
+    }));
+
+  if (!newRows.length) return;
+
+  const { error } = await supabaseAdmin.from("bum_contacts").insert(newRows);
+  if (error && error.code !== "23505") throw error;
+}
+
+async function fetchContact(userId: string, contactId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("bum_contacts")
+    .select("*, opportunity_registrations(id, target_account_name, status, companies(name))")
+    .eq("bum_user_id", userId)
+    .eq("id", contactId)
+    .maybeSingle<BumContactRow>();
+  if (error) throw error;
+  if (!data) throw new Error("Contact not found.");
+  return data;
+}
+
+async function listOpportunityOptions(currentOpportunityId?: string | null) {
+  const { data, error } = await supabaseAdmin
+    .from("opportunity_registrations")
+    .select("id, target_account_name, status, companies(name)")
+    .eq("status", "Accepted")
+    .order("target_account_name", { ascending: true })
+    .returns<OpportunityRow[]>();
+  if (error) throw error;
+
+  const options = [...(data ?? [])];
+  if (currentOpportunityId && !options.some((opportunity) => opportunity.id === currentOpportunityId)) {
+    const currentResult = await supabaseAdmin
+      .from("opportunity_registrations")
+      .select("id, target_account_name, status, companies(name)")
+      .eq("id", currentOpportunityId)
+      .maybeSingle<OpportunityRow>();
+    if (currentResult.error) throw currentResult.error;
+    if (currentResult.data) options.unshift(currentResult.data);
+  }
+
+  return options;
+}
+
+async function listContacts(userId: string) {
+  await syncSourceContacts(userId);
+  const { data, error } = await supabaseAdmin
+    .from("bum_contacts")
+    .select("*, opportunity_registrations(id, target_account_name, status, companies(name))")
+    .eq("bum_user_id", userId)
+    .order("created_at", { ascending: false })
+    .returns<BumContactRow[]>();
+  if (error) throw error;
+  return (data ?? []).map(mapContact);
+}
+
+async function getContactDetail(userId: string, contactId: string) {
+  await syncSourceContacts(userId);
+  const contact = await fetchContact(userId, contactId);
+  const opportunities = await listOpportunityOptions(contact.opportunity_registration_id);
+  return { contact: mapContact(contact), opportunities };
+}
+
+async function updateContact(userId: string, contactId: string, patch: Record<string, unknown>) {
+  const payload: Record<string, unknown> = {};
+  if ("name" in patch) payload.full_name = normalizeText(patch.name);
+  if ("title" in patch) payload.title = normalizeText(patch.title);
+  if ("companyName" in patch) payload.company_name = normalizeText(patch.companyName);
+  if ("email" in patch) payload.email = normalizeText(patch.email);
+  if ("linkedinUrl" in patch) payload.linkedin_url = normalizeText(patch.linkedinUrl);
+  if ("relationshipStrength" in patch) payload.relationship_strength = normalizeText(patch.relationshipStrength);
+  if ("note" in patch) payload.notes = normalizeText(patch.note);
+  if ("phoneNumbers" in patch) payload.phone_numbers = normalizePhoneNumbers(patch.phoneNumbers);
+
+  if ("opportunityRegistrationId" in patch) {
+    const opportunityRegistrationId = normalizeText(patch.opportunityRegistrationId);
+    if (opportunityRegistrationId) {
+      const { data, error } = await supabaseAdmin
+        .from("opportunity_registrations")
+        .select("id")
+        .eq("id", opportunityRegistrationId)
+        .maybeSingle<{ id: string }>();
+      if (error) throw error;
+      if (!data) throw new Error("Opportunity not found.");
+    }
+    payload.opportunity_registration_id = opportunityRegistrationId;
+  }
+
+  if (payload.full_name === null) throw new Error("Contact name is required.");
+  if (!Object.keys(payload).length) return getContactDetail(userId, contactId);
+
+  const { error } = await supabaseAdmin
+    .from("bum_contacts")
+    .update(payload)
+    .eq("bum_user_id", userId)
+    .eq("id", contactId);
+  if (error) throw error;
+
+  return getContactDetail(userId, contactId);
+}
+
+function captureUpdates(capture: ExtensionCaptureRow) {
+  const name = extensionCaptureContactName(capture);
+  const headline = inferLinkedInHeadline(capture, name);
+  const companyName =
+    inferCompanyFromHeadline(headline) ??
+    capture.customer_targets?.target_companies?.name ??
+    capture.customer_targets?.target_account_name ??
+    capture.opportunity_registrations?.target_account_name ??
+    capture.opportunity_registrations?.companies?.name ??
+    null;
+
+  return {
+    full_name: name,
+    title: headline,
+    company_name: companyName,
+    linkedin_url: capture.source_url,
+    extension_page_capture_id: capture.id,
+    last_synced_at: capture.created_at,
+    metadata: {
+      ...(capture.metadata ?? {}),
+      contextLabel: extensionCaptureContextLabel(capture),
+      selectedText: capture.selected_text,
+      pageTitle: capture.page_title,
+      resyncedFromCaptureId: capture.id,
+    },
+  };
+}
+
+async function resyncContact(userId: string, contactId: string) {
+  const contact = await fetchContact(userId, contactId);
+  let capture: ExtensionCaptureRow | null = null;
+
+  if (contact.linkedin_url) {
+    const byUrl = await supabaseAdmin
+      .from("extension_page_captures")
+      .select("*, opportunity_registrations(id, target_account_name, company_id, companies(name)), customer_targets(id, target_account_name, client_companies:companies!customer_targets_client_company_id_fkey(name), target_companies:companies!customer_targets_target_company_id_fkey(name))")
+      .eq("created_by", userId)
+      .eq("capture_type", "LINKEDIN_PROFILE")
+      .eq("source_url", contact.linkedin_url)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<ExtensionCaptureRow>();
+    if (byUrl.error) throw byUrl.error;
+    capture = byUrl.data ?? null;
+  }
+
+  if (!capture && contact.extension_page_capture_id) {
+    const byId = await supabaseAdmin
+      .from("extension_page_captures")
+      .select("*, opportunity_registrations(id, target_account_name, company_id, companies(name)), customer_targets(id, target_account_name, client_companies:companies!customer_targets_client_company_id_fkey(name), target_companies:companies!customer_targets_target_company_id_fkey(name))")
+      .eq("created_by", userId)
+      .eq("id", contact.extension_page_capture_id)
+      .maybeSingle<ExtensionCaptureRow>();
+    if (byId.error) throw byId.error;
+    capture = byId.data ?? null;
+  }
+
+  if (!capture) throw new Error("No saved LinkedIn capture was found for this contact yet.");
+
+  const { error } = await supabaseAdmin
+    .from("bum_contacts")
+    .update(captureUpdates(capture))
+    .eq("bum_user_id", userId)
+    .eq("id", contactId);
+  if (error) throw error;
+
+  return getContactDetail(userId, contactId);
 }
 
 Deno.serve(async (request) => {
@@ -327,12 +626,21 @@ Deno.serve(async (request) => {
 
     const profile = await getCurrentProfile(getBearerToken(request));
     if (profile.role !== "BUM" && !profile.is_admin) {
-      return json(403, { error: "Only Bums can load represented contacts." });
+      return json(403, { error: "Only Bums can manage represented contacts." });
     }
 
-    const contacts = await listContacts(profile.id);
-    return json(200, { contacts });
+    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    const action = typeof body.action === "string" ? body.action : "list";
+    const contactId = typeof body.contactId === "string" ? body.contactId : "";
+
+    if (action === "list") return json(200, { contacts: await listContacts(profile.id) });
+    if (!contactId) return json(400, { error: "Contact ID is required." });
+    if (action === "get") return json(200, await getContactDetail(profile.id, contactId));
+    if (action === "update") return json(200, await updateContact(profile.id, contactId, (body.patch as Record<string, unknown>) ?? {}));
+    if (action === "resync") return json(200, await resyncContact(profile.id, contactId));
+
+    return json(400, { error: "Unsupported contacts action." });
   } catch (error) {
-    return json(400, { error: error instanceof Error ? error.message : "Unable to load contacts." });
+    return json(400, { error: error instanceof Error ? error.message : "Unable to manage contacts." });
   }
 });

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, ExternalLink, Mail, Search, UserRound } from "lucide-react";
+import { Building2, ExternalLink, Mail, Phone, Search, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const sourceLabels: Record<BumRepresentedContactSource, string> = {
   PROSPECT: "Prospect",
   TARGET_RESPONSE: "Target response",
   EXTENSION_CAPTURE: "LinkedIn capture",
+  MANUAL: "Contact",
 };
 
 function formatDate(value: string, timeZone: string) {
@@ -32,6 +33,7 @@ function searchableText(contact: BumRepresentedContactRecord) {
     contact.name,
     contact.title,
     contact.email,
+    ...(contact.phoneNumbers ?? []),
     contact.companyName,
     contact.contextLabel,
     contact.status,
@@ -62,7 +64,7 @@ export default function BumContacts() {
   const countsBySource = useMemo(() => {
     return contacts.reduce<Record<BumRepresentedContactSource, number>>(
       (counts, contact) => ({ ...counts, [contact.source]: counts[contact.source] + 1 }),
-      { OPPORTUNITY_CLAIM: 0, PROSPECT: 0, TARGET_RESPONSE: 0, EXTENSION_CAPTURE: 0 },
+      { OPPORTUNITY_CLAIM: 0, PROSPECT: 0, TARGET_RESPONSE: 0, EXTENSION_CAPTURE: 0, MANUAL: 0 },
     );
   }, [contacts]);
 
@@ -162,6 +164,12 @@ export default function BumContacts() {
                         {contact.email}
                       </a>
                     ) : null}
+                    {contact.phoneNumbers?.length ? (
+                      <p className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        {contact.phoneNumbers[0]}
+                      </p>
+                    ) : null}
                     <p>{contact.contextLabel}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -180,7 +188,7 @@ export default function BumContacts() {
                     </Button>
                   ) : null}
                   <Button size="sm" asChild>
-                    <Link to={contact.detailUrl}>Open context</Link>
+                    <Link to={contact.detailUrl}>Edit contact</Link>
                   </Button>
                 </div>
               </div>

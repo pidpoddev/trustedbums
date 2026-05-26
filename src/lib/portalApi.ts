@@ -348,7 +348,7 @@ export interface ProspectContactRecord {
 }
 
 
-export type BumRepresentedContactSource = "OPPORTUNITY_CLAIM" | "PROSPECT" | "TARGET_RESPONSE" | "EXTENSION_CAPTURE";
+export type BumRepresentedContactSource = "OPPORTUNITY_CLAIM" | "PROSPECT" | "TARGET_RESPONSE" | "EXTENSION_CAPTURE" | "MANUAL";
 
 export interface BumRepresentedContactRecord {
   id: string;
@@ -356,6 +356,7 @@ export interface BumRepresentedContactRecord {
   name: string;
   title: string | null;
   email: string | null;
+  phoneNumbers?: string[];
   companyName: string;
   relationshipStrength: string | null;
   status: string;
@@ -363,7 +364,35 @@ export interface BumRepresentedContactRecord {
   detailUrl: string;
   linkedinUrl: string | null;
   note: string | null;
+  opportunityRegistrationId?: string | null;
+  customerTargetId?: string | null;
+  lastSyncedAt?: string | null;
   created_at: string;
+  updated_at?: string;
+}
+
+export interface BumContactOpportunityOption {
+  id: string;
+  target_account_name: string;
+  status: string;
+  companies?: Pick<CompanyRecord, "name"> | null;
+}
+
+export interface BumContactDetailResponse {
+  contact: BumRepresentedContactRecord;
+  opportunities: BumContactOpportunityOption[];
+}
+
+export interface BumContactUpdateInput {
+  name?: string | null;
+  title?: string | null;
+  companyName?: string | null;
+  email?: string | null;
+  phoneNumbers?: string[];
+  linkedinUrl?: string | null;
+  relationshipStrength?: string | null;
+  note?: string | null;
+  opportunityRegistrationId?: string | null;
 }
 
 interface ExtensionPageCaptureRecord {
@@ -4812,29 +4841,50 @@ async function listBumRepresentedContactsFromTables(userId: string) {
   return [...claimContacts, ...prospectContacts, ...targetContacts, ...extensionCaptureContacts].sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
-export async function listBumRepresentedContacts(userId: string) {
+async function invokePortalContacts<T>(body: Record<string, unknown>): Promise<T | null> {
   const token = await getSupabaseAccessToken("session");
+  if (!token) return null;
 
-  if (token) {
-    const response = await fetch(supabaseUrl + "/functions/v1/portal-contacts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: supabasePublishableKey,
-        Authorization: "Bearer " + token,
-      },
-      body: JSON.stringify({}),
-    });
-    const payload = (await response.json().catch(() => ({}))) as { contacts?: BumRepresentedContactRecord[]; error?: string };
+  const response = await fetch(supabaseUrl + "/functions/v1/portal-contacts", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: "Bearer " + token,
+    },
+    body: JSON.stringify(body),
+  });
+  const payload = (await response.json().catch(() => ({}))) as T & { error?: string };
 
-    if (!response.ok) {
-      throw new Error(payload.error || "Unable to load contacts.");
-    }
-
-    return payload.contacts ?? [];
+  if (!response.ok) {
+    throw new Error(payload.error || "Unable to manage contacts.");
   }
 
+  return payload;
+}
+
+export async function listBumRepresentedContacts(userId: string) {
+  const payload = await invokePortalContacts<{ contacts?: BumRepresentedContactRecord[] }>({ action: "list" });
+  if (payload) return payload.contacts ?? [];
   return listBumRepresentedContactsFromTables(userId);
+}
+
+export async function getBumRepresentedContact(contactId: string) {
+  const payload = await invokePortalContacts<BumContactDetailResponse>({ action: "get", contactId });
+  if (!payload) throw new Error("Sign in again to manage this contact.");
+  return payload;
+}
+
+export async function updateBumRepresentedContact(contactId: string, patch: BumContactUpdateInput) {
+  const payload = await invokePortalContacts<BumContactDetailResponse>({ action: "update", contactId, patch });
+  if (!payload) throw new Error("Sign in again to manage this contact.");
+  return payload;
+}
+
+export async function resyncBumRepresentedContact(contactId: string) {
+  const payload = await invokePortalContacts<BumContactDetailResponse>({ action: "resync", contactId });
+  if (!payload) throw new Error("Sign in again to re-sync this contact.");
+  return payload;
 }
 
 export async function createReverseOpportunity(user: AuthUser, input: ReverseOpportunityInput) {
