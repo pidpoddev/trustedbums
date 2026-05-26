@@ -1641,7 +1641,8 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
           })
         : null;
   const companyId = existing?.company_id ?? company?.id ?? null;
-  const isNewProfile = !existing;
+  // Client-side RLS reads can be stale or token-dependent, so profile sync must not trigger signup emails.
+  const isNewProfile = false;
 
   const { data, error } = await supabase
     .from("profiles")
