@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Trusted Bums LinkedIn Capture",
+  "description": "Send a user-confirmed LinkedIn page capture to Trusted Bums.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "110",
+  "action": {
+    "default_title": "Send to Trusted Bums",
+    "default_popup": "popup.html"
+  },
+  "permissions": ["activeTab", "cookies", "storage"],
+  "host_permissions": [
+    "https://www.linkedin.com/*",
+    "https://*.supabase.co/*",
+    "https://api.trustedbums.com/*",
+    "$CLERK_FRONTEND_API/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/in/*", "https://www.linkedin.com/company/*"],
+      "js": ["contentScript.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

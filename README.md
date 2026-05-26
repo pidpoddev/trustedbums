@@ -111,6 +111,8 @@ API documentation lives in [`docs/api.md`](docs/api.md), and the OpenAPI contrac
 
 Versioning policy: keep `extension-api-v1` backward-compatible with additive changes only. Breaking changes require a new Edge Function namespace such as `extension-api-v2`. Browser extensions must authenticate with a Clerk session token and must never receive Supabase service-role keys.
 
+The first LinkedIn capture extension lives in [`chrome-extension/linkedin-capture`](chrome-extension/linkedin-capture). Setup and QA notes live in [`docs/chrome-extension.md`](docs/chrome-extension.md).
+
 ## Website Email
 
 Website contact notifications are sent by the deployed Supabase Edge Function `send-website-email`. The homepage contact form saves the submission to `contact_submissions`, then invokes this function as a best-effort notification. The function uses the existing Microsoft Graph client-credentials setup and sends from `MICROSOFT_ORGANIZER_EMAIL` with replies directed to the submitter.

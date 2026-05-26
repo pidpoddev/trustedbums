@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Send to Trusted Bums</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">Trusted Bums</p>
+        <h1>Send LinkedIn page</h1>
+      </header>
+
+      <section id="status" class="status" role="status">Checking this tab...</section>
+
+      <section id="authPanel" class="panel hidden" aria-label="Trusted Bums sign in">
+        <p id="signedInIdentity" class="identity">Sign in to load destinations.</p>
+        <div class="actions">
+          <button id="signIn" type="button">Sign in</button>
+          <button id="signOut" type="button" class="secondary hidden">Sign out</button>
+        </div>
+      </section>
+
+      <section id="settings" class="panel hidden" aria-label="API settings">
+        <label>
+          API base URL
+          <input id="apiBaseUrl" type="url" autocomplete="off" />
+        </label>
+        <button id="saveSettings" type="button" class="secondary">Save settings</button>
+      </section>
+
+      <section id="capturePanel" class="panel hidden" aria-label="Captured LinkedIn page">
+        <dl class="capture-summary">
+          <div>
+            <dt>Name</dt>
+            <dd id="profileName">-</dd>
+          </div>
+          <div>
+            <dt>Headline</dt>
+            <dd id="headline">-</dd>
+          </div>
+          <div>
+            <dt>Selected text</dt>
+            <dd id="selectedText">None</dd>
+          </div>
+        </dl>
+
+        <label>
+          Destination
+          <select id="destination"></select>
+        </label>
+
+        <label>
+          Note
+          <textarea id="note" rows="3" maxlength="2000" placeholder="Optional context for the opportunity"></textarea>
+        </label>
+
+        <div class="actions">
+          <button id="refreshContext" type="button" class="secondary">Refresh</button>
+          <button id="sendCapture" type="button">Send</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
