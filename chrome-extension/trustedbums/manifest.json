@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Trusted Bums",
   "description": "Send user-confirmed page captures to Trusted Bums.",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "minimum_chrome_version": "110",
   "action": {
     "default_title": "Send to Trusted Bums",

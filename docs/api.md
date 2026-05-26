@@ -103,7 +103,7 @@ Opportunity example:
   "selectedText": "VP of Finance at Example Co",
   "note": "I know them from a prior project.",
   "metadata": {
-    "extensionVersion": "0.1.0"
+    "extensionVersion": "1.1.0"
   }
 }
 ```

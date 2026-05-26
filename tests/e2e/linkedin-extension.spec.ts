@@ -108,7 +108,7 @@ test.describe("Trusted Bums extension", () => {
         runtime: {
           id: "trustedbums",
           getURL: () => "chrome-extension://trustedbums/",
-          getManifest: () => ({ version: "0.1.0" }),
+          getManifest: () => ({ version: "1.1.0" }),
           lastError: null,
         },
         storage: {},
@@ -192,7 +192,7 @@ test.describe("Trusted Bums extension", () => {
       },
     });
     expect(captureRequest.body.metadata).toMatchObject({
-      extensionVersion: "0.1.0",
+      extensionVersion: "1.1.0",
       profileName: "Example Person",
       headline: "VP of Finance at Example Co",
     });
