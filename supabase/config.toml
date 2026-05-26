@@ -63,3 +63,6 @@ verify_jwt = false
 [functions.extension-api-v1]
 verify_jwt = false
 
+
+[functions.portal-contacts]
+verify_jwt = false

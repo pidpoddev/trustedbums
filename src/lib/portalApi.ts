@@ -4680,7 +4680,7 @@ function extensionCaptureDetailUrl(capture: ExtensionPageCaptureRecord, companyN
 }
 
 
-export async function listBumRepresentedContacts(userId: string) {
+async function listBumRepresentedContactsFromTables(userId: string) {
   const [claimsResult, recommendationsResult, contactsResult, targetResponsesResult, extensionCapturesResult] = await Promise.all([
     supabase
       .from("opportunity_claims")
@@ -4810,6 +4810,31 @@ export async function listBumRepresentedContacts(userId: string) {
   });
 
   return [...claimContacts, ...prospectContacts, ...targetContacts, ...extensionCaptureContacts].sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+export async function listBumRepresentedContacts(userId: string) {
+  const token = await getSupabaseAccessToken("session");
+
+  if (token) {
+    const response = await fetch(supabaseUrl + "/functions/v1/portal-contacts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabasePublishableKey,
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({}),
+    });
+    const payload = (await response.json().catch(() => ({}))) as { contacts?: BumRepresentedContactRecord[]; error?: string };
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Unable to load contacts.");
+    }
+
+    return payload.contacts ?? [];
+  }
+
+  return listBumRepresentedContactsFromTables(userId);
 }
 
 export async function createReverseOpportunity(user: AuthUser, input: ReverseOpportunityInput) {
