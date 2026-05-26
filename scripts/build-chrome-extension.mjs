@@ -4,10 +4,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const sourceDir = path.join(root, "chrome-extension", "linkedin-capture");
-const outputDir = path.join(root, "dist", "chrome-extension", "linkedin-capture");
+const sourceDir = path.join(root, "chrome-extension", "trustedbums");
+const outputDir = path.join(root, "dist", "chrome-extension", "trustedbums");
 const packageDir = path.join(root, "dist", "chrome-extension");
-const zipPath = path.join(packageDir, "trusted-bums-linkedin-capture.zip");
+const zipPath = path.join(packageDir, "trustedbums-extension.zip");
 const isPackageBuild = process.argv.includes("--zip");
 const allowPlaceholders = process.argv.includes("--allow-placeholders");
 

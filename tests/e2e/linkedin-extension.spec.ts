@@ -2,11 +2,11 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const extensionRoot = path.resolve("dist/chrome-extension/linkedin-capture");
+const extensionRoot = path.resolve("dist/chrome-extension/trustedbums");
 const popupUrl = pathToFileURL(path.join(extensionRoot, "popup.html")).toString();
 const contentScriptPath = path.join(extensionRoot, "contentScript.js");
 
-test.describe("LinkedIn capture extension", () => {
+test.describe("Trusted Bums extension", () => {
 
 
   test("extracts profile details from the LinkedIn page", async ({ page }) => {

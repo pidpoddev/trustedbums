@@ -1,6 +1,6 @@
 # Trusted Bums Chrome Extension
 
-The Chrome extension grabs a user-confirmed LinkedIn profile or company page and sends it to the versioned Trusted Bums Extension API.
+The Trusted Bums Chrome extension is the browser companion for user-confirmed page captures. The first supported workflow grabs a LinkedIn profile or company page and sends it to the versioned Trusted Bums Extension API.
 
 ## Current workflow
 
@@ -10,13 +10,13 @@ The Chrome extension grabs a user-confirmed LinkedIn profile or company page and
 4. Confirm the captured name, headline, selected text, destination, and optional note.
 5. Send the page to Trusted Bums as a draft `extension_page_captures` record.
 
-The extension does not crawl LinkedIn directories, auto-navigate search results, or send background captures. It only sends the page the user is already viewing after they click Send.
+The current LinkedIn workflow does not crawl LinkedIn directories, auto-navigate search results, or send background captures. It only sends the page the user is already viewing after they click Send.
 
 ## Files
 
-- Source extension folder: `chrome-extension/linkedin-capture`
-- Built extension folder: `dist/chrome-extension/linkedin-capture`
-- Packaged zip: `dist/chrome-extension/trusted-bums-linkedin-capture.zip`
+- Source extension folder: `chrome-extension/trustedbums`
+- Built extension folder: `dist/chrome-extension/trustedbums`
+- Packaged zip: `dist/chrome-extension/trustedbums-extension.zip`
 - OpenAPI contract: `docs/openapi.yaml`
 - API implementation: `supabase/functions/extension-api-v1/index.ts`
 - Browser QA: `tests/e2e/linkedin-extension.spec.ts`
@@ -53,7 +53,7 @@ Create the zip for another machine or the Chrome Web Store:
 npm run package:extension
 ```
 
-The zip contains the built files from `dist/chrome-extension/linkedin-capture`. Do not upload the source folder.
+The zip contains the built files from `dist/chrome-extension/trustedbums`. Do not upload the source folder.
 
 ## Local loading on an unmanaged machine
 
@@ -62,7 +62,7 @@ In Chrome:
 1. Open `chrome://extensions`.
 2. Enable Developer mode.
 3. Choose Load unpacked.
-4. Select `dist/chrome-extension/linkedin-capture`.
+4. Select `dist/chrome-extension/trustedbums`.
 
 If that machine also blocks unpacked extensions, use the Chrome Web Store path instead.
 
@@ -81,7 +81,7 @@ Also make sure the Clerk Native API is enabled and the production `CLERK_FRONTEN
 Before submitting:
 
 1. Build with live Clerk production values.
-2. Upload `dist/chrome-extension/trusted-bums-linkedin-capture.zip`.
+2. Upload `dist/chrome-extension/trustedbums-extension.zip`.
 3. Use the Web Store extension ID as the stable production ID.
 4. Add `chrome-extension://<extension-id>` to Clerk allowed origins.
 5. Narrow `extension-api-v1` CORS to the final Chrome extension origin before public release.

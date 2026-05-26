@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Trusted Bums LinkedIn Capture",
-  "description": "Send a user-confirmed LinkedIn page capture to Trusted Bums.",
+  "name": "Trusted Bums",
+  "description": "Send user-confirmed page captures to Trusted Bums.",
   "version": "0.1.0",
   "minimum_chrome_version": "110",
   "action": {
