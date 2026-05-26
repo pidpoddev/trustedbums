@@ -1,6 +1,7 @@
 import { BrandLogo } from "@/components/BrandLogo";
 import { NavLink } from "@/components/NavLink";
 import { PortalHeaderActions } from "@/components/PortalHeaderActions";
+import { PortalGlobalSearch } from "@/components/PortalGlobalSearch";
 import { ConversationDock } from "@/components/ConversationDock";
 import { getClientAccessLabel, type ClientAccessRole } from "@/data/authData";
 import { useAuth } from "@/contexts/AuthContext";
@@ -121,9 +122,10 @@ export default function ClientLayout() {
         <main className="flex-1 overflow-auto">
           <header className="h-14 border-b flex items-center px-4 bg-card">
             <SidebarTrigger />
-            <span className="ml-4 truncate text-sm text-muted-foreground">
+            <span className="ml-4 hidden truncate text-sm text-muted-foreground sm:inline">
               {visibleNavItems.find(i => location.pathname === i.url || (i.url !== "/client" && location.pathname.startsWith(i.url)))?.title ?? "Client"}
             </span>
+            <PortalGlobalSearch />
             <PortalHeaderActions />
           </header>
           <div className="p-4 sm:p-6">

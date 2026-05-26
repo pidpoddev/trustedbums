@@ -1,7 +1,7 @@
 import { BrandLogo } from "@/components/BrandLogo";
 import { NavLink } from "@/components/NavLink";
 import { PortalHeaderActions } from "@/components/PortalHeaderActions";
-import { BumOpportunitySearch } from "@/components/BumOpportunitySearch";
+import { PortalGlobalSearch } from "@/components/PortalGlobalSearch";
 import { ConversationDock } from "@/components/ConversationDock";
 import { useLocation, Outlet } from "react-router-dom";
 import {
@@ -95,7 +95,7 @@ export default function BumLayout() {
             <span className="ml-4 hidden truncate text-sm text-muted-foreground sm:inline">
               {navItems.find((i) => location.pathname === i.url || location.pathname.startsWith(`${i.url}/`))?.title ?? "Bum"}
             </span>
-            <BumOpportunitySearch />
+            <PortalGlobalSearch />
             <PortalHeaderActions />
           </header>
           <div className="p-4 sm:p-6">

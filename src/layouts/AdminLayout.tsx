@@ -1,6 +1,7 @@
 import { BrandLogo } from "@/components/BrandLogo";
 import { NavLink } from "@/components/NavLink";
 import { PortalHeaderActions } from "@/components/PortalHeaderActions";
+import { PortalGlobalSearch } from "@/components/PortalGlobalSearch";
 import { ConversationDock } from "@/components/ConversationDock";
 import { useLocation, Outlet } from "react-router-dom";
 import {
@@ -122,9 +123,10 @@ export default function AdminLayout() {
         <main className="flex-1 overflow-auto">
           <header className="flex h-14 items-center border-b bg-card px-4">
             <SidebarTrigger />
-            <span className="ml-4 truncate text-sm text-muted-foreground">
+            <span className="ml-4 hidden truncate text-sm text-muted-foreground sm:inline">
               {navItems.find((i) => location.pathname === i.url || (i.url !== "/admin" && location.pathname.startsWith(i.url)))?.title ?? "Admin"}
             </span>
+            <PortalGlobalSearch />
             <PortalHeaderActions />
           </header>
           <div className="p-4 sm:p-6">
