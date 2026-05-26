@@ -10,16 +10,16 @@ export type SupabaseAccessTokenMode = "session" | "legacy";
 type AccessTokenProvider = (mode: SupabaseAccessTokenMode) => Promise<string | null>;
 
 let accessTokenProvider: AccessTokenProvider | null = null;
-let preferredAccessTokenMode: SupabaseAccessTokenMode = "session";
+let preferredDataAccessTokenMode: SupabaseAccessTokenMode = "legacy";
 
 export const isSupabaseConfigured = Boolean(supabasePublishableKey);
 
 export function setSupabaseAccessTokenProvider(provider: AccessTokenProvider | null) {
   accessTokenProvider = provider;
-  preferredAccessTokenMode = "session";
+  preferredDataAccessTokenMode = "legacy";
 }
 
-export async function getSupabaseAccessToken(mode: SupabaseAccessTokenMode = preferredAccessTokenMode) {
+export async function getSupabaseAccessToken(mode: SupabaseAccessTokenMode = "session") {
   return accessTokenProvider?.(mode) ?? null;
 }
 
@@ -34,7 +34,7 @@ async function supabaseFetch(input: RequestInfo | URL, init?: RequestInit) {
     return response;
   }
 
-  const fallbackMode = getAlternateAccessTokenMode(preferredAccessTokenMode);
+  const fallbackMode = getAlternateAccessTokenMode(preferredDataAccessTokenMode);
   const fallbackToken = await accessTokenProvider(fallbackMode);
 
   if (!fallbackToken) {
@@ -50,7 +50,7 @@ async function supabaseFetch(input: RequestInfo | URL, init?: RequestInit) {
   });
 
   if (fallbackResponse.ok) {
-    preferredAccessTokenMode = fallbackMode;
+    preferredDataAccessTokenMode = fallbackMode;
   }
 
   return fallbackResponse;
@@ -60,7 +60,7 @@ export const supabase = createClient(
   supabaseUrl,
   supabasePublishableKey,
   {
-    accessToken: async () => accessTokenProvider?.(preferredAccessTokenMode) ?? null,
+    accessToken: async () => accessTokenProvider?.(preferredDataAccessTokenMode) ?? null,
     global: {
       fetch: supabaseFetch,
     },
