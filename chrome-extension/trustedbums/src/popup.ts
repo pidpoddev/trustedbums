@@ -3,6 +3,7 @@ import { createClerkClient } from "@clerk/chrome-extension/client";
 const DEFAULT_API_BASE_URL =
   process.env.TRUSTED_BUMS_EXTENSION_API_BASE_URL ||
   "https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1";
+const DEFAULT_SYNC_HOST = process.env.TRUSTED_BUMS_EXTENSION_SYNC_HOST || "https://trustedbums.com";
 const CAPTURE_MESSAGE_TYPE = "TRUSTED_BUMS_CAPTURE_LINKEDIN_PAGE";
 const LOCAL_STORAGE_KEYS = ["apiBaseUrl"];
 const EXTENSION_URL = chrome.runtime.getURL(".");
@@ -46,7 +47,7 @@ const state: {
 };
 
 const testWindow = window as typeof window & { __trustedBumsMockClerk?: ReturnType<typeof createClerkClient> };
-const clerk = testWindow.__trustedBumsMockClerk ?? createClerkClient({ publishableKey: process.env.CLERK_PUBLISHABLE_KEY });
+const clerk = testWindow.__trustedBumsMockClerk ?? createClerkClient({ publishableKey: process.env.CLERK_PUBLISHABLE_KEY, syncHost: DEFAULT_SYNC_HOST });
 
 const els = {
   status: document.querySelector("#status") as HTMLElement,

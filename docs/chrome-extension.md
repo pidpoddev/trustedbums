@@ -34,10 +34,11 @@ Optional values:
 
 ```sh
 TRUSTED_BUMS_EXTENSION_API_BASE_URL=https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1
+PLASMO_PUBLIC_CLERK_SYNC_HOST=https://trustedbums.com
 CRX_PUBLIC_KEY=<stable Chrome extension public key>
 ```
 
-`CRX_PUBLIC_KEY` is optional for a Web Store upload because the Chrome Developer Dashboard assigns the production extension ID. It is useful when you need a stable unpacked-extension ID for pre-store testing.
+`PLASMO_PUBLIC_CLERK_SYNC_HOST` lets the extension sync auth state with the Trusted Bums web app. `CRX_PUBLIC_KEY` is optional for a Web Store upload because the Chrome Developer Dashboard assigns the production extension ID. It is useful when you need a stable unpacked-extension ID for pre-store testing.
 
 ## Build and package
 
@@ -68,13 +69,13 @@ If that machine also blocks unpacked extensions, use the Chrome Web Store path i
 
 ## Production Clerk setup
 
-Clerk requires Chrome extension origins to be allowed explicitly. After the extension has a stable ID, add this origin to the Clerk production instance:
+Clerk requires Chrome extension origins to be allowed explicitly. After the extension has a stable ID, add this origin to the Clerk production instance. The current public pre-store zip is built with this stable ID:
 
 ```text
-chrome-extension://<extension-id>
+chrome-extension://eemjcjegjdmeghobmfdbaiammapaefde
 ```
 
-Also make sure the Clerk Native API is enabled and the production `CLERK_FRONTEND_API` value is included in the built manifest `host_permissions`.
+Also make sure the Clerk Native API is enabled and the production `CLERK_FRONTEND_API` and `PLASMO_PUBLIC_CLERK_SYNC_HOST` values are included in the built manifest `host_permissions`.
 
 ## Chrome Web Store notes
 
@@ -83,7 +84,7 @@ Before submitting:
 1. Build with live Clerk production values.
 2. Upload `dist/chrome-extension/trustedbums-extension.zip`.
 3. Use the Web Store extension ID as the stable production ID.
-4. Add `chrome-extension://<extension-id>` to Clerk allowed origins.
+4. Add `chrome-extension://eemjcjegjdmeghobmfdbaiammapaefde` to Clerk allowed origins.
 5. Narrow `extension-api-v1` CORS to the final Chrome extension origin before public release.
 
 ## QA

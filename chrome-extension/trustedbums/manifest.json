@@ -13,7 +13,8 @@
     "https://www.linkedin.com/*",
     "https://*.supabase.co/*",
     "https://api.trustedbums.com/*",
-    "$CLERK_FRONTEND_API/*"
+    "$CLERK_FRONTEND_API/*",
+    "$CLERK_SYNC_HOST/*"
   ],
   "content_scripts": [
     {

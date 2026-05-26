@@ -19,6 +19,10 @@ const clerkFrontendApi = process.env.CLERK_FRONTEND_API || process.env.CLERK_FRO
 const apiBaseUrl =
   process.env.TRUSTED_BUMS_EXTENSION_API_BASE_URL ||
   "https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1";
+const extensionSyncHost =
+  process.env.TRUSTED_BUMS_EXTENSION_SYNC_HOST ||
+  process.env.PLASMO_PUBLIC_CLERK_SYNC_HOST ||
+  "https://trustedbums.com";
 const crxPublicKey = process.env.CRX_PUBLIC_KEY || "";
 
 function requireValue(name, value) {
@@ -37,7 +41,9 @@ await mkdir(outputDir, { recursive: true });
 
 const manifest = JSON.parse(await readFile(path.join(sourceDir, "manifest.json"), "utf8"));
 manifest.host_permissions = manifest.host_permissions.map((permission) =>
-  permission.replace("$CLERK_FRONTEND_API", clerkFrontendApi || "https://example.clerk.accounts.dev"),
+  permission
+    .replace("$CLERK_FRONTEND_API", clerkFrontendApi || "https://example.clerk.accounts.dev")
+    .replace("$CLERK_SYNC_HOST", extensionSyncHost),
 );
 if (crxPublicKey) {
   manifest.key = crxPublicKey;
@@ -60,6 +66,7 @@ const commonBuildOptions = {
   define: {
     "process.env.CLERK_PUBLISHABLE_KEY": JSON.stringify(clerkPublishableKey || "pk_test_placeholder"),
     "process.env.TRUSTED_BUMS_EXTENSION_API_BASE_URL": JSON.stringify(apiBaseUrl),
+    "process.env.TRUSTED_BUMS_EXTENSION_SYNC_HOST": JSON.stringify(extensionSyncHost),
   },
 };
 
