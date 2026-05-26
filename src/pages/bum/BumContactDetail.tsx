@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Link2Off, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,6 +109,20 @@ export default function BumContactDetail() {
     },
   });
 
+  const unlinkMutation = useMutation({
+    mutationFn: () => updateBumRepresentedContact(contactId, { opportunityRegistrationId: null }),
+    onSuccess: (result) => {
+      queryClient.setQueryData(["bum-contact", contactId], result);
+      queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["portal-search", "bum-contacts", user?.id] });
+      setForm((current) => ({ ...current, opportunityRegistrationId: NO_OPPORTUNITY }));
+      toast({ title: "Opportunity unlinked", description: "The contact is no longer tied to that opportunity." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to unlink opportunity", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
   const resyncMutation = useMutation({
     mutationFn: () => resyncBumRepresentedContact(contactId),
     onSuccess: (result) => {
@@ -177,19 +191,26 @@ export default function BumContactDetail() {
                 </div>
                 <div className="space-y-2">
                   <Label>Opportunity</Label>
-                  <Select value={form.opportunityRegistrationId} onValueChange={(value) => setForm((current) => ({ ...current, opportunityRegistrationId: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="No linked opportunity" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_OPPORTUNITY}>No linked opportunity</SelectItem>
-                      {(detailQuery.data?.opportunities ?? []).map((opportunity) => (
-                        <SelectItem key={opportunity.id} value={opportunity.id}>
-                          {opportunityLabel(opportunity)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select value={form.opportunityRegistrationId} onValueChange={(value) => setForm((current) => ({ ...current, opportunityRegistrationId: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="No linked opportunity" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NO_OPPORTUNITY}>No linked opportunity</SelectItem>
+                        {(detailQuery.data?.opportunities ?? []).map((opportunity) => (
+                          <SelectItem key={opportunity.id} value={opportunity.id}>
+                            {opportunityLabel(opportunity)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {contact?.opportunityRegistrationId ? (
+                      <Button type="button" variant="outline" size="icon" aria-label="Unlink opportunity" onClick={() => unlinkMutation.mutate()} disabled={unlinkMutation.isPending}>
+                        <Link2Off className="h-4 w-4" />
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
@@ -233,7 +254,7 @@ export default function BumContactDetail() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+                <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || unlinkMutation.isPending}>
                   <Save className="mr-2 h-4 w-4" />
                   Save changes
                 </Button>

@@ -250,7 +250,8 @@ function contactCompany(row: BumContactRow) {
 
 function contactContextLabel(row: BumContactRow) {
   if (row.opportunity_registrations?.target_account_name) return "Opportunity: " + row.opportunity_registrations.target_account_name;
-  if (typeof row.metadata?.contextLabel === "string" && row.metadata.contextLabel.trim()) return row.metadata.contextLabel.trim();
+  const metadataContextLabel = typeof row.metadata?.contextLabel === "string" ? row.metadata.contextLabel.trim() : "";
+  if (metadataContextLabel && !(metadataContextLabel.startsWith("Opportunity:") && !row.opportunity_registration_id)) return metadataContextLabel;
   if (row.source_type === "OPPORTUNITY_CLAIM") return "Opportunity claim";
   if (row.source_type === "PROSPECT") return "Prospect recommendation";
   if (row.source_type === "TARGET_RESPONSE") return "Client target response";
