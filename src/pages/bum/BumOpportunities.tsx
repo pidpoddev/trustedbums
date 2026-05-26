@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { openConversationDock } from "@/lib/conversationDock";
 import { PageHeader } from "@/components/PageHeader";
@@ -31,7 +31,7 @@ import {
 } from "@/lib/portalApi";
 import { cn } from "@/lib/utils";
 import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const MARKETPLACE_PAGE_SIZE = 6;
 
@@ -92,7 +92,8 @@ export default function BumOpportunities() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("search") ?? "");
   const [heartedOnly, setHeartedOnly] = useState(false);
   const [typeFilter, setTypeFilter] = useState<OpportunityTypeFilter>("ALL");
   const [industry, setIndustry] = useState("ALL");
@@ -104,6 +105,12 @@ export default function BumOpportunities() {
   const [responseForm, setResponseForm] = useState(responseFormInitial);
   const [expandedOpportunityIds, setExpandedOpportunityIds] = useState<Set<string>>(new Set());
   const [expandedTargetIds, setExpandedTargetIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const searchQuery = searchParams.get("search") ?? "";
+    setQuery(searchQuery);
+    setMarketplacePage(1);
+  }, [searchParams]);
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
     queryFn: listMarketplaceOpportunities,
@@ -262,7 +269,20 @@ export default function BumOpportunities() {
           <Input
             placeholder="Search opportunities…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(event) => {
+              const value = event.target.value;
+              setQuery(value);
+              setMarketplacePage(1);
+              setSearchParams((current) => {
+                const next = new URLSearchParams(current);
+                if (value.trim()) {
+                  next.set("search", value);
+                } else {
+                  next.delete("search");
+                }
+                return next;
+              }, { replace: true });
+            }}
             className="pl-9"
           />
         </div>

@@ -1,6 +1,7 @@
 import { BrandLogo } from "@/components/BrandLogo";
 import { NavLink } from "@/components/NavLink";
 import { PortalHeaderActions } from "@/components/PortalHeaderActions";
+import { BumOpportunitySearch } from "@/components/BumOpportunitySearch";
 import { ConversationDock } from "@/components/ConversationDock";
 import { useLocation, Outlet } from "react-router-dom";
 import {
@@ -23,6 +24,7 @@ import {
   Wallet,
   User,
   Building2,
+  ContactRound,
   GraduationCap,
   PlusCircle,
   Sparkles,
@@ -35,6 +37,7 @@ const navGroups = [
   { title: "Prospects", url: "/bum/prospects", icon: PlusCircle },
   { title: "Reverse Opportunities", url: "/bum/reverse-opportunities", icon: Sparkles },
   { title: "Clients", url: "/bum/clients", icon: Building2 },
+  { title: "Contacts", url: "/bum/contacts", icon: ContactRound },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
   { title: "My Claims", url: "/bum/claims", icon: Handshake },
   { title: "Live Conversations", url: "/bum/live-conversations", icon: Calendar },
@@ -89,9 +92,10 @@ export default function BumLayout() {
         <main className="flex-1 overflow-auto">
           <header className="h-14 border-b flex items-center px-4 bg-card">
             <SidebarTrigger />
-            <span className="ml-4 truncate text-sm text-muted-foreground">
+            <span className="ml-4 hidden truncate text-sm text-muted-foreground sm:inline">
               {navItems.find((i) => location.pathname === i.url || location.pathname.startsWith(`${i.url}/`))?.title ?? "Bum"}
             </span>
+            <BumOpportunitySearch />
             <PortalHeaderActions />
           </header>
           <div className="p-4 sm:p-6">

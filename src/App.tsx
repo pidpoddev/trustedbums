@@ -59,6 +59,7 @@ import BumLiveConversations from "./pages/bum/BumLiveConversations";
 import BumEarnings from "./pages/bum/BumEarnings";
 import BumProfile from "./pages/bum/BumProfile";
 import BumClients from "./pages/bum/BumClients";
+import BumContacts from "./pages/bum/BumContacts";
 import BumTrainings from "./pages/bum/BumTrainings";
 import BumOpportunityDetail from "./pages/bum/BumOpportunityDetail";
 import BumReports from "./pages/bum/BumReports";
@@ -158,6 +159,7 @@ const App = () => (
                       <Route path="prospects" element={<BumProspects />} />
                       <Route path="reverse-opportunities" element={<BumReverseOpportunities />} />
                       <Route path="clients" element={<BumClients />} />
+                      <Route path="contacts" element={<BumContacts />} />
                       <Route path="opportunities" element={<BumOpportunities />} />
                       <Route path="opportunities/:id" element={<BumOpportunityDetail />} />
                       <Route path="claims" element={<BumClaims />} />

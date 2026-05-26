@@ -347,6 +347,25 @@ export interface ProspectContactRecord {
   prospect_recommendations?: Pick<ProspectRecommendationRecord, "id" | "bum_user_id"> | null;
 }
 
+
+export type BumRepresentedContactSource = "OPPORTUNITY_CLAIM" | "PROSPECT" | "TARGET_RESPONSE";
+
+export interface BumRepresentedContactRecord {
+  id: string;
+  source: BumRepresentedContactSource;
+  name: string;
+  title: string | null;
+  email: string | null;
+  companyName: string;
+  relationshipStrength: string | null;
+  status: string;
+  contextLabel: string;
+  detailUrl: string;
+  linkedinUrl: string | null;
+  note: string | null;
+  created_at: string;
+}
+
 export interface ProspectInput {
   company_name: string;
   company_website?: string;
@@ -4581,6 +4600,104 @@ export async function listProspectContacts() {
   }
 
   return data ?? [];
+}
+
+
+export async function listBumRepresentedContacts(userId: string) {
+  const [claimsResult, recommendationsResult, contactsResult, targetResponsesResult] = await Promise.all([
+    supabase
+      .from("opportunity_claims")
+      .select("*, opportunity_registrations(id, target_account_name, company_id, companies(name))")
+      .eq("bum_user_id", userId)
+      .order("created_at", { ascending: false })
+      .returns<Array<OpportunityClaimRecord & { opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name" | "company_id"> & { companies?: Pick<CompanyRecord, "name"> | null } | null }>>(),
+    supabase
+      .from("prospect_recommendations")
+      .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+      .eq("bum_user_id", userId)
+      .order("created_at", { ascending: false })
+      .returns<ProspectRecommendationRecord[]>(),
+    supabase
+      .from("prospect_contacts")
+      .select("*, prospect_recommendations(id, bum_user_id)")
+      .order("created_at", { ascending: false })
+      .returns<ProspectContactRecord[]>(),
+    supabase
+      .from("customer_target_responses")
+      .select(CUSTOMER_TARGET_RESPONSE_SELECT)
+      .eq("bum_user_id", userId)
+      .order("created_at", { ascending: false })
+      .returns<CustomerTargetResponseRecord[]>(),
+  ]);
+
+  for (const result of [claimsResult, recommendationsResult, contactsResult, targetResponsesResult]) {
+    if (result.error) {
+      throw result.error;
+    }
+  }
+
+  const recommendations = recommendationsResult.data ?? [];
+  const recommendationById = new Map(recommendations.map((recommendation) => [recommendation.id, recommendation]));
+  const ownRecommendationIds = new Set(recommendations.map((recommendation) => recommendation.id));
+
+  const claimContacts: BumRepresentedContactRecord[] = (claimsResult.data ?? []).map((claim) => ({
+    id: "claim:" + claim.id,
+    source: "OPPORTUNITY_CLAIM",
+    name: claim.contact_name,
+    title: null,
+    email: claim.contact_email,
+    companyName: claim.contact_company || claim.opportunity_registrations?.companies?.name || claim.opportunity_registrations?.target_account_name || "Unknown company",
+    relationshipStrength: claim.relationship_strength,
+    status: claim.status,
+    contextLabel: claim.opportunity_registrations?.target_account_name ? "Opportunity: " + claim.opportunity_registrations.target_account_name : "Opportunity claim",
+    detailUrl: claim.opportunity_registration_id ? "/bum/opportunities/" + claim.opportunity_registration_id : "/bum/claims",
+    linkedinUrl: null,
+    note: claim.note,
+    created_at: claim.created_at,
+  }));
+
+  const prospectContacts: BumRepresentedContactRecord[] = (contactsResult.data ?? [])
+    .filter((contact) => contact.recommendation_id && ownRecommendationIds.has(contact.recommendation_id))
+    .map((contact) => {
+      const recommendation = contact.recommendation_id ? recommendationById.get(contact.recommendation_id) : null;
+      return {
+        id: "prospect:" + contact.id,
+        source: "PROSPECT",
+        name: contact.full_name,
+        title: contact.title,
+        email: contact.email,
+        companyName: recommendation?.companies?.name ?? "Prospected company",
+        relationshipStrength: contact.is_primary ? "PRIMARY" : null,
+        status: recommendation?.status ?? "PROSPECT",
+        contextLabel: "Prospect recommendation",
+        detailUrl: "/bum/prospects",
+        linkedinUrl: contact.linkedin_url,
+        note: recommendation?.notes ?? null,
+        created_at: contact.created_at,
+      } satisfies BumRepresentedContactRecord;
+    });
+
+  const targetContacts: BumRepresentedContactRecord[] = (targetResponsesResult.data ?? []).map((response) => {
+    const normalized = normalizeCustomerTargetResponse(response);
+    const targetName = normalized.customer_targets?.target_companies?.name ?? normalized.customer_targets?.target_account_name ?? "Target account";
+    return {
+      id: "target:" + normalized.id,
+      source: "TARGET_RESPONSE",
+      name: normalized.contact_name,
+      title: null,
+      email: normalized.contact_email,
+      companyName: targetName,
+      relationshipStrength: normalized.relationship_strength,
+      status: normalized.status,
+      contextLabel: normalized.customer_targets?.client_companies?.name ? "Client target for " + normalized.customer_targets.client_companies.name : "Client target response",
+      detailUrl: "/bum/opportunities?search=" + encodeURIComponent(targetName),
+      linkedinUrl: null,
+      note: normalized.note,
+      created_at: normalized.created_at,
+    };
+  });
+
+  return [...claimContacts, ...prospectContacts, ...targetContacts].sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
 export async function createReverseOpportunity(user: AuthUser, input: ReverseOpportunityInput) {
