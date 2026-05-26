@@ -16,6 +16,7 @@ const sourceLabels: Record<BumRepresentedContactSource, string> = {
   OPPORTUNITY_CLAIM: "Claim",
   PROSPECT: "Prospect",
   TARGET_RESPONSE: "Target response",
+  EXTENSION_CAPTURE: "LinkedIn capture",
 };
 
 function formatDate(value: string, timeZone: string) {
@@ -61,7 +62,7 @@ export default function BumContacts() {
   const countsBySource = useMemo(() => {
     return contacts.reduce<Record<BumRepresentedContactSource, number>>(
       (counts, contact) => ({ ...counts, [contact.source]: counts[contact.source] + 1 }),
-      { OPPORTUNITY_CLAIM: 0, PROSPECT: 0, TARGET_RESPONSE: 0 },
+      { OPPORTUNITY_CLAIM: 0, PROSPECT: 0, TARGET_RESPONSE: 0, EXTENSION_CAPTURE: 0 },
     );
   }, [contacts]);
 
@@ -69,10 +70,10 @@ export default function BumContacts() {
     <div className="space-y-6">
       <PageHeader
         title="Contacts"
-        description="See the people you represent across claims, prospect recommendations, and client target responses."
+        description="See the people you represent across claims, prospect recommendations, client target responses, and LinkedIn captures."
       />
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-5">
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Total contacts</p>
           <p className="mt-1 text-2xl font-semibold">{contacts.length}</p>
@@ -88,6 +89,10 @@ export default function BumContacts() {
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Target responses</p>
           <p className="mt-1 text-2xl font-semibold">{countsBySource.TARGET_RESPONSE}</p>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <p className="text-sm text-muted-foreground">LinkedIn captures</p>
+          <p className="mt-1 text-2xl font-semibold">{countsBySource.EXTENSION_CAPTURE}</p>
         </div>
       </div>
 
@@ -120,7 +125,7 @@ export default function BumContacts() {
             <div>
               <p className="font-medium">No represented contacts yet</p>
               <p className="text-sm text-muted-foreground">
-                Add a prospect, respond to a client target, or claim an opportunity to start building your contact list.
+                Add a prospect, respond to a client target, claim an opportunity, or send a LinkedIn profile from the extension to start building your contact list.
               </p>
             </div>
             <Button variant="outline" asChild>

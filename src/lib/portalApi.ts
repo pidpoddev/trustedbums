@@ -348,7 +348,7 @@ export interface ProspectContactRecord {
 }
 
 
-export type BumRepresentedContactSource = "OPPORTUNITY_CLAIM" | "PROSPECT" | "TARGET_RESPONSE";
+export type BumRepresentedContactSource = "OPPORTUNITY_CLAIM" | "PROSPECT" | "TARGET_RESPONSE" | "EXTENSION_CAPTURE";
 
 export interface BumRepresentedContactRecord {
   id: string;
@@ -364,6 +364,27 @@ export interface BumRepresentedContactRecord {
   linkedinUrl: string | null;
   note: string | null;
   created_at: string;
+}
+
+interface ExtensionPageCaptureRecord {
+  id: string;
+  created_by: string;
+  company_id: string | null;
+  opportunity_registration_id: string | null;
+  customer_target_id: string | null;
+  capture_type: string;
+  source_url: string;
+  page_title: string | null;
+  selected_text: string | null;
+  note: string | null;
+  status: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name" | "company_id"> & { companies?: Pick<CompanyRecord, "name"> | null } | null;
+  customer_targets?: Pick<CustomerTargetRecord, "id" | "target_account_name"> & {
+    client_companies?: Pick<CompanyRecord, "name"> | null;
+    target_companies?: Pick<CompanyRecord, "name"> | null;
+  } | null;
 }
 
 export interface ProspectInput {
@@ -4602,9 +4623,64 @@ export async function listProspectContacts() {
   return data ?? [];
 }
 
+function cleanLinkedInProfileName(value?: string | null) {
+  return (value ?? "")
+    .replace(/\s*\|\s*LinkedIn\s*$/i, "")
+    .replace(/\s+LinkedIn\s*$/i, "")
+    .split("·")[0]
+    .trim();
+}
+
+function stringMetadataValue(metadata: Record<string, unknown> | null | undefined, key: string) {
+  const value = metadata?.[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function inferLinkedInHeadline(capture: ExtensionPageCaptureRecord, name: string) {
+  const metadataHeadline = stringMetadataValue(capture.metadata, "headline");
+  if (metadataHeadline) return metadataHeadline;
+
+  let text = capture.selected_text?.trim() ?? "";
+  if (name && text.toLowerCase().startsWith(name.toLowerCase())) {
+    text = text.slice(name.length).trim();
+  }
+  text = text.replace(/^(?:[·\s]*(?:1st|2nd|3rd)[·\s]*)+/i, "").trim();
+  const atMatch = text.match(/^(.{1,120}?\bat\b[^,·.\n]+)/i);
+  if (atMatch?.[1]) return atMatch[1].trim();
+  return text.split(/[\n·]/)[0]?.trim().slice(0, 120) || null;
+}
+
+function inferCompanyFromHeadline(headline?: string | null) {
+  const match = headline?.match(/\bat\s+([^,·.\n]+)/i);
+  return match?.[1]?.trim() || null;
+}
+
+function extensionCaptureContactName(capture: ExtensionPageCaptureRecord) {
+  return (
+    cleanLinkedInProfileName(stringMetadataValue(capture.metadata, "profileName")) ||
+    cleanLinkedInProfileName(capture.page_title) ||
+    "LinkedIn contact"
+  );
+}
+
+function extensionCaptureContextLabel(capture: ExtensionPageCaptureRecord) {
+  if (capture.opportunity_registrations?.target_account_name) {
+    return "Opportunity: " + capture.opportunity_registrations.target_account_name;
+  }
+  const targetName = capture.customer_targets?.target_companies?.name ?? capture.customer_targets?.target_account_name;
+  if (targetName) return "Client target: " + targetName;
+  return "LinkedIn page capture";
+}
+
+function extensionCaptureDetailUrl(capture: ExtensionPageCaptureRecord, companyName: string) {
+  if (capture.opportunity_registration_id) return "/bum/opportunities/" + capture.opportunity_registration_id;
+  if (capture.customer_target_id) return "/bum/opportunities?search=" + encodeURIComponent(companyName);
+  return "/bum/contacts";
+}
+
 
 export async function listBumRepresentedContacts(userId: string) {
-  const [claimsResult, recommendationsResult, contactsResult, targetResponsesResult] = await Promise.all([
+  const [claimsResult, recommendationsResult, contactsResult, targetResponsesResult, extensionCapturesResult] = await Promise.all([
     supabase
       .from("opportunity_claims")
       .select("*, opportunity_registrations(id, target_account_name, company_id, companies(name))")
@@ -4628,9 +4704,16 @@ export async function listBumRepresentedContacts(userId: string) {
       .eq("bum_user_id", userId)
       .order("created_at", { ascending: false })
       .returns<CustomerTargetResponseRecord[]>(),
+    supabase
+      .from("extension_page_captures")
+      .select("*, opportunity_registrations(id, target_account_name, company_id, companies(name)), customer_targets(id, target_account_name, client_companies:companies!customer_targets_client_company_id_fkey(name), target_companies:companies!customer_targets_target_company_id_fkey(name))")
+      .eq("created_by", userId)
+      .eq("capture_type", "LINKEDIN_PROFILE")
+      .order("created_at", { ascending: false })
+      .returns<ExtensionPageCaptureRecord[]>(),
   ]);
 
-  for (const result of [claimsResult, recommendationsResult, contactsResult, targetResponsesResult]) {
+  for (const result of [claimsResult, recommendationsResult, contactsResult, targetResponsesResult, extensionCapturesResult]) {
     if (result.error) {
       throw result.error;
     }
@@ -4697,7 +4780,35 @@ export async function listBumRepresentedContacts(userId: string) {
     };
   });
 
-  return [...claimContacts, ...prospectContacts, ...targetContacts].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const extensionCaptureContacts: BumRepresentedContactRecord[] = (extensionCapturesResult.data ?? []).map((capture) => {
+    const name = extensionCaptureContactName(capture);
+    const headline = inferLinkedInHeadline(capture, name);
+    const companyName =
+      inferCompanyFromHeadline(headline) ??
+      capture.customer_targets?.target_companies?.name ??
+      capture.customer_targets?.target_account_name ??
+      capture.opportunity_registrations?.target_account_name ??
+      capture.opportunity_registrations?.companies?.name ??
+      "LinkedIn contact";
+
+    return {
+      id: "extension:" + capture.id,
+      source: "EXTENSION_CAPTURE",
+      name,
+      title: headline,
+      email: null,
+      companyName,
+      relationshipStrength: null,
+      status: capture.status,
+      contextLabel: extensionCaptureContextLabel(capture),
+      detailUrl: extensionCaptureDetailUrl(capture, companyName),
+      linkedinUrl: capture.source_url,
+      note: capture.note ?? capture.selected_text,
+      created_at: capture.created_at,
+    } satisfies BumRepresentedContactRecord;
+  });
+
+  return [...claimContacts, ...prospectContacts, ...targetContacts, ...extensionCaptureContacts].sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
 export async function createReverseOpportunity(user: AuthUser, input: ReverseOpportunityInput) {
