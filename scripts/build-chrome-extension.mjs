@@ -11,10 +11,6 @@ const zipPath = path.join(packageDir, "trustedbums-extension.zip");
 const isPackageBuild = process.argv.includes("--zip");
 const allowPlaceholders = process.argv.includes("--allow-placeholders");
 
-const clerkPublishableKey = process.env.CLERK_PUBLISHABLE_KEY ||
-  process.env.VITE_CLERK_PUBLISHABLE_KEY ||
-  process.env.PLASMO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-  "";
 const clerkFrontendApi = process.env.CLERK_FRONTEND_API || process.env.CLERK_FRONTEND_API_URL || "";
 const apiBaseUrl =
   process.env.TRUSTED_BUMS_EXTENSION_API_BASE_URL ||
@@ -24,6 +20,7 @@ const extensionSyncHost =
   process.env.PLASMO_PUBLIC_CLERK_SYNC_HOST ||
   clerkFrontendApi ||
   "https://clerk.trustedbums.com";
+const extensionLoginUrl = process.env.TRUSTED_BUMS_EXTENSION_LOGIN_URL || "https://trustedbums.com/login";
 const crxPublicKey = process.env.CRX_PUBLIC_KEY || "";
 
 function requireValue(name, value) {
@@ -33,7 +30,6 @@ function requireValue(name, value) {
 }
 
 if (!allowPlaceholders) {
-  requireValue("CLERK_PUBLISHABLE_KEY", clerkPublishableKey);
   requireValue("CLERK_FRONTEND_API", clerkFrontendApi);
 }
 
@@ -67,10 +63,10 @@ const commonBuildOptions = {
   target: "es2022",
   sourcemap: !isPackageBuild,
   define: {
-    "process.env.CLERK_PUBLISHABLE_KEY": JSON.stringify(clerkPublishableKey || "pk_test_placeholder"),
     "process.env.CLERK_FRONTEND_API": JSON.stringify(clerkFrontendApi || "https://example.clerk.accounts.dev"),
     "process.env.TRUSTED_BUMS_EXTENSION_API_BASE_URL": JSON.stringify(apiBaseUrl),
     "process.env.TRUSTED_BUMS_EXTENSION_SYNC_HOST": JSON.stringify(extensionSyncHost),
+    "process.env.TRUSTED_BUMS_EXTENSION_LOGIN_URL": JSON.stringify(extensionLoginUrl),
   },
 };
 

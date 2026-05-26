@@ -104,14 +104,6 @@ test.describe("Trusted Bums extension", () => {
       };
 
       window.__trustedBumsExtensionRequests = [];
-      window.__trustedBumsMockClerk = {
-        user: { primaryEmailAddress: { emailAddress: "qa@example.com" } },
-        session: { getToken: async () => "test-clerk-token" },
-        load: async () => undefined,
-        addListener: () => undefined,
-        openSignIn: () => undefined,
-        signOut: async () => undefined,
-      };
       window.chrome = {
         runtime: {
           id: "trustedbums",
@@ -120,6 +112,11 @@ test.describe("Trusted Bums extension", () => {
           lastError: null,
         },
         storage: {},
+        cookies: {
+          getAll: (_details, callback) => {
+            callback([{ name: "__session", value: "test-clerk-token" }]);
+          },
+        },
         tabs: {
           query: (_query, callback) => {
             callback([{ id: 123, url: capture.sourceUrl }]);

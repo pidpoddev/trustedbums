@@ -25,6 +25,7 @@
     "https://www.linkedin.com/*",
     "https://*.supabase.co/*",
     "https://api.trustedbums.com/*",
+    "https://trustedbums.com/*",
     "$CLERK_FRONTEND_API/*",
     "$CLERK_SYNC_HOST/*"
   ],

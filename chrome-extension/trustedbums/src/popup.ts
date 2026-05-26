@@ -1,12 +1,11 @@
-import { createClerkClient } from "@clerk/chrome-extension/client";
-
 const DEFAULT_API_BASE_URL =
   process.env.TRUSTED_BUMS_EXTENSION_API_BASE_URL ||
   "https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1";
 const DEFAULT_SYNC_HOST = process.env.TRUSTED_BUMS_EXTENSION_SYNC_HOST || process.env.CLERK_FRONTEND_API || "https://clerk.trustedbums.com";
+const TRUSTED_BUMS_LOGIN_URL = process.env.TRUSTED_BUMS_EXTENSION_LOGIN_URL || "https://trustedbums.com/login";
+const TRUSTED_BUMS_APP_URL = new URL(TRUSTED_BUMS_LOGIN_URL).origin;
+const CLERK_SESSION_COOKIE_NAME = "__session";
 const CAPTURE_MESSAGE_TYPE = "TRUSTED_BUMS_CAPTURE_LINKEDIN_PAGE";
-const EXTENSION_URL = chrome.runtime.getURL(".");
-const POPUP_URL = `${EXTENSION_URL}popup.html`;
 
 type DestinationType = "OPPORTUNITY_REGISTRATION" | "CUSTOMER_TARGET";
 
@@ -36,15 +35,15 @@ interface ExtensionContext {
 }
 
 const state: {
+  authenticated: boolean;
   capture: LinkedInCapture | null;
   context: ExtensionContext | null;
 } = {
+  authenticated: false,
   capture: null,
   context: null,
 };
 
-const testWindow = window as typeof window & { __trustedBumsMockClerk?: ReturnType<typeof createClerkClient> };
-const clerk = testWindow.__trustedBumsMockClerk ?? createClerkClient({ publishableKey: process.env.CLERK_PUBLISHABLE_KEY, syncHost: DEFAULT_SYNC_HOST });
 
 const els = {
   status: document.querySelector("#status") as HTMLElement,
@@ -117,11 +116,35 @@ function requestPageCapture(tabId: number) {
   });
 }
 
-async function getSessionToken() {
-  if (!clerk.session) {
-    return null;
+function getCookies(details: chrome.cookies.GetAllDetails) {
+  return new Promise<chrome.cookies.Cookie[]>((resolve) => {
+    if (!chrome.cookies?.getAll) {
+      resolve([]);
+      return;
+    }
+
+    chrome.cookies.getAll(details, (cookies) => {
+      resolve(cookies || []);
+    });
+  });
+}
+
+async function getSessionCookieToken() {
+  const cookieUrls = [...new Set([DEFAULT_SYNC_HOST, TRUSTED_BUMS_APP_URL])];
+
+  for (const url of cookieUrls) {
+    const cookies = await getCookies({ url, name: CLERK_SESSION_COOKIE_NAME });
+    const sessionCookie = cookies.find((cookie) => cookie.value);
+    if (sessionCookie?.value) {
+      return sessionCookie.value;
+    }
   }
-  return clerk.session.getToken();
+
+  return null;
+}
+
+async function getSessionToken() {
+  return getSessionCookieToken();
 }
 
 async function fetchApi(path: string, options: RequestInit = {}) {
@@ -193,14 +216,15 @@ function renderCapture() {
 }
 
 function renderAuth() {
-  const email = clerk.user?.primaryEmailAddress?.emailAddress;
-  els.signedInIdentity.textContent = email ? `Signed in as ${email}` : "Sign in to load destinations.";
-  els.signIn.classList.toggle("hidden", Boolean(clerk.user));
-  els.signOut.classList.toggle("hidden", !clerk.user);
+  els.signedInIdentity.textContent = state.authenticated ? "Signed in to Trusted Bums." : "Sign in to load destinations.";
+  els.signIn.classList.toggle("hidden", state.authenticated);
+  els.signOut.classList.toggle("hidden", !state.authenticated);
 }
 
 async function refreshContext() {
   state.context = await fetchApi("/context");
+  state.authenticated = true;
+  renderAuth();
   renderDestinations();
 }
 
@@ -262,30 +286,22 @@ async function sendCapture() {
 
 async function initialize() {
   try {
-    if (!process.env.CLERK_PUBLISHABLE_KEY || process.env.CLERK_PUBLISHABLE_KEY.includes("YOUR_")) {
-      throw new Error("Build the extension with CLERK_PUBLISHABLE_KEY set.");
-    }
-
     els.authPanel.classList.remove("hidden");
-
-    await clerk.load({
-      afterSignOutUrl: POPUP_URL,
-      signInForceRedirectUrl: POPUP_URL,
-      signUpForceRedirectUrl: POPUP_URL,
-      allowedRedirectProtocols: ["chrome-extension:"],
-    });
-    clerk.addListener(renderAuth);
     renderAuth();
 
     const tab = await getActiveLinkedInTab();
     state.capture = await requestPageCapture(tab.id!);
     renderCapture();
 
-    if (clerk.session) {
+    try {
       await refreshContext();
       setStatus("Ready to send this page to Trusted Bums.", "success");
-    } else {
-      setStatus("Sign in to Trusted Bums to load destinations.", "error");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to load destinations.";
+      const authHint = message.includes("Sign in")
+        ? "Sign in to Trusted Bums in the browser, then reopen this extension."
+        : message;
+      setStatus(authHint, "error");
     }
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Unable to start extension.", "error");
@@ -293,11 +309,12 @@ async function initialize() {
 }
 
 els.signIn.addEventListener("click", () => {
-  clerk.openSignIn({});
+  chrome.tabs.create({ url: TRUSTED_BUMS_LOGIN_URL });
+  setStatus("Sign in to Trusted Bums in the new tab, then reopen this extension.", "success");
 });
 
 els.signOut.addEventListener("click", () => {
-  void clerk.signOut({ redirectUrl: POPUP_URL });
+  chrome.tabs.create({ url: TRUSTED_BUMS_APP_URL });
 });
 
 els.refreshContext.addEventListener("click", async () => {

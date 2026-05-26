@@ -6,7 +6,7 @@ The Trusted Bums Chrome extension is the browser companion for user-confirmed pa
 
 1. Open a LinkedIn profile or company page.
 2. Open the Trusted Bums extension popup.
-3. Sign in with Clerk.
+3. Sign in to Trusted Bums in the browser when prompted.
 4. Confirm the captured name, headline, selected text, destination, and optional note.
 5. Send the page to Trusted Bums as a draft `extension_page_captures` record.
 
@@ -26,7 +26,6 @@ The current LinkedIn workflow does not crawl LinkedIn directories, auto-navigate
 Set these before creating a real production package:
 
 ```sh
-CLERK_PUBLISHABLE_KEY=pk_live_...
 CLERK_FRONTEND_API=https://your-clerk-frontend-api-host
 ```
 
@@ -35,6 +34,7 @@ Optional values:
 ```sh
 TRUSTED_BUMS_EXTENSION_API_BASE_URL=https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1
 PLASMO_PUBLIC_CLERK_SYNC_HOST=https://clerk.trustedbums.com
+TRUSTED_BUMS_EXTENSION_LOGIN_URL=https://trustedbums.com/login
 CRX_PUBLIC_KEY=<stable Chrome extension public key>
 ```
 
@@ -67,15 +67,17 @@ In Chrome:
 
 If that machine also blocks unpacked extensions, use the Chrome Web Store path instead.
 
-## Production Clerk setup
+## Production auth setup
 
-Clerk requires Chrome extension origins to be allowed explicitly. After the extension has a stable ID, add this origin to the Clerk production instance. The current public pre-store zip is built with this stable ID:
+The current extension avoids Clerk popup sign-in and uses the existing Trusted Bums browser session instead. When the user clicks Sign in, the extension opens `https://trustedbums.com/login` in a normal browser tab. After the user signs in there, the extension reads the Clerk `__session` cookie for `https://trustedbums.com` or the Clerk frontend host and sends that token to the Extension API.
+
+The current public pre-store zip is still built with this stable extension ID:
 
 ```text
 chrome-extension://eemjcjegjdmeghobmfdbaiammapaefde
 ```
 
-Also make sure the Clerk Native API is enabled and the production `CLERK_FRONTEND_API` and `PLASMO_PUBLIC_CLERK_SYNC_HOST` values are included in the built manifest `host_permissions`. For the current production package, both values should point at the Clerk host.
+If a future version re-enables Clerk's Chrome extension popup SDK, Clerk Native API must be enabled and this extension origin must be added to Clerk allowed origins.
 
 ## Chrome Web Store notes
 
@@ -84,7 +86,7 @@ Before submitting:
 1. Build with live Clerk production values.
 2. Upload `dist/chrome-extension/trustedbums-extension.zip`.
 3. Use the Web Store extension ID as the stable production ID.
-4. Add `chrome-extension://eemjcjegjdmeghobmfdbaiammapaefde` to Clerk allowed origins.
+4. Confirm the login URL and cookie hosts are present in `host_permissions`.
 5. Narrow `extension-api-v1` CORS to the final Chrome extension origin before public release.
 
 ## QA
@@ -92,7 +94,6 @@ Before submitting:
 Build a test bundle and run the extension popup flow test with:
 
 ```sh
-CLERK_PUBLISHABLE_KEY=pk_test_placeholder \
 CLERK_FRONTEND_API=https://example.clerk.accounts.dev \
 npm run build:extension -- --allow-placeholders
 
