@@ -84,6 +84,10 @@ function prospectCompanyName(prospect: ProspectRecommendationRecord) {
   return prospect.companies?.name ?? "Prospect";
 }
 
+function contactResultHref(contact: BumRepresentedContactRecord) {
+  return contact.id.includes(":") ? contact.detailUrl : "/bum/contacts/" + contact.id;
+}
+
 function rolePages(role?: string) {
   if (role === "ADMIN") {
     return [
@@ -287,7 +291,7 @@ export function PortalGlobalSearch() {
       category: "Contact",
       title: contact.name,
       subtitle: [contact.companyName, contact.contextLabel].filter(Boolean).join(" · "),
-      href: contact.detailUrl,
+      href: contactResultHref(contact),
       terms: [contact.email, contact.title, contact.status, contact.relationshipStrength, contact.note],
     }));
 
