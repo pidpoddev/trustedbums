@@ -107,7 +107,7 @@ const roleAudits: RoleAuditConfig[] = [
 ];
 
 async function expectHealthyPortalPage(page: Page) {
-  await page.waitForLoadState("networkidle").catch(() => undefined);
+  await page.waitForLoadState("domcontentloaded").catch(() => undefined);
   await expect(page.locator("h1").first()).toBeVisible({ timeout: 20_000 });
   await expect(page).not.toHaveURL(/\/login\/?$/);
 
@@ -262,8 +262,9 @@ test.describe("portal interaction audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run the portal interaction audit.");
 
   for (const config of roleAudits) {
-    test(`${config.accountPrefix.toLowerCase().replaceAll("_", " ")} navigation and controls do not strand users`, async ({ page }) => {
-      test.setTimeout(420_000);
+    test(`${config.accountPrefix.toLowerCase().replaceAll("_", " ")} navigation and controls do not strand users`, async ({ page, isMobile }) => {
+      test.setTimeout(300_000);
+      test.skip(isMobile, "Desktop-only deep interaction audit; visual UI audit covers mobile layouts.");
 
       const account = getQaAccount(config.accountPrefix);
       test.skip(!account, `Set QA_${config.accountPrefix}_EMAIL.`);
