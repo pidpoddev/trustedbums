@@ -88,7 +88,9 @@ function contactResultHref(contact: BumRepresentedContactRecord) {
   return contact.id.includes(":") ? contact.detailUrl : "/bum/contacts/" + contact.id;
 }
 
-function rolePages(role?: string) {
+function rolePages(user?: { role?: string; clientAccessRole?: string }) {
+  const role = user?.role;
+
   if (role === "ADMIN") {
     return [
       result({ id: "page:admin-dashboard", icon: "page", category: "Page", title: "Admin dashboard", subtitle: "Operations overview", href: "/admin", terms: ["dashboard operations"] }),
@@ -101,14 +103,37 @@ function rolePages(role?: string) {
   }
 
   if (role === "CLIENT") {
-    return [
+    const accessRole = user?.clientAccessRole;
+    const pages = [
       result({ id: "page:client-dashboard", icon: "page", category: "Page", title: "Client dashboard", subtitle: "Client overview", href: "/client/dashboard", terms: ["dashboard overview"] }),
-      result({ id: "page:client-targets", icon: "target", category: "Page", title: "Target Accounts", subtitle: "Customer targets", href: "/client/targets", terms: ["accounts contacts customers"] }),
-      result({ id: "page:client-opportunities", icon: "opportunity", category: "Page", title: "Opportunities", subtitle: "Registered opportunities", href: "/client/opportunities", terms: ["pipeline registrations"] }),
-      result({ id: "page:client-bums", icon: "profile", category: "Page", title: "Bums", subtitle: "Bum directory", href: "/client/bum-directory", terms: ["directory relationships sellers"] }),
-      result({ id: "page:client-payments", icon: "report", category: "Page", title: "Payments", subtitle: "Payment reporting", href: "/client/payments", terms: ["finance invoices"] }),
-      result({ id: "page:client-team", icon: "profile", category: "Page", title: "Team Management", subtitle: "Client users", href: "/client/team", terms: ["members invitations"] }),
+      result({ id: "page:client-reports", icon: "report", category: "Page", title: "Reports", subtitle: "Client reporting", href: "/client/reports", terms: ["analytics reports"] }),
+      result({ id: "page:client-profile", icon: "profile", category: "Page", title: "Company Profile", subtitle: "Company settings", href: "/client/profile", terms: ["company settings"] }),
+      result({ id: "page:client-user-profile", icon: "profile", category: "Page", title: "User Profile", subtitle: "Personal settings", href: "/client/user-profile", terms: ["account settings"] }),
+      result({ id: "page:client-agreements", icon: "page", category: "Page", title: "Agreements", subtitle: "Terms and legal", href: "/client/agreements", terms: ["contracts terms legal"] }),
     ];
+
+    if (accessRole === "CLIENT_ADMIN" || accessRole === "CLIENT_MEMBER") {
+      pages.push(
+        result({ id: "page:client-targets", icon: "target", category: "Page", title: "Target Accounts", subtitle: "Customer targets", href: "/client/targets", terms: ["accounts contacts customers"] }),
+        result({ id: "page:client-opportunities", icon: "opportunity", category: "Page", title: "Opportunities", subtitle: "Registered opportunities", href: "/client/opportunities", terms: ["pipeline registrations"] }),
+        result({ id: "page:client-bums", icon: "profile", category: "Page", title: "Bums", subtitle: "Bum directory", href: "/client/bum-directory", terms: ["directory relationships sellers"] }),
+        result({ id: "page:client-trainings", icon: "training", category: "Page", title: "Training & Assets", subtitle: "Bum enablement content", href: "/client/trainings", terms: ["training assets materials"] }),
+        result({ id: "page:client-requests", icon: "conversation", category: "Page", title: "Requests", subtitle: "Inbound requests", href: "/client/requests", terms: ["inbound requests conversations"] }),
+      );
+    }
+
+    if (accessRole === "CLIENT_ADMIN" || accessRole === "CLIENT_FINANCE") {
+      pages.push(
+        result({ id: "page:client-payments", icon: "report", category: "Page", title: "Payments", subtitle: "Payment reporting", href: "/client/payments", terms: ["finance invoices"] }),
+        result({ id: "page:client-exports", icon: "report", category: "Page", title: "Exports", subtitle: "CSV downloads", href: "/client/exports", terms: ["downloads csv exports"] }),
+      );
+    }
+
+    if (accessRole === "CLIENT_ADMIN") {
+      pages.push(result({ id: "page:client-team", icon: "profile", category: "Page", title: "Team Management", subtitle: "Client users", href: "/client/team", terms: ["members invitations"] }));
+    }
+
+    return pages;
   }
 
   if (role === "BUM") {
@@ -373,7 +398,7 @@ export function PortalGlobalSearch() {
     }));
 
     return [
-      ...rolePages(user.role),
+      ...rolePages(user),
       ...opportunities,
       ...targets,
       ...companies,

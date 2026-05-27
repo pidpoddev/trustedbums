@@ -1,5 +1,8 @@
 name: E2E Smoke
 
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 on:
   workflow_dispatch:
     inputs:
@@ -43,7 +46,7 @@ jobs:
           QA_CLIENT_FINANCE_EMAIL: ${{ secrets.QA_CLIENT_FINANCE_EMAIL }}
           QA_CLIENT_MEMBER_EMAIL: ${{ secrets.QA_CLIENT_MEMBER_EMAIL }}
           QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
-        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/staging-smoke.spec.ts tests/e2e/authenticated-role-smoke.spec.ts
+        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/staging-smoke.spec.ts tests/e2e/authenticated-role-smoke.spec.ts tests/e2e/portal-interaction-audit.spec.ts
 
       - name: Upload Playwright report
         if: always()
