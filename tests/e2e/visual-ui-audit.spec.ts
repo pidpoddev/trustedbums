@@ -76,7 +76,7 @@ const interactionsByRole: Record<RoleKey, VisualInteraction[]> = {
       prepare: async (page) => {
         await page.getByRole("button", { name: "Create opportunity" }).click();
         await expect(page.getByText("Select client")).toBeVisible();
-        await expect(page.getByText("Target account")).toBeVisible();
+        await expect(page.getByText("Target account", { exact: true })).toBeVisible();
       },
     },
     {
