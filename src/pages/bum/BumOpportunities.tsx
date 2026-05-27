@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,28 +19,44 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
+  createBumRepresentedContact,
   createCustomerTargetQuestion,
   createCustomerTargetResponse,
+  createOpportunityClaim,
+  listBumRepresentedContacts,
   listBumSavedItems,
   listCustomerTargets,
   listMarketplaceOpportunities,
   listOpportunityClaimSummaries,
   setBumSavedItem,
+  updateBumRepresentedContact,
+  type BumRepresentedContactRecord,
   type CustomerTargetRecord,
   type CustomerTargetResponseStrength,
   type BumSavedItemType,
+  type OpportunityRegistration,
 } from "@/lib/portalApi";
+import type { RelationshipStrength } from "@/lib/claimConfig";
 import { cn } from "@/lib/utils";
-import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink } from "lucide-react";
+import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink, UserPlus } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 const MARKETPLACE_PAGE_SIZE = 6;
 
 const responseFormInitial = {
   contactName: "",
+  contactCompany: "",
   contactEmail: "",
   relationshipStrength: "warm" as CustomerTargetResponseStrength,
   note: "",
+};
+
+const quickAddInitial = {
+  name: "",
+  companyName: "",
+  title: "",
+  email: "",
+  linkedinUrl: "",
 };
 
 type ValueFilter = "ALL" | "UNDER_50K" | "50K_250K" | "250K_PLUS" | "UNKNOWN";
@@ -78,6 +95,19 @@ function valueMatchesFilter(value: number | null, filter: ValueFilter) {
   return value >= 250000;
 }
 
+function contactSearchText(contact: BumRepresentedContactRecord) {
+  return [contact.name, contact.companyName, contact.email, contact.title, contact.contextLabel]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function claimStrengthFromTargetStrength(strength: CustomerTargetResponseStrength): RelationshipStrength {
+  if (strength === "strong") return "STRONG";
+  if (strength === "unknown") return "WEAK";
+  return "MODERATE";
+}
+
 function termMatchesFilter(term: string | null, filter: TermFilter) {
   if (filter === "ALL") return true;
   if (filter === "UNKNOWN") return !term?.trim();
@@ -100,9 +130,14 @@ export default function BumOpportunities() {
   const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
   const [termFilter, setTermFilter] = useState<TermFilter>("ALL");
   const [selectedTarget, setSelectedTarget] = useState<CustomerTargetRecord | null>(null);
+  const [selectedOpportunity, setSelectedOpportunity] = useState<OpportunityRegistration | null>(null);
   const [targetDialogMode, setTargetDialogMode] = useState<TargetDialogMode>("connection");
   const [marketplacePage, setMarketplacePage] = useState(1);
   const [responseForm, setResponseForm] = useState(responseFormInitial);
+  const [contactSearch, setContactSearch] = useState("");
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickAddForm, setQuickAddForm] = useState(quickAddInitial);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [expandedOpportunityIds, setExpandedOpportunityIds] = useState<Set<string>>(new Set());
   const [expandedTargetIds, setExpandedTargetIds] = useState<Set<string>>(new Set());
 
@@ -124,6 +159,12 @@ export default function BumOpportunities() {
     queryFn: () => listBumSavedItems(user!.id),
     enabled: Boolean(user?.id),
   });
+  const contactsQuery = useQuery({
+    queryKey: ["opportunity-contact-picker", user?.id],
+    queryFn: () => listBumRepresentedContacts(user!.id),
+    enabled: Boolean(user?.id),
+    staleTime: 30_000,
+  });
   const claimSummariesQuery = useQuery({
     queryKey: ["marketplace-claim-summaries"],
     queryFn: listOpportunityClaimSummaries,
@@ -142,6 +183,13 @@ export default function BumOpportunities() {
       .map((item) => item.customer_target_id)
       .filter(Boolean),
   );
+  const filteredContacts = useMemo(() => {
+    const normalized = contactSearch.trim().toLowerCase();
+    const contacts = contactsQuery.data ?? [];
+    if (!normalized) return contacts.slice(0, 8);
+    return contacts.filter((contact) => contactSearchText(contact).includes(normalized)).slice(0, 12);
+  }, [contactsQuery.data, contactSearch]);
+
   const activeClaimByOpportunityId = useMemo(() => {
     const map = new Map<string, string>();
     for (const claim of claimSummariesQuery.data ?? []) {
@@ -159,6 +207,95 @@ export default function BumOpportunities() {
       ].filter(Boolean),
     ),
   );
+
+  function resetConnectionDialog() {
+    setSelectedTarget(null);
+    setSelectedOpportunity(null);
+    setTargetDialogMode("connection");
+    setResponseForm(responseFormInitial);
+    setContactSearch("");
+    setQuickAddOpen(false);
+    setQuickAddForm(quickAddInitial);
+    setSelectedContactId(null);
+  }
+
+  function applyContact(contact: BumRepresentedContactRecord) {
+    setSelectedContactId(contact.id.includes(":") ? null : contact.id);
+    setResponseForm((current) => ({
+      ...current,
+      contactName: contact.name,
+      contactCompany: contact.companyName === "Unknown company" ? current.contactCompany : contact.companyName,
+      contactEmail: contact.email ?? current.contactEmail,
+      note: current.note || contact.note || "",
+    }));
+  }
+
+  function openOpportunityConnection(opportunity: OpportunityRegistration) {
+    setSelectedOpportunity(opportunity);
+    setResponseForm({ ...responseFormInitial, contactCompany: opportunity.target_account_name });
+    setContactSearch("");
+    setQuickAddOpen(false);
+    setQuickAddForm(quickAddInitial);
+    setSelectedContactId(null);
+  }
+
+  function connectionAccountName() {
+    return selectedOpportunity?.target_account_name
+      ?? selectedTarget?.target_companies?.name
+      ?? selectedTarget?.target_account_name
+      ?? "this account";
+  }
+
+  const quickAddMutation = useMutation({
+    mutationFn: () =>
+      createBumRepresentedContact({
+        name: quickAddForm.name,
+        companyName: quickAddForm.companyName || selectedOpportunity?.target_account_name || selectedTarget?.target_companies?.name || selectedTarget?.target_account_name || null,
+        title: quickAddForm.title,
+        email: quickAddForm.email,
+        linkedinUrl: quickAddForm.linkedinUrl,
+        opportunityRegistrationId: selectedOpportunity?.id ?? null,
+        customerTargetId: selectedTarget?.id ?? null,
+      }),
+    onSuccess: (result) => {
+      applyContact(result.contact);
+      setQuickAddOpen(false);
+      setQuickAddForm(quickAddInitial);
+      queryClient.invalidateQueries({ queryKey: ["opportunity-contact-picker", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] });
+      toast({ title: "Contact added", description: "The contact is ready to use." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to add contact", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const opportunityClaimMutation = useMutation({
+    mutationFn: async () => {
+      const claim = await createOpportunityClaim(user!, {
+        opportunityId: selectedOpportunity!.id,
+        contactName: responseForm.contactName,
+        contactCompany: responseForm.contactCompany || selectedOpportunity!.target_account_name,
+        contactEmail: responseForm.contactEmail,
+        relationshipStrength: claimStrengthFromTargetStrength(responseForm.relationshipStrength),
+        note: responseForm.note,
+      });
+      if (selectedContactId) {
+        await updateBumRepresentedContact(selectedContactId, { opportunityRegistrationId: selectedOpportunity!.id });
+      }
+      return claim;
+    },
+    onSuccess: (claim) => {
+      toast({ title: "Claim requested", description: "Requested with " + claim.contact_name + " at " + claim.contact_company + "." });
+      queryClient.invalidateQueries({ queryKey: ["marketplace-claim-summaries"] });
+      queryClient.invalidateQueries({ queryKey: ["opportunity-contact-picker", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] });
+      resetConnectionDialog();
+    },
+    onError: (error) => {
+      toast({ title: "Unable to request claim", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
 
   const responseMutation = useMutation({
     mutationFn: () => {
@@ -185,9 +322,7 @@ export default function BumOpportunities() {
           ? "The client team can respond in chat."
           : "Trusted Bums now has your relationship context for this client target.",
       });
-      setSelectedTarget(null);
-      setTargetDialogMode("connection");
-      setResponseForm(responseFormInitial);
+      resetConnectionDialog();
       queryClient.invalidateQueries({ queryKey: ["conversation-threads"] });
       if (conversationId) {
         openConversationDock(conversationId);
@@ -215,6 +350,133 @@ export default function BumOpportunities() {
       });
     },
   });
+
+  const renderContactPicker = () => (
+    <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <Label>Choose from your contacts</Label>
+          <p className="text-xs text-muted-foreground">Search saved contacts, then select the person to connect.</p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant={quickAddOpen ? "secondary" : "outline"}
+          onClick={() => setQuickAddOpen((current) => !current)}
+        >
+          <UserPlus className="mr-2 h-4 w-4" />
+          Quick add
+        </Button>
+      </div>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={contactSearch}
+          onChange={(event) => setContactSearch(event.target.value)}
+          placeholder="Search contacts, companies, emails, or context"
+          className="pl-9"
+        />
+      </div>
+      {quickAddOpen ? (
+        <div className="grid gap-3 rounded-md border bg-background p-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="quick-contact-name">Name</Label>
+            <Input
+              id="quick-contact-name"
+              value={quickAddForm.name}
+              onChange={(event) => setQuickAddForm((current) => ({ ...current, name: event.target.value }))}
+              placeholder="Jane Doe"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="quick-contact-company">Company</Label>
+            <Input
+              id="quick-contact-company"
+              value={quickAddForm.companyName}
+              onChange={(event) => setQuickAddForm((current) => ({ ...current, companyName: event.target.value }))}
+              placeholder={connectionAccountName()}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="quick-contact-title">Title</Label>
+            <Input
+              id="quick-contact-title"
+              value={quickAddForm.title}
+              onChange={(event) => setQuickAddForm((current) => ({ ...current, title: event.target.value }))}
+              placeholder="VP Sales"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="quick-contact-email">Email</Label>
+            <Input
+              id="quick-contact-email"
+              type="email"
+              value={quickAddForm.email}
+              onChange={(event) => setQuickAddForm((current) => ({ ...current, email: event.target.value }))}
+              placeholder="jane@example.com"
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="quick-contact-linkedin">LinkedIn URL</Label>
+            <Input
+              id="quick-contact-linkedin"
+              value={quickAddForm.linkedinUrl}
+              onChange={(event) => setQuickAddForm((current) => ({ ...current, linkedinUrl: event.target.value }))}
+              placeholder="https://www.linkedin.com/in/janedoe"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={!quickAddForm.name.trim() || quickAddMutation.isPending}
+              onClick={() => quickAddMutation.mutate()}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              {quickAddMutation.isPending ? "Adding..." : "Add and select contact"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      <ScrollArea className="h-56 rounded-md border bg-background">
+        <div className="space-y-2 p-2">
+          {contactsQuery.isLoading ? (
+            <p className="p-4 text-center text-sm text-muted-foreground">Loading contacts...</p>
+          ) : null}
+          {!contactsQuery.isLoading && contactsQuery.isError ? (
+            <p className="p-4 text-center text-sm text-destructive">Unable to load contacts right now.</p>
+          ) : null}
+          {!contactsQuery.isLoading && !contactsQuery.isError && !filteredContacts.length ? (
+            <p className="p-4 text-center text-sm text-muted-foreground">No contacts match that search. Use quick add to create one.</p>
+          ) : null}
+          {filteredContacts.map((contact) => {
+            const isSelected = selectedContactId === contact.id;
+            return (
+              <button
+                key={contact.id}
+                type="button"
+                className={cn(
+                  "w-full rounded-md border bg-card p-3 text-left text-sm transition hover:border-primary/60 hover:bg-primary/5",
+                  isSelected && "border-primary bg-primary/10",
+                )}
+                onClick={() => applyContact(contact)}
+              >
+                <span className="flex items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block font-medium">{contact.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {[contact.title, contact.companyName, contact.email].filter(Boolean).join(" | ") || contact.contextLabel}
+                    </span>
+                  </span>
+                  <Badge variant="outline" className="shrink-0">{contact.source.replaceAll("_", " ")}</Badge>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    </div>
+  );
 
   const filtered = opportunities.filter((opportunity) => {
     const matchesType = typeFilter === "ALL" || typeFilter === "OPPORTUNITY";
@@ -618,10 +880,17 @@ export default function BumOpportunities() {
                     </a>
                   </Button>
                   <Button size="sm" asChild>
-                    <Link to={`/bum/opportunities/${opportunity.id}?ask=1`}>
+                    <Link to={"/bum/opportunities/" + opportunity.id + "?ask=1"}>
                       <MessageSquare className="mr-2 h-4 w-4" />
                       I have a question
                     </Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => openOpportunityConnection(opportunity)}
+                  >
+                    <Handshake className="mr-2 h-4 w-4" />
+                    I know someone
                   </Button>
                 </div>
               </div>
@@ -648,9 +917,7 @@ export default function BumOpportunities() {
         open={Boolean(selectedTarget)}
         onOpenChange={(open) => {
           if (!open) {
-            setSelectedTarget(null);
-            setTargetDialogMode("connection");
-            setResponseForm(responseFormInitial);
+            resetConnectionDialog();
           }
         }}
       >
@@ -666,6 +933,7 @@ export default function BumOpportunities() {
           <div className="grid gap-4">
             {targetDialogMode === "connection" ? (
               <>
+                {renderContactPicker()}
                 <div className="space-y-2">
                   <Label htmlFor="target-contact-name">Contact or path</Label>
                   <Input
@@ -721,9 +989,7 @@ export default function BumOpportunities() {
             <Button
               variant="outline"
               onClick={() => {
-                setSelectedTarget(null);
-                setTargetDialogMode("connection");
-                setResponseForm(responseFormInitial);
+                resetConnectionDialog();
               }}
             >
               Cancel
@@ -733,6 +999,97 @@ export default function BumOpportunities() {
               onClick={() => responseMutation.mutate()}
             >
               {targetDialogMode === "question" ? "Send question" : "Send response"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(selectedOpportunity)}
+        onOpenChange={(open) => {
+          if (!open) {
+            resetConnectionDialog();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display">Connect a contact</DialogTitle>
+            <DialogDescription>
+              Choose someone you know for {selectedOpportunity?.target_account_name ?? "this opportunity"}, or add them if they are not in your contacts yet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            {renderContactPicker()}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="opportunity-contact-name">Contact name</Label>
+                <Input
+                  id="opportunity-contact-name"
+                  value={responseForm.contactName}
+                  onChange={(event) => setResponseForm((current) => ({ ...current, contactName: event.target.value }))}
+                  placeholder="Jane Doe"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="opportunity-contact-company">Company</Label>
+                <Input
+                  id="opportunity-contact-company"
+                  value={responseForm.contactCompany}
+                  onChange={(event) => setResponseForm((current) => ({ ...current, contactCompany: event.target.value }))}
+                  placeholder={selectedOpportunity?.target_account_name ?? "Company"}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="opportunity-contact-email">Email if known</Label>
+                <Input
+                  id="opportunity-contact-email"
+                  type="email"
+                  value={responseForm.contactEmail}
+                  onChange={(event) => setResponseForm((current) => ({ ...current, contactEmail: event.target.value }))}
+                  placeholder="jane@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Relationship strength</Label>
+                <Select
+                  value={responseForm.relationshipStrength}
+                  onValueChange={(value: CustomerTargetResponseStrength) =>
+                    setResponseForm((current) => ({ ...current, relationshipStrength: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="strong">Strong direct relationship</SelectItem>
+                    <SelectItem value="warm">Warm path</SelectItem>
+                    <SelectItem value="advisor">Can advise on account</SelectItem>
+                    <SelectItem value="unknown">Unsure, but worth exploring</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="opportunity-contact-note">Context</Label>
+              <Textarea
+                id="opportunity-contact-note"
+                rows={4}
+                value={responseForm.note}
+                onChange={(event) => setResponseForm((current) => ({ ...current, note: event.target.value }))}
+                placeholder="How you know them, whether an intro is appropriate, and any caveats."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={resetConnectionDialog}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!responseForm.contactName.trim() || !responseForm.contactCompany.trim() || opportunityClaimMutation.isPending}
+              onClick={() => opportunityClaimMutation.mutate()}
+            >
+              {opportunityClaimMutation.isPending ? "Requesting..." : "Request claim"}
             </Button>
           </DialogFooter>
         </DialogContent>

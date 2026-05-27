@@ -393,6 +393,7 @@ export interface BumContactUpdateInput {
   relationshipStrength?: string | null;
   note?: string | null;
   opportunityRegistrationId?: string | null;
+  customerTargetId?: string | null;
 }
 
 interface ExtensionPageCaptureRecord {
@@ -4878,6 +4879,12 @@ export async function getBumRepresentedContact(contactId: string) {
 export async function updateBumRepresentedContact(contactId: string, patch: BumContactUpdateInput) {
   const payload = await invokePortalContacts<BumContactDetailResponse>({ action: "update", contactId, patch });
   if (!payload) throw new Error("Sign in again to manage this contact.");
+  return payload;
+}
+
+export async function createBumRepresentedContact(input: BumContactUpdateInput) {
+  const payload = await invokePortalContacts<BumContactDetailResponse>({ action: "create", patch: input });
+  if (!payload) throw new Error("Sign in again to add this contact.");
   return payload;
 }
 

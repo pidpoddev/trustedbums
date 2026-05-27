@@ -513,7 +513,7 @@ async function getContactDetail(userId: string, contactId: string) {
   return { contact: mapContact(contact), opportunities };
 }
 
-async function updateContact(userId: string, contactId: string, patch: Record<string, unknown>) {
+async function contactPayloadFromPatch(patch: Record<string, unknown>) {
   const payload: Record<string, unknown> = {};
   if ("name" in patch) payload.full_name = normalizeText(patch.name);
   if ("title" in patch) payload.title = normalizeText(patch.title);
@@ -538,6 +538,27 @@ async function updateContact(userId: string, contactId: string, patch: Record<st
     payload.opportunity_registration_id = opportunityRegistrationId;
   }
 
+  if ("customerTargetId" in patch) {
+    const customerTargetId = normalizeText(patch.customerTargetId);
+    if (customerTargetId) {
+      const { data, error } = await supabaseAdmin
+        .from("customer_targets")
+        .select("id, target_account_name, target_companies:companies!customer_targets_target_company_id_fkey(name)")
+        .eq("id", customerTargetId)
+        .maybeSingle<CustomerTargetRow>();
+      if (error) throw error;
+      if (!data) throw new Error("Client target not found.");
+      const targetName = data.target_companies?.name ?? data.target_account_name ?? "Target account";
+      payload.metadata = { contextLabel: "Client target: " + targetName };
+    }
+    payload.customer_target_id = customerTargetId;
+  }
+
+  return payload;
+}
+
+async function updateContact(userId: string, contactId: string, patch: Record<string, unknown>) {
+  const payload = await contactPayloadFromPatch(patch);
   if (payload.full_name === null) throw new Error("Contact name is required.");
   if (!Object.keys(payload).length) return getContactDetail(userId, contactId);
 
@@ -549,6 +570,35 @@ async function updateContact(userId: string, contactId: string, patch: Record<st
   if (error) throw error;
 
   return getContactDetail(userId, contactId);
+}
+
+async function createContact(userId: string, patch: Record<string, unknown>) {
+  const payload = await contactPayloadFromPatch(patch);
+  if (!payload.full_name) throw new Error("Contact name is required.");
+
+  const { data, error } = await supabaseAdmin
+    .from("bum_contacts")
+    .insert({
+      bum_user_id: userId,
+      source_type: "MANUAL",
+      full_name: payload.full_name,
+      title: payload.title ?? null,
+      company_name: payload.company_name ?? null,
+      email: payload.email ?? null,
+      phone_numbers: payload.phone_numbers ?? [],
+      linkedin_url: payload.linkedin_url ?? null,
+      relationship_strength: payload.relationship_strength ?? null,
+      notes: payload.notes ?? null,
+      opportunity_registration_id: payload.opportunity_registration_id ?? null,
+      customer_target_id: payload.customer_target_id ?? null,
+      status: "ACTIVE",
+      metadata: payload.metadata ?? { contextLabel: "Contact" },
+    })
+    .select("id")
+    .single<{ id: string }>();
+  if (error) throw error;
+
+  return getContactDetail(userId, data.id);
 }
 
 function captureUpdates(capture: ExtensionCaptureRow) {
@@ -635,6 +685,7 @@ Deno.serve(async (request) => {
     const contactId = typeof body.contactId === "string" ? body.contactId : "";
 
     if (action === "list") return json(200, { contacts: await listContacts(profile.id) });
+    if (action === "create") return json(200, await createContact(profile.id, (body.patch as Record<string, unknown>) ?? {}));
     if (!contactId) return json(400, { error: "Contact ID is required." });
     if (action === "get") return json(200, await getContactDetail(profile.id, contactId));
     if (action === "update") return json(200, await updateContact(profile.id, contactId, (body.patch as Record<string, unknown>) ?? {}));
