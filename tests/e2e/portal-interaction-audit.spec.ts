@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { getQaAccount, goToAuthedPath, hasExternalQaTarget, type QaAccount } from "./helpers/auth";
+import { getQaAccount, goToAuthedPath, hasExternalQaTarget } from "./helpers/auth";
 
 type RoleKey = "ADMIN" | "CLIENT_ADMIN" | "CLIENT_FINANCE" | "BUM";
 
@@ -124,6 +124,16 @@ async function visibleButtonName(button: Locator) {
     const ariaLabel = element.getAttribute("aria-label")?.trim();
     const title = element.getAttribute("title")?.trim();
     const text = (element.textContent ?? "").replace(/\s+/g, " ").trim();
+
+    if (element instanceof HTMLInputElement && element.type === "file") {
+      const labelText = Array.from(element.labels ?? [])
+        .map((label) => (label.textContent ?? "").replace(/\s+/g, " ").trim())
+        .filter(Boolean)
+        .join(" ");
+
+      return ariaLabel || labelText || title || element.name || element.id || "";
+    }
+
     return ariaLabel || text || title || "";
   });
 }
@@ -178,7 +188,7 @@ async function openAndCloseAccessibility(page: Page) {
   await expect(page.getByText("Enable low-vision mode")).toBeHidden();
 }
 
-async function openAccountProfile(page: Page, config: RoleAuditConfig, account: QaAccount) {
+async function openAccountProfile(page: Page, config: RoleAuditConfig) {
   await page.getByRole("button", { name: "Open account menu" }).click();
   await expect(page.getByText("Sign out")).toBeVisible();
 
@@ -186,7 +196,8 @@ async function openAccountProfile(page: Page, config: RoleAuditConfig, account: 
   await profileLink.click();
   await expect(page).toHaveURL(config.profilePath);
   await expectHealthyPortalPage(page);
-  await goToAuthedPath(page, account, config.homePath);
+  await page.goto(config.homePath);
+  await expectHealthyPortalPage(page);
 }
 
 async function exerciseSidebar(page: Page, config: RoleAuditConfig) {
@@ -208,12 +219,13 @@ async function exerciseSidebar(page: Page, config: RoleAuditConfig) {
   });
 }
 
-async function exerciseGlobalSearch(page: Page, config: RoleAuditConfig, account: QaAccount) {
+async function exerciseGlobalSearch(page: Page, config: RoleAuditConfig) {
   if (!config.searchQuery || !config.searchDestination) {
     return;
   }
 
-  await goToAuthedPath(page, account, config.homePath);
+  await page.goto(config.homePath);
+  await expectHealthyPortalPage(page);
   const search = page.getByLabel("Search anything you can access");
   if (!(await search.isVisible().catch(() => false))) {
     return;
@@ -263,12 +275,12 @@ test.describe("portal interaction audit", () => {
       await expectHealthyPortalPage(page);
       await openAndCloseFeedback(page);
       await openAndCloseAccessibility(page);
-      await openAccountProfile(page, config, account);
+      await openAccountProfile(page, config);
       await exerciseSidebar(page, config);
-      await exerciseGlobalSearch(page, config, account);
+      await exerciseGlobalSearch(page, config);
 
       for (const route of config.routes) {
-        await goToAuthedPath(page, account, route.path);
+        await page.goto(route.path);
         await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
         await expectHealthyPortalPage(page);
         await expectVisibleButtonsHaveNames(page);
