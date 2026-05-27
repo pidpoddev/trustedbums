@@ -13,6 +13,10 @@ interface VisualRoute {
   name: string;
 }
 
+interface VisualInteraction extends VisualRoute {
+  prepare: (page: Page, testInfo: TestInfo) => Promise<void>;
+}
+
 const routesByRole: Record<RoleKey, VisualRoute[]> = {
   ADMIN: [
     { path: "/admin", heading: "Admin Dashboard", name: "admin-dashboard" },
@@ -52,6 +56,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/bum/prospects", heading: "Prospects", name: "bum-prospects" },
     { path: "/bum/reverse-opportunities", heading: "Reverse Opportunities", name: "bum-reverse-opportunities" },
     { path: "/bum/clients", heading: "Clients We Represent", name: "bum-clients" },
+    { path: "/bum/contacts", heading: "Contacts", name: "bum-contacts" },
     { path: "/bum/opportunities", heading: "Opportunities", name: "bum-opportunities" },
     { path: "/bum/claims", heading: /^(My )?Claims$/, name: "bum-claims" },
     { path: "/bum/trainings", heading: "Training & Assets", name: "bum-trainings" },
@@ -59,6 +64,100 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/bum/earnings", heading: "Earnings", name: "bum-earnings" },
     { path: "/bum/reports", heading: "Bum Reports", name: "bum-reports" },
     { path: "/bum/profile", heading: "Profile", name: "bum-profile" },
+  ],
+};
+
+const interactionsByRole: Record<RoleKey, VisualInteraction[]> = {
+  ADMIN: [
+    {
+      path: "/admin/opportunities",
+      heading: "Opportunities",
+      name: "admin-create-opportunity-open",
+      prepare: async (page) => {
+        await page.getByRole("button", { name: "Create opportunity" }).click();
+        await expect(page.getByText("Select client")).toBeVisible();
+        await expect(page.getByText("Target account")).toBeVisible();
+      },
+    },
+    {
+      path: "/admin",
+      heading: "Admin Dashboard",
+      name: "admin-global-search-results",
+      prepare: async (page) => {
+        const search = page.getByLabel("Search anything you can access");
+        if (await search.isVisible().catch(() => false)) {
+          await search.fill("reports");
+          await expect(page.getByText("Reports", { exact: true }).first()).toBeVisible();
+        } else {
+          await page.getByRole("button", { name: "Open account menu" }).click();
+          await expect(page.getByText("Sign out")).toBeVisible();
+        }
+      },
+    },
+  ],
+  CLIENT_ADMIN: [
+    {
+      path: "/client/targets",
+      heading: "Target Accounts",
+      name: "client-target-add-form-open",
+      prepare: async (page) => {
+        await page.getByRole("button", { name: /Add target account/i }).first().click();
+        await expect(page.getByLabel("Target account name")).toBeVisible();
+        await expect(page.getByRole("button", { name: "Save target account" })).toBeVisible();
+      },
+    },
+    {
+      path: "/client/dashboard",
+      heading: /Welcome back/i,
+      name: "client-feedback-dialog-open",
+      prepare: async (page) => {
+        await page.getByRole("button", { name: "Submit feedback" }).click();
+        await expect(page.getByRole("heading", { name: "Submit feedback" })).toBeVisible();
+        await expect(page.getByLabel("Page")).toHaveValue(/\/client\/dashboard/);
+      },
+    },
+  ],
+  CLIENT_FINANCE: [
+    {
+      path: "/client/payments",
+      heading: "Customer Payments",
+      name: "client-finance-payment-search",
+      prepare: async (page) => {
+        await page.getByPlaceholder(/Search invoices, customers, or accounts/i).first().fill("visual-audit-empty");
+        await expect(page.getByPlaceholder(/Search invoices, customers, or accounts/i).first()).toHaveValue("visual-audit-empty");
+      },
+    },
+  ],
+  BUM: [
+    {
+      path: "/bum/opportunities",
+      heading: "Opportunities",
+      name: "bum-opportunity-contact-picker-open",
+      prepare: async (page, testInfo) => {
+        const knowSomeoneButtons = page.getByRole("button", { name: /I know someone/i });
+        if ((await knowSomeoneButtons.count()) > 0) {
+          await knowSomeoneButtons.first().click();
+          await expect(page.getByText("Choose from your contacts")).toBeVisible();
+          await page.getByRole("button", { name: "Quick add" }).click();
+          await expect(page.getByLabel("LinkedIn URL")).toBeVisible();
+        } else {
+          testInfo.annotations.push({ type: "visual-note", description: "No live marketplace items were available; captured filtered empty state instead." });
+          await page.getByPlaceholder("Search opportunities...").fill("visual-audit-empty-state").catch(async () => {
+            await page.getByPlaceholder("Search opportunities…").fill("visual-audit-empty-state");
+          });
+          await expect(page.getByText(/No live opportunities match your search|No live opportunities are available yet/i)).toBeVisible();
+        }
+      },
+    },
+    {
+      path: "/bum/contacts",
+      heading: "Contacts",
+      name: "bum-contacts-search",
+      prepare: async (page) => {
+        await page.getByPlaceholder("Search contacts, companies, emails, or opportunity context").fill("visual-audit-empty");
+        await expect(page.getByPlaceholder("Search contacts, companies, emails, or opportunity context")).toHaveValue("visual-audit-empty");
+      },
+    },
   ],
 };
 
@@ -122,13 +221,19 @@ async function expectNoObviousErrorPage(page: Page) {
   expect(text).not.toMatch(/configuration needed|set a production clerk publishable key|404|page not found/i);
 }
 
-async function auditRoute(page: Page, account: QaAccount, role: RoleKey, route: VisualRoute, testInfo: TestInfo) {
-  await goToAuthedPath(page, account, route.path);
-  await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
+async function dismissConsentBanner(page: Page) {
+  const rejectAll = page.getByRole("button", { name: "Reject all" });
+  if (await rejectAll.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await rejectAll.click();
+  }
+}
+
+async function captureVisualState(page: Page, testInfo: TestInfo, name: string, metadata: Record<string, unknown>) {
   await expectNoObviousErrorPage(page);
   await expectNoHorizontalOverflow(page);
   await expectReasonablePageHeight(page);
-  const screenshotPath = testInfo.outputPath(`${testInfo.project.name}-${role.toLowerCase()}-${route.name}.png`);
+
+  const screenshotPath = testInfo.outputPath(`${testInfo.project.name}-${name}.png`);
   await page.screenshot({
     path: screenshotPath,
     fullPage: true,
@@ -142,17 +247,71 @@ async function auditRoute(page: Page, account: QaAccount, role: RoleKey, route: 
   }));
 
   await fs.writeFile(
-    testInfo.outputPath(`${testInfo.project.name}-${role.toLowerCase()}-${route.name}.json`),
-    `${JSON.stringify({ role, route: route.path, name: route.name, screenshotPath, metrics }, null, 2)}\n`,
+    testInfo.outputPath(`${testInfo.project.name}-${name}.json`),
+    `${JSON.stringify({ ...metadata, screenshotPath, metrics }, null, 2)}\n`,
     "utf8",
   );
 }
+
+async function auditRoute(page: Page, account: QaAccount, role: RoleKey, route: VisualRoute, testInfo: TestInfo) {
+  await goToAuthedPath(page, account, route.path);
+  await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
+  await captureVisualState(page, testInfo, `${role.toLowerCase()}-${route.name}`, { role, route: route.path, name: route.name });
+}
+
+async function auditInteraction(page: Page, account: QaAccount, role: RoleKey, interaction: VisualInteraction, testInfo: TestInfo) {
+  await goToAuthedPath(page, account, interaction.path);
+  await expect(page.getByRole("heading", { name: interaction.heading }).first()).toBeVisible({ timeout: 20_000 });
+  await interaction.prepare(page, testInfo);
+  await captureVisualState(page, testInfo, `${role.toLowerCase()}-${interaction.name}`, {
+    role,
+    route: interaction.path,
+    name: interaction.name,
+    interaction: true,
+  });
+}
+
+test.describe("public visual UI audit", () => {
+  test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run public visual UI audit.");
+
+  test("public marketing and privacy states render cleanly", async ({ page }, testInfo) => {
+    test.setTimeout(120_000);
+
+    await page.goto("/");
+    await dismissConsentBanner(page);
+    await expect(page.getByRole("heading", { name: /Your buyer is ignoring strangers/i })).toBeVisible();
+    await captureVisualState(page, testInfo, "public-home", { route: "/", name: "public-home" });
+
+    await page.goto("/privacy-policy");
+    await dismissConsentBanner(page);
+    await expect(page.getByRole("heading", { name: /Privacy Policy/i })).toBeVisible();
+    await captureVisualState(page, testInfo, "public-privacy-policy", { route: "/privacy-policy", name: "public-privacy-policy" });
+
+    await page.goto("/?consent=reset");
+    await expect(page.getByRole("heading", { name: "Privacy choices" })).toBeVisible();
+    await page.getByRole("button", { name: "Customize" }).click();
+    await expect(page.getByRole("switch", { name: "Analytics consent" })).toBeVisible();
+    await captureVisualState(page, testInfo, "public-consent-settings", { route: "/?consent=reset", name: "public-consent-settings" });
+
+    await page.goto("/");
+    await dismissConsentBanner(page);
+    await page.getByRole("button", { name: /^Sign up$/i }).click();
+    await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
+    await captureVisualState(page, testInfo, "public-signup-intent", { route: "/", name: "public-signup-intent" });
+
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Accessibility settings" }).click();
+    await expect(page.getByText("Enable low-vision mode")).toBeVisible();
+    await captureVisualState(page, testInfo, "public-accessibility-menu", { route: "/", name: "public-accessibility-menu" });
+  });
+});
 
 test.describe("authenticated visual UI audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run authenticated visual UI audit.");
 
   for (const role of getSelectedRoles()) {
     const routes = routesByRole[role];
+    const interactions = interactionsByRole[role];
 
     test(`${role.toLowerCase().replaceAll("_", " ")} portal pages render cleanly`, async ({ page }, testInfo) => {
       test.setTimeout(240_000);
@@ -165,6 +324,29 @@ test.describe("authenticated visual UI audit", () => {
       for (const route of routes) {
         try {
           await auditRoute(page, account, role, route, testInfo);
+          auditedAnyRoute = true;
+        } catch (error) {
+          test.skip(
+            shouldSkipRoleMismatch(error, role, auditedAnyRoute),
+            `QA_${role}_EMAIL authenticated into a different portal. Check the Clerk role metadata or set QA_VISUAL_ROLES to the roles configured for this environment.`,
+          );
+
+          throw error;
+        }
+      }
+    });
+
+    test(`${role.toLowerCase().replaceAll("_", " ")} interactive states render cleanly`, async ({ page }, testInfo) => {
+      test.setTimeout(180_000);
+
+      const account = getQaAccount(role);
+      test.skip(!account, `Set QA_${role}_EMAIL.`);
+
+      let auditedAnyRoute = false;
+
+      for (const interaction of interactions) {
+        try {
+          await auditInteraction(page, account, role, interaction, testInfo);
           auditedAnyRoute = true;
         } catch (error) {
           test.skip(
