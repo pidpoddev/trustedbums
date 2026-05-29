@@ -24,6 +24,7 @@ import {
   createTermsVersion,
   listAuditEvents,
   listAdminProspectRecommendations,
+  listClerkAdminUsers,
   listCompanies,
   listCustomerTargets,
   listOpportunityRegistrations,
@@ -35,6 +36,8 @@ import {
   type OpportunityRegistration,
   type RegistrationStatus,
   type TermsVersion,
+  type ClerkAdminUserRecord,
+  type ProfileRecord,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 
@@ -59,6 +62,35 @@ function downloadCsv(filename: string, rows: Array<Record<string, unknown>>) {
   anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+
+interface AdminDashboardUserRow {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: string | null;
+  companyName: string | null;
+}
+
+function profileToDashboardUser(profile: ProfileRecord): AdminDashboardUserRow {
+  return {
+    id: profile.id,
+    name: profile.full_name,
+    email: profile.email,
+    role: profile.is_admin ? "ADMIN" : profile.role,
+    companyName: profile.companies?.name ?? null,
+  };
+}
+
+function clerkUserToDashboardUser(user: ClerkAdminUserRecord): AdminDashboardUserRow {
+  return {
+    id: user.id ?? user.email,
+    name: user.name,
+    email: user.email,
+    role: user.metadata.role ?? (user.profile?.isAdmin ? "ADMIN" : user.profile?.role ?? null),
+    companyName: user.metadata.companyName ?? user.profile?.companyName ?? null,
+  };
 }
 
 function getStatusVariant(status: RegistrationStatus) {
@@ -158,6 +190,13 @@ export default function AdminDashboard() {
 
   const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: listCompanies });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
+  const clerkUsersQuery = useQuery({
+    queryKey: ["admin-clerk-users-summary"],
+    queryFn: () => listClerkAdminUsers({ limit: 100 }),
+    enabled: user?.role === "ADMIN",
+    staleTime: 60_000,
+    retry: 1,
+  });
   const acceptancesQuery = useQuery({ queryKey: ["admin-terms-acceptances"], queryFn: listTermsAcceptances });
   const termsQuery = useQuery({ queryKey: ["admin-terms-versions"], queryFn: listTermsVersions });
   const auditQuery = useQuery({ queryKey: ["admin-audit-events"], queryFn: listAuditEvents });
@@ -211,6 +250,11 @@ export default function AdminDashboard() {
 
   const companies = companiesQuery.data ?? [];
   const profiles = profilesQuery.data ?? [];
+  const clerkUsers = clerkUsersQuery.data ?? [];
+  const useClerkUsers = clerkUsersQuery.isSuccess;
+  const dashboardUsers = useClerkUsers ? clerkUsers.map(clerkUserToDashboardUser) : profiles.map(profileToDashboardUser);
+  const userCount = useClerkUsers && clerkUsers.length >= 100 ? "100+" : dashboardUsers.length;
+  const userCountSubtitle = useClerkUsers ? "From Clerk" : "Synced profiles";
   const acceptances = acceptancesQuery.data ?? [];
   const clientProspects = clientProspectsQuery.data ?? [];
   const customerTargets = customerTargetsQuery.data ?? [];
@@ -224,7 +268,7 @@ export default function AdminDashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Companies" value={companies.length} icon={ShieldCheck} to="/admin/clients" />
-        <StatCard title="Users" value={profiles.length} icon={ShieldCheck} to="/admin/troubleshooting" />
+        <StatCard title="Users" value={userCount} subtitle={userCountSubtitle} icon={ShieldCheck} to="/admin/troubleshooting" />
         <StatCard title="Client Prospects" value={clientProspects.length} icon={Building2} to="/admin/clients" />
         <StatCard title="Target Accounts" value={customerTargets.length} icon={Target} to="/admin/opportunities" />
       </div>
@@ -554,12 +598,12 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {profiles.map((profile) => (
+                    {dashboardUsers.map((profile) => (
                       <TableRow key={profile.id}>
-                        <TableCell>{profile.full_name}</TableCell>
+                        <TableCell>{profile.name}</TableCell>
                         <TableCell>{profile.email}</TableCell>
-                        <TableCell>{profile.is_admin ? "ADMIN" : profile.role}</TableCell>
-                        <TableCell>{profile.companies?.name}</TableCell>
+                        <TableCell>{profile.role}</TableCell>
+                        <TableCell>{profile.companyName}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
