@@ -1,6 +1,6 @@
 # Trusted Bums Business Access Rules
 
-_Last updated: 2026-05-28 by Codex product ops workflow analyst automation._
+_Last updated: 2026-05-29 by Codex daily lead developer automation._
 
 ## Purpose
 
@@ -205,6 +205,30 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
 - Open questions:
   - Should Client Admin and Client Finance have identical finance export access?
   - Which claim-linked invoice fields are required in Bum earnings views beyond amount, status, and invoice identifier?
+
+### Performance Telemetry And Admin Observability
+- Roles: Admin, internal telemetry writer, non-admin portal users.
+- Data needed: Route-level Web Vitals samples, deployment origin, connection type, metric timestamps, aggregated troubleshooting summaries, and any admin-only operational dashboards derived from those rows.
+- Allowed actions: Public/frontend runtimes may write only the intended telemetry payload through the approved beacon path; Admins may read raw telemetry and admin observability summaries for troubleshooting; non-admin portal roles must not read raw telemetry or admin-only observability summaries.
+- Allowed when:
+  - The write originates from an approved frontend origin and matches the expected beacon schema.
+  - Admin is troubleshooting performance, release regressions, or environment health.
+  - Any future shared reporting uses approved aggregate-only summaries that exclude raw route, origin, or user-agent-derived detail.
+- Denied when:
+  - Client Admin, Client Finance, Client Member, or Bum users try to read `performance_metric_events` or `/admin/performance`.
+  - Unexpected origins attempt to post telemetry.
+  - Public callers try to invoke admin-only observability summaries through browser RPC, exposed SQL helpers, or unauthenticated edge functions.
+- Sensitive fields: Deployment origin, route path, connection type, user-agent-derived metadata, operational timing data, and any admin-only summary counts that reveal internal system state.
+- Source of truth: `performance_metric_events`, `performance-beacon`, `/admin/performance`, `admin_dashboard_summary`, and any future admin observability helpers.
+- RLS/authorization owner: Security Engineer plus Data/Analytics, with QA allow/deny coverage.
+- QA proof:
+  - Expected frontend origins can store telemetry and unexpected origins receive a deny response.
+  - Admin can load `/admin/performance` and any supporting summary APIs with seeded rows present.
+  - Non-admin roles are denied on the route and direct data paths.
+  - Any admin summary helper remains inaccessible to non-admin browser sessions.
+- Open questions:
+  - Which non-production origins should remain authorized for QA and preview telemetry?
+  - How long should raw telemetry be retained before rollup or deletion?
 
 ### Trainings And Legal Documents
 - Roles: Admin, Client Admin, Client Member, Bum.
