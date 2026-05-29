@@ -193,7 +193,7 @@ export default function ClientBums() {
     <div className="space-y-6">
       <PageHeader
         title="Bum Directory"
-        description="Review connector backgrounds, industries, and relationship coverage before you assign outreach."
+        description="Review Bum backgrounds, industries, and relationship coverage before you assign outreach."
       />
 
       <Card>
@@ -426,4 +426,3 @@ export default function ClientBums() {
     </div>
   );
 }
-

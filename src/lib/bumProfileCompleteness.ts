@@ -23,10 +23,10 @@ export interface BumProfilePromptDefinition {
 const BUM_PROFILE_PROMPTS: BumProfilePromptDefinition[] = [
   {
     key: "headline",
-    label: "What is your connector headline?",
+    label: "What is your Bum headline?",
     description: "Give clients a one-line summary of who you help and what you know.",
     type: "text",
-    placeholder: "Healthcare connector with 12 years selling enterprise software",
+    placeholder: "Healthcare Bum with 12 years selling enterprise software",
   },
   {
     key: "years_experience",
@@ -73,7 +73,7 @@ const BUM_PROFILE_PROMPTS: BumProfilePromptDefinition[] = [
   {
     key: "home_region",
     label: "What is your home region?",
-    description: "A quick geography anchor helps clients route the right connector.",
+    description: "A quick geography anchor helps clients route the right Bum.",
     type: "text",
     placeholder: "North America",
   },

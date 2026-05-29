@@ -186,7 +186,6 @@ function canAccessOpportunity(profile: ProfileRow, opportunity: OpportunityRow) 
 function canAccessCustomerTarget(profile: ProfileRow, target: CustomerTargetRow) {
   if (isAdmin(profile)) return true;
   if (normalizeRole(profile) === "CLIENT") return Boolean(profile.company_id && target.client_company_id === profile.company_id);
-  if (normalizeRole(profile) === "BUM") return true;
   return false;
 }
 
@@ -209,6 +208,7 @@ async function listContext(profile: ProfileRow) {
       targetQuery = targetQuery.eq("client_company_id", profile.company_id);
     } else if (normalizeRole(profile) === "BUM") {
       opportunityQuery = opportunityQuery.eq("status", "Accepted");
+      targetQuery = targetQuery.limit(0);
     } else {
       opportunityQuery = opportunityQuery.limit(0);
       targetQuery = targetQuery.limit(0);

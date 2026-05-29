@@ -124,7 +124,7 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
       await queryClient.invalidateQueries({ queryKey: ["admin-bum-profiles"] });
       await queryClient.invalidateQueries({ queryKey: ["client-visible-bum-profiles"] });
       setOpen(false);
-      toast({ title: "Bum updated", description: "The connector profile changes were saved." });
+      toast({ title: "Bum updated", description: "The Bum profile changes were saved." });
     },
     onError: (error) => {
       toast({
@@ -144,7 +144,7 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Edit Bum data</DialogTitle>
-            <DialogDescription>Update connector profile data shown to admins and, when visible, clients.</DialogDescription>
+            <DialogDescription>Update Bum profile data shown to admins and, when visible, clients.</DialogDescription>
           </DialogHeader>
           <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-1">
             <div className="grid gap-4 md:grid-cols-2">
@@ -394,7 +394,7 @@ export default function AdminBums() {
 
   return (
     <div>
-      <PageHeader title="Bums" description="Review connector background, coverage, and agreement status">
+      <PageHeader title="Bums" description="Review Bum background, coverage, and agreement status">
         <Button onClick={() => setInviteOpen(true)}><Plus className="h-4 w-4 mr-2" /> Invite Bum</Button>
       </PageHeader>
 
@@ -414,7 +414,7 @@ export default function AdminBums() {
                 type="email"
                 value={inviteEmail}
                 onChange={(event) => setInviteEmail(event.target.value)}
-                placeholder="connector@example.com"
+                placeholder="bum@example.com"
               />
             </div>
             <div className="space-y-2">

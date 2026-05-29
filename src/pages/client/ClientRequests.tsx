@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { listClientReverseOpportunities, type ReverseOpportunityStatus } from "@/lib/portalApi";
+import { listClientBumIntroRequests, listClientReverseOpportunities, type ClientBumIntroRequestStatus, type ReverseOpportunityStatus } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
 
 type RequestTypeFilter = "ALL" | "NEW" | "ACTIVE" | "CONVERTED" | "CLOSED";
@@ -36,6 +37,13 @@ function statusVariant(status: ReverseOpportunityStatus) {
   }
 
   return "warning" as const;
+}
+
+function introRequestStatusVariant(status: ClientBumIntroRequestStatus) {
+  if (status === "CLOSED") return "success" as const;
+  if (status === "INTRO_REQUESTED") return "info" as const;
+  if (status === "IN_REVIEW") return "warning" as const;
+  return "secondary" as const;
 }
 
 function matchesTypeFilter(status: ReverseOpportunityStatus, typeFilter: RequestTypeFilter) {
@@ -66,6 +74,11 @@ export default function ClientRequests() {
   const requestsQuery = useQuery({
     queryKey: ["client-reverse-opportunities", user?.clientId],
     queryFn: () => listClientReverseOpportunities(user!),
+    enabled: Boolean(user?.clientId),
+  });
+  const introRequestsQuery = useQuery({
+    queryKey: ["client-bum-intro-requests", user?.clientId],
+    queryFn: () => listClientBumIntroRequests(user!),
     enabled: Boolean(user?.clientId),
   });
 
@@ -173,11 +186,60 @@ export default function ClientRequests() {
             <CardContent className="pt-6 text-sm text-muted-foreground">
               {requestsQuery.data?.length
                 ? "No inbound requests match your current filters."
-                : "No Bum-submitted reverse opportunities are targeting your company yet."}
+                : "No Bum-submitted customer leads are targeting your company yet."}
             </CardContent>
           </Card>
         ) : null}
       </div>
+
+      <Card className="mb-8">
+        <CardContent className="pt-6">
+          <div className="mb-4 flex flex-col gap-1">
+            <h2 className="font-display text-xl font-bold">Bum Intro Requests</h2>
+            <p className="text-sm text-muted-foreground">
+              Requests your team sent from the Bum Directory, with the target and current handoff status.
+            </p>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Bum</TableHead>
+                <TableHead>Target</TableHead>
+                <TableHead>Context</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Updated</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(introRequestsQuery.data ?? []).map((request) => (
+                <TableRow key={request.id}>
+                  <TableCell className="font-medium">{request.bum_profiles?.full_name ?? request.bum_profiles?.email ?? "Bum"}</TableCell>
+                  <TableCell>
+                    <p className="font-medium">{request.target_company_name}</p>
+                    {request.target_contact_name ? (
+                      <p className="text-xs text-muted-foreground">
+                        {request.target_contact_name}{request.target_contact_title ? `, ${request.target_contact_title}` : ""}
+                      </p>
+                    ) : null}
+                  </TableCell>
+                  <TableCell>{request.intro_context}</TableCell>
+                  <TableCell>
+                    <StatusBadge label={request.status.replaceAll("_", " ")} variant={introRequestStatusVariant(request.status)} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{formatDateForTimeZone(request.updated_at, timeZone)}</TableCell>
+                </TableRow>
+              ))}
+              {!introRequestsQuery.isLoading && !(introRequestsQuery.data ?? []).length ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-sm text-muted-foreground">
+                    No Bum intro requests have been submitted from the directory yet.
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -151,7 +151,7 @@ export default function BumDashboard() {
                   <Sparkles className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium">Your connector profile is in strong shape.</p>
+                  <p className="font-medium">Your Bum profile is in strong shape.</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Admins and clients now have a complete picture of your experience, coverage, and relationships.
                   </p>
@@ -226,9 +226,9 @@ export default function BumDashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Prospected Clients" value={prospectsQuery.data?.length ?? 0} icon={Building2} to="/bum/prospects" />
-        <StatCard title="Reverse Opportunities" value={reverseOpportunitiesQuery.data?.length ?? 0} icon={Sparkles} to="/bum/reverse-opportunities" />
+        <StatCard title="Customer Leads" value={reverseOpportunitiesQuery.data?.length ?? 0} icon={Sparkles} to="/bum/reverse-opportunities" />
         <StatCard title="Open Opportunities" value={opportunitiesQuery.data?.length ?? 0} icon={Briefcase} to="/bum/opportunities" />
-        <StatCard title="Active Claims" value={myClaims.length} icon={Handshake} to="/bum/claims" />
+        <StatCard title="Intro Requests" value={myClaims.length} icon={Handshake} to="/bum/claims" />
         <StatCard title="Pending Earnings" value="$0" icon={TrendingUp} to="/bum/earnings" />
         <StatCard title="Lifetime Payouts" value="$0" icon={Wallet} to="/bum/earnings" />
       </div>
@@ -267,11 +267,11 @@ export default function BumDashboard() {
                 <span className="font-medium">{opportunitiesQuery.data?.length ?? 0}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Reverse opportunities</span>
+                <span className="text-muted-foreground">Customer leads</span>
                 <span className="font-medium">{reverseOpportunitiesQuery.data?.length ?? 0}</span>
               </div>
               <Button asChild variant="outline" className="w-full">
-                <Link to="/bum/reverse-opportunities">Open Reverse Opportunities</Link>
+                <Link to="/bum/reverse-opportunities">Open Customer Leads</Link>
               </Button>
             </CardContent>
           </Card>

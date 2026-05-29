@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   listAdminProspectRecommendations,
@@ -34,6 +36,7 @@ import {
   listProfiles,
   listTrainingMaterialsForUser,
   listVisibleBumProfiles,
+  type BumRepresentedContactRecord,
   type ProspectRecommendationRecord,
 } from "@/lib/portalApi";
 
@@ -95,7 +98,7 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
     return [
       result({ id: "page:admin-dashboard", icon: "page", category: "Page", title: "Admin dashboard", subtitle: "Operations overview", href: "/admin", terms: ["dashboard operations"] }),
       result({ id: "page:admin-clients", icon: "client", category: "Page", title: "Clients", subtitle: "Manage client companies", href: "/admin/clients", terms: ["companies prospects contacts"] }),
-      result({ id: "page:admin-bums", icon: "profile", category: "Page", title: "Bums", subtitle: "Manage relationship sellers", href: "/admin/bums", terms: ["users profiles sellers"] }),
+      result({ id: "page:admin-bums", icon: "profile", category: "Page", title: "Bums", subtitle: "Manage Bum profiles", href: "/admin/bums", terms: ["users profiles sellers"] }),
       result({ id: "page:admin-opportunities", icon: "opportunity", category: "Page", title: "Opportunities", subtitle: "Pipeline and target accounts", href: "/admin/opportunities", terms: ["targets reverse pipeline"] }),
       result({ id: "page:admin-emails", icon: "email", category: "Page", title: "Emails", subtitle: "Campaigns and deliveries", href: "/admin/emails", terms: ["communications templates"] }),
       result({ id: "page:admin-reports", icon: "report", category: "Page", title: "Reports", subtitle: "Admin reporting", href: "/admin/reports", terms: ["analytics exports"] }),
@@ -141,7 +144,7 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
       result({ id: "page:bum-dashboard", icon: "page", category: "Page", title: "Bum dashboard", subtitle: "Workspace overview", href: "/bum/dashboard", terms: ["dashboard overview"] }),
       result({ id: "page:bum-contacts", icon: "contact", category: "Page", title: "Contacts", subtitle: "People you represent", href: "/bum/contacts", terms: ["relationships represented people"] }),
       result({ id: "page:bum-opportunities", icon: "opportunity", category: "Page", title: "Opportunities", subtitle: "Marketplace and target accounts", href: "/bum/opportunities", terms: ["targets marketplace"] }),
-      result({ id: "page:bum-claims", icon: "claim", category: "Page", title: "My Claims", subtitle: "Claimed intros", href: "/bum/claims", terms: ["introductions contacts"] }),
+      result({ id: "page:bum-claims", icon: "claim", category: "Page", title: "Intro Requests", subtitle: "Requested intros", href: "/bum/claims", terms: ["introductions contacts claims"] }),
       result({ id: "page:bum-prospects", icon: "client", category: "Page", title: "Prospects", subtitle: "Prospected clients and contacts", href: "/bum/prospects", terms: ["recommendations contacts"] }),
       result({ id: "page:bum-clients", icon: "client", category: "Page", title: "Clients", subtitle: "Client companies", href: "/bum/clients", terms: ["companies customers"] }),
       result({ id: "page:bum-earnings", icon: "report", category: "Page", title: "Earnings", subtitle: "Bum finance", href: "/bum/earnings", terms: ["payments payouts"] }),
@@ -156,95 +159,97 @@ export function PortalGlobalSearch() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const shouldFetchSearchData = Boolean(user && (focused || mobileOpen || query.trim().length >= 2));
 
   const marketplaceOpportunitiesQuery = useQuery({
     queryKey: ["portal-search", "marketplace-opportunities", user?.role],
     queryFn: listMarketplaceOpportunities,
-    enabled: user?.role === "BUM",
+    enabled: shouldFetchSearchData && user?.role === "BUM",
     staleTime: 60_000,
   });
   const adminOpportunitiesQuery = useQuery({
     queryKey: ["portal-search", "admin-opportunities", user?.role],
     queryFn: () => listOpportunityRegistrations(),
-    enabled: user?.role === "ADMIN",
+    enabled: shouldFetchSearchData && user?.role === "ADMIN",
     staleTime: 60_000,
   });
   const clientOpportunitiesQuery = useQuery({
     queryKey: ["portal-search", "client-opportunities", user?.id],
     queryFn: () => listOwnOpportunityRegistrations(user!),
-    enabled: user?.role === "CLIENT",
+    enabled: shouldFetchSearchData && user?.role === "CLIENT",
     staleTime: 60_000,
   });
   const targetsQuery = useQuery({
     queryKey: ["portal-search", "targets", user?.role, user?.clientId],
     queryFn: () => listCustomerTargets(user?.role === "CLIENT" ? user : null),
-    enabled: Boolean(user),
+    enabled: shouldFetchSearchData,
     staleTime: 60_000,
   });
   const companiesQuery = useQuery({
     queryKey: ["portal-search", "companies", user?.role],
     queryFn: listCompanies,
-    enabled: user?.role === "ADMIN" || user?.role === "BUM",
+    enabled: shouldFetchSearchData && (user?.role === "ADMIN" || user?.role === "BUM"),
     staleTime: 60_000,
   });
   const contactsQuery = useQuery({
     queryKey: ["portal-search", "bum-contacts", user?.id],
     queryFn: () => listBumRepresentedContacts(user!.id),
-    enabled: user?.role === "BUM",
+    enabled: shouldFetchSearchData && user?.role === "BUM",
     staleTime: 60_000,
   });
   const claimsQuery = useQuery({
     queryKey: ["portal-search", "claims", user?.role],
     queryFn: () => listOpportunityClaims(),
-    enabled: user?.role === "BUM" || user?.role === "ADMIN",
+    enabled: shouldFetchSearchData && (user?.role === "BUM" || user?.role === "ADMIN"),
     staleTime: 60_000,
   });
   const bumProspectsQuery = useQuery({
     queryKey: ["portal-search", "bum-prospects", user?.id],
     queryFn: () => listOwnProspectRecommendations(user!.id),
-    enabled: user?.role === "BUM",
+    enabled: shouldFetchSearchData && user?.role === "BUM",
     staleTime: 60_000,
   });
   const adminProspectsQuery = useQuery({
     queryKey: ["portal-search", "admin-prospects"],
     queryFn: listAdminProspectRecommendations,
-    enabled: user?.role === "ADMIN",
+    enabled: shouldFetchSearchData && user?.role === "ADMIN",
     staleTime: 60_000,
   });
   const ownReverseQuery = useQuery({
     queryKey: ["portal-search", "own-reverse", user?.id],
     queryFn: () => listOwnReverseOpportunities(user!.id),
-    enabled: user?.role === "BUM",
+    enabled: shouldFetchSearchData && user?.role === "BUM",
     staleTime: 60_000,
   });
   const adminReverseQuery = useQuery({
     queryKey: ["portal-search", "admin-reverse"],
     queryFn: listAdminReverseOpportunities,
-    enabled: user?.role === "ADMIN",
+    enabled: shouldFetchSearchData && user?.role === "ADMIN",
     staleTime: 60_000,
   });
   const profilesQuery = useQuery({
     queryKey: ["portal-search", "profiles", user?.role],
     queryFn: listProfiles,
-    enabled: user?.role === "ADMIN",
+    enabled: shouldFetchSearchData && user?.role === "ADMIN",
     staleTime: 60_000,
   });
   const visibleBumsQuery = useQuery({
     queryKey: ["portal-search", "visible-bums"],
     queryFn: listVisibleBumProfiles,
-    enabled: user?.role === "CLIENT",
+    enabled: shouldFetchSearchData && user?.role === "CLIENT",
     staleTime: 60_000,
   });
   const conversationsQuery = useQuery({
     queryKey: ["portal-search", "conversations", user?.id],
     queryFn: listConversationThreads,
-    enabled: Boolean(user),
+    enabled: shouldFetchSearchData,
     staleTime: 60_000,
   });
   const trainingQuery = useQuery({
     queryKey: ["portal-search", "training", user?.id],
     queryFn: () => listTrainingMaterialsForUser(user!),
-    enabled: Boolean(user),
+    enabled: shouldFetchSearchData,
     staleTime: 60_000,
   });
 
@@ -349,7 +354,7 @@ export function PortalGlobalSearch() {
     ].map((reverseOpportunity) => result({
       id: "reverse:" + reverseOpportunity.id,
       icon: "opportunity",
-      category: "Reverse opportunity",
+      category: "Customer lead",
       title: reverseOpportunity.customer_company_name,
       subtitle: [reverseOpportunity.companies?.name, reverseOpportunity.status].filter(Boolean).join(" · "),
       href: user.role === "ADMIN" ? "/admin/opportunities" : "/bum/reverse-opportunities",
@@ -460,12 +465,49 @@ export function PortalGlobalSearch() {
     event.preventDefault();
     if (results[0]) {
       setFocused(false);
+      setMobileOpen(false);
       navigate(results[0].href);
     }
   };
 
-  return (
-    <form onSubmit={submitSearch} className="relative ml-4 hidden w-full max-w-lg md:block">
+  const resultList = (
+    <>
+      {isLoading ? (
+        <div className="p-3 text-sm text-muted-foreground">Searching...</div>
+      ) : results.length ? (
+        <div className="max-h-96 overflow-auto py-1">
+          {results.map((item) => {
+            const Icon = iconFor(item.icon);
+            return (
+              <Link
+                key={item.id}
+                to={item.href}
+                className="flex items-start gap-3 px-3 py-2 text-sm hover:bg-muted"
+                onClick={() => {
+                  setFocused(false);
+                  setMobileOpen(false);
+                }}
+              >
+                <span className="mt-0.5 rounded-md bg-primary/10 p-1.5 text-primary">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{item.title}</span>
+                  {item.subtitle ? <span className="block truncate text-xs text-muted-foreground">{item.subtitle}</span> : null}
+                </span>
+                <Badge variant="outline" className="shrink-0">{item.category}</Badge>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="p-3 text-sm text-muted-foreground">No matching results you can access.</div>
+      )}
+    </>
+  );
+
+  const searchInput = (
+    <>
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={query}
@@ -476,38 +518,41 @@ export function PortalGlobalSearch() {
         className="h-9 pl-9"
         aria-label="Search anything you can access"
       />
+    </>
+  );
+
+  return (
+    <>
+      <form onSubmit={submitSearch} className="relative ml-4 hidden w-full max-w-lg md:block">
+        {searchInput}
       {showResults ? (
         <div className="absolute left-0 right-0 top-11 z-50 overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg">
-          {isLoading ? (
-            <div className="p-3 text-sm text-muted-foreground">Searching...</div>
-          ) : results.length ? (
-            <div className="max-h-96 overflow-auto py-1">
-              {results.map((item) => {
-                const Icon = iconFor(item.icon);
-                return (
-                  <Link
-                    key={item.id}
-                    to={item.href}
-                    className="flex items-start gap-3 px-3 py-2 text-sm hover:bg-muted"
-                    onClick={() => setFocused(false)}
-                  >
-                    <span className="mt-0.5 rounded-md bg-primary/10 p-1.5 text-primary">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{item.title}</span>
-                      {item.subtitle ? <span className="block truncate text-xs text-muted-foreground">{item.subtitle}</span> : null}
-                    </span>
-                    <Badge variant="outline" className="shrink-0">{item.category}</Badge>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="p-3 text-sm text-muted-foreground">No matching results you can access.</div>
-          )}
+          {resultList}
         </div>
       ) : null}
-    </form>
+      </form>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetTrigger asChild>
+          <Button type="button" variant="ghost" size="icon" className="ml-auto md:hidden" aria-label="Open portal search">
+            <Search className="h-4 w-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="top" className="min-h-[70vh]">
+          <SheetHeader>
+            <SheetTitle>Search</SheetTitle>
+          </SheetHeader>
+          <form onSubmit={submitSearch} className="mt-6">
+            <div className="relative">
+              {searchInput}
+            </div>
+          </form>
+          {query.trim().length >= 2 ? (
+            <div className="mt-4 overflow-hidden rounded-lg border bg-popover text-popover-foreground">
+              {resultList}
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

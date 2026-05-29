@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { ClerkTicketHandler } from "@/components/ClerkTicketHandler";
 import { ConsentManager } from "@/components/ConsentManager";
+import { PerformanceMonitoring } from "@/components/PerformanceMonitoring";
 import { ClientAccessRoute } from "@/components/ClientAccessRoute";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ClientTermsGate } from "@/components/ClientTermsGate";
@@ -32,6 +33,7 @@ import AdminLiveConversations from "./pages/admin/AdminLiveConversations";
 import AdminEmails from "./pages/admin/AdminEmails";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminReports from "./pages/admin/AdminReports";
+import AdminPerformanceMetrics from "./pages/admin/AdminPerformanceMetrics";
 import AdminTrainingAssets from "./pages/admin/AdminTrainingAssets";
 import AdminTroubleshooting from "./pages/admin/AdminTroubleshooting";
 import AdminLegal from "./pages/admin/AdminLegal";
@@ -84,6 +86,7 @@ const App = () => (
         <BrowserRouter basename={import.meta.env.BASE_URL}>
           <AuthProvider>
             <AppErrorBoundary>
+              <PerformanceMonitoring />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
@@ -113,6 +116,7 @@ const App = () => (
                       <Route path="emails" element={<AdminEmails />} />
                       <Route path="training-assets" element={<AdminTrainingAssets />} />
                       <Route path="reports" element={<AdminReports />} />
+                      <Route path="performance" element={<AdminPerformanceMetrics />} />
                       <Route path="troubleshooting" element={<AdminTroubleshooting />} />
                       <Route path="legal" element={<AdminLegal />} />
                       <Route path="profile" element={<AdminProfile />} />

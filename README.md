@@ -129,6 +129,12 @@ WEBSITE_CONTACT_NOTIFY_TO # optional; defaults to MICROSOFT_ORGANIZER_EMAIL
 
 The Azure app must have Microsoft Graph `Mail.Send` as an Application permission with admin consent. The helper script `scripts/add-graph-mail-send-permission.ps1` grants that permission for the Trusted Bums app registration. Live verification on May 19, 2026 returned `200 {"sent":true}` from `send-website-email`.
 
+## Shared mailbox and DMARC review
+
+Admins can review likely DMARC aggregate-report emails through the Supabase Edge Function `dmarc-reports`. The function reads from the shared operations mailbox `bums@trustedbums.com` by default and returns sender, subject, received date, attachment metadata, and parsed DMARC aggregate summaries from XML, gzip, or zip attachments; it does not return email bodies or raw attachment contents.
+
+Mailbox review requires Microsoft Graph mailbox-read access in addition to the existing mail-send setup. The app may use `bums@trustedbums.com` for DMARC, legal documents, questions, complaints, privacy/abuse intake, and support triage, but practical access should still be scoped to that shared mailbox. If Graph `Mail.Read` application permission is used, restrict the app to `bums@trustedbums.com` before routine monitoring. See `docs/dmarc-report-review.md`, `docs/shared-mailbox-operations.md`, and `scripts/add-graph-mail-read-permission.ps1`.
+
 ## Portal Flow
 
 Client users must accept the current active Partner Terms at `/client/terms` before accessing client dashboard features. When a new active terms version is created, client users are redirected back to the terms page until they accept the latest version.

@@ -130,7 +130,7 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
                     Bum
                   </span>
                   <span className="mt-1 block text-sm font-normal text-muted-foreground">
-                    Connector account
+                    Bum account
                   </span>
                 </span>
               </Label>

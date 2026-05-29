@@ -1,0 +1,273 @@
+# Trusted Bums Business Access Rules
+
+_Last updated: 2026-05-28 by Codex product ops workflow analyst automation._
+
+## Purpose
+
+This document is the business source of truth for role-based access decisions before RLS, edge-function authorization, route guards, or QA tests are changed.
+
+RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed access change should map to this document and include before/after QA checks for affected roles.
+
+## Ownership Model
+
+- Product Ops defines the business workflow and handoff rules.
+- QA defines the role data each workflow needs and the allow/deny test scenarios.
+- Security maps the business rules to RLS, RPC, edge-function, and route-guard controls.
+- Data/Analytics checks whether reporting, exports, dashboards, and telemetry need different read access than operational screens.
+- Lead Developer approves sequencing and blocks RLS hardening that lacks role-by-role acceptance criteria.
+
+## Access Rule Template
+
+### Object or workflow
+- Roles:
+- Data needed:
+- Allowed actions:
+- Allowed when:
+- Denied when:
+- Sensitive fields:
+- Source of truth:
+- RLS/authorization owner:
+- QA proof:
+- Open questions:
+
+## Starter Role Matrix
+
+| Role | Core purpose | Default data posture |
+| --- | --- | --- |
+| Public Visitor | Evaluate Trusted Bums, submit contact/signup interest, read legal and marketing pages. | No portal data. Public content and intentional public forms only. |
+| Client Admin | Manage the client company relationship, targets, opportunities, Bum intro requests, trainings, reports, payments, and team access. | Company-scoped access, with admin-level visibility inside their own company. |
+| Client Finance | Review payment reports, invoices, exports, and finance dashboards. | Company-scoped finance/report access; no unrelated workflow management access unless explicitly granted. |
+| Client Member | Participate in assigned client workflows such as trainings, target review, intro requests, or reporting as granted. | Least-privilege company-scoped access based on team role and workflow involvement. |
+| Bum | Manage their own profile, prospects, contacts, opportunities, intro requests, trainings, earnings, customer leads, and relevant conversations. | Own or explicitly assigned marketplace work only; no broad client target browsing by default. |
+| Admin | Operate and troubleshoot the marketplace across clients, Bums, finance, training, support, and reports. | Full operational access with auditability, support tooling, and elevated-action controls. |
+
+## Candidate Rules To Validate First
+
+### Public Contact And Signup Intake
+- Roles: Public Visitor, Admin, internal notification mailbox or workflow automation.
+- Data needed: Visitor contact details, declared interest, message, anti-abuse proof, submission timestamp, review status, and any escalation or conversion outcome.
+- Allowed actions: Public visitors may submit intentional contact or signup-interest forms; Admins may review, triage, escalate, convert, archive, or reply through approved workflows; automated notification paths may send internal alerts only for validated submissions.
+- Allowed when:
+  - The visitor submits the intended public form with required fields plus current anti-abuse proof.
+  - Internal mail or queue notifications are triggered only after server-side validation and abuse checks pass.
+  - Admins are reviewing, escalating, or converting the resulting intake record.
+- Denied when:
+  - Requests fail anti-abuse verification, rate limits, nonce checks, or other server-side abuse controls.
+  - Unauthenticated callers try to list, read, update, or resend prior submissions.
+  - Public users attempt to trigger internal email workflows outside the intended intake path.
+- Sensitive fields: Email address, phone or contact details if later added, free-text message content, internal admin notes, conversion decisions, and notification mailbox addresses.
+- Source of truth: Public contact/signup forms, `contact_submissions`, related admin queues, and the `send-website-email` or successor notification path.
+- RLS/authorization owner: Security Engineer plus Product Ops, with Trust & Reputation review.
+- QA proof:
+  - A valid public submission creates exactly one intake record and one intended internal notification.
+  - Invalid captcha, nonce, or throttled repeats are rejected without creating duplicate mail noise.
+  - Public users cannot read or mutate prior submissions through portal, RPC, or direct API paths.
+  - Admins can review and triage created submissions without exposing internal notes publicly.
+- Open questions:
+  - What is the approved anti-abuse stack for public intake: Turnstile, provider-native challenge, IP throttle, email throttle, or combination?
+  - Should high-volume or suspicious submissions create records without sending email, or should they be dropped entirely?
+
+### Customer Targets
+- Roles: Admin, Client Admin, Client Member where assigned, Bum where explicitly entitled.
+- Data needed: Target company/person details, status, linked opportunities, linked responses, linked conversations, relevant activity history.
+- Allowed actions: Admins can manage; Client Admins can manage company targets; authorized Client Members can read/update assigned workflow fields; Bums can read only target data tied to explicit marketplace work.
+- Allowed when:
+  - Admin is operating the marketplace.
+  - Client user belongs to the target's company and has a role that grants target access.
+  - Bum has an explicit workflow relationship, such as an accepted claim, assigned opportunity, accepted target response, accepted intro request, or other documented assignment.
+- Denied when:
+  - Bum is merely signed in and has no explicit relationship to the target.
+  - Client user belongs to a different company.
+  - Public or unauthenticated user requests target data.
+- Sensitive fields: Contact identity, company relationship, opportunity context, notes, response history, financial or strategic target notes.
+- Source of truth: `customer_targets`, linked opportunity/claim/request/response tables, company membership tables.
+- RLS/authorization owner: Security Engineer plus Lead Developer.
+- QA proof:
+  - Client Admin can read own company target.
+  - Client Finance cannot read non-finance target details unless granted by business rule.
+  - Bum with explicit accepted relationship can read the allowed target subset.
+  - Bum without relationship cannot read unrelated targets through direct Supabase access, portal APIs, extension APIs, or search.
+  - Admin can read and update across companies.
+- Open questions:
+  - Which target fields are safe in marketplace-browsing surfaces before a Bum has an explicit relationship?
+
+### Customer Target Responses
+- Roles: Admin, Client Admin, Client Member with target-management responsibility, submitting Bum.
+- Data needed: Response status, linked target, submitting Bum, contact summary, relationship strength, notes, linked question thread or formalized opportunity.
+- Allowed actions:
+  - Bum can create and read their own responses.
+  - Client Admin and target-managing Client Members can review, accept, decline, and formalize responses for their company.
+  - Admin can review, troubleshoot, and rescue stale responses across companies.
+- Allowed when:
+  - Status is `PROPOSED`, `ACCEPTED`, or `DECLINED` and the user is the submitting Bum, an authorized target-managing client user for that company, or an Admin.
+  - Once a response is formalized into an opportunity or conversation thread, linked participants keep read access to the workflow objects they are part of.
+- Denied when:
+  - Client Finance users try to browse target-response content by default.
+  - Unrelated Bums or other client companies try to read the response.
+- Sensitive fields: Contact identity, direct contact details, relationship notes, internal review notes, linked workflow IDs.
+- Source of truth: `customer_target_responses`, `customer_targets`, linked `conversation_threads`, linked opportunity/claim records.
+- RLS/authorization owner: Security Engineer plus Lead Developer.
+- QA proof:
+  - Submitting Bum can read their own response history.
+  - Client Admin and allowed Client Member can review and formalize company responses.
+  - Client Finance is denied by default.
+  - Unrelated Bums and other client companies are denied.
+- Open questions:
+  - Should `DECLINED` responses remain visible to all target-managing client users indefinitely, or age into admin-only history?
+
+### Opportunities, Claims, And Intro Requests
+- Roles: Admin, Client Admin, Client Member where assigned, Bum.
+- Data needed: Opportunity status, client, target, assigned/requesting Bum, claim/request status, split details, meeting/conversation context.
+- Allowed actions: Clients create/manage company opportunities; Bums request visible opportunities; Admins manage exceptions and disputes.
+- Allowed when:
+  - Bum can see opportunities open to the marketplace or specifically assigned/invited to them.
+  - Multiple Bums can request before client acceptance.
+  - After an accepted or approved handoff, the opportunity should no longer be visible as claimable to unrelated Bums.
+  - Splits are visible only to parties involved plus Admins.
+- Denied when:
+  - Bum is unrelated after a claim/request is accepted and has no split relationship.
+  - Client user belongs to a different company.
+- Sensitive fields: Customer identity, client relationship, payout/split details, acceptance status, notes.
+- Source of truth: Opportunity registrations, claims/intro request tables, split/commission tables, company membership.
+- QA proof:
+  - Two Bums can request before client acceptance.
+  - Accepted or approved handoff locks the opportunity from unrelated Bum claim flows.
+  - Split participants can see their relevant split context.
+  - Unrelated Bums cannot read accepted opportunity private details.
+- Open questions:
+  - Should "claim" become "Intro Request" in all user-facing flows?
+
+### Client-To-Bum Intro Requests
+- Roles: Admin, Client Admin, Client Member, assigned Bum.
+- Data needed: Requesting client, requested Bum, target company/contact summary, intro context, notes, status, timestamps.
+- Allowed actions:
+  - Client Admin and Client Member can create requests from visible Bum directory entries.
+  - Admin can read and update all request statuses.
+  - Assigned Bum can read requests addressed to them and use them as a work queue once Bum-side tooling exists.
+- Allowed when:
+  - `SUBMITTED` is visible to the requesting client company, the requested Bum, and Admin.
+  - `IN_REVIEW` and `INTRO_REQUESTED` stay visible to the same parties while the handoff is active.
+  - `CLOSED` remains visible as history to the requesting client company, requested Bum, and Admin.
+- Denied when:
+  - Client Finance users try to read or manage intro requests by default.
+  - Other Bums or other client companies try to read the request.
+- Sensitive fields: Prospect identity, requested introduction context, private notes, target contact details.
+- Source of truth: `client_bum_intro_requests`, company membership, visible Bum directory eligibility.
+- RLS/authorization owner: Security Engineer plus Lead Developer.
+- QA proof:
+  - Client Admin and Client Member can create and read their company request history.
+  - Requested Bum can read assigned requests only.
+  - Client Finance and unrelated Bums are denied.
+  - Admin can update statuses across all requests.
+- Open questions:
+  - When Bum-side tooling launches, can the Bum move `INTRO_REQUESTED` to `CLOSED`, or should closure remain an Admin action?
+
+### Customer Leads
+- Roles: Bum, Admin, potential future Client after match.
+- Data needed: Lead details submitted by Bum before a matching supported client exists.
+- Allowed actions: Bum creates and manages own leads; Admin reviews and matches; Client sees only after an approved match/handshake.
+- Allowed when:
+  - Bum owns the submitted customer lead.
+  - Admin is matching or troubleshooting.
+  - Client has been explicitly matched to the lead.
+- Denied when:
+  - Other Bums attempt to browse or claim the lead without assignment.
+  - Unmatched clients attempt to read lead details.
+- Sensitive fields: Customer identity, need/problem statement, notes, proposed client match.
+- Source of truth: Current customer-lead tables and any future match table.
+- QA proof:
+  - Bum can create and read own customer lead.
+  - Other Bum cannot read it.
+  - Admin can see matching queue.
+  - Matched Client sees only after match approval.
+- Open questions:
+  - What status marks a lead as safe to share with a potential Client?
+
+### Payments, Invoices, Payouts, And Reports
+- Roles: Admin, Client Admin, Client Finance, Bum.
+- Data needed: Payment reports, invoices, payout status, commission/split allocations, export history, report filters.
+- Allowed actions: Admins operate all finance records; Client Admin/Finance reads company finance records and exports; Bums read only their own earnings/payouts and relevant split allocations.
+- Allowed when:
+  - Client user belongs to the paying company and has finance/admin role.
+  - Bum is the payout recipient or split participant.
+  - Admin is reconciling or troubleshooting.
+- Denied when:
+  - Bum tries to read client-wide payment reports.
+  - Client Finance tries to read another company or another Bum's unrelated earnings.
+  - Client Member lacks finance permission.
+- Sensitive fields: Amounts, invoice numbers, customer payment dates, payout amounts, disputes, reconciliation notes.
+- Source of truth: Payment reports, claim invoices, Bum payouts, commission plan tables, company membership.
+- QA proof:
+  - Client Finance can export own company finance report.
+  - Client Member without finance role cannot.
+  - Bum can read own earnings but not client payment report details.
+  - Admin can manage exceptions.
+- Open questions:
+  - Should Client Admin and Client Finance have identical finance export access?
+  - Which claim-linked invoice fields are required in Bum earnings views beyond amount, status, and invoice identifier?
+
+### Trainings And Legal Documents
+- Roles: Admin, Client Admin, Client Member, Bum.
+- Data needed: Training materials, completion records, legal versions, acceptances, attachments.
+- Allowed actions: Admins manage; Clients manage company-scoped trainings if permitted; Bums read assigned/corporate trainings and their own completions.
+- Allowed when:
+  - User is assigned to the training audience or company scope.
+  - User needs legal document access for acceptance or audit.
+- Denied when:
+  - User tries to access another company's private training or acceptance records.
+- Sensitive fields: Completion status, legal acceptance history, private attachments.
+- Source of truth: Training material tables, attachment storage policies, terms versions and acceptances.
+- QA proof:
+  - Bum can access assigned/corporate training.
+  - Client can access company training.
+  - Cross-company attachment reads fail.
+- Open questions:
+  - Which trainings are global to all Bums versus company-scoped?
+
+### Conversations, Meetings, Support, And Feedback
+- Roles: Admin, Client participants, Bum participants.
+- Data needed: Conversation threads, participants, messages, Teams meetings, transcripts, support/contact/feedback records.
+- Allowed actions: Participants read relevant conversations; Admins operate/troubleshoot; support records visible to Admins and submitter where appropriate.
+- Allowed when:
+  - User is a participant, creator, assigned owner, company-authorized participant, or Admin.
+  - Transcript is attached to a meeting involving the user or their company/workflow.
+- Denied when:
+  - Unrelated users attempt to read conversations, transcripts, support submissions, or feedback.
+- Sensitive fields: Message content, transcript content, support details, private notes.
+- Source of truth: Conversation participants, meetings, transcripts, support/contact/feedback tables.
+- QA proof:
+  - Participant can read conversation.
+  - Non-participant cannot.
+  - Admin can troubleshoot.
+  - Transcript visibility matches meeting/workflow membership.
+- Open questions:
+  - If a finance dispute requires context, should Client Finance get explicit case-by-case participation or a dedicated finance-note surface instead of broad conversation/transcript access?
+
+## Required QA Audit Output
+
+Each QA run should maintain a section in `docs/qa-test-backlog.md` called `Business Access Coverage` that lists:
+
+- Access objects reviewed.
+- Role data needed for each object.
+- Missing allow/deny test scenarios.
+- Seed data or credentials needed.
+- RLS-sensitive workflows that should not be changed until tested.
+
+## Required Security Audit Output
+
+Each Security run should maintain a section in `docs/security-review-backlog.md` called `Business Rule Alignment` that lists:
+
+- RLS policies or edge functions that conflict with this document.
+- Public RPC or service-role paths that bypass these rules.
+- Direct Supabase access checks needed for each risky object.
+- Any proposed RLS change that lacks product-rule signoff.
+
+## Required Lead Developer Gate
+
+The Lead Developer should not recommend implementing an RLS hardening change unless the recommendation includes:
+
+- Business rule reference from this document.
+- Before/after role matrix.
+- Direct data-path test plan.
+- Portal/API/extension test plan where relevant.
+- Rollback plan for broken legitimate access.

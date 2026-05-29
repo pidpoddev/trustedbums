@@ -258,7 +258,7 @@ export default function AdminLegal() {
             <CardHeader><CardTitle className="font-display flex items-center gap-2"><FileSignature className="h-5 w-5 text-primary" />Rev Contract</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2"><Label>Audience</Label><Select value={contractForm.audience} onValueChange={(value: "CLIENT" | "BUM") => setContractForm((current) => ({ ...current, audience: value, title: value === "BUM" ? "Trusted Bums Connector Agreement" : "Trusted Bums Partner Terms" }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="CLIENT">Client</SelectItem><SelectItem value="BUM">Bum</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2"><Label>Audience</Label><Select value={contractForm.audience} onValueChange={(value: "CLIENT" | "BUM") => setContractForm((current) => ({ ...current, audience: value, title: value === "BUM" ? "Trusted Bums Bum Agreement" : "Trusted Bums Partner Terms" }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="CLIENT">Client</SelectItem><SelectItem value="BUM">Bum</SelectItem></SelectContent></Select></div>
                 <div className="space-y-2"><Label>Version</Label><Input value={contractForm.version} onChange={(event) => setContractForm((current) => ({ ...current, version: event.target.value }))} placeholder="1.4" /></div>
               </div>
               <div className="space-y-2"><Label>Title</Label><Input value={contractForm.title} onChange={(event) => setContractForm((current) => ({ ...current, title: event.target.value }))} /></div>

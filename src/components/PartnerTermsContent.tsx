@@ -13,6 +13,7 @@ export function PartnerTermsContent({ terms, showFaq = true }: PartnerTermsConte
   const timeZone = useUserTimeZone();
   const parsedTerms = splitTermsSections(terms.body);
   const faqItems = parseFaq(terms.faq_body ?? "");
+  const isBumTerms = terms.audience === "BUM";
 
   return (
     <div className="space-y-6">
@@ -48,11 +49,11 @@ export function PartnerTermsContent({ terms, showFaq = true }: PartnerTermsConte
         <section id="agreement-faq" className="space-y-3">
           <div>
             <h3 className="font-display text-xl font-bold">
-              {terms.title.includes("Connector") ? "Connector Agreement FAQ" : "Client Agreement FAQ"}
+              {isBumTerms ? "Bum Agreement FAQ" : "Client Agreement FAQ"}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {terms.title.includes("Connector")
-                ? "Short answers to the questions connectors usually ask first."
+              {isBumTerms
+                ? "Short answers to the questions Bums usually ask first."
                 : "Short answers to the questions clients usually ask first."}
             </p>
           </div>

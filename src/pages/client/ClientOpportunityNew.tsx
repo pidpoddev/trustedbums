@@ -178,12 +178,12 @@ function getAssignedClaim(claims: OpportunityClaimRecord[]) {
   );
 }
 
-function connectorName(claim: OpportunityClaimRecord | null) {
+function bumName(claim: OpportunityClaimRecord | null) {
   if (!claim) {
     return "Unassigned";
   }
 
-  return claim.profiles?.full_name ?? claim.profiles?.email ?? "Connector assigned";
+  return claim.profiles?.full_name ?? claim.profiles?.email ?? "Bum assigned";
 }
 
 function nextStepForOpportunity(opportunity: OpportunityRegistration, assignedClaim: OpportunityClaimRecord | null) {
@@ -197,7 +197,7 @@ function nextStepForOpportunity(opportunity: OpportunityRegistration, assignedCl
 
   if (opportunity.status === "Accepted") {
     if (!assignedClaim) {
-      return "Assign connector";
+      return "Assign Bum";
     }
 
     if (assignedClaim.status === "SCHEDULED") {
@@ -208,7 +208,7 @@ function nextStepForOpportunity(opportunity: OpportunityRegistration, assignedCl
       return "Track outcome";
     }
 
-    return "Connector outreach";
+    return "Bum outreach";
   }
 
   if (opportunity.status === "Disputed") {
@@ -582,7 +582,7 @@ export default function ClientOpportunityNew() {
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       toast({
         title: "Opportunity published",
-        description: "The opportunity is live for connector matching.",
+        description: "The opportunity is live for Bum matching.",
       });
     } catch (error) {
       toast({
@@ -662,7 +662,7 @@ export default function ClientOpportunityNew() {
     <div>
       <PageHeader
         title="Opportunities"
-        description="Manage the client opportunity pipeline, registration status, connector assignment, value, next step, and commission plan."
+        description="Manage the client opportunity pipeline, registration status, Bum assignment, value, next step, and commission plan."
       >
         <Button
           type="button"
@@ -694,7 +694,7 @@ export default function ClientOpportunityNew() {
               <CheckCircle className="h-5 w-5 text-success" />
               <div>
                 <p className="font-medium">Opportunity published</p>
-                <p className="text-sm text-muted-foreground">The opportunity is live and available for connector matching.</p>
+                <p className="text-sm text-muted-foreground">The opportunity is live and available for Bum matching.</p>
               </div>
             </div>
             <Button asChild variant="outline">
@@ -1392,7 +1392,7 @@ export default function ClientOpportunityNew() {
                     <TableHead>Last Activity</TableHead>
                     <TableHead>Next Step</TableHead>
                     <TableHead>Value</TableHead>
-                    <TableHead>Assigned Connector</TableHead>
+                    <TableHead>Assigned Bum</TableHead>
                     <TableHead>Commission Plan</TableHead>
                     <TableHead>Owner</TableHead>
                     <TableHead className="text-right">Action</TableHead>
@@ -1424,7 +1424,7 @@ export default function ClientOpportunityNew() {
                         <TableCell className="font-medium">{formatMoney(opportunity.estimated_deal_value)}</TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            <p>{connectorName(assignedClaim)}</p>
+                            <p>{bumName(assignedClaim)}</p>
                             {assignedClaim ? <p className="text-xs text-muted-foreground">{assignedClaim.status.replaceAll("_", " ").toLowerCase()}</p> : null}
                           </div>
                         </TableCell>

@@ -37,8 +37,8 @@ export default function BumClaims() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="My Claims"
-        description="Track the intros you've claimed and jump back into the opportunity when it's time to schedule or update."
+        title="Intro Requests"
+        description="Track the opportunity intros you requested and jump back in when it's time to schedule or update."
       />
 
       {claimsQuery.isLoading ? (
@@ -60,7 +60,7 @@ export default function BumClaims() {
             <div>
               <p className="font-medium">No claims yet</p>
               <p className="text-sm text-muted-foreground">
-                When you request or receive an approved claim, it will show up here.
+                When you request or receive an approved intro, it will show up here.
               </p>
             </div>
             <Button variant="outline" asChild>
@@ -106,7 +106,7 @@ export default function BumClaims() {
                   <div className="rounded-xl border bg-muted/20 p-3">
                     <p className="flex items-center gap-2 font-medium text-foreground">
                       <CalendarClock className="h-4 w-4" />
-                      Claim expires
+                      Request expires
                     </p>
                     <p className="mt-1">{formatDate(claim.expires_at, timeZone)}</p>
                   </div>
@@ -132,7 +132,7 @@ export default function BumClaims() {
 
                 {claim.note ? (
                   <div className="rounded-xl border bg-card p-3 text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground">Claim note</p>
+                    <p className="font-medium text-foreground">Request note</p>
                     <p className="mt-1">{claim.note}</p>
                   </div>
                 ) : null}

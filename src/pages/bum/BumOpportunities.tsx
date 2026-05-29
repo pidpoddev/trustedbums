@@ -193,7 +193,7 @@ export default function BumOpportunities() {
   const activeClaimByOpportunityId = useMemo(() => {
     const map = new Map<string, string>();
     for (const claim of claimSummariesQuery.data ?? []) {
-      if (["PROPOSED", "APPROVED", "SCHEDULED", "MEETING_HELD"].includes(claim.status) && !map.has(claim.opportunity_registration_id)) {
+      if (["APPROVED", "SCHEDULED", "MEETING_HELD"].includes(claim.status) && !map.has(claim.opportunity_registration_id)) {
         map.set(claim.opportunity_registration_id, claim.bum_display_name);
       }
     }

@@ -21,11 +21,11 @@ export const legalDocuments: LegalDocument[] = [
     effectiveDate: "May 19, 2026",
     sections: [
       { title: "Information We Collect", body: ["We may collect information you provide directly to Trusted Bums, including your name, email address, company details, account information, submitted opportunities, communications, and other business information you choose to share through the platform."] },
-      { title: "How We Use Information", body: ["We use information to operate the platform, provide account access, manage introductions and opportunities, communicate with users, improve our services, maintain security, and comply with legal obligations."] },
+      { title: "How We Use Information", body: ["We use information to operate the platform, provide account access, manage introductions and opportunities, communicate with users, monitor necessary service performance, improve our services, maintain security, and comply with legal obligations."] },
       { title: "How Information Is Shared", body: ["We may share information with service providers that help us run the platform, with authorized users inside your organization, and when required to protect rights, investigate misuse, or comply with law. We do not sell personal information."] },
       { title: "Data Retention", body: ["We retain information for as long as reasonably necessary to provide the service, maintain business records, resolve disputes, enforce agreements, and meet legal or operational requirements."] },
       { title: "Security", body: ["We use reasonable administrative, technical, and organizational safeguards designed to protect information. No system can be guaranteed perfectly secure, so users should also take care to protect their credentials and account access."] },
-      { title: "Cookies, Local Storage, and Consent", body: ["Strictly necessary storage is used for security, authentication, accessibility, and remembering your consent choice. Preferences, analytics, and marketing or engagement measurement are optional and are disabled unless you choose them. You can reject all optional categories as easily as accepting them, and you can change your choices at any time using the Privacy choices control."] },
+      { title: "Cookies, Local Storage, and Consent", body: ["Strictly necessary storage and lightweight performance monitoring are used for security, authentication, accessibility, service reliability, and remembering your consent choice. Optional product analytics, preferences, and marketing or engagement measurement are disabled unless you choose them. You can reject all optional categories as easily as accepting them, and you can change your choices at any time using the Privacy choices control."] },
       { title: "Your Choices and EU/UK Rights", body: ["Depending on your location, you may have rights to access, correct, delete, restrict, object to, or port personal data, and to withdraw consent where processing is based on consent. Withdrawing consent does not affect processing that occurred before withdrawal."] },
       { title: "Changes to This Policy", body: ["We may update this Privacy Policy from time to time. When we do, we will post the updated version on this page and revise the effective date below."] },
       { title: "Contact Us", body: ["If you have questions about this Privacy Policy, data rights, or consent choices, contact Trusted Bums at bums@trustedbums.com."] },
@@ -37,11 +37,11 @@ export const legalDocuments: LegalDocument[] = [
     description: "General website and platform terms for visitors and account users.",
     effectiveDate,
     sections: [
-      { title: "Use of the Service", body: ["Trusted Bums provides a business development platform for warm introductions, client opportunity workflows, connector participation, meeting coordination, training assets, reporting, and related services.", "You may use the service only for lawful business purposes and only in accordance with these Terms, any applicable Client Agreement, Connector Agreement, Data Processing Addendum, and posted policies."] },
+      { title: "Use of the Service", body: ["Trusted Bums provides a business development platform for warm introductions, client opportunity workflows, Bum participation, meeting coordination, training assets, reporting, and related services.", "You may use the service only for lawful business purposes and only in accordance with these Terms, any applicable Client Agreement, Bum Agreement, Data Processing Addendum, and posted policies."] },
       { title: "Accounts and Access", body: ["You are responsible for maintaining the confidentiality of your account credentials and for activity under your account. You must provide accurate account information and promptly update it when it changes.", "Trusted Bums may approve, deny, suspend, or terminate access where necessary to protect the service, other users, customers, prospects, confidential information, or legal compliance."] },
       { title: "Acceptable Use", body: ["You may not use the service for unlawful outreach, spam, harassment, misleading relationship claims, scraping, credential sharing, security testing without permission, or activity that interferes with the service.", "You may not upload or share information you do not have the right to provide, including confidential third-party information, restricted employer information, or personal data collected without a valid business reason."] },
       { title: "Customer Targets, Introductions, and Content", body: ["Users are responsible for the accuracy and legality of customer target data, contact details, profile information, training materials, read-ahead assets, opportunity details, and communications submitted through the service.", "Trusted Bums may remove, restrict, or correct content that appears inaccurate, unlawful, confidentially improper, abusive, or inconsistent with platform rules."] },
-      { title: "Commercial Terms", body: ["Commercial obligations, commissions, payouts, claims, disputes, invoicing, and client-specific terms are governed by the applicable Client Agreement, Connector Agreement, approved commission plan, opportunity record, or separate signed agreement.", "If these Terms conflict with a signed agreement or approved opportunity-specific commercial term, the more specific agreement controls for that opportunity or relationship."] },
+      { title: "Commercial Terms", body: ["Commercial obligations, commissions, payouts, intro requests, disputes, invoicing, and client-specific terms are governed by the applicable Client Agreement, Bum Agreement, approved commission plan, opportunity record, or separate signed agreement.", "If these Terms conflict with a signed agreement or approved opportunity-specific commercial term, the more specific agreement controls for that opportunity or relationship."] },
       { title: "Confidentiality", body: ["Users may receive non-public business, customer, product, pricing, relationship, meeting, transcript, or strategy information. Users must protect that information and use it only for authorized platform purposes."] },
       { title: "Disclaimers and Limitation of Liability", body: ["The service is provided on an as-available basis. Trusted Bums does not guarantee meetings, introductions, customer responses, contracts, revenue, payout approval, or uninterrupted service.", "To the fullest extent permitted by law, Trusted Bums will not be liable for indirect, incidental, special, consequential, punitive, or lost-profit damages arising from use of the service."] },
       { title: "Changes", body: ["Trusted Bums may update these Terms from time to time. Material changes will be posted in the service or on the website. Continued use after an update means you accept the updated Terms."] },
@@ -54,8 +54,8 @@ export const legalDocuments: LegalDocument[] = [
     description: "How Trusted Bums uses cookies, local storage, and similar technologies.",
     effectiveDate,
     sections: [
-      { title: "Overview", body: ["Trusted Bums uses cookies, local storage, and similar technologies to operate the website and platform, remember user choices, support authentication, improve usability, and, where enabled, measure engagement."] },
-      { title: "Categories", body: ["Strictly necessary storage supports security, login, routing, consent records, accessibility settings, and core platform functionality.", "Preference storage remembers user choices such as display, accessibility, timezone, date format, or similar settings.", "Analytics and marketing storage, if enabled, may help us understand usage, improve content, and measure communications. Optional categories can be rejected or changed through Privacy Choices."] },
+      { title: "Overview", body: ["Trusted Bums uses cookies, local storage, performance beacons, and similar technologies to operate the website and platform, remember user choices, support authentication, improve reliability, and, where enabled, measure optional engagement."] },
+      { title: "Categories", body: ["Strictly necessary storage and lightweight performance monitoring support security, login, routing, consent records, accessibility settings, core platform functionality, reliability, and troubleshooting.", "Preference storage remembers user choices such as display, accessibility, timezone, date format, or similar settings.", "Optional analytics and marketing storage, if enabled, may help us understand usage, improve content, and measure communications. Optional categories can be rejected or changed through Privacy Choices."] },
       { title: "Managing Choices", body: ["You can use the Privacy Choices control to accept, reject, or customize optional categories. Strictly necessary storage remains active because the service cannot operate securely without it."] },
       { title: "Browser Controls", body: ["Most browsers allow you to block or delete cookies. Blocking necessary storage may prevent login, consent management, or portal features from working correctly."] },
     ],
@@ -150,12 +150,12 @@ export const legalDocuments: LegalDocument[] = [
     ],
   },
   {
-    slug: "connector-agreement",
-    title: "Connector Agreement",
-    description: "Bum connector terms for participation, confidentiality, conduct, and earnings eligibility.",
+    slug: "bum-agreement",
+    title: "Bum Agreement",
+    description: "Bum terms for participation, confidentiality, conduct, and earnings eligibility.",
     effectiveDate,
     sections: [
-      { title: "Connector Terms", body: ["The Connector Agreement is the current Trusted Bums Connector Agreement accepted in the Bum Portal. It covers the connector role, accuracy, confidentiality, respectful conduct, platform rules, eligibility for earnings, compliance, termination, recording/transcription, and updates."] },
+      { title: "Bum Terms", body: ["The Bum Agreement is the current Trusted Bums Bum Agreement accepted in the Bum Portal. It covers the Bum role, accuracy, confidentiality, respectful conduct, platform rules, eligibility for earnings, compliance, termination, recording/transcription, and updates."] },
       { title: "No Guaranteed Compensation", body: ["Creating an account, proposing introductions, joining opportunities, or making introductions does not guarantee approval, compensation, payouts, or continued access to the platform. Earnings depend on the applicable opportunity rules, client payments, platform approval, dispute review, and tax or payout requirements."] },
       { title: "Portal Record", body: ["The accepted portal version should be reviewed inside the Bum Portal. Contact bums@trustedbums.com for a copy or questions."] },
     ],
@@ -173,7 +173,7 @@ export const footerLegalLinks = [
   { to: "/legal/recording-transcription-notice", label: "Recording & Transcription" },
   { to: "/legal/data-retention", label: "Data Retention" },
   { to: "/legal/client-agreement", label: "Client Agreement" },
-  { to: "/legal/connector-agreement", label: "Connector Agreement" },
+  { to: "/legal/bum-agreement", label: "Bum Agreement" },
 ];
 
 export function getLegalDocument(slug: string | undefined) {

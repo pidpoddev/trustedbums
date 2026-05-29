@@ -300,7 +300,7 @@ export default function BumProfile() {
       await queryClient.invalidateQueries({ queryKey: ["client-visible-bum-profiles"] });
       toast({
         title: "Profile saved",
-        description: "Your connector profile is updated for admin and client review.",
+        description: "Your Bum profile is updated for admin and client review.",
       });
     },
     onError: (error) => {
@@ -383,7 +383,7 @@ export default function BumProfile() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Profile" description="Build the connector profile that admins and clients will review." />
+      <PageHeader title="Profile" description="Build the Bum profile that admins and clients will review." />
 
       <div className="grid gap-4 xl:grid-cols-3">
         <UserTimeZoneCard description="Your time zone controls how meetings and timestamps appear throughout the Bum portal." />
@@ -397,11 +397,11 @@ export default function BumProfile() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <StatusBadge
-              label={hasAcceptedCurrentTerms ? "Connector agreement accepted" : "Agreement pending"}
+              label={hasAcceptedCurrentTerms ? "Bum agreement accepted" : "Agreement pending"}
               variant={hasAcceptedCurrentTerms ? "success" : "warning"}
             />
             <div className="rounded-md border bg-muted/20 p-4">
-              <p className="font-medium text-foreground">{terms?.title ?? "Trusted Bums Connector Terms"}</p>
+              <p className="font-medium text-foreground">{terms?.title ?? "Trusted Bums Bum Terms"}</p>
               <p className="mt-1 text-muted-foreground">Version {terms?.version ?? "current"}</p>
               <p className="mt-1 text-muted-foreground">
                 {acceptance
@@ -412,7 +412,7 @@ export default function BumProfile() {
               </p>
             </div>
             <Button asChild variant="outline" className="w-full">
-              <Link to="/bum/terms">Review connector agreement</Link>
+              <Link to="/bum/terms">Review Bum agreement</Link>
             </Button>
           </CardContent>
         </Card>
@@ -421,7 +421,7 @@ export default function BumProfile() {
       <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">Connector Profile</CardTitle>
+            <CardTitle className="font-display">Bum Profile</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex flex-wrap gap-2">
@@ -451,7 +451,7 @@ export default function BumProfile() {
                   id="headline"
                   value={form.headline}
                   onChange={(event) => updateForm((current) => ({ ...current, headline: event.target.value }))}
-                  placeholder="Healthcare connector with 15 years selling enterprise software"
+                  placeholder="Healthcare Bum with 15 years selling enterprise software"
                 />
               </div>
               <div className="space-y-2">

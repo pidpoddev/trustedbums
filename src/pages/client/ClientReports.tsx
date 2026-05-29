@@ -316,7 +316,7 @@ export default function ClientReports() {
       },
       {
         id: "inbound-reverse-opportunities",
-        title: "Inbound reverse opportunities",
+        title: "Inbound customer leads",
         description: "Customer needs submitted by Bums that point back to your company.",
         category: "Demand",
         dataLabel: "request rows",
@@ -337,7 +337,7 @@ export default function ClientReports() {
         ],
         dateKey: "createdAt",
         groupByKey: "status",
-        groupByLabel: "reverse opportunity status",
+        groupByLabel: "customer lead status",
         valueKey: "expectedValue",
         valueLabel: "Expected value",
       },
@@ -356,8 +356,8 @@ export default function ClientReports() {
         valueLabel: "Estimated value",
       },
       {
-        id: "connector-coverage",
-        title: "Connector coverage",
+        id: "bum-coverage",
+        title: "Bum coverage",
         description: "Visible Bums by availability, region, industries, and buyer coverage.",
         category: "Coverage",
         dataLabel: "profile rows",

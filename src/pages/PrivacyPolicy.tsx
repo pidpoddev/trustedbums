@@ -16,7 +16,7 @@ const sections = [
   {
     title: "How We Use Information",
     body:
-      "We use information to operate the platform, provide account access, manage introductions and opportunities, communicate with users, improve our services, maintain security, and comply with legal obligations.",
+      "We use information to operate the platform, provide account access, manage introductions and opportunities, communicate with users, monitor necessary service performance, improve our services, maintain security, and comply with legal obligations.",
   },
   {
     title: "How Information Is Shared",
@@ -36,7 +36,7 @@ const sections = [
   {
     title: "Cookies, Local Storage, and Consent",
     body:
-      "Strictly necessary storage is used for security, authentication, accessibility, and remembering your consent choice. Preferences, analytics, and marketing or engagement measurement are optional and are disabled unless you choose them. You can reject all optional categories as easily as accepting them, and you can change your choices at any time using the Privacy choices control.",
+      "Strictly necessary storage and lightweight performance monitoring are used for security, authentication, accessibility, service reliability, and remembering your consent choice. Optional product analytics, preferences, and marketing or engagement measurement are disabled unless you choose them. You can reject all optional categories as easily as accepting them, and you can change your choices at any time using the Privacy choices control.",
   },
   {
     title: "Your Choices and EU/UK Rights",
@@ -97,7 +97,7 @@ export default function PrivacyPolicy() {
           <div className="mt-8 rounded-xl border bg-background p-4">
             <h2 className="font-display text-xl font-bold">Manage Consent</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Use the consent manager to accept, reject, or customize optional categories. Strictly necessary storage remains on because the service cannot operate securely without it.
+              Use the consent manager to accept, reject, or customize optional categories. Strictly necessary storage and performance monitoring remain on because the service cannot operate securely and reliably without them.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button

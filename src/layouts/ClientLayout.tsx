@@ -79,6 +79,9 @@ export default function ClientLayout() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow">
+          Skip to content
+        </a>
         <Sidebar>
           <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
             <div>
@@ -119,7 +122,7 @@ export default function ClientLayout() {
           </SidebarContent>
         </Sidebar>
 
-        <main className="flex-1 overflow-auto">
+        <main id="main-content" className="flex-1 overflow-auto">
           <header className="h-14 border-b flex items-center px-4 bg-card">
             <SidebarTrigger />
             <span className="ml-4 hidden truncate text-sm text-muted-foreground sm:inline">

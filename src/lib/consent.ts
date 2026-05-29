@@ -28,7 +28,7 @@ export const consentCategories: Array<{
   {
     id: "necessary",
     title: "Strictly necessary",
-    description: "Required for security, authentication, accessibility, consent storage, and core portal functions.",
+    description: "Required for security, authentication, accessibility, consent storage, core portal functions, and operational performance monitoring.",
     required: true,
   },
   {
@@ -39,7 +39,7 @@ export const consentCategories: Array<{
   {
     id: "analytics",
     title: "Analytics",
-    description: "Helps us understand aggregate product usage and improve workflows. Disabled unless you opt in.",
+    description: "Helps us understand optional aggregate product usage beyond necessary operational monitoring. Disabled unless you opt in.",
   },
   {
     id: "marketing",

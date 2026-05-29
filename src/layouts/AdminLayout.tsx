@@ -31,6 +31,7 @@ import {
   BarChart3,
   Wrench,
   FileSignature,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
 
@@ -71,6 +72,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Admin Tools",
     items: [
+      { title: "Performance", url: "/admin/performance", icon: Gauge },
       { title: "Tools", url: "/admin/troubleshooting", icon: Wrench },
       { title: "Legal", url: "/admin/legal", icon: FileSignature },
     ],
@@ -85,6 +87,9 @@ export default function AdminLayout() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow">
+          Skip to content
+        </a>
         <Sidebar>
           <div className="flex items-center gap-2 border-b border-sidebar-border p-4">
             <div>
@@ -120,7 +125,7 @@ export default function AdminLayout() {
           </SidebarContent>
         </Sidebar>
 
-        <main className="flex-1 overflow-auto">
+        <main id="main-content" className="flex-1 overflow-auto">
           <header className="flex h-14 items-center border-b bg-card px-4">
             <SidebarTrigger />
             <span className="ml-4 hidden truncate text-sm text-muted-foreground sm:inline">

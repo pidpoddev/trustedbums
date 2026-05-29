@@ -92,11 +92,11 @@ const roleAudits: RoleAuditConfig[] = [
     routes: [
       { path: "/bum/dashboard", heading: /Welcome back/i, navName: "Dashboard" },
       { path: "/bum/prospects", heading: "Prospects", navName: "Prospects" },
-      { path: "/bum/reverse-opportunities", heading: "Reverse Opportunities", navName: "Reverse Opportunities" },
+      { path: "/bum/reverse-opportunities", heading: "Customer Leads", navName: "Customer Leads" },
       { path: "/bum/clients", heading: "Clients We Represent", navName: "Clients" },
       { path: "/bum/contacts", heading: "Contacts", navName: "Contacts" },
       { path: "/bum/opportunities", heading: "Opportunities", navName: "Opportunities" },
-      { path: "/bum/claims", heading: "My Claims", navName: "My Claims" },
+      { path: "/bum/claims", heading: "Intro Requests", navName: "Intro Requests" },
       { path: "/bum/live-conversations", heading: "Live Conversations", navName: "Live Conversations" },
       { path: "/bum/trainings", heading: "Training & Assets", navName: "Training & Assets" },
       { path: "/bum/earnings", heading: "Earnings", navName: "Earnings" },

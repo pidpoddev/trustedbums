@@ -115,17 +115,17 @@ export default function BumReverseOpportunities() {
       await queryClient.invalidateQueries({ queryKey: ["client-reverse-opportunities"] });
       await queryClient.invalidateQueries({ queryKey: ["companies"] });
       toast({
-        title: "Reverse opportunity saved",
+        title: "Customer lead saved",
         description:
           record.client_mode === "EXISTING_CLIENT"
             ? "We logged this demand opportunity against the existing client for review and outreach."
-            : "We created the prospect client record and queued the reverse opportunity for review and outreach.",
+            : "We created the prospect client record and queued the customer lead for review and outreach.",
       });
       setForm(initialForm);
     },
     onError: (error) => {
       toast({
-        title: "Unable to save reverse opportunity",
+        title: "Unable to save customer lead",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -139,7 +139,7 @@ export default function BumReverseOpportunities() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Reverse Opportunities"
+        title="Customer Leads"
         description="Start with real buyer demand, then route it to an existing client or a prospect client who could fulfill it."
       />
 
@@ -147,7 +147,7 @@ export default function BumReverseOpportunities() {
         <CardHeader>
           <CardTitle className="font-display flex items-center gap-2">
             <Plus className="h-5 w-5 text-primary" />
-            Add reverse opportunity
+            Add customer lead
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -374,7 +374,7 @@ export default function BumReverseOpportunities() {
             <div className="flex justify-end">
               <Button disabled={createMutation.isPending}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                {createMutation.isPending ? "Saving..." : "Save reverse opportunity"}
+                {createMutation.isPending ? "Saving..." : "Save customer lead"}
               </Button>
             </div>
           </form>
@@ -436,7 +436,7 @@ export default function BumReverseOpportunities() {
         {!reverseOpportunitiesQuery.data?.length ? (
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground">
-              No reverse opportunities yet. Add the first one above when you know a real buyer need and the right vendor to chase it.
+              No customer leads yet. Add the first one above when you know a real buyer need and the right vendor to chase it.
             </CardContent>
           </Card>
         ) : null}

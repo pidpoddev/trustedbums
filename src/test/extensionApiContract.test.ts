@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const openApi = readFileSync("docs/openapi.yaml", "utf8");
 const apiDocs = readFileSync("docs/api.md", "utf8");
 const functionSource = readFileSync("supabase/functions/extension-api-v1/index.ts", "utf8");
+const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 
 describe("extension API contract", () => {
   it("documents the implemented v1 endpoints", () => {
@@ -28,5 +29,18 @@ describe("extension API contract", () => {
     expect(openApi).toContain("apiVersion:");
     expect(functionSource).toContain("getBearerToken(request)");
     expect(functionSource).toContain("apiVersion: API_VERSION");
+  });
+
+  it("does not expose client target-account destinations to Bum extension sessions", () => {
+    expect(functionSource).toContain('if (normalizeRole(profile) === "CLIENT") return Boolean(profile.company_id && target.client_company_id === profile.company_id)');
+    expect(functionSource).not.toContain('if (normalizeRole(profile) === "BUM") return true');
+    expect(functionSource).toContain("targetQuery = targetQuery.limit(0);");
+  });
+
+  it("keeps opportunities requestable until a client accepts an intro request", () => {
+    expect(portalApiSource).toContain("const MARKETPLACE_LOCKING_CLAIM_STATUSES");
+    expect(portalApiSource).toContain('"APPROVED"');
+    expect(portalApiSource).not.toContain('MARKETPLACE_LOCKING_CLAIM_STATUSES: OpportunityClaimStatus[] = [\n  "PROPOSED"');
+    expect(portalApiSource).toContain("That opportunity already has an accepted intro request.");
   });
 });

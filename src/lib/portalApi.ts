@@ -92,6 +92,29 @@ export interface AdminDashboardSummary {
   client_companies_count: number;
 }
 
+export type PerformanceMetricName = "CLS" | "FCP" | "INP" | "LCP" | "TTFB";
+export type PerformanceMetricRating = "good" | "needs-improvement" | "poor";
+
+export interface PerformanceMetricEventRecord {
+  id: string;
+  created_at: string;
+  metric_name: PerformanceMetricName;
+  metric_value: number;
+  metric_rating: PerformanceMetricRating;
+  metric_id: string | null;
+  navigation_type: string | null;
+  page_path: string;
+  connection_type: string | null;
+  deployment_origin: string | null;
+}
+
+export interface PerformanceMetricEventFilters {
+  days?: number;
+  metricName?: PerformanceMetricName | "ALL";
+  rating?: PerformanceMetricRating | "ALL";
+  limit?: number;
+}
+
 
 export interface ClerkAdminUserRecord {
   id: string | null;
@@ -762,6 +785,9 @@ export interface ClientBumIntroRequestRecord {
   status: ClientBumIntroRequestStatus;
   created_at: string;
   updated_at: string;
+  client_companies?: Pick<CompanyRecord, "id" | "name"> | null;
+  client_profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  bum_profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
 
 export interface ClientBumIntroRequestInput {
@@ -2733,6 +2759,7 @@ export async function listCustomerPaymentReports(user?: AuthUser) {
   const { data, error } = await supabase
     .from("customer_payment_reports")
     .select("*, opportunity_claims(id, contact_name, contact_company, bum_user_id), opportunity_registrations(id, target_account_name, commission_rate), companies(id, name), profiles(id, full_name, email)")
+    .order("customer_payment_received_at", { ascending: false })
     .order("created_at", { ascending: false })
     .returns<CustomerPaymentReportRecord[]>();
 
@@ -2740,7 +2767,23 @@ export async function listCustomerPaymentReports(user?: AuthUser) {
     throw error;
   }
 
-  return data ?? [];
+  return sortByBusinessDate(data ?? [], paymentReportBusinessDate);
+}
+
+export function paymentReportBusinessDate(report: Pick<CustomerPaymentReportRecord, "customer_payment_received_at" | "created_at">) {
+  return report.customer_payment_received_at || report.created_at;
+}
+
+export function claimInvoiceBusinessDate(invoice: Pick<ClaimInvoiceRecord, "paid_at" | "sent_at" | "generated_at" | "created_at" | "customer_payment_reports">) {
+  return invoice.paid_at || invoice.sent_at || invoice.customer_payment_reports?.customer_payment_received_at || invoice.generated_at || invoice.created_at;
+}
+
+export function bumPayoutBusinessDate(payout: Pick<BumPayoutRecord, "paid_at" | "approved_at" | "created_at">) {
+  return payout.paid_at || payout.approved_at || payout.created_at;
+}
+
+function sortByBusinessDate<T>(items: T[], getDate: (item: T) => string | null | undefined) {
+  return [...items].sort((a, b) => new Date(getDate(b) ?? 0).getTime() - new Date(getDate(a) ?? 0).getTime());
 }
 
 export async function createCustomerPaymentReport(user: AuthUser, input: CustomerPaymentReportInput) {
@@ -2830,7 +2873,7 @@ export async function listClaimInvoices(user?: AuthUser) {
     throw error;
   }
 
-  return data ?? [];
+  return sortByBusinessDate(data ?? [], claimInvoiceBusinessDate);
 }
 
 export async function createClaimInvoice(user: AuthUser, paymentReportId: string) {
@@ -2981,7 +3024,7 @@ export async function listBumPayouts() {
     throw error;
   }
 
-  return data ?? [];
+  return sortByBusinessDate(data ?? [], bumPayoutBusinessDate);
 }
 
 export async function updateBumPayout(user: AuthUser, payout: BumPayoutRecord, updates: Partial<Pick<BumPayoutRecord, "payout_amount" | "status" | "notes">>) {
@@ -3040,7 +3083,12 @@ async function upsertOpportunityClaimPublicSummary(claim: OpportunityClaimRecord
 }
 
 const ACTIVE_CLAIM_STATUSES: OpportunityClaimStatus[] = [
-  "PROPOSED",
+  "APPROVED",
+  "SCHEDULED",
+  "MEETING_HELD",
+];
+
+const MARKETPLACE_LOCKING_CLAIM_STATUSES: OpportunityClaimStatus[] = [
   "APPROVED",
   "SCHEDULED",
   "MEETING_HELD",
@@ -3329,6 +3377,22 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
 
   if (!opportunity) {
     throw new Error("That opportunity is no longer available.");
+  }
+
+  const { data: lockingClaim, error: lockingClaimError } = await supabase
+    .from("opportunity_claims")
+    .select("id")
+    .eq("opportunity_registration_id", opportunity.id)
+    .in("status", MARKETPLACE_LOCKING_CLAIM_STATUSES)
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+
+  if (lockingClaimError) {
+    throw lockingClaimError;
+  }
+
+  if (lockingClaim) {
+    throw new Error("That opportunity already has an accepted intro request.");
   }
 
   const { data, error } = await supabase
@@ -4919,7 +4983,7 @@ export async function resyncBumRepresentedContact(contactId: string) {
 
 export async function createReverseOpportunity(user: AuthUser, input: ReverseOpportunityInput) {
   if (user.role !== "BUM") {
-    throw new Error("Only Bums can submit reverse opportunities.");
+    throw new Error("Only Bums can submit customer leads.");
   }
 
   let vendorCompany: CompanyRecord | null = null;
@@ -4988,7 +5052,7 @@ export async function createReverseOpportunity(user: AuthUser, input: ReverseOpp
     status: data.status,
   });
   await createAuditEvent(user, "admin_notification_queued", "reverse_opportunities", data.id, {
-    message: "New reverse opportunity submitted for admin review.",
+    message: "New customer lead submitted for admin review.",
   });
 
   return data;
@@ -5025,7 +5089,7 @@ export async function listAdminReverseOpportunities() {
 
 export async function listClientReverseOpportunities(user: AuthUser) {
   if (user.role !== "CLIENT" || !user.clientId) {
-    throw new Error("Only client users linked to a company can read reverse opportunities.");
+    throw new Error("Only client users linked to a company can read customer leads.");
   }
 
   const { data, error } = await supabase
@@ -5313,6 +5377,35 @@ export async function createClientBumIntroRequest(user: AuthUser, input: ClientB
   });
 
   return data;
+}
+
+const CLIENT_BUM_INTRO_REQUEST_SELECT = "*, client_companies:companies!client_bum_intro_requests_client_company_id_fkey(id, name), client_profiles:profiles!client_bum_intro_requests_client_user_id_fkey(id, full_name, email), bum_profiles:profiles!client_bum_intro_requests_bum_user_id_fkey(id, full_name, email)";
+
+export async function listClientBumIntroRequests(user: AuthUser) {
+  let query = supabase
+    .from("client_bum_intro_requests")
+    .select(CLIENT_BUM_INTRO_REQUEST_SELECT)
+    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (user.role === "CLIENT") {
+    if (!user.clientId) {
+      throw new Error("Your client account is not linked to a company.");
+    }
+    query = query.eq("client_company_id", user.clientId);
+  } else if (user.role === "BUM") {
+    query = query.eq("bum_user_id", user.id);
+  } else if (user.role !== "ADMIN") {
+    throw new Error("You do not have access to Bum intro requests.");
+  }
+
+  const { data, error } = await query.returns<ClientBumIntroRequestRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
 }
 
 const CUSTOMER_TARGET_RESPONSE_SELECT = "*, customer_targets(id, target_account_name, business_unit, expected_product_service, estimated_deal_value, expected_timeline, notes, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url)), profiles(id, full_name, email), conversation_threads(id)";
@@ -5824,6 +5917,35 @@ export async function listAuditEvents() {
     .order("created_at", { ascending: false })
     .limit(100)
     .returns<AuditEvent[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listPerformanceMetricEvents(filters: PerformanceMetricEventFilters = {}) {
+  const days = Math.min(Math.max(filters.days ?? 7, 1), 90);
+  const limit = Math.min(Math.max(filters.limit ?? 500, 25), 1000);
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  let query = supabase
+    .from("performance_metric_events")
+    .select("id, created_at, metric_name, metric_value, metric_rating, metric_id, navigation_type, page_path, connection_type, deployment_origin")
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (filters.metricName && filters.metricName !== "ALL") {
+    query = query.eq("metric_name", filters.metricName);
+  }
+
+  if (filters.rating && filters.rating !== "ALL") {
+    query = query.eq("metric_rating", filters.rating);
+  }
+
+  const { data, error } = await query.returns<PerformanceMetricEventRecord[]>();
 
   if (error) {
     throw error;

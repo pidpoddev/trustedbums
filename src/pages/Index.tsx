@@ -247,7 +247,7 @@ const Index = () => {
                 <div className="rounded-[2rem] bg-[#fff8ef] p-4 text-[#08111f] shadow-[0_25px_80px_rgba(0,0,0,0.28)]">
                   <img
                     src="/brand-trust-connector.svg"
-                    alt="A trusted connector bridges a client and decision maker"
+                    alt="A trusted Bum bridges a client and decision maker"
                     className="w-full rounded-[1.5rem]"
                   />
                 </div>
@@ -268,7 +268,7 @@ const Index = () => {
                 <div key={groupIndex} className="brand-marquee-segment flex shrink-0 items-center">
                   <span>Warm introductions</span>
                   <span className="text-primary">Bring Us More Sales</span>
-                  <span>Trusted connectors</span>
+                  <span>Trusted Bums</span>
                   <span className="text-primary">Hard accounts</span>
                   <span>Relationship-led revenue</span>
                 </div>
@@ -360,7 +360,7 @@ const Index = () => {
             <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
               {[
                 ["Choose the doors", "Clients name the accounts and decision makers that are worth a trusted route."],
-                ["Match the Bum", "We find the connector with the right relationship, context, and credibility."],
+                ["Match the Bum", "We find the Bum with the right relationship, context, and credibility."],
                 ["Make it warm", "The approach feels natural because it comes through trust, not automation."],
                 ["Track the value", "If the intro turns into durable revenue, everyone can see the aligned economics."],
               ].map(([title, copy], index) => (
@@ -407,7 +407,7 @@ const Index = () => {
                 the joke, but it is also the job.
               </p>
               <div className="mt-6 space-y-3">
-                {["Connector profile", "Opportunity matching", "Transparent payout tracking"].map((item) => (
+                {["Bum profile", "Opportunity matching", "Transparent payout tracking"].map((item) => (
                   <p key={item} className="flex items-center gap-3 text-sm font-semibold">
                     <CheckCircle2 className="h-5 w-5 text-accent" />
                     {item}
@@ -517,7 +517,7 @@ const Index = () => {
                       className="h-12 w-full rounded-md border border-white/15 bg-white px-3 text-base text-[#08111f] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                     >
                       <option value="CLIENT">I need introductions for my company</option>
-                      <option value="BUM">I want to become a Bum connector</option>
+                      <option value="BUM">I want to become a Bum</option>
                       <option value="GENERAL">I have a general question</option>
                     </select>
                   </div>

@@ -98,7 +98,7 @@ export function ConsentManager() {
                 <h2 className="font-display text-xl font-semibold">Privacy choices</h2>
               </div>
               <p className="text-sm leading-6 text-muted-foreground">
-We use necessary storage to run the site. Optional preferences, analytics, and outreach measurement stay off unless you choose them.
+We use necessary storage and performance monitoring to run, secure, and maintain the site. Optional preferences, product analytics, and outreach measurement stay off unless you choose them.
               </p>
               <p className="text-xs text-muted-foreground">
                 See the <Link to="/privacy-policy" className="font-medium text-primary underline-offset-4 hover:underline">Privacy Policy</Link> for more detail.

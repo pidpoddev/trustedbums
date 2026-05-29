@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  bumPayoutBusinessDate,
   calculateTrustedBumsCommission,
+  claimInvoiceBusinessDate,
   getCommissionPlanInvoiceBlockReason,
+  paymentReportBusinessDate,
   resolveTieredCommissionRate,
 } from "@/lib/portalApi";
 
@@ -38,5 +41,17 @@ describe("payment commission helpers", () => {
       "This deal's commission plan is not active.",
     );
     expect(getCommissionPlanInvoiceBlockReason({ status: "ACTIVE", approval_status: "APPROVED" })).toBeNull();
+  });
+
+  it("uses business dates, not record creation dates, for finance activity sorting", () => {
+    expect(paymentReportBusinessDate({ customer_payment_received_at: "2026-04-01", created_at: "2026-05-01" })).toBe("2026-04-01");
+    expect(claimInvoiceBusinessDate({
+      paid_at: null,
+      sent_at: "2026-04-03",
+      generated_at: "2026-04-02",
+      created_at: "2026-05-01",
+      customer_payment_reports: { id: "payment-1", customer_name: "Acme", commissionable_amount: 1000, customer_payment_received_at: "2026-04-01" },
+    })).toBe("2026-04-03");
+    expect(bumPayoutBusinessDate({ paid_at: null, approved_at: "2026-04-04", created_at: "2026-05-01" })).toBe("2026-04-04");
   });
 });

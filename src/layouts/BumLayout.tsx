@@ -35,11 +35,11 @@ const navGroups = [
   { label: "Workspace", items: [
   { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
   { title: "Prospects", url: "/bum/prospects", icon: PlusCircle },
-  { title: "Reverse Opportunities", url: "/bum/reverse-opportunities", icon: Sparkles },
+  { title: "Customer Leads", url: "/bum/reverse-opportunities", icon: Sparkles },
   { title: "Clients", url: "/bum/clients", icon: Building2 },
   { title: "Contacts", url: "/bum/contacts", icon: ContactRound },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
-  { title: "My Claims", url: "/bum/claims", icon: Handshake },
+  { title: "Intro Requests", url: "/bum/claims", icon: Handshake },
   { title: "Live Conversations", url: "/bum/live-conversations", icon: Calendar },
   { title: "Training & Assets", url: "/bum/trainings", icon: GraduationCap },
   ] },
@@ -57,6 +57,9 @@ export default function BumLayout() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow">
+          Skip to content
+        </a>
         <Sidebar>
           <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
             <BrandLogo to="/" theme="dark" imageClassName="h-12" />
@@ -89,7 +92,7 @@ export default function BumLayout() {
           </SidebarContent>
         </Sidebar>
 
-        <main className="flex-1 overflow-auto">
+        <main id="main-content" className="flex-1 overflow-auto">
           <header className="h-14 border-b flex items-center px-4 bg-card">
             <SidebarTrigger />
             <span className="ml-4 hidden truncate text-sm text-muted-foreground sm:inline">

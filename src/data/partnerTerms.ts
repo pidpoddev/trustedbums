@@ -117,9 +117,9 @@ export const FALLBACK_TERMS_VERSION = {
 };
 
 export const BUM_TERMS_VERSION = "bum-1.1";
-export const BUM_TERMS_TITLE = "Trusted Bums Connector Agreement";
+export const BUM_TERMS_TITLE = "Trusted Bums Bum Agreement";
 export const BUM_TERMS_CHANGE_SUMMARY = `This update adds explicit recording and transcription terms for meetings scheduled, hosted, or supported through Trusted Bums.`;
-export const BUM_TERMS_BODY = `Trusted Bums allows approved connectors, introducers, and relationship owners to participate in the platform as "Bums." By using the Bum Portal, joining opportunities, or making introductions, you agree to the terms below.
+export const BUM_TERMS_BODY = `Trusted Bums allows approved Bums to participate in the platform by creating access, introductions, relationship context, and customer leads. By using the Bum Portal, joining opportunities, or making introductions, you agree to the terms below.
 
 1. Role of a Bum
 
@@ -167,10 +167,10 @@ Trusted Bums is not liable for indirect, incidental, special, punitive, or conse
 
 12. Updates
 
-Trusted Bums may update this Connector Agreement from time to time. Continued use of the platform after acceptance of updated terms constitutes agreement to the updated version.`;
+Trusted Bums may update this Bum Agreement from time to time. Continued use of the platform after acceptance of updated terms constitutes agreement to the updated version.`;
 
 export const BUM_TERMS_FAQ_BODY = `Q: What is a Bum in Trusted Bums?
-A: A Bum is a connector or introduction partner who helps create access, context, or meetings between clients and target accounts.
+A: A Bum helps create access, context, introductions, or meetings between clients and target accounts.
 
 Q: Am I guaranteed payouts if I create an account?
 A: No. Payouts depend on approved participation, the underlying opportunity terms, and successful downstream commercial events or platform approvals.

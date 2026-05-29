@@ -175,10 +175,10 @@ export default function BumReports() {
       },
       {
         id: "reverse-opportunity-submissions",
-        title: "Reverse opportunity submissions",
+        title: "Customer lead submissions",
         description: "Customer demand you submitted for existing or prospective clients.",
-        category: "Reverse opps",
-        dataLabel: "reverse opportunity rows",
+        category: "Customer leads",
+        dataLabel: "customer lead rows",
         rows: reverseOpportunities.map((opportunity) => ({
           client: opportunity.companies?.name,
           customer: opportunity.customer_company_name,
@@ -198,7 +198,7 @@ export default function BumReports() {
         ],
         dateKey: "createdAt",
         groupByKey: "status",
-        groupByLabel: "reverse opportunity status",
+        groupByLabel: "customer lead status",
         valueKey: "expectedValue",
         valueLabel: "Expected value",
       },

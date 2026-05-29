@@ -66,3 +66,9 @@ verify_jwt = false
 
 [functions.portal-contacts]
 verify_jwt = false
+
+[functions.performance-beacon]
+verify_jwt = false
+
+[functions.dmarc-reports]
+verify_jwt = false

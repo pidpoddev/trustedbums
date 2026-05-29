@@ -102,7 +102,7 @@ function profileName(profile: BumProfileCardProps["profile"], showFullName = fal
   return (
     toFirstName(fullName) ||
     firstNameFromEmail(profile.profiles?.email) ||
-    "Connector"
+    "Bum"
   );
 }
 
@@ -230,7 +230,7 @@ export function BumProfileCard({ profile, showAdminMeta = false, showClientActio
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Admin status</p>
                 <div className="flex flex-wrap gap-2">
                   <StatusBadge
-                    label={profile.hasAcceptedAgreement ? "Connector agreement accepted" : "Agreement pending"}
+                    label={profile.hasAcceptedAgreement ? "Bum agreement accepted" : "Agreement pending"}
                     variant={profile.hasAcceptedAgreement ? "success" : "warning"}
                   />
                   {profile.last_linkedin_imported_at ? (

@@ -263,7 +263,7 @@ export default function AdminReports() {
       {
         id: "compliance-and-engagement",
         title: "Compliance and engagement",
-        description: "Terms acceptance, audit activity, reverse opportunities, and email delivery records.",
+        description: "Terms acceptance, audit activity, customer leads, and email delivery records.",
         category: "Governance",
         dataLabel: "governance rows",
         rows: [
@@ -285,7 +285,7 @@ export default function AdminReports() {
           })),
           ...reverseOpportunities.map((opportunity) => ({
             record: opportunity.customer_company_name,
-            type: "Reverse opportunity",
+            type: "Customer lead",
             status: statusLabel(opportunity.status),
             owner: opportunity.profiles?.full_name ?? opportunity.profiles?.email,
             value: money(opportunity.estimated_deal_value),

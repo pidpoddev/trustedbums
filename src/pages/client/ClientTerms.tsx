@@ -66,12 +66,12 @@ export default function ClientTerms() {
       await refetch();
       setShouldAutoContinue(true);
       toast({
-        title: isBumTerms ? "Connector agreement accepted" : "Partner terms accepted",
+        title: isBumTerms ? "Bum agreement accepted" : "Partner terms accepted",
         description: "Your acceptance was recorded for this terms version.",
       });
     } catch (error) {
       toast({
-        title: isBumTerms ? "Unable to accept connector agreement" : "Unable to accept terms",
+        title: isBumTerms ? "Unable to accept Bum agreement" : "Unable to accept terms",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -98,12 +98,12 @@ export default function ClientTerms() {
         <SubmitFeedbackButton />
       </div>
       <PageHeader
-        title={isBumTerms ? "Trusted Bums Connector Terms" : "Trusted Bums Terms & Legal Agreements"}
+        title={isBumTerms ? "Trusted Bums Bum Terms" : "Trusted Bums Terms & Legal Agreements"}
         description={
           requiredAssignment
             ? "Review and accept this assigned contract before continuing into the platform."
             : isBumTerms
-              ? "Review and accept the current connector agreement before continuing into the Bum portal."
+              ? "Review and accept the current Bum agreement before continuing into the Bum portal."
               : "Review and accept the current client legal terms before continuing into the platform."
         }
       />
@@ -157,7 +157,7 @@ export default function ClientTerms() {
                     />
                     <Label htmlFor="partnerTerms" className="text-sm leading-6">
                       {isBumTerms
-                        ? "I have read and agree to the Trusted Bums Connector Agreement, including the confidentiality, conduct, compliance, and payout eligibility terms."
+                        ? "I have read and agree to the Trusted Bums Bum Agreement, including the confidentiality, conduct, compliance, and payout eligibility terms."
                         : "I have read and agree to the Trusted Bums Partner Terms, including the commission, non-circumvention, confidentiality, and opportunity registration terms."}
                     </Label>
                   </div>
@@ -171,7 +171,7 @@ export default function ClientTerms() {
                 <Button variant="outline" asChild>
                   <a href="#top">
                     <ScrollText className="mr-2 h-4 w-4" />
-                    {isBumTerms ? "View Connector Agreement" : "View Partner Terms"}
+                    {isBumTerms ? "View Bum Agreement" : "View Partner Terms"}
                   </a>
                 </Button>
                 <Button variant="outline" asChild>

@@ -87,7 +87,7 @@ const registrationTypeFilters: { value: RegistrationTypeFilter; label: string }[
 ];
 
 const reverseOpportunityTypeFilters: { value: ReverseOpportunityTypeFilter; label: string }[] = [
-  { value: "ALL", label: "All reverse opportunities" },
+  { value: "ALL", label: "All customer leads" },
   { value: "NEW", label: "New" },
   { value: "ACTIVE", label: "Active outreach" },
   { value: "CONVERTED", label: "Converted" },
@@ -194,7 +194,7 @@ export default function AdminOpportunities() {
       await queryClient.invalidateQueries({ queryKey: ["admin-opportunities"] });
       setNewOpportunity({ company_id: "", pay_program_id: "", target_account_name: "", business_unit: "", opportunity_description: "", client_contact: "", trusted_bums_contact: "", expected_product_service: "", estimated_deal_value: "", expected_timeline: "", notes: "" });
       setIsCreateOpportunityOpen(false);
-      toast({ title: "Opportunity created", description: "The client opportunity is active for connector matching." });
+      toast({ title: "Opportunity created", description: "The client opportunity is active for Bum matching." });
     },
     onError: (error) => {
       toast({
@@ -218,13 +218,13 @@ export default function AdminOpportunities() {
       await queryClient.invalidateQueries({ queryKey: ["client-reverse-opportunities"] });
       await queryClient.invalidateQueries({ queryKey: ["bum-reverse-opportunities"] });
       toast({
-        title: "Reverse opportunity updated",
+        title: "Customer lead updated",
         description: "The demand-sourced workflow status was saved.",
       });
     },
     onError: (error) => {
       toast({
-        title: "Unable to update reverse opportunity",
+        title: "Unable to update customer lead",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -498,7 +498,7 @@ export default function AdminOpportunities() {
           <TabsTrigger value="priority">Priority Queue</TabsTrigger>
           <TabsTrigger value="targets">Target Accounts</TabsTrigger>
           <TabsTrigger value="registrations">Opportunity Registrations</TabsTrigger>
-          <TabsTrigger value="reverse-opportunities">Reverse Opportunities</TabsTrigger>
+          <TabsTrigger value="reverse-opportunities">Customer Leads</TabsTrigger>
         </TabsList>
 
         <TabsContent value="priority">
@@ -876,8 +876,8 @@ export default function AdminOpportunities() {
               <Card>
                 <CardContent className="pt-6 text-sm text-muted-foreground">
                   {reverseOpportunities.length
-                    ? "No reverse opportunities match your current filters."
-                    : "No reverse opportunities have been submitted yet."}
+                    ? "No customer leads match your current filters."
+                    : "No customer leads have been submitted yet."}
                 </CardContent>
               </Card>
             )}
