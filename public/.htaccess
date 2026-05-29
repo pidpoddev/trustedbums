@@ -1,6 +1,11 @@
 RewriteEngine On
 RewriteBase /
 
+# Serve crawler-facing files as static assets with explicit content types.
+AddType application/xml .xml
+AddType text/plain .txt
+RewriteRule ^(sitemap\.xml|robots\.txt)$ - [L]
+
 # Let Apache serve real files and directories directly.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

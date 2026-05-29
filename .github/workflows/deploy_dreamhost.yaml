@@ -37,6 +37,14 @@ jobs:
       - name: Include DreamHost SPA rewrite rules
         run: cp public/.htaccess dist/.htaccess
 
+      - name: Verify crawler assets
+        run: |
+          test -s dist/sitemap.xml
+          grep -q '<urlset' dist/sitemap.xml
+          test -s dist/robots.txt
+          grep -q 'Sitemap: https://trustedbums.com/sitemap.xml' dist/robots.txt
+          grep -Fq 'sitemap\.xml|robots\.txt' dist/.htaccess
+
       - name: Deploy to DreamHost via SSH
         uses: easingthemes/ssh-deploy@main
         env:
