@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 1280 720">
+  <style>
+    text { paint-order: stroke; stroke: transparent; }
+  </style>
+  
+    <rect width="1280" height="720" fill="#fff8ef"/>
+    <path d="M 0 590 C 220 540 345 646 560 600 C 805 548 1016 548 1280 604 L 1280 720 L 0 720 Z" fill="#fff0df" opacity="0.74"/>
+    <path d="M 66 88 H 1214" stroke="#eedbc7" stroke-width="2" stroke-linecap="round" stroke-dasharray="8 18" opacity="0.9"/>
+    <text x="66" y="58" font-family="DejaVu Sans" font-size="22" font-weight="800" fill="#ff7a1a">TRUSTED BUMS</text>
+    <text x="1214" y="58" text-anchor="end" font-family="DejaVu Sans" font-size="18" font-weight="700" fill="#5e6470">Relationships</text>
+    <text x="76" y="504" text-anchor="start" font-family="DejaVu Sans" font-size="43" font-weight="900" fill="#08111f" opacity="0.3360768175582982">Your network has context.</text>
+    <text x="78" y="552" text-anchor="start" font-family="DejaVu Sans" font-size="24" font-weight="600" fill="#5e6470" opacity="0.3360768175582982">Past colleagues, customers, friends, and operators can</text><text x="78" y="585" text-anchor="start" font-family="DejaVu Sans" font-size="24" font-weight="600" fill="#5e6470" opacity="0.3360768175582982">become warm routes to real buyers.</text>
+    <circle cx="468" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="526" cy="650" r="7" fill="#ff7a1a" opacity="0.95"/><circle cx="584" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="642" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="700" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="758" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="816" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/>
+  
+  
+    <path d="M 640 252 C 548 164 418 164 338 246" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="24.46697833307343" opacity="1"/>
+    <path d="M 640 252 C 744 158 884 180 952 275" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="24.46697833307343" opacity="1"/>
+    <path d="M 640 252 C 594 353 482 395 360 364" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="24.46697833307343" opacity="1"/>
+    <path d="M 640 252 C 728 363 878 386 1010 340" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="24.46697833307343" opacity="1"/>
+    <path d="M 640 194 A 58 58 0 1 1 639.9 194 Z" pathLength="1000" fill="none" stroke="#08111f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="293.82522056628835" opacity="1"/>
+    <path d="M 606 312 C 628 338 657 338 680 312" pathLength="1000" fill="none" stroke="#08111f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="293.82522056628835" opacity="1"/>
+    <path d="M 338 210 A 36 36 0 1 1 337.9 210 Z" pathLength="1000" fill="none" stroke="#08111f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="470.8480366941018" opacity="1"/><path d="M 338 218 A 28 28 0 1 1 337.9 218 Z" fill="#ffffff" opacity="0.40775879709512397"/><path d="M 952 239 A 36 36 0 1 1 951.9 239 Z" pathLength="1000" fill="none" stroke="#08111f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="470.8480366941018" opacity="1"/><path d="M 952 247 A 28 28 0 1 1 951.9 247 Z" fill="#ffffff" opacity="0.40775879709512397"/><path d="M 360 328 A 36 36 0 1 1 359.9 328 Z" pathLength="1000" fill="none" stroke="#08111f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="470.8480366941018" opacity="1"/><path d="M 360 336 A 28 28 0 1 1 359.9 336 Z" fill="#ffffff" opacity="0.40775879709512397"/><path d="M 1010 304 A 36 36 0 1 1 1009.9 304 Z" pathLength="1000" fill="none" stroke="#08111f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="470.8480366941018" opacity="1"/><path d="M 1010 312 A 28 28 0 1 1 1009.9 312 Z" fill="#ffffff" opacity="0.40775879709512397"/>
+    <text x="338" y="306" text-anchor="middle" font-family="DejaVu Sans" font-size="18" font-weight="800" fill="#5e6470" opacity="0.5291519633058982">past colleague</text>
+    <text x="952" y="335" text-anchor="middle" font-family="DejaVu Sans" font-size="18" font-weight="800" fill="#5e6470" opacity="0.5291519633058982">customer</text>
+    <text x="360" y="424" text-anchor="middle" font-family="DejaVu Sans" font-size="18" font-weight="800" fill="#5e6470" opacity="0.5291519633058982">operator</text>
+    <text x="1010" y="400" text-anchor="middle" font-family="DejaVu Sans" font-size="18" font-weight="800" fill="#5e6470" opacity="0.5291519633058982">buyer</text>
+  
+</svg>

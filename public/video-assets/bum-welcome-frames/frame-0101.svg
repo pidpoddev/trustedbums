@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 1280 720">
+  <style>
+    text { paint-order: stroke; stroke: transparent; }
+  </style>
+  
+    <rect width="1280" height="720" fill="#fff8ef"/>
+    <path d="M 0 590 C 220 540 345 646 560 600 C 805 548 1016 548 1280 604 L 1280 720 L 0 720 Z" fill="#fff0df" opacity="0.74"/>
+    <path d="M 66 88 H 1214" stroke="#eedbc7" stroke-width="2" stroke-linecap="round" stroke-dasharray="8 18" opacity="0.9"/>
+    <text x="66" y="58" font-family="DejaVu Sans" font-size="22" font-weight="800" fill="#ff7a1a">TRUSTED BUMS</text>
+    <text x="1214" y="58" text-anchor="end" font-family="DejaVu Sans" font-size="18" font-weight="700" fill="#5e6470">Targets</text>
+    <text x="76" y="504" text-anchor="start" font-family="DejaVu Sans" font-size="43" font-weight="900" fill="#08111f" opacity="1">Clients share target accounts.</text>
+    <text x="78" y="552" text-anchor="start" font-family="DejaVu Sans" font-size="24" font-weight="600" fill="#5e6470" opacity="1">Trusted Bums surfaces opportunities where your</text><text x="78" y="585" text-anchor="start" font-family="DejaVu Sans" font-size="24" font-weight="600" fill="#5e6470" opacity="1">background may create a credible path in.</text>
+    <circle cx="468" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="526" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="584" cy="650" r="7" fill="#ff7a1a" opacity="0.95"/><circle cx="642" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="700" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="758" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="816" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/>
+  
+  
+    <path d="M 448 118 H 832 Q 860 118 860 146 V 408 Q 860 436 832 436 H 448 Q 420 436 420 408 V 146 Q 420 118 448 118" pathLength="1000" fill="none" stroke="#08111f" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <path d="M 502 118 V 88 H 778 V 118" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <text x="640" y="156" text-anchor="middle" font-family="DejaVu Sans" font-size="25" font-weight="900" fill="#ff7a1a" opacity="1">TARGET ACCOUNTS</text>
+    
+        <path d="M 482 182 H 798 Q 810 182 810 194 V 208 Q 810 220 798 220 H 482 Q 470 220 470 208 V 194 Q 470 182 482 182" pathLength="1000" fill="none" stroke="#08111f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+        <path d="M 502 201 H 735" pathLength="1000" fill="none" stroke="#5e6470" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+      
+        <path d="M 482 240 H 798 Q 810 240 810 252 V 266 Q 810 278 798 278 H 482 Q 470 278 470 266 V 252 Q 470 240 482 240" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+        <path d="M 502 259 H 717" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+      
+        <path d="M 482 298 H 798 Q 810 298 810 310 V 324 Q 810 336 798 336 H 482 Q 470 336 470 324 V 310 Q 470 298 482 298" pathLength="1000" fill="none" stroke="#08111f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+        <path d="M 502 317 H 699" pathLength="1000" fill="none" stroke="#5e6470" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+      
+        <path d="M 482 356 H 798 Q 810 356 810 368 V 382 Q 810 394 798 394 H 482 Q 470 394 470 382 V 368 Q 470 356 482 356" pathLength="1000" fill="none" stroke="#08111f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+        <path d="M 502 375 H 681" pathLength="1000" fill="none" stroke="#5e6470" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+      
+    <path d="M 330 280 H 410 M 870 280 H 948" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <path d="M 287 242 A 38 38 0 1 1 286.9 242 Z" pathLength="1000" fill="none" stroke="#08111f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <path d="M 993 242 A 38 38 0 1 1 992.9 242 Z" pathLength="1000" fill="none" stroke="#08111f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="10.430757188945039" opacity="1"/>
+  
+</svg>

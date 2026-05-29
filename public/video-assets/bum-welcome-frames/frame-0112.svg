@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 1280 720">
+  <style>
+    text { paint-order: stroke; stroke: transparent; }
+  </style>
+  
+    <rect width="1280" height="720" fill="#fff8ef"/>
+    <path d="M 0 590 C 220 540 345 646 560 600 C 805 548 1016 548 1280 604 L 1280 720 L 0 720 Z" fill="#fff0df" opacity="0.74"/>
+    <path d="M 66 88 H 1214" stroke="#eedbc7" stroke-width="2" stroke-linecap="round" stroke-dasharray="8 18" opacity="0.9"/>
+    <text x="66" y="58" font-family="DejaVu Sans" font-size="22" font-weight="800" fill="#ff7a1a">TRUSTED BUMS</text>
+    <text x="1214" y="58" text-anchor="end" font-family="DejaVu Sans" font-size="18" font-weight="700" fill="#5e6470">Preparation</text>
+    <text x="76" y="504" text-anchor="start" font-family="DejaVu Sans" font-size="43" font-weight="900" fill="#08111f" opacity="0">Review the read-ahead.</text>
+    <text x="78" y="552" text-anchor="start" font-family="DejaVu Sans" font-size="24" font-weight="600" fill="#5e6470" opacity="0">You get the client story, buyer context, and what</text><text x="78" y="585" text-anchor="start" font-family="DejaVu Sans" font-size="24" font-weight="600" fill="#5e6470" opacity="0">makes a good introduction.</text>
+    <circle cx="468" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="526" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="584" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="642" cy="650" r="7" fill="#ff7a1a" opacity="0.95"/><circle cx="700" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="758" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="816" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/>
+  
+  
+    <path d="M 392 126 H 610 Q 636 126 636 152 V 416 Q 636 442 610 442 H 392 Q 366 442 366 416 V 152 Q 366 126 392 126" pathLength="1000" fill="none" stroke="#08111f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="905.5889362012902" opacity="1"/>
+    <path d="M 410 184 H 584 M 410 230 H 548 M 410 276 H 570 M 410 322 H 520" pathLength="1000" fill="none" stroke="#5e6470" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="1000" opacity="1"/>
+    <text x="500" y="384" text-anchor="middle" font-family="DejaVu Sans" font-size="27" font-weight="900" fill="#ff7a1a" opacity="0">READ</text><text x="500" y="415" text-anchor="middle" font-family="DejaVu Sans" font-size="27" font-weight="900" fill="#ff7a1a" opacity="0">AHEAD</text>
+    <path d="M 672 154 H 890 Q 916 154 916 180 V 378 Q 916 404 890 404 H 672 Q 646 404 646 378 V 180 Q 646 154 672 154" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="1000" opacity="1"/>
+    <path d="M 690 214 H 858 M 690 260 H 828 M 690 306 H 840" pathLength="1000" fill="none" stroke="#5e6470" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="1000" opacity="1"/>
+    <path d="M 762 348 H 916 Q 938 348 938 370 V 398 Q 938 420 916 420 H 762 Q 740 420 740 398 V 370 Q 740 348 762 348" pathLength="1000" fill="none" stroke="#08111f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="1000" opacity="1"/>
+    <text x="838" y="394" text-anchor="middle" font-family="DejaVu Sans" font-size="31" font-weight="900" fill="#08111f" opacity="0">CLAIM</text>
+    <path d="M 771 384 L 806 416 L 878 328" pathLength="1000" fill="none" stroke="#1f9d70" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="1000" opacity="1"/>
+  
+</svg>

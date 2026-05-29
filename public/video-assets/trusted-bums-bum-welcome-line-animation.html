@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trusted Bums - Welcome Bum Line Animation</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        overflow: hidden;
+        background: #08111f;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+      }
+
+      img {
+        display: block;
+        width: 960px;
+        height: 540px;
+        background: #fff8ef;
+      }
+    </style>
+  </head>
+  <body>
+    <img id="stage" src="bum-welcome-frames/frame-0000.svg" alt="Line drawing animation welcoming a new Trusted Bums connector and explaining how the portal works." />
+    <script>
+      const fps = 6;
+      const frameCount = 252;
+      const stage = document.getElementById("stage");
+      const pad = (value) => String(value).padStart(4, "0");
+      let startedAt = performance.now();
+
+      function tick(now) {
+        const elapsed = (now - startedAt) / 1000;
+        const frame = Math.min(frameCount - 1, Math.floor(elapsed * fps));
+        stage.src = `bum-welcome-frames/frame-${pad(frame)}.svg`;
+
+        if (frame >= frameCount - 1) {
+          window.__trustedBumsAnimationDone = true;
+          return;
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+    </script>
+  </body>
+</html>

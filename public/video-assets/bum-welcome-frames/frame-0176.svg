@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 1280 720">
+  <style>
+    text { paint-order: stroke; stroke: transparent; }
+  </style>
+  
+    <rect width="1280" height="720" fill="#fff8ef"/>
+    <path d="M 0 590 C 220 540 345 646 560 600 C 805 548 1016 548 1280 604 L 1280 720 L 0 720 Z" fill="#fff0df" opacity="0.74"/>
+    <path d="M 66 88 H 1214" stroke="#eedbc7" stroke-width="2" stroke-linecap="round" stroke-dasharray="8 18" opacity="0.9"/>
+    <text x="66" y="58" font-family="DejaVu Sans" font-size="22" font-weight="800" fill="#ff7a1a">TRUSTED BUMS</text>
+    <text x="1214" y="58" text-anchor="end" font-family="DejaVu Sans" font-size="18" font-weight="700" fill="#5e6470">Introduction</text>
+    <text x="76" y="504" text-anchor="start" font-family="DejaVu Sans" font-size="43" font-weight="900" fill="#08111f" opacity="1">Claim only real relationships.</text>
+    <text x="78" y="552" text-anchor="start" font-family="DejaVu Sans" font-size="24" font-weight="600" fill="#5e6470" opacity="1">When the connection is genuine, make the intro with</text><text x="78" y="585" text-anchor="start" font-family="DejaVu Sans" font-size="24" font-weight="600" fill="#5e6470" opacity="1">care and context.</text>
+    <circle cx="468" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="526" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="584" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="642" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="700" cy="650" r="7" fill="#ff7a1a" opacity="0.95"/><circle cx="758" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/><circle cx="816" cy="650" r="5" fill="#d8c7b4" opacity="0.95"/>
+  
+  
+    <path d="M 315 252 C 390 204 454 210 511 270 C 535 296 562 306 596 294" pathLength="1000" fill="none" stroke="#08111f" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <path d="M 965 252 C 890 204 826 210 769 270 C 745 296 718 306 684 294" pathLength="1000" fill="none" stroke="#08111f" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <path d="M 594 294 C 626 254 660 254 686 294 C 661 334 624 334 594 294 Z" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <path d="M 640 171 V 96 M 604 132 H 676" pathLength="1000" fill="none" stroke="#ffc44d" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <path d="M 530 346 H 750 Q 770 346 770 366 V 422 Q 770 442 750 442 H 530 Q 510 442 510 422 V 366 Q 510 346 530 346" pathLength="1000" fill="none" stroke="#08111f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <path d="M 510 378 H 770 M 562 346 V 322 M 718 346 V 322" pathLength="1000" fill="none" stroke="#ff7a1a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1000" stroke-dashoffset="0" opacity="1"/>
+    <text x="640" y="406" text-anchor="middle" font-family="DejaVu Sans" font-size="25" font-weight="900" fill="#ff7a1a" opacity="1">INTRO</text><text x="640" y="436" text-anchor="middle" font-family="DejaVu Sans" font-size="25" font-weight="900" fill="#ff7a1a" opacity="1">BOOKED</text>
+  
+</svg>
