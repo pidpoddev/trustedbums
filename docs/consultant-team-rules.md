@@ -115,6 +115,7 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 - Verify high-priority security and data recommendations against live Supabase tools when available; otherwise keep them source-backed and say so explicitly.
 - Audit whether specialists used the obvious access and tools available in the current run. If they overclaimed live evidence or missed necessary access, update this rules file and the access-needs file.
 - Maintain a visible access-needs backlog for missing credentials, connectors, dashboards, logs, QA data, and third-party systems that materially affect consulting quality.
+- When updating consultant rules, access needs, business-access rules, trust/reputation tasks, QA tasks, or other specialist process/backlog files, handle the Git handoff deliberately: inspect `git status`, stage only intended documentation/process files, avoid secrets and unrelated local changes, commit with a clear message, and push when validation and branch state make it safe. If the update cannot be pushed, record the blocker and exact follow-up command in `docs/lead-developer-recommendations.md`.
 
 ## Future Roles
 
