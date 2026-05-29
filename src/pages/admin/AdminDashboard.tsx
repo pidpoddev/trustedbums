@@ -22,6 +22,7 @@ import { ACTIVE_TERMS_CHANGE_SUMMARY, PARTNER_FAQ_BODY, PARTNER_TERMS_BODY } fro
 import {
   activateTermsVersion,
   createTermsVersion,
+  getAdminDashboardSummary,
   listAuditEvents,
   listAdminProspectRecommendations,
   listClerkAdminUsers,
@@ -188,6 +189,7 @@ export default function AdminDashboard() {
     is_active: "false",
   });
 
+  const summaryQuery = useQuery({ queryKey: ["admin-dashboard-summary"], queryFn: getAdminDashboardSummary, enabled: user?.role === "ADMIN", retry: 1 });
   const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: listCompanies });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
   const clerkUsersQuery = useQuery({
@@ -258,6 +260,10 @@ export default function AdminDashboard() {
   const acceptances = acceptancesQuery.data ?? [];
   const clientProspects = clientProspectsQuery.data ?? [];
   const customerTargets = customerTargetsQuery.data ?? [];
+  const summary = summaryQuery.data;
+  const clientProspectsCount = summary ? Number(summary.prospect_recommendations_count) : clientProspects.length;
+  const customerTargetsCount = summary ? Number(summary.customer_targets_count) : customerTargets.length;
+  const companiesCount = summary ? Number(summary.companies_count) : companies.length;
   const opportunities = opportunitiesQuery.data ?? [];
   const termsVersions = termsQuery.data ?? [];
   const auditEvents = auditQuery.data ?? [];
@@ -267,10 +273,10 @@ export default function AdminDashboard() {
       <PageHeader title="Admin Dashboard" description="Scan priority queues and jump into the focused admin workspaces." />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <StatCard title="Companies" value={companies.length} icon={ShieldCheck} to="/admin/clients" />
+        <StatCard title="Companies" value={companiesCount} icon={ShieldCheck} to="/admin/clients" />
         <StatCard title="Users" value={userCount} subtitle={userCountSubtitle} icon={ShieldCheck} to="/admin/troubleshooting" />
-        <StatCard title="Client Prospects" value={clientProspects.length} icon={Building2} to="/admin/clients" />
-        <StatCard title="Target Accounts" value={customerTargets.length} icon={Target} to="/admin/opportunities" />
+        <StatCard title="Client Prospects" value={clientProspectsCount} icon={Building2} to="/admin/clients" />
+        <StatCard title="Target Accounts" value={customerTargetsCount} icon={Target} to="/admin/opportunities" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr] mb-8">

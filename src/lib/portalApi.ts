@@ -82,6 +82,17 @@ export interface SyncClerkUsersResult {
   skipped: Array<{ id?: string; email?: string; reason: string }>;
 }
 
+export interface AdminDashboardSummary {
+  companies_count: number;
+  profiles_count: number;
+  prospect_recommendations_count: number;
+  customer_targets_count: number;
+  opportunity_registrations_count: number;
+  prospect_companies_count: number;
+  client_companies_count: number;
+}
+
+
 export interface ClerkAdminUserRecord {
   id: string | null;
   email: string;
@@ -4428,6 +4439,18 @@ export async function updateAdminClientCompany(
     linkedin_company_url: data.linkedin_company_url,
     relationship_stage: data.relationship_stage,
   });
+
+  return data;
+}
+
+export async function getAdminDashboardSummary() {
+  const { data, error } = await supabase
+    .rpc("admin_dashboard_summary")
+    .single<AdminDashboardSummary>();
+
+  if (error) {
+    throw error;
+  }
 
   return data;
 }
