@@ -13,6 +13,8 @@ export interface ContactSubmissionInput {
   targetAccounts?: string;
   message: string;
   website?: string;
+  turnstileToken?: string;
+  idempotencyKey?: string;
 }
 
 export interface ContactSubmissionRecord {
@@ -27,6 +29,11 @@ export interface ContactSubmissionRecord {
   user_agent: string | null;
   status: ContactSubmissionStatus;
   admin_notes: string | null;
+  admin_owner_id: string | null;
+  admin_next_action: string | null;
+  admin_priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+  notification_sent_at: string | null;
+  notification_error: string | null;
   escalated_to: ContactEscalationType | null;
   escalated_entity_id: string | null;
   escalated_at: string | null;
@@ -130,34 +137,18 @@ export async function submitContactSubmission(input: ContactSubmissionInput) {
     return { submitted: true };
   }
 
-  const { error } = await supabase.from("contact_submissions").insert({
-    name: input.name.trim(),
-    email: input.email.trim().toLowerCase(),
-    company_name: toNullableString(input.companyName),
-    interest: input.interest,
-    target_accounts: toNullableString(input.targetAccounts),
-    message: input.message.trim(),
-    source: "homepage",
-    user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
-    status: "NEW",
+  const { data, error } = await supabase.functions.invoke<{ submitted: boolean; notificationSent?: boolean }>("submit-contact", {
+    body: {
+      ...input,
+      idempotencyKey: input.idempotencyKey ?? crypto.randomUUID(),
+    },
   });
 
   if (error) {
     throw error;
   }
 
-  const { error: emailError } = await supabase.functions.invoke("send-website-email", {
-    body: {
-      template: "contact-submission",
-      ...input,
-    },
-  });
-
-  if (emailError) {
-    console.error("Unable to send contact submission notification", emailError);
-  }
-
-  return { submitted: true };
+  return data ?? { submitted: true };
 }
 
 export async function listContactSubmissions() {
@@ -223,6 +214,31 @@ export async function updateContactSubmission(
   await createAuditEvent(user, "contact_submission_updated", "contact_submissions", submissionId, {
     status: updates.status,
     escalated_to: updates.escalatedTo,
+  });
+
+  return data;
+}
+
+export async function claimContactSubmission(user: AuthUser, submissionId: string) {
+  assertAdmin(user);
+
+  const { data, error } = await supabase
+    .from("contact_submissions")
+    .update({
+      admin_owner_id: user.id,
+      admin_next_action: "Admin follow-up in progress",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", submissionId)
+    .select("*")
+    .single<ContactSubmissionRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "contact_submission_claimed", "contact_submissions", submissionId, {
+    admin_owner_id: user.id,
   });
 
   return data;

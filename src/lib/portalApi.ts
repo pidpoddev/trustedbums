@@ -715,6 +715,7 @@ export interface FeedbackSubmitResult {
 }
 
 export type CustomerTargetResponseStrength = "warm" | "strong" | "advisor" | "unknown";
+export type AdminHandoffPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
 export interface CustomerTargetResponseRecord {
   id: string;
@@ -728,6 +729,9 @@ export interface CustomerTargetResponseRecord {
   relationship_strength: CustomerTargetResponseStrength;
   note: string | null;
   status: "PROPOSED" | "ACCEPTED" | "DECLINED" | "CONTACTED" | "MEETING_SET";
+  admin_owner_id: string | null;
+  admin_next_action: string | null;
+  admin_priority: AdminHandoffPriority;
   created_at: string;
   updated_at: string;
   customer_targets?: Pick<CustomerTargetRecord, "id" | "target_account_name" | "business_unit" | "expected_product_service" | "estimated_deal_value" | "expected_timeline" | "notes" | "key_contact_name" | "key_contact_email"> & {
@@ -783,6 +787,9 @@ export interface ClientBumIntroRequestRecord {
   intro_context: string;
   notes: string | null;
   status: ClientBumIntroRequestStatus;
+  admin_owner_id: string | null;
+  admin_next_action: string | null;
+  admin_priority: AdminHandoffPriority;
   created_at: string;
   updated_at: string;
   client_companies?: Pick<CompanyRecord, "id" | "name"> | null;
@@ -5408,6 +5415,58 @@ export async function listClientBumIntroRequests(user: AuthUser) {
   return data ?? [];
 }
 
+export async function updateClientBumIntroRequestStatus(
+  user: AuthUser,
+  requestId: string,
+  status: ClientBumIntroRequestStatus,
+) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can update Bum intro request handoffs.");
+  }
+
+  const { data, error } = await supabase
+    .from("client_bum_intro_requests")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", requestId)
+    .select(CLIENT_BUM_INTRO_REQUEST_SELECT)
+    .single<ClientBumIntroRequestRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "client_bum_intro_request_status_changed", "client_bum_intro_requests", data.id, { status });
+
+  return data;
+}
+
+export async function claimClientBumIntroRequest(user: AuthUser, requestId: string) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can claim Bum intro request handoffs.");
+  }
+
+  const { data, error } = await supabase
+    .from("client_bum_intro_requests")
+    .update({
+      admin_owner_id: user.id,
+      admin_next_action: "Admin follow-up in progress",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", requestId)
+    .select(CLIENT_BUM_INTRO_REQUEST_SELECT)
+    .single<ClientBumIntroRequestRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "client_bum_intro_request_claimed", "client_bum_intro_requests", data.id, {
+    admin_owner_id: user.id,
+  });
+
+  return data;
+}
+
 const CUSTOMER_TARGET_RESPONSE_SELECT = "*, customer_targets(id, target_account_name, business_unit, expected_product_service, estimated_deal_value, expected_timeline, notes, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url)), profiles(id, full_name, email), conversation_threads(id)";
 
 export async function listCustomerTargetResponses(user: AuthUser) {
@@ -5475,6 +5534,33 @@ export async function updateCustomerTargetResponseStatus(
   }
 
   await createAuditEvent(user, "customer_target_response_status_changed", "customer_target_responses", data.id, { status });
+
+  return normalizeCustomerTargetResponse(data);
+}
+
+export async function claimCustomerTargetResponse(user: AuthUser, responseId: string) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can claim Bum target response handoffs.");
+  }
+
+  const { data, error } = await supabase
+    .from("customer_target_responses")
+    .update({
+      admin_owner_id: user.id,
+      admin_next_action: "Admin follow-up in progress",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", responseId)
+    .select(CUSTOMER_TARGET_RESPONSE_SELECT)
+    .single<CustomerTargetResponseRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "customer_target_response_claimed", "customer_target_responses", data.id, {
+    admin_owner_id: user.id,
+  });
 
   return normalizeCustomerTargetResponse(data);
 }

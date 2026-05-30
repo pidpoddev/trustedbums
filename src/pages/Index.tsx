@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useState } from "react";
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from "react";
 import { SignInButton, UserButton } from "@clerk/react";
 import {
   ArrowRight,
@@ -62,11 +62,26 @@ const defaultContactForm = {
   website: "",
 };
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: HTMLElement, options: Record<string, unknown>) => string;
+      reset: (widgetId?: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
+
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
 const Index = () => {
   const { user, isLoaded, isSignedIn } = useAuth();
   const { toast } = useToast();
   const [contactForm, setContactForm] = useState(defaultContactForm);
   const [isContactSubmitting, setIsContactSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
   const portalPath = user ? getDefaultPathForRole(user.role) : "/login";
   const needsRoleSetup = Boolean(isLoaded && isSignedIn && !user);
   const showSignedOutActions = !isLoaded || (!isSignedIn && !user);
@@ -78,6 +93,53 @@ const Index = () => {
       const value = field === "interest" ? (event.target.value as ContactInterest) : event.target.value;
       setContactForm((current) => ({ ...current, [field]: value }));
     };
+
+  useEffect(() => {
+    if (!turnstileSiteKey || !turnstileContainerRef.current || turnstileWidgetIdRef.current) {
+      return;
+    }
+
+    const renderWidget = () => {
+      if (!window.turnstile || !turnstileContainerRef.current || turnstileWidgetIdRef.current) {
+        return;
+      }
+
+      turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+        sitekey: turnstileSiteKey,
+        action: "contact",
+        callback: (token: string) => setTurnstileToken(token),
+        "expired-callback": () => setTurnstileToken(""),
+        "error-callback": () => setTurnstileToken(""),
+      });
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+      return;
+    }
+
+    const existingScript = document.getElementById("cloudflare-turnstile");
+    if (existingScript) {
+      existingScript.addEventListener("load", renderWidget, { once: true });
+      return () => existingScript.removeEventListener("load", renderWidget);
+    }
+
+    const script = document.createElement("script");
+    script.id = "cloudflare-turnstile";
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.addEventListener("load", renderWidget, { once: true });
+    document.head.appendChild(script);
+
+    return () => {
+      script.removeEventListener("load", renderWidget);
+      if (turnstileWidgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetIdRef.current);
+        turnstileWidgetIdRef.current = null;
+      }
+    };
+  }, []);
 
   const submitContactForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -95,10 +157,27 @@ const Index = () => {
       return;
     }
 
+    if (turnstileSiteKey && !turnstileToken) {
+      toast({
+        title: "Verification needed",
+        description: "Please complete the verification before sending.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsContactSubmitting(true);
     try {
-      await submitContactSubmission(contactForm);
+      await submitContactSubmission({
+        ...contactForm,
+        turnstileToken,
+        idempotencyKey: crypto.randomUUID(),
+      });
       setContactForm(defaultContactForm);
+      setTurnstileToken("");
+      if (turnstileWidgetIdRef.current) {
+        window.turnstile?.reset(turnstileWidgetIdRef.current);
+      }
       toast({
         title: "Message sent",
         description: "Thanks. Trusted Bums will review this and follow up soon.",
@@ -110,6 +189,10 @@ const Index = () => {
         description: "Please try again in a moment.",
         variant: "destructive",
       });
+      setTurnstileToken("");
+      if (turnstileWidgetIdRef.current) {
+        window.turnstile?.reset(turnstileWidgetIdRef.current);
+      }
     } finally {
       setIsContactSubmitting(false);
     }
@@ -558,6 +641,12 @@ const Index = () => {
                       autoComplete="off"
                     />
                   </div>
+
+                  {turnstileSiteKey ? (
+                    <div className="min-h-[65px]">
+                      <div ref={turnstileContainerRef} />
+                    </div>
+                  ) : null}
 
                   <Button type="submit" size="lg" className="h-14 rounded-full text-base font-bold" disabled={isContactSubmitting}>
                     {isContactSubmitting ? "Sending..." : "Send message"}

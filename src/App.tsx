@@ -34,6 +34,7 @@ import AdminEmails from "./pages/admin/AdminEmails";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminPerformanceMetrics from "./pages/admin/AdminPerformanceMetrics";
+import AdminHandoffs from "./pages/admin/AdminHandoffs";
 import AdminTrainingAssets from "./pages/admin/AdminTrainingAssets";
 import AdminTroubleshooting from "./pages/admin/AdminTroubleshooting";
 import AdminLegal from "./pages/admin/AdminLegal";
@@ -108,6 +109,7 @@ const App = () => (
                       <Route path="clients" element={<AdminClients />} />
                       <Route path="bums" element={<AdminBums />} />
                       <Route path="opportunities" element={<AdminOpportunities />} />
+                      <Route path="handoffs" element={<AdminHandoffs />} />
                       <Route path="credits" element={<AdminCredits />} />
                       <Route path="commission-plans" element={<AdminCommissionPlans />} />
                       <Route path="payments" element={<AdminPayments />} />

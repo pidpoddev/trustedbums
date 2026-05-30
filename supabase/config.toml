@@ -33,6 +33,9 @@ verify_jwt = false
 [functions.send-website-email]
 verify_jwt = false
 
+[functions.submit-contact]
+verify_jwt = false
+
 [functions.send-admin-email]
 verify_jwt = false
 

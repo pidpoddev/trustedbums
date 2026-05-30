@@ -32,6 +32,7 @@ import {
   Wrench,
   FileSignature,
   Gauge,
+  Handshake,
   type LucideIcon,
 } from "lucide-react";
 
@@ -49,6 +50,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
       { title: "Clients", url: "/admin/clients", icon: Briefcase },
       { title: "Bums", url: "/admin/bums", icon: Users },
       { title: "Opportunities", url: "/admin/opportunities", icon: Target },
+      { title: "Handoffs", url: "/admin/handoffs", icon: Handshake },
       { title: "Live Conversations", url: "/admin/live-conversations", icon: Video },
     ],
   },
