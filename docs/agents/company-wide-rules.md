@@ -47,7 +47,15 @@ When adding a rule, include:
 - Why it matters: This preserves low-friction client onboarding while preventing users from self-assigning access to companies they do not control.
 - Implementation notes: Signup metadata is onboarding intent, not final authorization. The approved server path should validate the verified email domain, create the company for an unclaimed domain, and assign initial Client Admin only when the domain is not already claimed.
 - QA proof: First verified user from an unclaimed client domain can create a company and becomes Client Admin; direct attempts to fake company or role through metadata/direct API fail.
-- Open questions: Which domains are blocked from automatic company creation, such as public webmail, disposable domains, agencies, consultants, or partner domains?
+- Open questions: Which non-public domains should still be blocked from automatic company creation, such as disposable domains, agencies, consultants, or partner domains?
+
+### Public email domains require manual company and admin verification
+- Rule: Gmail and other public email accounts may be used to create a company, but they do not qualify for automatic company-domain claiming. The client must provide alternate proof of company identity and administrative authority before a company is created or a Client Admin is assigned.
+- Applies to: Client signup, public email onboarding, Admin review queues, company creation, Client Admin assignment, RLS, Product Ops, Security, QA, and Support.
+- Why it matters: Some legitimate clients may use Gmail or another public mailbox, but public email domains cannot prove company control by domain ownership.
+- Implementation notes: Public-domain signups should enter Admin review. The product should collect or request proof of both company identity and administrative identity through an approved process before granting company-scoped access. Signup intent remains advisory until approved.
+- QA proof: A Gmail/public-email user can request company creation; the user cannot automatically create a company or become Client Admin; Admin can approve company/admin assignment after verification; direct role/company mutation attempts remain denied.
+- Open questions: What proof should be required, such as business registration, website/domain ownership, signed authorization, payment/customer record, or another evidence bundle?
 
 ### Existing Client Admins approve later same-domain users
 - Rule: If a client company domain is already claimed, later users from that same verified domain should request access. The existing Client Admin approves them and assigns their company-scoped role.
