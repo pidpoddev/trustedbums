@@ -2058,6 +2058,36 @@ export async function listRequiredTermsAssignmentsForUser(user: AuthUser) {
 }
 
 export async function getRequiredTermsForUser(user: AuthUser) {
+  const assignments = await listRequiredTermsAssignmentsForUser(user);
+  const customAssignments = assignments.filter((assignment) => assignment.terms_versions?.is_custom);
+
+  if (customAssignments.length) {
+    let latestAcceptedCustom: { terms: TermsVersion; acceptance: TermsAcceptance } | null = null;
+
+    for (const assignment of customAssignments) {
+      const assignedTerms = assignment.terms_versions;
+      if (!assignedTerms) {
+        continue;
+      }
+
+      const acceptance = await getCurrentTermsAcceptance(
+        user.id,
+        assignment.assigned_company_id ? user.clientId : undefined,
+        assignedTerms.id,
+      );
+
+      if (!acceptance) {
+        return { terms: assignedTerms, acceptance: null, assignment };
+      }
+
+      latestAcceptedCustom = { terms: assignedTerms, acceptance };
+    }
+
+    if (latestAcceptedCustom) {
+      return { terms: latestAcceptedCustom.terms, acceptance: latestAcceptedCustom.acceptance, assignment: null as TermsAssignmentRecord | null };
+    }
+  }
+
   const defaultTerms = user.role === "BUM" ? await getDefaultBumTermsVersion() : await getActiveTermsVersion();
   const defaultAcceptance = await getCurrentTermsAcceptance(user.id, user.clientId, defaultTerms.id);
 
@@ -2065,8 +2095,7 @@ export async function getRequiredTermsForUser(user: AuthUser) {
     return { terms: defaultTerms, acceptance: null, assignment: null as TermsAssignmentRecord | null };
   }
 
-  const assignments = await listRequiredTermsAssignmentsForUser(user);
-  for (const assignment of assignments) {
+  for (const assignment of assignments.filter((item) => !item.terms_versions?.is_custom)) {
     const assignedTerms = assignment.terms_versions;
     if (!assignedTerms) {
       continue;
