@@ -107,7 +107,7 @@ test.describe("staging smoke", () => {
     await expect(page.getByPlaceholder("Search contacts, companies, emails, or context")).toBeVisible();
 
     await page.getByRole("button", { name: "Quick add" }).click();
-    await expect(page.getByLabel("Name")).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Name", exact: true })).toBeVisible();
     await expect(page.getByLabel("LinkedIn URL")).toBeVisible();
     await expect(page.getByRole("button", { name: /Add and select contact/i })).toBeDisabled();
   });

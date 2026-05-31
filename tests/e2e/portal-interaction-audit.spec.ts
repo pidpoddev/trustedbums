@@ -165,9 +165,11 @@ async function expectNoBrokenInternalLinks(page: Page) {
       .map((link) => {
         const href = link.getAttribute("href") ?? "";
         const text = (link.textContent ?? link.getAttribute("aria-label") ?? "").replace(/\s+/g, " ").trim();
-        return { href, text };
+        const targetExists = href.startsWith("#") && href.length > 1 ? Boolean(document.querySelector(href)) : false;
+        return { href, text, targetExists };
       })
-      .filter(({ href }) => href.startsWith("#") || href === ""),
+      .filter(({ href, targetExists }) => href === "" || href === "#" || (href.startsWith("#") && !targetExists))
+      .map(({ href, text }) => ({ href, text })),
   );
 
   expect(badLinks, "Visible navigation links should not point to empty anchors.").toEqual([]);
