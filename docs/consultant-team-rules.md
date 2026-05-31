@@ -1,6 +1,6 @@
 # Trusted Bums Consultant Team Rules
 
-_Last updated: 2026-05-28 by Codex daily lead developer automation._
+_Last updated: 2026-05-31 by Codex daily lead developer automation._
 
 ## Global Rules
 
@@ -10,6 +10,7 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 - Revalidate live findings in the current session. If a fact came from a prior run and the current session cannot re-check it, label it as historical or source-backed, not freshly verified.
 - Distinguish partial live access from full live access. If Supabase exposes only project metadata, URL, logs, or edge-function inventory, report that as partial verification and do not imply current schema, policy, advisor, or catalog validation.
 - Do not cite tools or connector capabilities that were not actually callable in the current run.
+- Before carrying forward an active recommendation, reconcile it against the current route map, recent commits, and source files. If code already shipped part of the recommendation, downgrade it to the remaining gap and update acceptance criteria instead of repeating stale implementation work.
 - Use every relevant available capability before downgrading to source-only review: local repo inspection, browser/Playwright, package/security tooling, Supabase MCP, screenshots, logs, and current external guidance.
 - Source `.env.qa` for local QA checks when present, but never print or persist secret values. Mention only variable names when reporting missing or invalid configuration.
 - When QA env files exist, report both states separately: whether the shell already had the variables exported, and whether sourcing `.env.qa` restored the expected contract.
@@ -83,6 +84,7 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 
 - Focus on reporting correctness, exports, dashboard metrics, event naming, funnel visibility, data quality, finance date semantics, and metric definitions.
 - For reports, dashboards, exports, and telemetry, identify whether data access is operational, financial, analytics-only, or admin-only, and flag needed access-rule additions or exceptions in `docs/business-access-rules.md`.
+- For client-facing exports, explicitly separate finance-safe columns from operational contact, meeting, transcript, target, and support context. Do not treat route access as proof that every export type is approved for every client access role.
 - For mailbox-derived reporting, distinguish message metadata, parsed operational facts, raw body content, and attachments. Recommend aggregate or classified records before storing raw email content.
 - Verify finance and payout reporting against business-effective dates, not only `created_at`.
 - Use Supabase read-only SQL when available to inspect schemas, reporting views, safe aggregates, date fields, constraints, and status enums. Do not dump private row data into markdown.
@@ -103,6 +105,8 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 
 - Focus on marketplace operations, queue health, handoffs, admin supportability, exception handling, workflow states, and operational visibility.
 - Own the business-language side of `docs/business-access-rules.md`: identify who needs what data, when handoffs change visibility, which statuses lock or unlock access, and which fields are sensitive.
+- When code adds a new workflow route, queue, object, status, or operational field, refresh the backlog before the next handoff so recommendations do not keep asking for already shipped surfaces. Downgrade shipped work to missing owner, aging, next-action, exception, access-rule, or QA proof only when that is the real remaining gap.
+- For extension captures, represented contacts, profile bootstrap, signup intake, and other identity or relationship-forming workflows, define the business access rule before recommending broader admin, client, finance, or Bum visibility.
 - Own the business-language side of shared mailbox intake. For legal documents, questions, complaints, privacy requests, abuse reports, and support messages, define category, owner, visibility, response SLA, retention expectation, and whether the app should store metadata only, parsed facts, body text, or attachments.
 - When a new workflow object or status exists, verify that the product also exposes queue, ownership, history, or aging surfaces where operators need them.
 - Request support queue evidence, CRM pipeline data, finance exception examples, admin logs, SOPs, and narrated walkthroughs when repo evidence cannot prove operational reality.
