@@ -113,7 +113,7 @@ async function createClientTarget(page: Page, runId: string, records: QaCreatedR
   const name = `${runId} target`;
   await page.goto("/client/targets");
   await expect(page.getByRole("heading", { name: "Target Accounts" })).toBeVisible();
-  await page.getByRole("button", { name: "Add target account" }).click();
+  await page.getByRole("button", { name: "Add Target Account", exact: true }).click();
   await page.getByLabel("Target account name").fill(name);
   await page.getByLabel("Company website").fill("qa-deep.example");
   await page.getByLabel("Business unit").fill("QA");
