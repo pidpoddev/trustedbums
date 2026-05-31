@@ -2052,18 +2052,20 @@ function scopePriorAcceptanceQuery<T extends { eq: (column: string, value: strin
   return user.clientId ? query.eq("company_id", user.clientId) : query.eq("user_id", user.id).is("company_id", null);
 }
 
-export function getTermsDeferralSessionKey(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string) {
-  return `trusted-bums:terms-deferral:${user.id}:${user.clientId ?? "personal"}:${termsVersionId}`;
+export function getTermsDeferralSessionKey(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string, sessionId: string) {
+  return `trusted-bums:terms-deferral:${user.id}:${user.clientId ?? "personal"}:${termsVersionId}:${sessionId}`;
 }
 
-export function hasTermsSessionDeferral(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string) {
+export function hasTermsSessionDeferral(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string, sessionId: string | undefined) {
   if (typeof window === "undefined") return false;
-  return window.sessionStorage.getItem(getTermsDeferralSessionKey(user, termsVersionId)) === "true";
+  if (!sessionId) return false;
+  return window.sessionStorage.getItem(getTermsDeferralSessionKey(user, termsVersionId, sessionId)) === "true";
 }
 
-export function markTermsSessionDeferral(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string) {
+export function markTermsSessionDeferral(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string, sessionId: string | undefined) {
   if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(getTermsDeferralSessionKey(user, termsVersionId), "true");
+  if (!sessionId) return;
+  window.sessionStorage.setItem(getTermsDeferralSessionKey(user, termsVersionId, sessionId), "true");
 }
 
 async function getPriorStandardTermsAcceptance(user: AuthUser, terms: TermsVersion) {
@@ -2294,7 +2296,7 @@ export async function acceptPartnerTerms(user: AuthUser, terms: TermsVersion, us
   return data;
 }
 
-export async function deferPartnerTerms(user: AuthUser, terms: TermsVersion, userAgent: string | null) {
+export async function deferPartnerTerms(user: AuthUser, terms: TermsVersion, userAgent: string | null, sessionId?: string) {
   const acceptance = await getCurrentTermsAcceptance(user.id, user.clientId, terms.id);
   if (acceptance) {
     return { deferred: false, reason: "already_accepted" as const, acceptance };
@@ -2342,7 +2344,7 @@ export async function deferPartnerTerms(user: AuthUser, terms: TermsVersion, use
     console.error("Unable to record terms deferral audit event", auditError);
   }
 
-  markTermsSessionDeferral(user, terms.id);
+  markTermsSessionDeferral(user, terms.id, sessionId);
   return { deferred: true, reason: "deferred" as const, deferral: data };
 }
 

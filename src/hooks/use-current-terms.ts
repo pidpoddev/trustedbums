@@ -1,9 +1,11 @@
+import { useSession } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRequiredTermsForUser, hasTermsSessionDeferral } from "@/lib/portalApi";
 
 export function useCurrentTermsState() {
   const { user } = useAuth();
+  const { session } = useSession();
 
   const requiredTermsQuery = useQuery({
     queryKey: ["required-terms", user?.id, user?.clientId, user?.role],
@@ -13,7 +15,7 @@ export function useCurrentTermsState() {
   });
   const terms = requiredTermsQuery.data?.terms;
   const deferral = requiredTermsQuery.data?.deferral;
-  const hasCurrentSessionDeferral = Boolean(user && terms && hasTermsSessionDeferral(user, terms.id));
+  const hasCurrentSessionDeferral = Boolean(user && terms && hasTermsSessionDeferral(user, terms.id, session?.id));
   const hasAcceptedCurrentTerms = Boolean(requiredTermsQuery.data?.acceptance && !requiredTermsQuery.data?.assignment);
   const hasVerifiedSessionDeferral = Boolean(
     hasCurrentSessionDeferral &&

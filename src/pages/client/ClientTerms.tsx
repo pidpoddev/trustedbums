@@ -1,3 +1,4 @@
+import { useSession } from "@clerk/react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle, Download, Mail, MessageCircle, ScrollText } from "lucide-react";
@@ -31,6 +32,7 @@ function resolveDashboardPath(role: "ADMIN" | "CLIENT" | "BUM", from?: string) {
 
 export default function ClientTerms() {
   const { user } = useAuth();
+  const { session } = useSession();
   const timeZone = useUserTimeZone();
   const { terms, acceptance, requiredAssignment, hasAcceptedCurrentTerms, canContinueWithCurrentTerms, canDeferCurrentTerms, deferral, isLoading, error, refetch } = useCurrentTermsState();
   const [checked, setChecked] = useState(false);
@@ -88,7 +90,7 @@ export default function ClientTerms() {
 
     setIsDeferring(true);
     try {
-      await deferPartnerTerms(user, terms, navigator.userAgent ?? null);
+      await deferPartnerTerms(user, terms, navigator.userAgent ?? null, session?.id);
       await refetch();
       setShouldAutoContinue(true);
       toast({
