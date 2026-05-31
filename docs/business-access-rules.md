@@ -71,31 +71,35 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
 
 ### Profile Bootstrap And Self-Editable Identity
 - Roles: Public Visitor, signed-in unassigned user, Client Admin, Client Finance, Client Member, Bum, Admin.
-- Data needed: Clerk user ID, email, verified email domain, display name, requested signup intent, approved portal role, approved client company, approved client access role, approved Bum identity, timezone, date format, domain-claim status, approving Client Admin or Admin, and audit history for role or company changes.
+- Data needed: Clerk user ID, email, verified email domain, display name, requested signup intent, approved portal role, approved client company, approved client access role, approved Bum identity, timezone, date format, notification preferences, domain-claim status, approved related-domain aliases, pending/approved/denied access status, approving Client Admin or Admin, disabled status, and audit history for role, company, domain, approval, denial, disablement, or override changes.
 - Allowed actions:
   - Public visitors may submit signup intent, company-name hints, and verified email during onboarding.
   - First verified client-domain claimant may create the client company workspace and become initial Client Admin when the email domain is not already claimed.
   - Gmail and other public-email users may request company creation, but only Admin may approve company creation and initial Client Admin assignment after alternate company-identity and administrative-identity proof.
   - Later users from an already claimed client email domain may request access to that company.
-  - Existing Client Admins may approve same-domain users and assign company-scoped roles such as Client Admin, Client Finance, or Client Member.
-  - Signed-in users may edit safe profile preferences such as display name, timezone, and date format when those fields do not affect authorization.
+  - Existing Client Admins may approve same-domain users, assign company-scoped roles such as Client Admin, Client Finance, or Client Member, and disable same-company users including another Client Admin.
+  - Client Admins may request additional related company domains, but those domains must be validated before they grant company access.
+  - Signed-in users may edit safe profile preferences such as display name, timezone, date format, and notification preferences when those fields do not affect authorization.
   - Admins may override or repair portal role, client company, client access role, Bum identity, company-domain ownership, and admin status through an audited server-side path, including when the prior Client Admin is no longer valid.
   - Approved automation may sync Clerk identity fields into `profiles` only when the sync path cannot elevate role, company, client access role, or admin status from client-controlled metadata.
 - Allowed when:
   - Signup metadata is used as onboarding intent and is validated against the user's verified email before any workspace or company assignment is created.
   - No existing client company has claimed the verified business email domain, and the first claimant creates the company workspace as initial Client Admin through the approved server path.
-  - A public email domain such as Gmail is reviewed by Admin with alternate proof of company identity and administrative identity before company creation or Client Admin assignment.
+  - A public email domain such as Gmail is reviewed by Admin with alternate proof of company identity and administrative identity before company creation or Client Admin assignment. Initial acceptable proof may include company legal name, company website or public listing, and at least one administrative proof such as signed authorization, ownership email from a company domain, payment/customer record, business registration match, or Admin-verified relationship.
   - A same-domain access request is approved by an existing Client Admin for that company or by Admin override.
-  - A role, company, client access role, Bum assignment, admin-status change, or domain-ownership change is performed by Admin, an authorized Client Admin within the same company/domain boundary, or an approved internal server workflow with auditability.
-  - Self-service updates are limited to non-authorization preferences.
+  - A related-domain alias request is validated before users from that domain can be approved into the company.
+  - A role, company, client access role, Bum assignment, admin-status change, domain-ownership change, approval, denial, or disablement is performed by Admin, an authorized Client Admin within the same company/domain boundary, or an approved internal server workflow with auditability.
+  - Self-service updates are limited to non-authorization preferences: display name, timezone, date format, and notification preferences.
 - Denied when:
   - A user tries to self-assign `role`, `is_admin`, `company_id`, `client_access_role`, or Bum identity through Clerk `unsafeMetadata`, browser profile sync, direct Supabase Data API, RPC, edge function, or extension API.
   - A user attempts to attach themselves to another client company or switch between Client and Bum posture without Admin approval.
   - A user with a public/free email domain or unmatched email domain attempts to automatically create or join a client company without Admin review and proof approval.
   - A user from an already claimed domain tries to bypass the existing Client Admin approval queue.
+  - A Client Admin tries to manage users outside their company, claim an unrelated domain without validation, or grant themselves cross-company/domain authority.
+  - A pending or denied user tries to view company data before approval.
   - Signup intent alone is treated as proof of workspace membership or finance/admin authority.
-- Sensitive fields: `profiles.role`, `profiles.is_admin`, `profiles.company_id`, `profiles.client_access_role`, company email domain aliases, domain-claim ownership, Bum identity links, Clerk metadata used for onboarding, email, admin repair notes, and audit events.
-- Source of truth: `profiles`, client company records and approved email-domain aliases, Clerk user ID and backend-managed metadata, admin user tools, Client Admin team-management approvals, signup intent records or metadata, and audit events.
+- Sensitive fields: `profiles.role`, `profiles.is_admin`, `profiles.company_id`, `profiles.client_access_role`, company email domain aliases, domain-claim ownership, related-domain validation status, pending/approved/denied access status, disabled status, Bum identity links, Clerk metadata used for onboarding, email, admin repair notes, and audit events.
+- Source of truth: `profiles`, client company records and approved email-domain aliases, related-domain validation records, Clerk user ID and backend-managed metadata, admin user tools, Client Admin team-management approvals, signup intent records or metadata, and audit events.
 - RLS/authorization owner: Security Engineer plus Product Ops, with QA allow/deny coverage before hardening release.
 - QA proof:
   - First verified user from an unclaimed client domain can create the company workspace and becomes initial Client Admin.
@@ -103,18 +107,22 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - Admin can approve a Gmail/public-email company creation and Client Admin assignment after alternate proof is recorded.
   - A later same-domain user cannot self-join directly; they enter a Client Admin approval queue or Admin override queue.
   - Existing Client Admin can approve a same-domain user and assign Client Admin, Client Finance, or Client Member as allowed.
+  - Existing Client Admin can disable another same-company user, including another Client Admin, through the approved company-scoped path.
+  - Client Admin can request an additional related domain; it does not grant access until validated; unrelated-domain claims stay pending or are denied.
   - Admin can override domain/company assignment and make a new Client Admin when the previous Client Admin is invalid or unavailable.
   - Users from different domains cannot join or see another client company without Admin override.
   - Public/free email domains do not auto-create trusted client workspaces without Admin review and alternate proof.
+  - Pending and denied users cannot see company data.
+  - Client Admins see same-domain requests; Admins see public-email, unmatched-domain, related-domain, and stale-admin override requests.
   - A user can update approved preference fields without changing access.
   - Direct attempts to mutate `company_id`, `client_access_role`, `role`, `is_admin`, or Bum identity are denied.
   - Clerk `unsafeMetadata` role/company edits do not become authoritative access.
   - Admin can assign or repair role and company through the approved path and the change is audited.
+  - Every approval, denial, role/company/domain change, disable/enable action, and override creates an audit event with actor, target, company, old value, new value, action reason or category, evidence type when applicable, and timestamp.
 - Open questions:
-  - Which exact display/profile fields are approved for self-service edits after launch?
-  - What exact proof is required for Gmail/public-email company creation and Client Admin assignment?
-  - Which non-public email domains should be blocked from automatic client workspace creation, such as disposable domains, agencies, consultants, or partner domains?
-  - Should Client Admin approval be limited to the exact email domain alias, or can a Client Admin approve related aliases after Admin verifies them?
+  - Hone proof requirements for Gmail/public-email company creation and Client Admin assignment as real client cases come in.
+  - Hone the blocked/manual-review domain list over time. Public/shared/disposable domains should not auto-create companies; agencies, consultants, partner/referral domains, and ambiguous school/franchise/subsidiary domains should start as manual-review unless explicitly approved.
+  - Choose the first related-domain validation method: Admin review, DNS challenge, email-to-domain approval, website proof, or a combination.
 
 ### Customer Targets
 - Roles: Admin, Client Admin, Client Member where assigned, Bum where explicitly entitled.

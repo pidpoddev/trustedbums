@@ -47,41 +47,65 @@ When adding a rule, include:
 - Why it matters: This preserves low-friction client onboarding while preventing users from self-assigning access to companies they do not control.
 - Implementation notes: Signup metadata is onboarding intent, not final authorization. The approved server path should validate the verified email domain, create the company for an unclaimed domain, and assign initial Client Admin only when the domain is not already claimed.
 - QA proof: First verified user from an unclaimed client domain can create a company and becomes Client Admin; direct attempts to fake company or role through metadata/direct API fail.
-- Open questions: Which non-public domains should still be blocked from automatic company creation, such as disposable domains, agencies, consultants, or partner domains?
+- Open questions: Hone the blocked/manual-review domain list over time based on abuse patterns and client operations.
 
 ### Public email domains require manual company and admin verification
 - Rule: Gmail and other public email accounts may be used to create a company, but they do not qualify for automatic company-domain claiming. The client must provide alternate proof of company identity and administrative authority before a company is created or a Client Admin is assigned.
 - Applies to: Client signup, public email onboarding, Admin review queues, company creation, Client Admin assignment, RLS, Product Ops, Security, QA, and Support.
 - Why it matters: Some legitimate clients may use Gmail or another public mailbox, but public email domains cannot prove company control by domain ownership.
-- Implementation notes: Public-domain signups should enter Admin review. The product should collect or request proof of both company identity and administrative identity through an approved process before granting company-scoped access. Signup intent remains advisory until approved.
+- Implementation notes: Public-domain signups should enter Admin review. Initial acceptable proof may include company legal name, company website or public listing, and at least one proof of administrative authority such as signed authorization, ownership email from a company domain, payment/customer record, business registration match, or Admin-verified relationship. Signup intent remains advisory until approved.
 - QA proof: A Gmail/public-email user can request company creation; the user cannot automatically create a company or become Client Admin; Admin can approve company/admin assignment after verification; direct role/company mutation attempts remain denied.
-- Open questions: What proof should be required, such as business registration, website/domain ownership, signed authorization, payment/customer record, or another evidence bundle?
+- Open questions: Hone exact proof requirements as real client cases come in.
 
 ### Existing Client Admins approve later same-domain users
 - Rule: If a client company domain is already claimed, later users from that same verified domain should request access. The existing Client Admin approves them and assigns their company-scoped role.
 - Applies to: Client team management, Client Admin, Client Finance, Client Member, notifications, profile bootstrap, and QA.
 - Why it matters: The client company controls its own team access without allowing automatic self-join into potentially sensitive company data.
-- Implementation notes: Same-domain users should enter an approval queue rather than receiving access immediately. Client Admins may assign allowed roles such as Client Admin, Client Finance, or Client Member.
-- QA proof: A later same-domain user cannot self-join directly; the user appears in an approval queue; Client Admin approval grants the selected role; denial or no action leaves the user unassigned.
-- Open questions: Should approval be limited to the exact domain alias, or can Client Admins approve related aliases after Admin verifies them?
+- Implementation notes: Same-domain users should enter an approval queue rather than receiving access immediately. Client Admins may assign allowed company-scoped roles such as Client Admin, Client Finance, or Client Member, and may disable other users in their company including another Client Admin. Client Admin actions must remain company-scoped and must not let the acting user claim unrelated companies or unrelated domains.
+- QA proof: A later same-domain user cannot self-join directly; the user appears in an approval queue; Client Admin approval grants the selected role; denial or no action leaves the user unassigned; Client Admin can disable another same-company Client Admin; cross-company changes are denied.
+- Open questions: None for the first implementation pass.
+
+### Client Admins may request related company domains with validation
+- Rule: Client Admins may add additional domains to their company domain list, but each added domain must be validated so one company cannot claim an unrelated domain.
+- Applies to: Client Admin company settings, related-domain aliases, Admin review, onboarding, RLS, QA, Security, and Product Ops.
+- Why it matters: Many companies use multiple domains, acquired brands, or subsidiary domains, but domain aliases create company-access authority and must not allow false claims such as one company claiming another company's domain.
+- Implementation notes: Related-domain additions should require validation before users from that domain can be approved into the company. The first implementation may use Admin review or a verification workflow that proves control/relationship of the requested domain.
+- QA proof: Client Admin can request an additional domain; the requested domain does not grant access until validated; users from the new domain can be approved only after validation; attempts to claim an unrelated domain are denied or remain pending.
+- Open questions: Which validation method should be first: Admin review, DNS challenge, email-to-domain approval, website proof, or a combination?
 
 ### Admin can override stale or invalid Client Admin ownership
 - Rule: Admin must have an override path to assign a new Client Admin when the previous Client Admin is no longer valid, unavailable, or incorrectly owns the company domain.
 - Applies to: Admin portal, company team management, support operations, audit trail, Client Admin assignment, and profile repair.
 - Why it matters: Client access cannot become permanently blocked when the first admin leaves the company or made a mistake.
-- Implementation notes: Admin override should be audited and should not depend on client-controlled metadata. Admin needs a visible repair or override queue/list.
+- Implementation notes: While Trusted Bums is operated by a small trusted team, Admin discretion is acceptable for override evidence. Admin override should still be audited and should not depend on client-controlled metadata. Admin needs a visible repair or override queue/list.
 - QA proof: Admin can replace or add a Client Admin for a claimed domain; the change is audited; the prior user does not retain unintended access if removed.
-- Open questions: What evidence should Admin require before overriding a claimed domain?
+- Open questions: None for the first implementation pass.
 
 ## Authorization And Profile Rules
 
 ### Authorization-bearing profile fields are not self-service
-- Rule: Users may not self-assign or directly mutate `role`, `is_admin`, `company_id`, `client_access_role`, or Bum identity through Clerk metadata, browser profile sync, Supabase Data API, RPC, edge function, or extension API.
+- Rule: Users may not self-assign or directly mutate `role`, `is_admin`, `company_id`, `client_access_role`, or Bum identity through Clerk metadata, browser profile sync, Supabase Data API, RPC, edge function, or extension API. Client Admins may make approved company-scoped user-management changes for users in their own company, including role assignment among company roles and disabling another Client Admin.
 - Applies to: Clerk, Supabase profiles, route guards, RLS, edge functions, extension API, Admin tooling, and QA.
 - Why it matters: These fields determine tenant boundaries and role permissions.
-- Implementation notes: Users may edit safe preferences only, such as display name, timezone, and date format, when those fields do not affect authorization.
-- QA proof: Direct mutation attempts are denied; safe preference edits still work; Admin/server assignment path works and is audited.
-- Open questions: Which exact profile fields are approved for self-service edits after launch?
+- Implementation notes: Users may edit safe preferences only, such as display name, timezone, date format, and notification preferences, when those fields do not affect authorization. Client Admin company-user edits must go through an approved server path with company-scope checks.
+- QA proof: Direct mutation attempts are denied; safe preference edits still work; Admin/server assignment path works and is audited; Client Admin can manage same-company users within allowed roles; Client Admin cannot grant themselves cross-company/domain authority.
+- Open questions: Hone the self-service preference list over time if more non-authorization profile fields are added.
+
+### Pending access users remain unassigned until approved
+- Rule: Pending users should see that company access is awaiting approval, Client Admins should see same-domain access requests, and Admins should see public-email, unmatched-domain, related-domain, and stale-admin override requests. Denied users remain unassigned and cannot see company data.
+- Applies to: Signup, pending access screens, Client Admin team management, Admin queues, RLS, QA, Product Ops, and Support.
+- Why it matters: Pending and denied states must be clear without accidentally granting company visibility.
+- Implementation notes: Build explicit pending, approved, denied, and unassigned states rather than inferring access from signup intent or metadata.
+- QA proof: Pending user cannot see company data; Client Admin can view same-domain requests; Admin can view exception queues; denied user remains unassigned.
+- Open questions: None for the first implementation pass.
+
+### Authorization changes require audit events
+- Rule: Every role, company, company-domain, Client Admin, disable/enable, approval, denial, and override action should create an audit event.
+- Applies to: Admin tooling, Client Admin team management, profile bootstrap, company-domain aliases, RLS, QA, Security, Product Ops, and Support.
+- Why it matters: Access changes affect tenant boundaries and future troubleshooting.
+- Implementation notes: Audit events should record actor, target user, company, old value, new value, action reason or category, evidence type when applicable, and timestamp.
+- QA proof: Each supported access-management path produces an audit event with the expected actor, target, action, and before/after context.
+- Open questions: None for the first implementation pass.
 
 ## Specialist And Release Coordination
 
