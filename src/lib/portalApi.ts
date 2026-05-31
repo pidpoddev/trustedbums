@@ -2145,7 +2145,7 @@ export async function acceptPartnerTerms(user: AuthUser, terms: TermsVersion, us
       }
     }
 
-    throw error;
+    throw new Error(error.message || "Unable to record this terms acceptance.");
   }
 
   try {
