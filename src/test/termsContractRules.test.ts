@@ -15,9 +15,11 @@ describe("terms contract rules", () => {
 
   it("allows three audited skips only for updated standard terms with a prior acceptance", () => {
     expect(portalApiSource).toContain("const TERMS_DEFERRAL_LIMIT = 3;");
+    expect(portalApiSource).toContain("function noTermsDeferral()");
     expect(portalApiSource).toContain("export async function deferPartnerTerms");
     expect(portalApiSource).toContain("if (terms.is_custom)");
     expect(portalApiSource).toContain("const priorAcceptance = await getPriorTermsAcceptance(user, terms.id);");
+    expect(portalApiSource).toContain("return { terms: assignedTerms, acceptance: null, assignment, deferral: noTermsDeferral() };");
     expect(portalApiSource).toContain("terms_acceptance_deferred");
   });
 });

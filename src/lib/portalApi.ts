@@ -2041,6 +2041,10 @@ export async function getCurrentTermsAcceptance(userId: string, companyId: strin
 
 const TERMS_DEFERRAL_LIMIT = 3;
 
+function noTermsDeferral() {
+  return { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null };
+}
+
 function scopeCompanyAcceptanceQuery<T extends { or: (filters: string) => T; eq: (column: string, value: string) => T }>(
   query: T,
   user: AuthUser,
@@ -2166,7 +2170,7 @@ export async function getRequiredTermsForUser(user: AuthUser) {
       );
 
       if (!acceptance) {
-        return { terms: assignedTerms, acceptance: null, assignment, deferral: { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null } };
+        return { terms: assignedTerms, acceptance: null, assignment, deferral: noTermsDeferral() };
       }
 
       latestAcceptedCustom = { terms: assignedTerms, acceptance };
@@ -2177,7 +2181,7 @@ export async function getRequiredTermsForUser(user: AuthUser) {
         terms: latestAcceptedCustom.terms,
         acceptance: latestAcceptedCustom.acceptance,
         assignment: null as TermsAssignmentRecord | null,
-        deferral: { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null },
+        deferral: noTermsDeferral(),
       };
     }
   }
@@ -2202,7 +2206,7 @@ export async function getRequiredTermsForUser(user: AuthUser) {
     );
 
     if (!acceptance) {
-      return { terms: assignedTerms, acceptance: null, assignment, deferral: await getStandardTermsDeferralState(user, assignedTerms, null) };
+      return { terms: assignedTerms, acceptance: null, assignment, deferral: noTermsDeferral() };
     }
   }
 
