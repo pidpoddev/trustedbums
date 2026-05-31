@@ -2045,11 +2045,11 @@ function noTermsDeferral() {
   return { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null };
 }
 
-function scopeCompanyAcceptanceQuery<T extends { or: (filters: string) => T; eq: (column: string, value: string) => T }>(
+function scopePriorAcceptanceQuery<T extends { eq: (column: string, value: string) => T; is: (column: string, value: null) => T }>(
   query: T,
   user: AuthUser,
 ) {
-  return user.clientId ? query.or(`user_id.eq.${user.id},company_id.eq.${user.clientId}`) : query.eq("user_id", user.id);
+  return user.clientId ? query.eq("company_id", user.clientId) : query.eq("user_id", user.id).is("company_id", null);
 }
 
 export function getTermsDeferralSessionKey(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string) {
@@ -2067,7 +2067,7 @@ export function markTermsSessionDeferral(user: Pick<AuthUser, "id" | "clientId">
 }
 
 async function getPriorTermsAcceptance(user: AuthUser, termsVersionId: string) {
-  const query = scopeCompanyAcceptanceQuery(
+  const query = scopePriorAcceptanceQuery(
     supabase
       .from("terms_acceptances")
       .select("*")
