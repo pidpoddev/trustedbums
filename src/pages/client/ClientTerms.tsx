@@ -32,7 +32,7 @@ function resolveDashboardPath(role: "ADMIN" | "CLIENT" | "BUM", from?: string) {
 export default function ClientTerms() {
   const { user } = useAuth();
   const timeZone = useUserTimeZone();
-  const { terms, acceptance, requiredAssignment, hasAcceptedCurrentTerms, canDeferCurrentTerms, deferral, isLoading, error, refetch } = useCurrentTermsState();
+  const { terms, acceptance, requiredAssignment, hasAcceptedCurrentTerms, canContinueWithCurrentTerms, canDeferCurrentTerms, deferral, isLoading, error, refetch } = useCurrentTermsState();
   const [checked, setChecked] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeferring, setIsDeferring] = useState(false);
@@ -45,7 +45,7 @@ export default function ClientTerms() {
   const dashboardPath = user ? resolveDashboardPath(user.role, state?.from) : "/";
 
   useEffect(() => {
-    if (!user || !hasAcceptedCurrentTerms) {
+    if (!user || !canContinueWithCurrentTerms) {
       return;
     }
 
@@ -54,7 +54,7 @@ export default function ClientTerms() {
     }
 
     navigate(dashboardPath, { replace: true });
-  }, [dashboardPath, hasAcceptedCurrentTerms, isBumTerms, navigate, shouldAutoContinue, user]);
+  }, [canContinueWithCurrentTerms, dashboardPath, isBumTerms, navigate, shouldAutoContinue, user]);
 
   const acceptTerms = async () => {
     if (!user || !terms) {

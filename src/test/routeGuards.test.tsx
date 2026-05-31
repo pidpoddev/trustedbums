@@ -25,6 +25,7 @@ const authState = vi.hoisted(() => ({
 const termsState = vi.hoisted(() => ({
   value: {
     hasAcceptedCurrentTerms: true,
+    canContinueWithCurrentTerms: true,
     isLoading: false,
     terms: { id: "terms-v1" },
   },
@@ -56,6 +57,7 @@ describe("route guards", () => {
     authState.value.isLoaded = true;
     authState.value.isSignedIn = false;
     termsState.value.hasAcceptedCurrentTerms = true;
+    termsState.value.canContinueWithCurrentTerms = true;
     termsState.value.isLoading = false;
     termsState.value.terms = { id: "terms-v1" };
   });
@@ -149,6 +151,7 @@ describe("route guards", () => {
     authState.value.user = makeUser("BUM");
     authState.value.isSignedIn = true;
     termsState.value.hasAcceptedCurrentTerms = false;
+    termsState.value.canContinueWithCurrentTerms = false;
 
     render(
       <MemoryRouter initialEntries={["/bum/dashboard"]}>
@@ -168,6 +171,7 @@ describe("route guards", () => {
     authState.value.user = makeUser("ADMIN");
     authState.value.isSignedIn = true;
     termsState.value.hasAcceptedCurrentTerms = false;
+    termsState.value.canContinueWithCurrentTerms = false;
 
     render(
       <MemoryRouter initialEntries={["/admin"]}>

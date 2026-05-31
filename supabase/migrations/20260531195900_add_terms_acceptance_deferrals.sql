@@ -50,7 +50,6 @@ on public.terms_acceptance_deferrals for select
 to authenticated
 using (
   user_id = public.current_user_id()
-  or company_id = public.current_company_id()
   or public.is_admin()
 );
 

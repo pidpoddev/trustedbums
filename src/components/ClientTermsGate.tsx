@@ -5,7 +5,7 @@ import { useCurrentTermsState } from "@/hooks/use-current-terms";
 export function ClientTermsGate() {
   const { user } = useAuth();
   const location = useLocation();
-  const { hasAcceptedCurrentTerms, isLoading, terms, error } = useCurrentTermsState();
+  const { canContinueWithCurrentTerms, isLoading, terms, error } = useCurrentTermsState();
   const isTermsRoute =
     location.pathname === "/client/terms" || location.pathname === "/bum/terms" || location.pathname === "/terms";
 
@@ -29,7 +29,7 @@ export function ClientTermsGate() {
     );
   }
 
-  if (!hasAcceptedCurrentTerms) {
+  if (!canContinueWithCurrentTerms) {
     const termsPath = user.role === "BUM" ? "/bum/terms" : "/client/terms";
 
     return <Navigate to={termsPath} replace state={{ from: location.pathname }} />;

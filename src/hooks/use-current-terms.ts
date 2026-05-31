@@ -13,14 +13,17 @@ export function useCurrentTermsState() {
   });
   const terms = requiredTermsQuery.data?.terms;
   const hasCurrentSessionDeferral = Boolean(user && terms && hasTermsSessionDeferral(user, terms.id));
+  const hasAcceptedCurrentTerms = Boolean(requiredTermsQuery.data?.acceptance && !requiredTermsQuery.data?.assignment);
 
   return {
     terms,
     acceptance: requiredTermsQuery.data?.acceptance,
     requiredAssignment: requiredTermsQuery.data?.assignment ?? null,
     deferral: requiredTermsQuery.data?.deferral,
+    hasCurrentSessionDeferral,
     canDeferCurrentTerms: Boolean(requiredTermsQuery.data?.deferral?.canDefer && !hasCurrentSessionDeferral),
-    hasAcceptedCurrentTerms: Boolean((requiredTermsQuery.data?.acceptance && !requiredTermsQuery.data?.assignment) || hasCurrentSessionDeferral),
+    hasAcceptedCurrentTerms,
+    canContinueWithCurrentTerms: hasAcceptedCurrentTerms || hasCurrentSessionDeferral,
     isLoading: requiredTermsQuery.isLoading,
     error: requiredTermsQuery.error,
     refetch: async () => {
