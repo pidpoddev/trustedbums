@@ -66,12 +66,12 @@ When adding a rule, include:
 - Open questions: None for the first implementation pass.
 
 ### Client Admins may request related company domains with validation
-- Rule: Client Admins may add additional domains to their company domain list, but each added domain must be validated so one company cannot claim an unrelated domain.
+- Rule: Client Admins may add additional domains to their company domain list, but each added domain requires Admin review before it can grant company access.
 - Applies to: Client Admin company settings, related-domain aliases, Admin review, onboarding, RLS, QA, Security, and Product Ops.
 - Why it matters: Many companies use multiple domains, acquired brands, or subsidiary domains, but domain aliases create company-access authority and must not allow false claims such as one company claiming another company's domain.
-- Implementation notes: Related-domain additions should require validation before users from that domain can be approved into the company. The first implementation may use Admin review or a verification workflow that proves control/relationship of the requested domain.
-- QA proof: Client Admin can request an additional domain; the requested domain does not grant access until validated; users from the new domain can be approved only after validation; attempts to claim an unrelated domain are denied or remain pending.
-- Open questions: Which validation method should be first: Admin review, DNS challenge, email-to-domain approval, website proof, or a combination?
+- Implementation notes: Related-domain additions should enter an Admin review queue. Admin approves only when the relationship/control is credible enough for the current small-team operating model. DNS challenge, email-to-domain approval, or website proof can be added later if volume or risk increases.
+- QA proof: Client Admin can request an additional domain; the requested domain does not grant access until Admin approves it; users from the new domain can be approved only after Admin approval; attempts to claim an unrelated domain are denied or remain pending.
+- Open questions: None for the first implementation pass.
 
 ### Admin can override stale or invalid Client Admin ownership
 - Rule: Admin must have an override path to assign a new Client Admin when the previous Client Admin is no longer valid, unavailable, or incorrectly owns the company domain.

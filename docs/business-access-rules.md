@@ -78,7 +78,7 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - Gmail and other public-email users may request company creation, but only Admin may approve company creation and initial Client Admin assignment after alternate company-identity and administrative-identity proof.
   - Later users from an already claimed client email domain may request access to that company.
   - Existing Client Admins may approve same-domain users, assign company-scoped roles such as Client Admin, Client Finance, or Client Member, and disable same-company users including another Client Admin.
-  - Client Admins may request additional related company domains, but those domains must be validated before they grant company access.
+  - Client Admins may request additional related company domains, but those domains require Admin review before they grant company access.
   - Signed-in users may edit safe profile preferences such as display name, timezone, date format, and notification preferences when those fields do not affect authorization.
   - Admins may override or repair portal role, client company, client access role, Bum identity, company-domain ownership, and admin status through an audited server-side path, including when the prior Client Admin is no longer valid.
   - Approved automation may sync Clerk identity fields into `profiles` only when the sync path cannot elevate role, company, client access role, or admin status from client-controlled metadata.
@@ -87,7 +87,7 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - No existing client company has claimed the verified business email domain, and the first claimant creates the company workspace as initial Client Admin through the approved server path.
   - A public email domain such as Gmail is reviewed by Admin with alternate proof of company identity and administrative identity before company creation or Client Admin assignment. Initial acceptable proof may include company legal name, company website or public listing, and at least one administrative proof such as signed authorization, ownership email from a company domain, payment/customer record, business registration match, or Admin-verified relationship.
   - A same-domain access request is approved by an existing Client Admin for that company or by Admin override.
-  - A related-domain alias request is validated before users from that domain can be approved into the company.
+  - A related-domain alias request is approved by Admin before users from that domain can be approved into the company.
   - A role, company, client access role, Bum assignment, admin-status change, domain-ownership change, approval, denial, or disablement is performed by Admin, an authorized Client Admin within the same company/domain boundary, or an approved internal server workflow with auditability.
   - Self-service updates are limited to non-authorization preferences: display name, timezone, date format, and notification preferences.
 - Denied when:
@@ -108,7 +108,7 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - A later same-domain user cannot self-join directly; they enter a Client Admin approval queue or Admin override queue.
   - Existing Client Admin can approve a same-domain user and assign Client Admin, Client Finance, or Client Member as allowed.
   - Existing Client Admin can disable another same-company user, including another Client Admin, through the approved company-scoped path.
-  - Client Admin can request an additional related domain; it does not grant access until validated; unrelated-domain claims stay pending or are denied.
+  - Client Admin can request an additional related domain; it does not grant access until Admin approves it; unrelated-domain claims stay pending or are denied.
   - Admin can override domain/company assignment and make a new Client Admin when the previous Client Admin is invalid or unavailable.
   - Users from different domains cannot join or see another client company without Admin override.
   - Public/free email domains do not auto-create trusted client workspaces without Admin review and alternate proof.
@@ -122,7 +122,6 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
 - Open questions:
   - Hone proof requirements for Gmail/public-email company creation and Client Admin assignment as real client cases come in.
   - Hone the blocked/manual-review domain list over time. Public/shared/disposable domains should not auto-create companies; agencies, consultants, partner/referral domains, and ambiguous school/franchise/subsidiary domains should start as manual-review unless explicitly approved.
-  - Choose the first related-domain validation method: Admin review, DNS challenge, email-to-domain approval, website proof, or a combination.
 
 ### Customer Targets
 - Roles: Admin, Client Admin, Client Member where assigned, Bum where explicitly entitled.
