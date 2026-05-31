@@ -19,7 +19,6 @@ create index if not exists terms_acceptance_deferrals_company_terms_idx
 create or replace function public.prevent_excess_terms_acceptance_deferrals()
 returns trigger
 language plpgsql
-security definer
 set search_path = public
 as $$
 begin
