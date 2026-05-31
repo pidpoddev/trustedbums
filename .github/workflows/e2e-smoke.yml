@@ -57,7 +57,7 @@ jobs:
         run: pnpm run qa:env && pnpm exec playwright test tests/e2e/staging-smoke.spec.ts tests/e2e/authenticated-role-smoke.spec.ts tests/e2e/portal-interaction-audit.spec.ts
 
       - name: Run deep workflow hotfix audit
-        if: ${{ inputs.run_deep_audit }}
+        if: ${{ always() && inputs.run_deep_audit }}
         env:
           QA_BASE_URL: ${{ inputs.target_url }}
           QA_DEEP_MUTATION: ${{ inputs.mutation_mode && '1' || '0' }}
