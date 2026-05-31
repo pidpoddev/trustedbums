@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import * as jose from "jsr:@panva/jose@6";
 
 type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_MEMBER";
-type Action = "list" | "invite" | "update_role";
+type Action = "list" | "invite" | "update_role" | "disable_member" | "request_domain" | "approve_request" | "deny_request";
 
 interface ClaimsResponse { sub?: string }
 interface CompanyRow { id: string; name: string }
@@ -15,6 +15,8 @@ interface ProfileRow {
   role: string | null;
   is_admin: boolean;
   client_access_role: ClientAccessRole | null;
+  access_status?: string | null;
+  disabled_at?: string | null;
   last_sign_in_at: string | null;
   created_at: string;
   companies?: CompanyRow | null;
@@ -102,6 +104,17 @@ function readClientAccessRole(value: unknown): ClientAccessRole | null {
   return null;
 }
 
+function normalizeDomain(value?: string | null) {
+  if (!value) return null;
+  const withoutProtocol = value.trim().toLowerCase().replace(/^https?:\/\//, "");
+  const host = withoutProtocol.split("/")[0]?.replace(/^www\./, "").replace(/\.$/, "").split(":")[0];
+  return host || null;
+}
+
+function getEmailDomain(email: string) {
+  return normalizeDomain(email.split("@")[1]);
+}
+
 function primaryEmail(user: ClerkUser) {
   const primary = (user.email_addresses ?? []).find((email) => email.id && email.id === user.primary_email_address_id);
   return (primary?.email_address ?? user.email_addresses?.[0]?.email_address ?? "").trim().toLowerCase();
@@ -134,7 +147,7 @@ async function getCurrentProfile(token: string) {
 
   const { data, error } = await supabaseAdmin
     .from("profiles")
-    .select("id, company_id, full_name, email, role, is_admin, client_access_role, last_sign_in_at, created_at, companies(id, name)")
+    .select("id, company_id, full_name, email, role, is_admin, client_access_role, access_status, disabled_at, last_sign_in_at, created_at, companies(id, name)")
     .eq("id", currentUserId)
     .maybeSingle<ProfileRow>();
   if (error || !data) throw new Error("Unable to verify the current Trusted Bums profile.");
@@ -252,7 +265,7 @@ async function createClerkInvitation(input: {
 async function listTeam(companyId: string) {
   const { data: members, error: membersError } = await supabaseAdmin
     .from("profiles")
-    .select("id, company_id, full_name, email, role, is_admin, client_access_role, last_sign_in_at, created_at")
+    .select("id, company_id, full_name, email, role, is_admin, client_access_role, access_status, disabled_at, last_sign_in_at, created_at")
     .eq("company_id", companyId)
     .eq("role", "CLIENT")
     .order("full_name", { ascending: true, nullsFirst: false })
@@ -278,7 +291,23 @@ async function listTeam(companyId: string) {
     .order("created_at", { ascending: false });
   if (invitationsError) throw invitationsError;
 
-  return { members: members ?? [], invitations: invitations ?? [] };
+  const { data: accessRequests, error: accessRequestsError } = await supabaseAdmin
+    .from("client_company_access_requests")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (accessRequestsError) throw accessRequestsError;
+
+  const { data: domains, error: domainsError } = await supabaseAdmin
+    .from("company_domains")
+    .select("*")
+    .eq("company_id", companyId)
+    .order("is_primary", { ascending: false })
+    .order("domain", { ascending: true });
+  if (domainsError) throw domainsError;
+
+  return { members: members ?? [], invitations: invitations ?? [], accessRequests: accessRequests ?? [], domains: domains ?? [] };
 }
 
 async function inviteMember(currentProfile: ProfileRow, body: Record<string, unknown>, request: Request) {
@@ -290,6 +319,16 @@ async function inviteMember(currentProfile: ProfileRow, body: Record<string, unk
   const clientAccessRole = readClientAccessRole(body.clientAccessRole) ?? "CLIENT_MEMBER";
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
+  const emailDomain = getEmailDomain(email);
+  if (!emailDomain) throw new Error("Enter a valid email domain.");
+  const { data: approvedDomain, error: domainError } = await supabaseAdmin
+    .from("company_domains")
+    .select("id")
+    .eq("company_id", currentProfile.company_id)
+    .eq("domain", emailDomain)
+    .maybeSingle<{ id: string }>();
+  if (domainError) throw domainError;
+  if (!approvedDomain) throw new Error("Ask Admin to approve this company domain before inviting users from it.");
 
   const clerkUsers = await listClerkUsersByEmail(email);
   const existingClerkUser = clerkUsers.find((user) => primaryEmail(user) === email);
@@ -297,7 +336,7 @@ async function inviteMember(currentProfile: ProfileRow, body: Record<string, unk
   if (existingClerkUser?.id) {
     const { data: existingProfile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id, company_id, full_name, email, role, is_admin, client_access_role, last_sign_in_at, created_at")
+      .select("id, company_id, full_name, email, role, is_admin, client_access_role, access_status, disabled_at, last_sign_in_at, created_at")
       .eq("id", existingClerkUser.id)
       .maybeSingle<ProfileRow>();
     if (profileError) throw profileError;
@@ -314,6 +353,9 @@ async function inviteMember(currentProfile: ProfileRow, body: Record<string, unk
       role: "CLIENT",
       is_admin: false,
       client_access_role: clientAccessRole,
+      access_status: "APPROVED",
+      disabled_at: null,
+      disabled_by: null,
       last_sign_in_at: timestampMsToIso(updatedUser.last_sign_in_at) ?? new Date().toISOString(),
     }, { onConflict: "id" });
 
@@ -384,7 +426,7 @@ async function updateMemberRole(currentProfile: ProfileRow, body: Record<string,
 
   const { data: member, error: memberError } = await supabaseAdmin
     .from("profiles")
-    .select("id, company_id, full_name, email, role, is_admin, client_access_role, last_sign_in_at, created_at")
+    .select("id, company_id, full_name, email, role, is_admin, client_access_role, access_status, disabled_at, last_sign_in_at, created_at")
     .eq("id", profileId)
     .maybeSingle<ProfileRow>();
   if (memberError) throw memberError;
@@ -422,6 +464,161 @@ async function updateMemberRole(currentProfile: ProfileRow, body: Record<string,
   return { updated: true, profileId, clientAccessRole, team: await listTeam(currentProfile.company_id) };
 }
 
+async function disableMember(currentProfile: ProfileRow, body: Record<string, unknown>) {
+  if (!currentProfile.company_id) throw new Error("Your profile is not linked to a client company.");
+  const profileId = cleanString(body.profileId);
+  if (!profileId) throw new Error("Choose a team member to disable.");
+  if (profileId === currentProfile.id) throw new Error("You cannot disable your own client admin access.");
+
+  const { data: member, error: memberError } = await supabaseAdmin
+    .from("profiles")
+    .select("id, company_id, full_name, email, role, is_admin, client_access_role, access_status, disabled_at, last_sign_in_at, created_at")
+    .eq("id", profileId)
+    .maybeSingle<ProfileRow>();
+  if (memberError) throw memberError;
+  if (!member || member.company_id !== currentProfile.company_id || member.role !== "CLIENT") {
+    throw new Error("Choose a client team member from your company.");
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from("profiles")
+    .update({ access_status: "DISABLED", disabled_at: new Date().toISOString(), disabled_by: currentProfile.id })
+    .eq("id", profileId);
+  if (updateError) throw updateError;
+
+  await supabaseAdmin.from("audit_events").insert({
+    company_id: currentProfile.company_id,
+    user_id: currentProfile.id,
+    event_type: "client_team_member_disabled",
+    entity_type: "profiles",
+    entity_id: null,
+    event_data: { profileId, email: member.email, previousAccessStatus: member.access_status },
+  });
+
+  return { disabled: true, profileId, team: await listTeam(currentProfile.company_id) };
+}
+
+async function requestDomain(currentProfile: ProfileRow, body: Record<string, unknown>) {
+  if (!currentProfile.company_id || !currentProfile.companies) throw new Error("Your profile is not linked to a client company.");
+  const domain = normalizeDomain(cleanString(body.domain));
+  if (!domain) throw new Error("Enter a valid company domain.");
+
+  const { data: existingApproved, error: approvedError } = await supabaseAdmin
+    .from("company_domains")
+    .select("id, company_id")
+    .eq("domain", domain)
+    .maybeSingle<{ id: string; company_id: string }>();
+  if (approvedError) throw approvedError;
+  if (existingApproved?.company_id === currentProfile.company_id) throw new Error("That domain is already approved for your company.");
+  if (existingApproved) throw new Error("That domain is already assigned to another company.");
+
+  const payload = {
+    requester_profile_id: currentProfile.id,
+    company_id: currentProfile.company_id,
+    email: currentProfile.email ?? "",
+    email_domain: getEmailDomain(currentProfile.email ?? "") ?? null,
+    requested_company_name: currentProfile.companies.name,
+    requested_domain: domain,
+    requested_role: null,
+    request_type: "RELATED_DOMAIN",
+    status: "pending",
+    evidence: { source: "client_admin_request" },
+    requested_by: currentProfile.id,
+  };
+
+  const { data: existingRequest, error: existingRequestError } = await supabaseAdmin
+    .from("client_company_access_requests")
+    .select("id")
+    .eq("company_id", currentProfile.company_id)
+    .eq("requested_domain", domain)
+    .eq("request_type", "RELATED_DOMAIN")
+    .eq("status", "pending")
+    .maybeSingle<{ id: string }>();
+  if (existingRequestError) throw existingRequestError;
+
+  const write = existingRequest
+    ? await supabaseAdmin.from("client_company_access_requests").update(payload).eq("id", existingRequest.id).select("id").single<{ id: string }>()
+    : await supabaseAdmin.from("client_company_access_requests").insert(payload).select("id").single<{ id: string }>();
+  if (write.error) throw write.error;
+
+  await supabaseAdmin.from("audit_events").insert({
+    company_id: currentProfile.company_id,
+    user_id: currentProfile.id,
+    event_type: "client_related_domain_requested",
+    entity_type: "client_company_access_requests",
+    entity_id: write.data.id,
+    event_data: { domain },
+  });
+
+  return { requested: true, requestId: write.data.id, team: await listTeam(currentProfile.company_id) };
+}
+
+async function reviewAccessRequest(currentProfile: ProfileRow, body: Record<string, unknown>, status: "approved" | "denied") {
+  if (!currentProfile.company_id || !currentProfile.companies) throw new Error("Your profile is not linked to a client company.");
+  const requestId = cleanString(body.requestId);
+  if (!requestId) throw new Error("Choose an access request.");
+
+  const { data: accessRequest, error: requestError } = await supabaseAdmin
+    .from("client_company_access_requests")
+    .select("*")
+    .eq("id", requestId)
+    .eq("company_id", currentProfile.company_id)
+    .eq("status", "pending")
+    .maybeSingle<{
+      id: string;
+      requester_profile_id: string | null;
+      email: string;
+      requested_role: ClientAccessRole | null;
+      request_type: string;
+    }>();
+  if (requestError) throw requestError;
+  if (!accessRequest) throw new Error("Choose a pending request for your company.");
+  if (accessRequest.request_type !== "SAME_DOMAIN_ACCESS") {
+    throw new Error("Admin must review this type of company access request.");
+  }
+
+  if (status === "approved") {
+    if (!accessRequest.requester_profile_id) throw new Error("This request is missing a requester profile.");
+    const clientAccessRole = readClientAccessRole(body.clientAccessRole) ?? accessRequest.requested_role ?? "CLIENT_MEMBER";
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        company_id: currentProfile.company_id,
+        role: "CLIENT",
+        is_admin: false,
+        client_access_role: clientAccessRole,
+        access_status: "APPROVED",
+        disabled_at: null,
+        disabled_by: null,
+      })
+      .eq("id", accessRequest.requester_profile_id);
+    if (profileError) throw profileError;
+    await updateClerkMetadata(accessRequest.requester_profile_id, currentProfile.companies, clientAccessRole, currentProfile.id);
+  }
+
+  const { error: reviewError } = await supabaseAdmin
+    .from("client_company_access_requests")
+    .update({
+      status,
+      reviewed_by: currentProfile.id,
+      reviewed_at: new Date().toISOString(),
+      review_note: cleanString(body.reviewNote),
+    })
+    .eq("id", accessRequest.id);
+  if (reviewError) throw reviewError;
+
+  await supabaseAdmin.from("audit_events").insert({
+    company_id: currentProfile.company_id,
+    user_id: currentProfile.id,
+    event_type: status === "approved" ? "client_access_request_approved" : "client_access_request_denied",
+    entity_type: "client_company_access_requests",
+    entity_id: accessRequest.id,
+    event_data: { requestId: accessRequest.id, requesterProfileId: accessRequest.requester_profile_id, email: accessRequest.email },
+  });
+
+  return { reviewed: true, requestId: accessRequest.id, status, team: await listTeam(currentProfile.company_id) };
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json(405, { error: "Method not allowed." });
@@ -442,6 +639,22 @@ Deno.serve(async (request: Request) => {
 
     if (action === "update_role") {
       return json(200, await updateMemberRole(currentProfile, body));
+    }
+
+    if (action === "disable_member") {
+      return json(200, await disableMember(currentProfile, body));
+    }
+
+    if (action === "request_domain") {
+      return json(200, await requestDomain(currentProfile, body));
+    }
+
+    if (action === "approve_request") {
+      return json(200, await reviewAccessRequest(currentProfile, body, "approved"));
+    }
+
+    if (action === "deny_request") {
+      return json(200, await reviewAccessRequest(currentProfile, body, "denied"));
     }
 
     return json(400, { error: "Choose a valid client team action." });

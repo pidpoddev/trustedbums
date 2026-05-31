@@ -100,13 +100,10 @@ function readRole(value: unknown): PortalRole | null {
 
 function readMetadata(user: ClerkUser) {
   const publicMetadata = user.public_metadata ?? {};
-  const unsafeMetadata = user.unsafe_metadata ?? {};
-  const role = readRole(publicMetadata.role) ?? readRole(publicMetadata.signupIntent) ?? readRole(unsafeMetadata.role) ?? readRole(unsafeMetadata.signupIntent);
+  const role = readRole(publicMetadata.role) ?? readRole(publicMetadata.signupIntent);
   const companyName =
     cleanString(publicMetadata.clientCompanyName) ??
-    cleanString(publicMetadata.companyName) ??
-    cleanString(unsafeMetadata.clientCompanyName) ??
-    cleanString(unsafeMetadata.companyName);
+    cleanString(publicMetadata.companyName);
   return { role, companyName };
 }
 

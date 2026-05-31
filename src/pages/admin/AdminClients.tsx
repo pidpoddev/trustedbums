@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit3, Link2, Plus, ScrollText, Search, Users } from "lucide-react";
+import { Check, Edit3, Link2, Plus, ScrollText, Search, ShieldQuestion, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,9 +15,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
+  approveAdminCompanyAccessRequest,
   createClientCompany,
+  denyAdminCompanyAccessRequest,
   updateAdminClientCompany,
   listAdminProspectRecommendations,
+  listAdminCompanyAccessRequests,
   listCompanies,
   listOpportunityRegistrations,
   listProfiles,
@@ -214,6 +217,11 @@ export default function AdminClients() {
     queryKey: ["admin-prospect-contacts"],
     queryFn: listProspectContacts,
   });
+  const accessRequestsQuery = useQuery({
+    queryKey: ["admin-company-access-requests"],
+    queryFn: () => listAdminCompanyAccessRequests(user!),
+    enabled: Boolean(user?.role === "ADMIN"),
+  });
   const createClientMutation = useMutation({
     mutationFn: () => createClientCompany(user!, { name: newClientName, website: newClientWebsite }),
     onSuccess: async () => {
@@ -226,6 +234,38 @@ export default function AdminClients() {
     onError: (error) => {
       toast({
         title: "Unable to create client",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  const approveAccessRequestMutation = useMutation({
+    mutationFn: (requestId: string) => approveAdminCompanyAccessRequest(user!, requestId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-company-access-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-companies"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-profiles"] }),
+      ]);
+      toast({ title: "Access approved", description: "The request was approved and audited." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to approve request",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  const denyAccessRequestMutation = useMutation({
+    mutationFn: (requestId: string) => denyAdminCompanyAccessRequest(user!, requestId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-company-access-requests"] });
+      toast({ title: "Access denied", description: "The request was denied and audited." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to deny request",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -413,6 +453,51 @@ export default function AdminClients() {
           </Select>
         </div>
       </div>
+
+      {accessRequestsQuery.data?.length ? (
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="mb-4 flex items-center gap-2">
+              <ShieldQuestion className="h-5 w-5 text-primary" />
+              <h2 className="font-display text-lg font-semibold">Company Access Review</h2>
+            </div>
+            <div className="grid gap-3">
+              {accessRequestsQuery.data.map((request) => (
+                <div key={request.id} className="flex flex-col gap-3 rounded-md border p-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="font-medium">{request.email}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {request.request_type.replaceAll("_", " ").toLowerCase()} · {request.requested_company_name ?? request.companies?.name ?? "No company"} · {request.requested_domain ?? request.email_domain ?? "No domain"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{formatDateTimeForTimeZone(request.created_at, timeZone)}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={approveAccessRequestMutation.isPending || denyAccessRequestMutation.isPending}
+                      onClick={() => approveAccessRequestMutation.mutate(request.id)}
+                    >
+                      <Check className="mr-1 h-4 w-4" />
+                      Approve
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={approveAccessRequestMutation.isPending || denyAccessRequestMutation.isPending}
+                      onClick={() => denyAccessRequestMutation.mutate(request.id)}
+                    >
+                      <X className="mr-1 h-4 w-4" />
+                      Deny
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4">
         {isLoading ? (

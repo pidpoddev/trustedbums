@@ -67,9 +67,13 @@ export interface ProfileRecord {
   role: string | null;
   is_admin: boolean;
   client_access_role: string | null;
+  access_status?: "PENDING" | "APPROVED" | "DENIED" | "DISABLED" | null;
+  disabled_at?: string | null;
+  disabled_by?: string | null;
   last_sign_in_at: string | null;
   time_zone: string | null;
   date_format: string | null;
+  notification_preferences?: Record<string, unknown> | null;
   invited_to_customer_introductions: boolean;
   created_at: string;
   companies?: Pick<CompanyRecord, "id" | "name"> | null;
@@ -1350,6 +1354,8 @@ export interface ClientTeamMemberRecord {
   role: "CLIENT";
   is_admin: boolean;
   client_access_role: ClientAccessRole;
+  access_status?: "PENDING" | "APPROVED" | "DENIED" | "DISABLED" | null;
+  disabled_at?: string | null;
   last_sign_in_at: string | null;
   created_at: string;
 }
@@ -1372,6 +1378,8 @@ export interface ClientTeamInvitationRecord {
 export interface ClientTeamResponse {
   members: ClientTeamMemberRecord[];
   invitations: ClientTeamInvitationRecord[];
+  accessRequests?: ClientCompanyAccessRequestRecord[];
+  domains?: CompanyDomainRecord[];
 }
 
 export interface ClientTeamInviteInput {
@@ -1383,6 +1391,50 @@ export interface ClientTeamInviteInput {
 export interface ClientTeamRoleInput {
   profileId: string;
   clientAccessRole: ClientAccessRole;
+}
+
+export interface ClientTeamDisableInput {
+  profileId: string;
+}
+
+export interface ClientTeamDomainInput {
+  domain: string;
+}
+
+export interface ClientTeamReviewRequestInput {
+  requestId: string;
+  clientAccessRole?: ClientAccessRole;
+  reviewNote?: string;
+}
+
+export interface ClientCompanyAccessRequestRecord {
+  id: string;
+  requester_profile_id: string | null;
+  company_id: string | null;
+  email: string;
+  email_domain: string | null;
+  requested_company_name: string | null;
+  requested_domain: string | null;
+  requested_role: ClientAccessRole | "BUM" | null;
+  request_type: "AUTO_DOMAIN_CLAIM" | "SAME_DOMAIN_ACCESS" | "PUBLIC_EMAIL_COMPANY" | "RELATED_DOMAIN" | "BUM_SIGNUP";
+  status: "pending" | "approved" | "denied" | "cancelled";
+  evidence: Record<string, unknown>;
+  requested_by: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_at: string;
+  updated_at: string;
+  companies?: Pick<CompanyRecord, "id" | "name"> | null;
+}
+
+export interface ProfileBootstrapResponse {
+  profile: ProfileRecord;
+  request: { id: string; status: string; type: string; companyId?: string | null } | null;
+}
+
+export interface AdminAccessRequestsResponse {
+  requests: ClientCompanyAccessRequestRecord[];
 }
 
 interface ImpersonationFunctionProfile {
@@ -1812,6 +1864,35 @@ export async function ensureSupabaseProfileForAuthUser(user: AuthUser) {
   }
 
   return data;
+}
+
+export async function bootstrapSupabaseProfile(input: {
+  fullName: string;
+  timeZone?: string;
+  dateFormat?: string;
+}) {
+  const token = await getSupabaseAccessToken();
+  const response = await fetch(`${supabaseUrl}/functions/v1/profile-bootstrap`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token ?? supabasePublishableKey}`,
+    },
+    body: JSON.stringify({
+      fullName: input.fullName,
+      timeZone: normalizeTimeZone(input.timeZone),
+      dateFormat: normalizeDateFormat(input.dateFormat),
+    }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as ProfileBootstrapResponse & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Unable to verify this Trusted Bums profile.");
+  }
+
+  return payload;
 }
 
 export async function getOwnProfileSettings(userId: string) {
@@ -6365,6 +6446,103 @@ export async function updateClientTeamMemberRole(user: AuthUser, input: ClientTe
   return invokeClientTeamFunction<ClientTeamResponse & { updated?: boolean }>({
     action: "update_role",
     ...input,
+  });
+}
+
+export async function disableClientTeamMember(user: AuthUser, input: ClientTeamDisableInput) {
+  if (user.role !== "CLIENT" || user.clientAccessRole !== "CLIENT_ADMIN") {
+    throw new Error("Only client admins can disable team members.");
+  }
+
+  return invokeClientTeamFunction<ClientTeamResponse & { disabled?: boolean }>({
+    action: "disable_member",
+    ...input,
+  });
+}
+
+export async function requestClientCompanyDomain(user: AuthUser, input: ClientTeamDomainInput) {
+  if (user.role !== "CLIENT" || user.clientAccessRole !== "CLIENT_ADMIN") {
+    throw new Error("Only client admins can request company domains.");
+  }
+
+  return invokeClientTeamFunction<ClientTeamResponse & { requested?: boolean; requestId?: string | null }>({
+    action: "request_domain",
+    ...input,
+  });
+}
+
+export async function approveClientCompanyAccessRequest(user: AuthUser, input: ClientTeamReviewRequestInput) {
+  if (user.role !== "CLIENT" || user.clientAccessRole !== "CLIENT_ADMIN") {
+    throw new Error("Only client admins can approve company access requests.");
+  }
+
+  return invokeClientTeamFunction<ClientTeamResponse & { reviewed?: boolean }>({
+    action: "approve_request",
+    ...input,
+  });
+}
+
+export async function denyClientCompanyAccessRequest(user: AuthUser, input: ClientTeamReviewRequestInput) {
+  if (user.role !== "CLIENT" || user.clientAccessRole !== "CLIENT_ADMIN") {
+    throw new Error("Only client admins can deny company access requests.");
+  }
+
+  return invokeClientTeamFunction<ClientTeamResponse & { reviewed?: boolean }>({
+    action: "deny_request",
+    ...input,
+  });
+}
+
+async function invokeAdminAccessRequestsFunction<T>(body: Record<string, unknown>) {
+  const token = await getSupabaseAccessToken();
+  const response = await fetch(`${supabaseUrl}/functions/v1/admin-access-requests`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token ?? supabasePublishableKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as T & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Unable to review company access requests.");
+  }
+
+  return payload;
+}
+
+export async function listAdminCompanyAccessRequests(user: AuthUser) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can review company access requests.");
+  }
+
+  const payload = await invokeAdminAccessRequestsFunction<AdminAccessRequestsResponse>({ action: "list" });
+  return payload.requests;
+}
+
+export async function approveAdminCompanyAccessRequest(user: AuthUser, requestId: string) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can approve company access requests.");
+  }
+
+  return invokeAdminAccessRequestsFunction<AdminAccessRequestsResponse & { approved?: boolean }>({
+    action: "approve",
+    requestId,
+  });
+}
+
+export async function denyAdminCompanyAccessRequest(user: AuthUser, requestId: string, reviewNote?: string) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can deny company access requests.");
+  }
+
+  return invokeAdminAccessRequestsFunction<AdminAccessRequestsResponse & { denied?: boolean }>({
+    action: "deny",
+    requestId,
+    reviewNote,
   });
 }
 

@@ -63,6 +63,12 @@ verify_jwt = false
 [functions.client-team]
 verify_jwt = false
 
+[functions.profile-bootstrap]
+verify_jwt = false
+
+[functions.admin-access-requests]
+verify_jwt = false
+
 [functions.extension-api-v1]
 verify_jwt = false
 

@@ -67,7 +67,6 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
   };
 
   const unsafeMetadata = {
-    role,
     signupIntent: role,
     ...(role === "CLIENT"
       ? {

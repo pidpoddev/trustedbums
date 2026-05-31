@@ -24,12 +24,12 @@ function getDestination(user: AuthUser, fallbackPath?: string) {
 }
 
 export default function Login() {
-  const { user, isLoaded, authorizationError } = useAuth();
+  const { user, isLoaded, isSignedIn, authorizationError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
-  const showSignedOutActions = !isLoaded || !user;
-  const showSignedInActions = Boolean(isLoaded && user);
+  const showSignedOutActions = !isLoaded || !isSignedIn;
+  const showSignedInActions = Boolean(isLoaded && isSignedIn);
   const showAuthorizationProfiles = import.meta.env.DEV || import.meta.env.VITE_SHOW_AUTHORIZATION_PROFILES === "true";
 
   if (isLoaded && user) {

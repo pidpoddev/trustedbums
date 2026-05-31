@@ -1,17 +1,12 @@
 import { useAuth as useClerkAuth, useSession, useUser } from "@clerk/react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  DEFAULT_CLIENT_ACCESS_ROLE,
-  createPendingBumId,
-  getAuthorizationProfileByEmail,
-  getKnownClientForEmail,
   readClientAccessRole,
-  toAuthUser,
   type AuthUser,
   type ClientAccessRole,
   type UserRole,
 } from "@/data/authData";
-import { ensureSupabaseProfileForAuthUser } from "@/lib/portalApi";
+import { bootstrapSupabaseProfile, type ProfileRecord } from "@/lib/portalApi";
 import { setSupabaseAccessTokenProvider } from "@/lib/supabase";
 import { getBrowserTimeZone, getStoredDateFormat, normalizeDateFormat, setStoredDateFormat } from "@/lib/timezone";
 
@@ -37,6 +32,36 @@ function readString(value: unknown) {
 
 function readRole(value: unknown): UserRole | undefined {
   return value === "ADMIN" || value === "CLIENT" || value === "BUM" ? value : undefined;
+}
+
+interface BaseIdentity {
+  id: string;
+  email: string;
+  name: string;
+  timeZone?: string;
+  dateFormat?: string;
+}
+
+function profileToAuthUser(profile: ProfileRecord, baseUser: BaseIdentity): AuthUser | null {
+  const role = readRole(profile.role);
+  const accessStatus = profile.access_status ?? "APPROVED";
+
+  if (!role || accessStatus !== "APPROVED" || profile.disabled_at) {
+    return null;
+  }
+
+  return {
+    id: baseUser.id,
+    email: profile.email ?? baseUser.email,
+    name: profile.full_name ?? baseUser.name,
+    role,
+    timeZone: profile.time_zone ?? baseUser.timeZone,
+    dateFormat: normalizeDateFormat(profile.date_format ?? baseUser.dateFormat),
+    clientAccessRole: role === "CLIENT" ? readClientAccessRole(profile.client_access_role) : undefined,
+    clientId: role === "CLIENT" ? profile.company_id ?? undefined : undefined,
+    companyName: profile.companies?.name ?? undefined,
+    bumId: role === "BUM" ? profile.id : undefined,
+  };
 }
 
 function getDisplayName(
@@ -77,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => setSupabaseAccessTokenProvider(null);
   }, [session]);
 
-  const baseUser = useMemo<AuthUser | null>(() => {
+  const baseUser = useMemo<BaseIdentity | null>(() => {
     const isLoaded = isAuthLoaded && isSessionLoaded && isUserLoaded;
     const signedIn = Boolean(isSignedIn && clerkUser);
     const email =
@@ -91,36 +116,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    const publicMetadata = clerkUser.publicMetadata as Record<string, unknown>;
-    const unsafeMetadata = clerkUser.unsafeMetadata as Record<string, unknown>;
-    const profile = getAuthorizationProfileByEmail(email);
-    const fallbackUser = profile ? toAuthUser(profile) : undefined;
-    const knownClient = getKnownClientForEmail(email);
-    const metadataRole = readRole(publicMetadata.role) ?? readRole(unsafeMetadata.role);
-    const metadataCompanyName =
-      readString(publicMetadata.clientCompanyName) ??
-      readString(publicMetadata.companyName) ??
-      readString(unsafeMetadata.clientCompanyName) ??
-      readString(unsafeMetadata.companyName);
-    const metadataClientAccessRole =
-      readClientAccessRole(publicMetadata.clientAccessRole) ??
-      readClientAccessRole(publicMetadata.clientRole) ??
-      readClientAccessRole(publicMetadata.clientPortalRole) ??
-      readClientAccessRole(unsafeMetadata.clientAccessRole) ??
-      readClientAccessRole(unsafeMetadata.clientRole) ??
-      readClientAccessRole(unsafeMetadata.clientPortalRole);
-    const role = metadataRole ?? profile?.role;
-    const companyName = knownClient?.company ?? metadataCompanyName ?? fallbackUser?.companyName;
-    const bumId =
-      readString(publicMetadata.bumId) ??
-      readString(unsafeMetadata.bumId) ??
-      profile?.bumId ??
-      (role === "BUM" ? createPendingBumId(email) : undefined);
-
-    if (!role || (role === "CLIENT" && !companyName) || (role === "BUM" && !bumId)) {
-      return null;
-    }
-
     return {
       id: clerkUser.id,
       email,
@@ -128,16 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clerkUser.fullName,
         clerkUser.firstName,
         clerkUser.lastName,
-        fallbackUser?.name,
+        undefined,
         email,
       ),
-      role,
       timeZone: browserTimeZone,
       dateFormat,
-      clientAccessRole: role === "CLIENT" ? metadataClientAccessRole ?? fallbackUser?.clientAccessRole ?? DEFAULT_CLIENT_ACCESS_ROLE : undefined,
-      clientId: fallbackUser?.clientId,
-      bumId,
-      companyName,
     };
   }, [clerkUser, isAuthLoaded, isSessionLoaded, isSignedIn, isUserLoaded]);
 
@@ -155,28 +145,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const profile = await ensureSupabaseProfileForAuthUser(baseUser);
+        const { profile, request } = await bootstrapSupabaseProfile({
+          fullName: baseUser.name,
+          timeZone: baseUser.timeZone,
+          dateFormat: baseUser.dateFormat,
+        });
         if (!mounted) {
           return;
         }
 
         setStoredDateFormat(profile.date_format ?? baseUser.dateFormat);
-        setDbUser({
-          ...baseUser,
-          timeZone: profile.time_zone ?? baseUser.timeZone,
-          dateFormat: normalizeDateFormat(profile.date_format ?? baseUser.dateFormat),
-          clientAccessRole: baseUser.role === "CLIENT"
-            ? readClientAccessRole(profile.client_access_role) ?? baseUser.clientAccessRole
-            : undefined,
-          clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
-          companyName: profile.companies?.name ?? baseUser.companyName,
-        });
+        const authorizedUser = profileToAuthUser(profile, baseUser);
+        setDbUser(authorizedUser);
+        if (!authorizedUser && request) {
+          setDbError("Your Trusted Bums access request is awaiting approval.");
+        }
       } catch (error) {
         if (!mounted) {
           return;
         }
 
-        setDbUser(baseUser);
+        setDbUser(null);
         setDbError(error instanceof Error ? error.message : "Unable to connect this Clerk user to Supabase.");
       } finally {
         if (mounted) {
@@ -199,11 +188,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!baseUser) {
-      return "Your Clerk user is signed in but has not been assigned a Trusted Bums role.";
+      return "Your Clerk user is signed in but does not have a verified email address.";
     }
 
-    return dbError;
-  }, [baseUser, dbError, isLoaded, isSignedIn]);
+    return dbError ?? (!dbUser ? "Your Trusted Bums access is awaiting approval." : null);
+  }, [baseUser, dbError, dbUser, isLoaded, isSignedIn]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -223,18 +212,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ),
       refreshUser: async () => {
         if (baseUser) {
-          const profile = await ensureSupabaseProfileForAuthUser(baseUser);
-          setStoredDateFormat(profile.date_format ?? baseUser.dateFormat);
-          setDbUser({
-            ...baseUser,
-            timeZone: profile.time_zone ?? baseUser.timeZone,
-            dateFormat: normalizeDateFormat(profile.date_format ?? baseUser.dateFormat),
-            clientAccessRole: baseUser.role === "CLIENT"
-              ? readClientAccessRole(profile.client_access_role) ?? baseUser.clientAccessRole
-              : undefined,
-            clientId: baseUser.role === "CLIENT" ? profile.company_id ?? undefined : baseUser.clientId,
-            companyName: profile.companies?.name ?? baseUser.companyName,
+          const { profile } = await bootstrapSupabaseProfile({
+            fullName: baseUser.name,
+            timeZone: baseUser.timeZone,
+            dateFormat: baseUser.dateFormat,
           });
+          setStoredDateFormat(profile.date_format ?? baseUser.dateFormat);
+          setDbUser(profileToAuthUser(profile, baseUser));
         }
       },
       signOut: async () => {
