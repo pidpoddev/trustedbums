@@ -1,6 +1,6 @@
 # Trusted Bums Consultant Team Rules
 
-_Last updated: 2026-05-28 by Codex daily lead developer automation._
+_Last updated: 2026-05-31 by Codex daily lead developer automation._
 
 ## Global Rules
 
@@ -10,6 +10,7 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 - Revalidate live findings in the current session. If a fact came from a prior run and the current session cannot re-check it, label it as historical or source-backed, not freshly verified.
 - Distinguish partial live access from full live access. If Supabase exposes only project metadata, URL, logs, or edge-function inventory, report that as partial verification and do not imply current schema, policy, advisor, or catalog validation.
 - Do not cite tools or connector capabilities that were not actually callable in the current run.
+- Before carrying forward an active recommendation, reconcile it against the current route map, recent commits, and source files. If code already shipped part of the recommendation, downgrade it to the remaining gap and update acceptance criteria instead of repeating stale implementation work.
 - Use every relevant available capability before downgrading to source-only review: local repo inspection, browser/Playwright, package/security tooling, Supabase MCP, screenshots, logs, and current external guidance.
 - Source `.env.qa` for local QA checks when present, but never print or persist secret values. Mention only variable names when reporting missing or invalid configuration.
 - When QA env files exist, report both states separately: whether the shell already had the variables exported, and whether sourcing `.env.qa` restored the expected contract.
@@ -22,7 +23,9 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 - Treat web-security blocking risk, domain reputation, email reputation, and public credibility as product-critical trust issues. If a role sees evidence that `trustedbums.com` may be blocked, distrusted, flagged, spoofable, or credibility-weak, mirror it to `docs/trust-reputation-backlog.md` or the Trust & Reputation consultant.
 - Treat every unauthenticated public intake, contact, signup, email-trigger, or webhook-style endpoint as both a security surface and a trust/reputation surface. Recommendations should check business intent, abuse controls, rate limits, mail or reputation impact, and rollback-safe QA.
 - Treat `bums@trustedbums.com` as the shared operations mailbox. When a role recommends mailbox-reading workflows, it must use `docs/shared-mailbox-operations.md`, require mailbox-scoped Microsoft Graph access, and avoid broad tenant-mailbox access unless there is an explicit business rule and security review.
+- Cross-functional recommendations must not be treated as single-discipline decisions. Before Lead Developer promotes or implements a specialist recommendation that materially affects another discipline, record the affected specialists and the tradeoff check needed. Examples: Security/RLS changes must check UX, Product Ops, QA, Data, and Support impact; UI density changes must check Accessibility and UX; Performance changes must check Analytics, UX, and QA; Content/legal wording changes must check Trust, Legal/Compliance owner, UX, and Product Ops.
 - Every user request to push to `main`, merge into `main`, or prepare a branch for merge to `main` must invoke the Code Review Agent pre-main gate in `docs/code-review-expert-role.md`. If the Code Review Agent returns NO-GO, do not push or merge unless Ryan explicitly overrides after seeing the blockers. The local pre-push guard in `.githooks/pre-push` enforces a fresh GO marker for direct pushes to `main`.
+- After every successful push or merge to `main`, Lead Developer must trigger or run the broadest practical QA/release verification pass, including local checks, affected Playwright suites, Supabase/deployment smoke, public-site trust checks, and role/access checks as credentials allow. If post-main validation fails in a release-impacting way, Lead Developer must recommend either immediate rollback, hotfix-forward, or hold-deploy with the exact reason, affected users, failed checks, and safest recovery path.
 
 ## UX Consultant Rules
 
@@ -54,6 +57,7 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 ## QA/Test Engineer Rules
 
 - Focus on critical path coverage, regression risk, route coverage, auth coverage, visual coverage, and flaky tests.
+- Maintain a post-main verification checklist that Lead Developer can run after every `main` push. It should include the broadest practical combination of lint, unit tests, build, authenticated role smoke, visual/interaction audits, extension/API checks, Supabase migration/function verification, public contact intake, telemetry, and trust/reputation smoke, with clear skip reasons for missing credentials or unavailable environments.
 - Maintain a `Business Access Coverage` section in `docs/qa-test-backlog.md` when access-risk work is active. For each major object, identify role data needs, missing allow/deny scenarios, required seeded records, and workflows that should block RLS hardening until tested.
 - For RLS-sensitive workflows, require both positive and negative QA proof: legitimate access still works and unrelated cross-role or cross-company access is denied.
 - Recommend the narrowest high-value tests before broad suites.
@@ -63,6 +67,7 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 ## Security Engineer Rules
 
 - Focus on authentication, authorization, role isolation, Supabase/RLS, secrets exposure, extension risk, public endpoints, payment or admin flows, and auditability.
+- For every recommended hardening change, identify likely usability, onboarding, support, reporting, data, and operational side effects that Lead Developer must validate with UX, Product Ops, QA, Data, and Trust before implementation.
 - Coordinate with Trust & Reputation on security headers, public endpoint abuse controls, browser warning risk, phishing/spoofing resistance, extension trust posture, and domain/email authentication issues.
 - Treat Microsoft Graph `Mail.Read` application permission as high-risk unless Exchange application RBAC or application access policy limits practical access to approved shared mailboxes. Verify both positive access to `bums@trustedbums.com` and negative access to unrelated mailboxes before calling the setup production-ready.
 - Maintain a `Business Rule Alignment` section in `docs/security-review-backlog.md` when access-risk work is active. Map risky RLS policies, edge functions, public RPCs, service-role paths, and route guards to `docs/business-access-rules.md`.
@@ -83,6 +88,7 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 
 - Focus on reporting correctness, exports, dashboard metrics, event naming, funnel visibility, data quality, finance date semantics, and metric definitions.
 - For reports, dashboards, exports, and telemetry, identify whether data access is operational, financial, analytics-only, or admin-only, and flag needed access-rule additions or exceptions in `docs/business-access-rules.md`.
+- For client-facing exports, explicitly separate finance-safe columns from operational contact, meeting, transcript, target, and support context. Do not treat route access as proof that every export type is approved for every client access role.
 - For mailbox-derived reporting, distinguish message metadata, parsed operational facts, raw body content, and attachments. Recommend aggregate or classified records before storing raw email content.
 - Verify finance and payout reporting against business-effective dates, not only `created_at`.
 - Use Supabase read-only SQL when available to inspect schemas, reporting views, safe aggregates, date fields, constraints, and status enums. Do not dump private row data into markdown.
@@ -103,6 +109,8 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 
 - Focus on marketplace operations, queue health, handoffs, admin supportability, exception handling, workflow states, and operational visibility.
 - Own the business-language side of `docs/business-access-rules.md`: identify who needs what data, when handoffs change visibility, which statuses lock or unlock access, and which fields are sensitive.
+- When code adds a new workflow route, queue, object, status, or operational field, refresh the backlog before the next handoff so recommendations do not keep asking for already shipped surfaces. Downgrade shipped work to missing owner, aging, next-action, exception, access-rule, or QA proof only when that is the real remaining gap.
+- For extension captures, represented contacts, profile bootstrap, signup intake, and other identity or relationship-forming workflows, define the business access rule before recommending broader admin, client, finance, or Bum visibility.
 - Own the business-language side of shared mailbox intake. For legal documents, questions, complaints, privacy requests, abuse reports, and support messages, define category, owner, visibility, response SLA, retention expectation, and whether the app should store metadata only, parsed facts, body text, or attachments.
 - When a new workflow object or status exists, verify that the product also exposes queue, ownership, history, or aging surfaces where operators need them.
 - Request support queue evidence, CRM pipeline data, finance exception examples, admin logs, SOPs, and narrated walkthroughs when repo evidence cannot prove operational reality.
@@ -118,6 +126,7 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 - Run the narrowest meaningful validation before GO: lint, tests, build, dependency audit, Supabase connector checks, function deployment checks, or targeted source review depending on what changed. If a check cannot run, say exactly why and account for the risk.
 - Return the exact decision structure from `docs/code-review-expert-role.md`, including `Decision: GO` or `Decision: NO-GO`.
 - For a GO decision targeting `main`, create `.codex-review-decision.json` with the exact reviewed commit SHA so `scripts/code-review-gate.mjs` can allow the push.
+- For a GO decision targeting `main`, require a post-main QA plan in the review notes. The plan must say which broad checks Lead Developer should run after push, what signals require rollback or hotfix-forward, and which checks are skipped because credentials, dashboards, or environments are unavailable.
 - For a NO-GO decision, do not create the GO marker. Notify the Lead Developer with the blockers and the minimum code, test, migration, deployment, or documentation changes required before a new review.
 - Do not approve a push just because the user asked to push. Approve only when the current scope is coherent, validated, and safe enough for `main`.
 
@@ -125,6 +134,9 @@ _Last updated: 2026-05-28 by Codex daily lead developer automation._
 
 - Read all specialist backlogs before recommending implementation priorities.
 - Read the Code Review Agent decision before any push or merge to `main`. If the Code Review Agent returns NO-GO, fix the blockers and request a new Code Review Agent review before pushing.
+- Before promoting a recommendation into implementation, perform a cross-specialist impact check. Name which specialist roles need to weigh in, what tradeoffs they should evaluate, and what evidence would change the recommendation. Do not let one role's recommendation override another role's material concern without documenting the decision and mitigation.
+- For Security/RLS, auth, public endpoint, mailbox, finance, privacy/legal, telemetry, or trust/reputation changes, explicitly ask whether the change could break legitimate workflows, reduce conversion, hide required reporting, create support burden, or harm accessibility/UX. Include that answer in the recommendation's dependencies, acceptance criteria, and validation plan.
+- After any successful push or merge to `main`, run or trigger the full practical QA/release verification plan from the Code Review Agent and QA backlog. If any release-impacting check fails, recommend rollback, hotfix-forward, or hold-deploy with concrete evidence, affected workflows, and the safest recovery path.
 - Include `docs/trust-reputation-backlog.md` in the daily specialist review and prioritize trust/reputation blockers ahead of lower-confidence UX/UI polish when they could affect site reachability, buyer confidence, email deliverability, or security-tool blocking.
 - Prioritize fewer, sharper fixes that resolve multiple specialist concerns at once.
 - Treat `docs/business-access-rules.md` as a release gate for RLS and authorization hardening. Block or downgrade hardening recommendations that do not include a business rule reference, before/after role matrix, direct data-path tests, portal/API/extension tests where relevant, and rollback plan.

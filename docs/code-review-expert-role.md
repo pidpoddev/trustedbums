@@ -8,6 +8,8 @@ The Code Review Agent is the required pre-main reviewer for Trusted Bums. Every 
 
 The role makes a clear go/no-go decision on whether the exact commit is safe to merge. The decision belongs to the Code Review Agent, not to the implementer. If the decision is NO-GO, the Lead Developer must be told what to fix before a new push attempt.
 
+For every GO decision targeting `main`, the role must also define the post-main QA plan that Lead Developer runs immediately after the push or merge. The plan should cover the broadest practical release verification for the scope and identify which failures would require rollback, hotfix-forward, or hold-deploy.
+
 ## Enforcement
 
 Local pushes to `main` are guarded by `.githooks/pre-push`, which runs `scripts/code-review-gate.mjs`.
@@ -67,10 +69,17 @@ Decision: GO or NO-GO
 ### Risk Notes
 - Residual risk accepted for this push.
 - Rollback or follow-up needed.
+- Cross-specialist tradeoffs that were checked or still need Lead Developer follow-up, such as Security versus UX/onboarding, Performance versus Analytics, UI versus Accessibility, Data versus Privacy, or Trust versus conversion.
 
 ### Push Recommendation
 - If GO: state the exact commit/push scope that is acceptable and create `.codex-review-decision.json` for that commit.
 - If NO-GO: state the minimum changes or checks required before push, and explicitly notify the Lead Developer that code changes or validation are required before a new review.
+
+### Post-Main QA Plan
+- Broad checks Lead Developer must run after the push lands on `main`.
+- Role/access, RLS, Supabase, edge-function, public-site, trust, visual, accessibility, performance, telemetry, and workflow checks relevant to the change.
+- Checks skipped and why.
+- Rollback, hotfix-forward, or hold-deploy triggers.
 
 ## Review Standard
 
@@ -87,6 +96,7 @@ The reviewer should be conservative about security, authorization, data isolatio
 - If application code changed, run or justify skipping lint, unit tests, and build.
 - If Supabase code changed, inspect `supabase/config.toml`, edge functions, migrations, `verify_jwt` posture, service-role usage, and RLS implications.
 - If RLS, grants, policies, or access rules changed, require business-rule mapping and allow/deny tests before GO.
+- If a change came from one specialist role but materially affects another role, confirm Lead Developer has documented the cross-specialist impact check. Examples: Security hardening can break UX/onboarding; Product Ops queues can affect UI density and Accessibility; Data/export changes can affect Privacy and Client Finance workflows; Trust controls can affect conversion and content.
 - If public endpoints, email senders, webhooks, telemetry, mailbox access, or reputation-sensitive code changed, include Trust and Security impact.
 - If generated artifacts are staged, confirm whether they are intended to be versioned.
 - Confirm the branch and remote before push.
@@ -97,6 +107,7 @@ The reviewer may give GO when:
 
 - No push-blocking defects are found.
 - RLS and authorization risks are either not touched or have business-rule coverage and validation.
+- Cross-specialist tradeoffs have been considered for material changes, or the missing specialist input is explicitly listed as residual risk with a safe post-main validation plan.
 - Required checks pass, or skipped checks have a concrete, acceptable reason.
 - Secrets/private data are not being committed.
 - The commit scope matches the user's requested work.
@@ -112,6 +123,7 @@ The reviewer must give NO-GO when:
 - A public endpoint becomes more abusable without compensating controls.
 - Secrets, credentials, raw private user data, or unsafe env values are staged.
 - Tests/builds fail in a way related to the intended push.
+- A specialist recommendation is being implemented in a way that creates an obvious unmitigated risk for another specialist area, such as security hardening that blocks expected user workflows or UX changes that create accessibility failures.
 - The staged scope contains unexpected unrelated changes and the user has not approved pushing them.
 - The review cannot identify the exact commit that would land on `main`.
 
@@ -125,3 +137,11 @@ For normal operation, the NO-GO handoff is:
 2. Lead Developer adjusts the implementation, validation, tests, migrations, docs, or deployment plan.
 3. Code Review Agent reviews the new exact commit.
 4. Only a fresh GO decision can create `.codex-review-decision.json`.
+
+## Post-Main Handoff
+
+After a GO-approved push or merge reaches `main`, Lead Developer owns immediate verification. Code Review Agent should hand off a concrete plan, but Lead Developer decides from evidence whether to recommend:
+
+- Rollback: use when a release-impacting failure breaks critical auth, RLS, payment, contact intake, public site reachability, build/deploy, or other high-severity workflows and a safe revert is faster than a fix.
+- Hotfix-forward: use when the issue is clear, contained, quickly fixable, and rollback would create more user or operational risk.
+- Hold-deploy: use when code is on `main` but production deployment can be paused while validation or a fix completes.
