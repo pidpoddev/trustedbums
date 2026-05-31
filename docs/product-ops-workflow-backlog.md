@@ -25,8 +25,8 @@ Live Supabase read-only checks on 2026-05-31 confirm the relevant objects are ac
 ### P1 - Define operational ownership for profile bootstrap and workspace assignment
 - Evidence: Security review found Clerk `unsafeMetadata` still feeds role/company/bootstrap state in `src/contexts/AuthContext.tsx`, `src/components/SignupIntentDialog.tsx`, and `src/lib/portalApi.ts`. The `Profile Bootstrap And Self-Editable Identity` business rule blocks hardening until Product confirms workspace-creation and self-editable field policy.
 - Why it matters: Signup intent, role assignment, and company attachment are operational handoffs, not just auth plumbing. If Product Ops does not own the approval model, Security cannot safely tighten RLS without risking legitimate onboarding or allowing self-escalation.
-- Recommendation: Decide whether first-time client signup may create a workspace automatically, which roles may approve company/client-role/Bum assignment, which fields users can self-edit, and what queue or audit trail Admins use for pending profile repair.
-- Acceptance criteria: Product has a documented role/company assignment flow; Admins have a visible pending/repair workflow or explicit manual process; safe self-edit fields are named; and QA has allow/deny cases for profile bootstrap.
+- Recommendation: Implement the approved domain-claim operating model in the workflow design: first verified claimant of an unclaimed client email domain can create the company and become initial Client Admin; later same-domain users enter Client Admin approval; Admins get an override queue for stale, invalid, or unavailable previous Client Admins. Product Ops still needs to define safe self-edit fields, blocked/public domain handling, related-domain alias approval, and the admin repair audit trail.
+- Acceptance criteria: Product has a documented domain-claim and same-domain approval flow; Admins have a visible override/repair workflow; safe self-edit fields are named; blocked-domain and related-domain decisions are documented; and QA has allow/deny cases for profile bootstrap.
 
 ### P1 - Define extension-capture and represented-contact operating rules
 - Evidence: `extension_page_captures`, `bum_contacts`, `extension-api-v1`, and `portal-contacts` are now live product surfaces. The business rule keeps raw capture text, source URLs, notes, and represented-contact details Bum/Admin scoped unless Product approves converted client visibility.
@@ -42,7 +42,7 @@ Live Supabase read-only checks on 2026-05-31 confirm the relevant objects are ac
 
 ## Business Access Rule Recommendations
 
-- Product must confirm the profile bootstrap rule before Security implements profile/RLS hardening: self-editable fields, workspace creation, role assignment owner, and audit trail.
+- Product has confirmed the core profile bootstrap rule: first verified user for an unclaimed client email domain may create the company and become initial Client Admin; later same-domain users require Client Admin approval; Admin can override stale or invalid prior admins. Remaining Product Ops decisions: safe self-edit fields, blocked/public domains, related-domain aliases, role-assignment audit trail, and repair queue design.
 - Product must confirm whether saved targets can ever preserve Bum read access. Until clarified, saved-only access is not an approved entitlement in `docs/business-access-rules.md`.
 - Product must confirm converted extension-capture visibility and raw-capture retention before exposing capture-derived details to client roles.
 - Client Finance should remain finance/report scoped. If finance needs operational meeting or target context for a dispute, use explicit case participation or a finance-note surface rather than broad operational exports.
@@ -50,7 +50,7 @@ Live Supabase read-only checks on 2026-05-31 confirm the relevant objects are ac
 ## Workflow Map
 
 - Public intake: Visitor submits contact form through `submit-contact` -> abuse controls validate -> contact submission enters admin handoff queue -> Admin archives, escalates, converts, or follows up.
-- Profile bootstrap: Visitor signs up with role/company intent -> intent remains advisory -> Admin or approved internal flow assigns authoritative role/company/client access/Bum identity -> profile changes are audited.
+- Profile bootstrap: Visitor signs up with role/company intent and verified email domain -> if the client domain is unclaimed, approved server flow creates company and initial Client Admin -> if domain is already claimed, user enters Client Admin approval queue -> Admin can override stale or invalid prior admins -> authoritative profile changes are audited.
 - Bum-to-client handoff: Bum submits target response -> Client reviews and formalizes or declines -> Admin monitors aging/ownership in `/admin/handoffs`.
 - Client-to-Bum intro request: Client creates intro request -> requested Bum and Admin need queue visibility -> closure authority remains an open product decision.
 - Extension capture: Bum captures page context for an allowed destination -> capture can materialize represented contact -> raw capture stays Bum/Admin scoped unless converted into approved client-visible workflow output.
@@ -72,7 +72,7 @@ Live Supabase read-only checks on 2026-05-31 confirm the relevant objects are ac
 ## Access Requests And Evidence Gaps
 
 - Need support queue exports, SLA definitions, operator screenshots, CRM pipeline data, finance exception samples, admin logs, operations SOPs, and narrated role walkthroughs.
-- Need Product and Security confirmation for first-time client workspace creation, self-editable profile fields, saved-target visibility, extension-capture retention, converted capture visibility, and intro-request closure authority.
+- Need Product and Security confirmation for self-editable profile fields, blocked/public domains, related-domain aliases, saved-target visibility, extension-capture retention, converted capture visibility, and intro-request closure authority.
 - Supabase lead-run access on 2026-05-31 included read-only SQL, policy catalog queries, grants/function ACL checks, edge-function inventory/source, and safe aggregate counts. Dedicated advisor and log tools were still not exposed as callable tools in the lead session.
 
 ## Agent Inputs

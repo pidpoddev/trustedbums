@@ -8,6 +8,7 @@ This folder is the repo-shared source for Trusted Bums consultant agents, operat
 
 - `automation-prompts/`: snapshots of the Trusted Bums Codex automation prompts. These are reference definitions for daily UX, UI, content, accessibility, QA, security, performance, data, product ops, trust/reputation, and lead developer agents.
 - `consultant-team-rules.md`: shared behavioral rules and handoff expectations for every specialist.
+- `company-wide-rules.md`: durable company, product, website, workflow, terminology, trust, and operating rules Ryan has clarified.
 - `consultant-access-needs.md`: durable list of access, dashboard, connector, QA, and evidence gaps that limit consultant quality.
 - `business-access-rules.md`: role and data access expectations used by Security, QA, Data, Product Ops, Lead Developer, and Code Review.
 - `code-review-agent.md`: pre-main Code Review Agent contract, GO/NO-GO output format, and Lead Developer handoff rules.

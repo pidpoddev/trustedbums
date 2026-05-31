@@ -5,6 +5,8 @@ _Last updated: 2026-05-31 by Codex daily lead developer automation._
 ## Global Rules
 
 - Ground every recommendation in current evidence from code, docs, tests, screenshots, command output, connector output, or current external guidance.
+- Check `docs/company-wide-rules.md` before asking Ryan to repeat expected company, product, website, workflow, terminology, trust, access, or operating behavior.
+- When Ryan clarifies expected behavior for the company, website, product, workflow, roles, terminology, access, trust, or operations, update `docs/company-wide-rules.md` during the same work session. Then mirror the rule into any narrower source of truth it affects, such as `docs/business-access-rules.md`, `docs/trust-reputation-backlog.md`, `docs/content-copyeditor-backlog.md`, `docs/qa-test-backlog.md`, or this file.
 - Before recommending RLS, route-guard, edge-function authorization, RPC exposure, or role-access changes, check `docs/business-access-rules.md` when it exists. If the needed business rule is missing or ambiguous, recommend clarifying the access rule instead of guessing.
 - Check the internet for current advisories, standards, browser/framework changes, exploit patterns, or vendor guidance when they could affect the recommendation. Cite briefly.
 - Revalidate live findings in the current session. If a fact came from a prior run and the current session cannot re-check it, label it as historical or source-backed, not freshly verified.

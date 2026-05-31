@@ -91,6 +91,7 @@ The reviewer should be conservative about security, authorization, data isolatio
 - Inspect relevant diffs before staging or pushing.
 - Confirm whether the push targets `main`, a feature branch, or both.
 - Confirm the exact commit SHA being approved.
+- Check `docs/company-wide-rules.md` for expected company, product, website, workflow, terminology, trust, or operating behavior that affects the change. If Ryan clarified expected behavior during the work, confirm that file was updated before GO.
 - Check for committed secrets, tokens, private user data, and unsafe `.env` changes.
 - If package files changed, run or justify skipping dependency/audit checks.
 - If application code changed, run or justify skipping lint, unit tests, and build.

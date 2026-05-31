@@ -1,10 +1,12 @@
 # Trusted Bums Business Access Rules
 
-_Last updated: 2026-05-29 by Codex daily lead developer automation._
+_Last updated: 2026-05-31 by Codex daily lead developer automation._
 
 ## Purpose
 
 This document is the business source of truth for role-based access decisions before RLS, edge-function authorization, route guards, or QA tests are changed.
+
+For broader company, product, website, terminology, trust, and operating behavior, check `docs/company-wide-rules.md` first. When Ryan clarifies behavior that affects access, mirror the relevant rule here.
 
 RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed access change should map to this document and include before/after QA checks for affected roles.
 
@@ -67,6 +69,48 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - What is the approved anti-abuse stack for public intake: Turnstile, provider-native challenge, IP throttle, email throttle, or combination?
   - Should high-volume or suspicious submissions create records without sending email, or should they be dropped entirely?
 
+### Profile Bootstrap And Self-Editable Identity
+- Roles: Public Visitor, signed-in unassigned user, Client Admin, Client Finance, Client Member, Bum, Admin.
+- Data needed: Clerk user ID, email, verified email domain, display name, requested signup intent, approved portal role, approved client company, approved client access role, approved Bum identity, timezone, date format, domain-claim status, approving Client Admin or Admin, and audit history for role or company changes.
+- Allowed actions:
+  - Public visitors may submit signup intent, company-name hints, and verified business email during onboarding.
+  - First verified client-domain claimant may create the client company workspace and become initial Client Admin when the email domain is not already claimed.
+  - Later users from an already claimed client email domain may request access to that company.
+  - Existing Client Admins may approve same-domain users and assign company-scoped roles such as Client Admin, Client Finance, or Client Member.
+  - Signed-in users may edit safe profile preferences such as display name, timezone, and date format when those fields do not affect authorization.
+  - Admins may override or repair portal role, client company, client access role, Bum identity, company-domain ownership, and admin status through an audited server-side path, including when the prior Client Admin is no longer valid.
+  - Approved automation may sync Clerk identity fields into `profiles` only when the sync path cannot elevate role, company, client access role, or admin status from client-controlled metadata.
+- Allowed when:
+  - Signup metadata is used as onboarding intent and is validated against the user's verified email domain before any workspace or company assignment is created.
+  - No existing client company has claimed the verified email domain, and the first claimant creates the company workspace as initial Client Admin through the approved server path.
+  - A same-domain access request is approved by an existing Client Admin for that company or by Admin override.
+  - A role, company, client access role, Bum assignment, admin-status change, or domain-ownership change is performed by Admin, an authorized Client Admin within the same company/domain boundary, or an approved internal server workflow with auditability.
+  - Self-service updates are limited to non-authorization preferences.
+- Denied when:
+  - A user tries to self-assign `role`, `is_admin`, `company_id`, `client_access_role`, or Bum identity through Clerk `unsafeMetadata`, browser profile sync, direct Supabase Data API, RPC, edge function, or extension API.
+  - A user attempts to attach themselves to another client company or switch between Client and Bum posture without Admin approval.
+  - A user with a public/free email domain or unmatched email domain attempts to create or join a client company without Admin review.
+  - A user from an already claimed domain tries to bypass the existing Client Admin approval queue.
+  - Signup intent alone is treated as proof of workspace membership or finance/admin authority.
+- Sensitive fields: `profiles.role`, `profiles.is_admin`, `profiles.company_id`, `profiles.client_access_role`, company email domain aliases, domain-claim ownership, Bum identity links, Clerk metadata used for onboarding, email, admin repair notes, and audit events.
+- Source of truth: `profiles`, client company records and approved email-domain aliases, Clerk user ID and backend-managed metadata, admin user tools, Client Admin team-management approvals, signup intent records or metadata, and audit events.
+- RLS/authorization owner: Security Engineer plus Product Ops, with QA allow/deny coverage before hardening release.
+- QA proof:
+  - First verified user from an unclaimed client domain can create the company workspace and becomes initial Client Admin.
+  - A later same-domain user cannot self-join directly; they enter a Client Admin approval queue or Admin override queue.
+  - Existing Client Admin can approve a same-domain user and assign Client Admin, Client Finance, or Client Member as allowed.
+  - Admin can override domain/company assignment and make a new Client Admin when the previous Client Admin is invalid or unavailable.
+  - Users from different domains cannot join or see another client company without Admin override.
+  - Public/free email domains do not auto-create trusted client workspaces without Admin review.
+  - A user can update approved preference fields without changing access.
+  - Direct attempts to mutate `company_id`, `client_access_role`, `role`, `is_admin`, or Bum identity are denied.
+  - Clerk `unsafeMetadata` role/company edits do not become authoritative access.
+  - Admin can assign or repair role and company through the approved path and the change is audited.
+- Open questions:
+  - Which exact display/profile fields are approved for self-service edits after launch?
+  - Which email domains should be blocked from automatic client workspace creation, such as public webmail, disposable domains, agencies, consultants, or partner domains?
+  - Should Client Admin approval be limited to the exact email domain alias, or can a Client Admin approve related aliases after Admin verifies them?
+
 ### Customer Targets
 - Roles: Admin, Client Admin, Client Member where assigned, Bum where explicitly entitled.
 - Data needed: Target company/person details, status, linked opportunities, linked responses, linked conversations, relevant activity history.
@@ -77,6 +121,7 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - Bum has an explicit workflow relationship, such as an accepted claim, assigned opportunity, accepted target response, accepted intro request, or other documented assignment.
 - Denied when:
   - Bum is merely signed in and has no explicit relationship to the target.
+  - Bum has only saved or bookmarked a target and no accepted, assigned, or otherwise approved marketplace relationship unless Product Ops explicitly approves saved-target visibility.
   - Client user belongs to a different company.
   - Public or unauthenticated user requests target data.
 - Sensitive fields: Contact identity, company relationship, opportunity context, notes, response history, financial or strategic target notes.
@@ -90,6 +135,7 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - Admin can read and update across companies.
 - Open questions:
   - Which target fields are safe in marketplace-browsing surfaces before a Bum has an explicit relationship?
+  - Should a saved target ever preserve Bum read access after the underlying explicit relationship ends?
 
 ### Customer Target Responses
 - Roles: Admin, Client Admin, Client Member with target-management responsibility, submitting Bum.
@@ -183,6 +229,36 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
 - Open questions:
   - What status marks a lead as safe to share with a potential Client?
 
+### Extension Page Captures And Bum Represented Contacts
+- Roles: Bum, Admin, Client Admin, Client Member where explicitly participating, Client Finance by exception only.
+- Data needed: Captured source URL, capture type, page title, selected text, notes, destination opportunity or target, derived represented contact details, source workflow, status, timestamps, and audit trail.
+- Allowed actions:
+  - Bums may create captures and represented contacts only for destinations they are allowed to access.
+  - Bums may read and update their own represented contacts.
+  - Admins may troubleshoot captures and represented contacts across the marketplace.
+  - Client users may see only sanitized, workflow-approved outputs that have been converted into a company-visible target, opportunity, intro request, or conversation.
+- Allowed when:
+  - The capture is tied to an accepted or explicitly assigned opportunity or target relationship for the Bum.
+  - The represented contact is owned by the Bum or is being reviewed by Admin for support or compliance.
+  - A client-facing view shows derived workflow context that Product Ops has approved for that client company, not raw private capture notes by default.
+- Denied when:
+  - A Bum tries to capture against or read a target/opportunity they are not entitled to access.
+  - A different Bum tries to read or mutate another Bum's represented contact.
+  - Client Finance, unrelated client users, or other companies try to read raw capture text, raw notes, source URLs, or unrelated represented contacts.
+  - Public or unauthenticated users try to read or write captures or represented contacts.
+- Sensitive fields: Selected text, source URL, personal contact details, LinkedIn URLs, notes, relationship strength, extension metadata, destination IDs, and audit events.
+- Source of truth: `extension_page_captures`, `bum_contacts`, `extension-api-v1`, `portal-contacts`, linked opportunities, linked customer targets, and linked handoff workflows.
+- RLS/authorization owner: Security Engineer plus Product Ops, with extension API and portal QA coverage.
+- QA proof:
+  - Owning Bum can create a capture and manage the resulting represented contact for an allowed destination.
+  - Another Bum and unrelated client roles cannot read or mutate that contact.
+  - Client company visibility is limited to approved converted workflow outputs.
+  - Admin can troubleshoot with audit trail.
+  - Extension `/context` and `/page-captures` prove one allowed and one denied case.
+- Open questions:
+  - Which converted capture fields, if any, are safe for Client Admin or Client Member views?
+  - What retention period applies to raw selected text and source URLs?
+
 ### Payments, Invoices, Payouts, And Reports
 - Roles: Admin, Client Admin, Client Finance, Bum.
 - Data needed: Payment reports, invoices, payout status, commission/split allocations, export history, report filters.
@@ -195,6 +271,7 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - Bum tries to read client-wide payment reports.
   - Client Finance tries to read another company or another Bum's unrelated earnings.
   - Client Member lacks finance permission.
+  - Client Finance tries to export target contact emails, meeting attendee lists, Teams join URLs, transcripts, or other operational workflow details unless explicitly granted by a finance-case participation rule.
 - Sensitive fields: Amounts, invoice numbers, customer payment dates, payout amounts, disputes, reconciliation notes.
 - Source of truth: Payment reports, claim invoices, Bum payouts, commission plan tables, company membership.
 - QA proof:
