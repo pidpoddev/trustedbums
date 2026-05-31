@@ -149,28 +149,47 @@ async function createClientOpportunity(page: Page, runId: string, records: QaCre
 test.describe("deep workflow hotfix audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run deep workflow hotfix audit against the deployed QA target.");
 
-  test("explores role routes and non-destructive controls for Lead Dev hotfix candidates", async ({ page }, testInfo) => {
+  test("explores role routes and non-destructive controls for Lead Dev hotfix candidates", async ({ browser }, testInfo) => {
     test.setTimeout(600_000);
     test.skip(testInfo.project.name !== "chromium", "Run the deep route audit once on desktop Chromium.");
 
     const runId = createDeepQaRunId();
     const issues: DeepQaIssue[] = [];
-    installDeepQaMonitors(page, issues, "Deep route audit");
 
-    for (const route of routeInventory) {
-      const account = getRequiredAccount(route.role);
-      await goToAuthedPath(page, account, route.path);
-      await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
-      await reportVisibleFailure(page, issues, route.area, route.workflow);
-      await exploreVisibleNonDestructiveButtons(page, issues, route.area, route.workflow);
+    try {
+      for (const route of routeInventory) {
+        const account = getRequiredAccount(route.role);
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        installDeepQaMonitors(page, issues, route.area);
+
+        try {
+          await goToAuthedPath(page, account, route.path);
+          await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
+          await reportVisibleFailure(page, issues, route.area, route.workflow);
+          await exploreVisibleNonDestructiveButtons(page, issues, route.area, route.workflow);
+        } catch (error) {
+          issues.push({
+            severity: "P1",
+            area: route.area,
+            workflow: route.workflow,
+            evidence: error instanceof Error ? error.message : String(error),
+            recommendation: "Reproduce this route/workflow directly, then fix either the product failure or the QA selector/session assumption.",
+            url: page.url(),
+          });
+        } finally {
+          await context.close();
+        }
+      }
+    } finally {
+      await attachLeadDevHotfixReport(testInfo, runId, issues);
     }
 
     const blockerIssues = issues.filter((issue) => issue.severity === "P0" || issue.severity === "P1");
-    await attachLeadDevHotfixReport(testInfo, runId, issues);
     expect(blockerIssues, "P0/P1 deep QA findings should be routed to Lead Dev as hotfix candidates.").toEqual([]);
   });
 
-  test("attempts legal acceptance and mutating client workflows with cleanup", async ({ page }, testInfo) => {
+  test("attempts legal acceptance and mutating client workflows with cleanup", async ({ browser }, testInfo) => {
     test.setTimeout(240_000);
     test.skip(testInfo.project.name !== "chromium", "Run mutating workflow QA once on desktop Chromium.");
     test.skip(!isDeepMutationEnabled(), "Set QA_DEEP_MUTATION=1 to create and clean up QA workflow records.");
@@ -178,15 +197,26 @@ test.describe("deep workflow hotfix audit", () => {
     const runId = createDeepQaRunId();
     const issues: DeepQaIssue[] = [];
     const createdRecords: QaCreatedRecord[] = [];
-    installDeepQaMonitors(page, issues, "Deep mutating workflow audit");
-
     try {
-      await exerciseTermsAcceptanceIfRequired(page, getRequiredAccount("BUM"), issues, "BUM");
-      await exerciseTermsAcceptanceIfRequired(page, getRequiredAccount("CLIENT_ADMIN"), issues, "CLIENT_ADMIN");
+      const bumContext = await browser.newContext();
+      const bumPage = await bumContext.newPage();
+      installDeepQaMonitors(bumPage, issues, "Bum");
+      await exerciseTermsAcceptanceIfRequired(bumPage, getRequiredAccount("BUM"), issues, "BUM");
+      await bumContext.close();
 
-      await goToAuthedPath(page, getRequiredAccount("CLIENT_ADMIN"), "/client/targets");
-      await createClientTarget(page, runId, createdRecords);
-      await createClientOpportunity(page, runId, createdRecords);
+      const clientTermsContext = await browser.newContext();
+      const clientTermsPage = await clientTermsContext.newPage();
+      installDeepQaMonitors(clientTermsPage, issues, "Client");
+      await exerciseTermsAcceptanceIfRequired(clientTermsPage, getRequiredAccount("CLIENT_ADMIN"), issues, "CLIENT_ADMIN");
+      await clientTermsContext.close();
+
+      const clientContext = await browser.newContext();
+      const clientPage = await clientContext.newPage();
+      installDeepQaMonitors(clientPage, issues, "Client");
+      await goToAuthedPath(clientPage, getRequiredAccount("CLIENT_ADMIN"), "/client/targets");
+      await createClientTarget(clientPage, runId, createdRecords);
+      await createClientOpportunity(clientPage, runId, createdRecords);
+      await clientContext.close();
     } finally {
       await cleanupCreatedRecords(createdRecords, issues);
       await attachLeadDevHotfixReport(testInfo, runId, issues, createdRecords);
