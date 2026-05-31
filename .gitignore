@@ -13,6 +13,8 @@ dist
 dist-ssr
 playwright-report
 test-results
+tmp-*-audit/
+tmp-ui-audit/
 *.local
 .env.qa
 .env.development
