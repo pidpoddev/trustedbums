@@ -17,8 +17,8 @@ export interface QaCreatedRecord {
   value: string;
 }
 
-const destructiveActionPattern =
-  /delete|remove|archive|void|disable|deny|approve|reject|paid|sent|sign out|submit|send|save|create|import|upload|invite|accept|decline/i;
+const safeExploratoryActionPattern =
+  /view|open|close|show|hide|expand|collapse|filter|search|clear|download|copy|cancel|details|help|faq|profile|settings|accessibility|feedback/i;
 
 export function createDeepQaRunId() {
   return `qa-deep-${new Date().toISOString().replace(/[:.]/g, "-")}`;
@@ -128,7 +128,7 @@ export async function exploreVisibleNonDestructiveButtons(page: Page, issues: De
     }
 
     const label = await buttonLabel(button);
-    if (!label || destructiveActionPattern.test(label)) {
+    if (!label || !safeExploratoryActionPattern.test(label)) {
       continue;
     }
 
