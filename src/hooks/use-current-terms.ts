@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { getRequiredTermsForUser } from "@/lib/portalApi";
+import { getRequiredTermsForUser, hasTermsSessionDeferral } from "@/lib/portalApi";
 
 export function useCurrentTermsState() {
   const { user } = useAuth();
@@ -11,12 +11,16 @@ export function useCurrentTermsState() {
     enabled: Boolean(user?.id && user?.role),
     retry: false,
   });
+  const terms = requiredTermsQuery.data?.terms;
+  const hasCurrentSessionDeferral = Boolean(user && terms && hasTermsSessionDeferral(user, terms.id));
 
   return {
-    terms: requiredTermsQuery.data?.terms,
+    terms,
     acceptance: requiredTermsQuery.data?.acceptance,
     requiredAssignment: requiredTermsQuery.data?.assignment ?? null,
-    hasAcceptedCurrentTerms: Boolean(requiredTermsQuery.data?.acceptance && !requiredTermsQuery.data?.assignment),
+    deferral: requiredTermsQuery.data?.deferral,
+    canDeferCurrentTerms: Boolean(requiredTermsQuery.data?.deferral?.canDefer && !hasCurrentSessionDeferral),
+    hasAcceptedCurrentTerms: Boolean((requiredTermsQuery.data?.acceptance && !requiredTermsQuery.data?.assignment) || hasCurrentSessionDeferral),
     isLoading: requiredTermsQuery.isLoading,
     error: requiredTermsQuery.error,
     refetch: async () => {

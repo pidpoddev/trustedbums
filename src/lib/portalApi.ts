@@ -907,6 +907,17 @@ export interface TermsAcceptance {
   terms_versions?: Pick<TermsVersion, "id" | "version" | "title" | "body" | "faq_body" | "change_summary" | "audience" | "is_custom" | "custom_label" | "created_at"> | null;
 }
 
+export interface TermsAcceptanceDeferral {
+  id: string;
+  user_id: string;
+  company_id: string | null;
+  terms_version_id: string;
+  prior_terms_acceptance_id: string | null;
+  deferred_at: string;
+  user_agent: string | null;
+  created_at: string;
+}
+
 export interface OpportunityRegistration {
   id: string;
   company_id: string | null;
@@ -2028,6 +2039,84 @@ export async function getCurrentTermsAcceptance(userId: string, companyId: strin
   return data;
 }
 
+const TERMS_DEFERRAL_LIMIT = 3;
+
+function scopeCompanyAcceptanceQuery<T extends { or: (filters: string) => T; eq: (column: string, value: string) => T }>(
+  query: T,
+  user: AuthUser,
+) {
+  return user.clientId ? query.or(`user_id.eq.${user.id},company_id.eq.${user.clientId}`) : query.eq("user_id", user.id);
+}
+
+export function getTermsDeferralSessionKey(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string) {
+  return `trusted-bums:terms-deferral:${user.id}:${user.clientId ?? "personal"}:${termsVersionId}`;
+}
+
+export function hasTermsSessionDeferral(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string) {
+  if (typeof window === "undefined") return false;
+  return window.sessionStorage.getItem(getTermsDeferralSessionKey(user, termsVersionId)) === "true";
+}
+
+export function markTermsSessionDeferral(user: Pick<AuthUser, "id" | "clientId">, termsVersionId: string) {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(getTermsDeferralSessionKey(user, termsVersionId), "true");
+}
+
+async function getPriorTermsAcceptance(user: AuthUser, termsVersionId: string) {
+  const query = scopeCompanyAcceptanceQuery(
+    supabase
+      .from("terms_acceptances")
+      .select("*")
+      .neq("terms_version_id", termsVersionId),
+    user,
+  );
+
+  const { data, error } = await query
+    .order("accepted_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<TermsAcceptance>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function getTermsDeferralCount(user: AuthUser, termsVersionId: string) {
+  const { count, error } = await supabase
+    .from("terms_acceptance_deferrals")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("terms_version_id", termsVersionId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+async function getStandardTermsDeferralState(user: AuthUser, terms: TermsVersion, acceptance: TermsAcceptance | null) {
+  if (acceptance || terms.is_custom) {
+    return { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null as TermsAcceptance | null };
+  }
+
+  const priorAcceptance = await getPriorTermsAcceptance(user, terms.id);
+  if (!priorAcceptance) {
+    return { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null as TermsAcceptance | null };
+  }
+
+  const used = await getTermsDeferralCount(user, terms.id);
+  return {
+    canDefer: used < TERMS_DEFERRAL_LIMIT,
+    remaining: Math.max(TERMS_DEFERRAL_LIMIT - used, 0),
+    used,
+    limit: TERMS_DEFERRAL_LIMIT,
+    priorAcceptance,
+  };
+}
+
 const TERMS_ASSIGNMENT_SELECT = `
   *,
   companies:companies!terms_assignments_assigned_company_id_fkey(id, name),
@@ -2077,14 +2166,19 @@ export async function getRequiredTermsForUser(user: AuthUser) {
       );
 
       if (!acceptance) {
-        return { terms: assignedTerms, acceptance: null, assignment };
+        return { terms: assignedTerms, acceptance: null, assignment, deferral: { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null } };
       }
 
       latestAcceptedCustom = { terms: assignedTerms, acceptance };
     }
 
     if (latestAcceptedCustom) {
-      return { terms: latestAcceptedCustom.terms, acceptance: latestAcceptedCustom.acceptance, assignment: null as TermsAssignmentRecord | null };
+      return {
+        terms: latestAcceptedCustom.terms,
+        acceptance: latestAcceptedCustom.acceptance,
+        assignment: null as TermsAssignmentRecord | null,
+        deferral: { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null },
+      };
     }
   }
 
@@ -2092,7 +2186,7 @@ export async function getRequiredTermsForUser(user: AuthUser) {
   const defaultAcceptance = await getCurrentTermsAcceptance(user.id, user.clientId, defaultTerms.id);
 
   if (!defaultAcceptance) {
-    return { terms: defaultTerms, acceptance: null, assignment: null as TermsAssignmentRecord | null };
+    return { terms: defaultTerms, acceptance: null, assignment: null as TermsAssignmentRecord | null, deferral: await getStandardTermsDeferralState(user, defaultTerms, null) };
   }
 
   for (const assignment of assignments.filter((item) => !item.terms_versions?.is_custom)) {
@@ -2108,11 +2202,16 @@ export async function getRequiredTermsForUser(user: AuthUser) {
     );
 
     if (!acceptance) {
-      return { terms: assignedTerms, acceptance: null, assignment };
+      return { terms: assignedTerms, acceptance: null, assignment, deferral: await getStandardTermsDeferralState(user, assignedTerms, null) };
     }
   }
 
-  return { terms: defaultTerms, acceptance: defaultAcceptance, assignment: null as TermsAssignmentRecord | null };
+  return {
+    terms: defaultTerms,
+    acceptance: defaultAcceptance,
+    assignment: null as TermsAssignmentRecord | null,
+    deferral: await getStandardTermsDeferralState(user, defaultTerms, defaultAcceptance),
+  };
 }
 
 function isUuid(value: string | undefined) {
@@ -2187,6 +2286,58 @@ export async function acceptPartnerTerms(user: AuthUser, terms: TermsVersion, us
   }
 
   return data;
+}
+
+export async function deferPartnerTerms(user: AuthUser, terms: TermsVersion, userAgent: string | null) {
+  const acceptance = await getCurrentTermsAcceptance(user.id, user.clientId, terms.id);
+  if (acceptance) {
+    return { deferred: false, reason: "already_accepted" as const, acceptance };
+  }
+
+  if (terms.is_custom) {
+    throw new Error("Assigned custom contracts must be accepted before continuing.");
+  }
+
+  const priorAcceptance = await getPriorTermsAcceptance(user, terms.id);
+  if (!priorAcceptance) {
+    throw new Error("This agreement must be accepted before continuing.");
+  }
+
+  const used = await getTermsDeferralCount(user, terms.id);
+  if (used >= TERMS_DEFERRAL_LIMIT) {
+    throw new Error("Updated terms can only be skipped three times before acceptance is required.");
+  }
+
+  const { data, error } = await supabase
+    .from("terms_acceptance_deferrals")
+    .insert({
+      user_id: user.id,
+      company_id: user.clientId ?? null,
+      terms_version_id: terms.id,
+      prior_terms_acceptance_id: priorAcceptance.id,
+      user_agent: userAgent,
+    })
+    .select("*")
+    .single<TermsAcceptanceDeferral>();
+
+  if (error) {
+    throw new Error(error.message || "Unable to skip updated terms.");
+  }
+
+  try {
+    await createAuditEvent(user, "terms_acceptance_deferred", "terms_versions", terms.id, {
+      version: terms.version,
+      used: used + 1,
+      limit: TERMS_DEFERRAL_LIMIT,
+      prior_terms_acceptance_id: priorAcceptance.id,
+      user_agent: userAgent,
+    });
+  } catch (auditError) {
+    console.error("Unable to record terms deferral audit event", auditError);
+  }
+
+  markTermsSessionDeferral(user, terms.id);
+  return { deferred: true, reason: "deferred" as const, deferral: data };
 }
 
 export async function createOpportunityRegistration(user: AuthUser, input: OpportunityInput) {

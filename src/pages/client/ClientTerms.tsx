@@ -13,7 +13,7 @@ import { getDefaultPathForRole } from "@/data/authData";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { acceptPartnerTerms } from "@/lib/portalApi";
+import { acceptPartnerTerms, deferPartnerTerms } from "@/lib/portalApi";
 import { downloadPartnerTermsPdf } from "@/lib/pdf";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
@@ -32,9 +32,10 @@ function resolveDashboardPath(role: "ADMIN" | "CLIENT" | "BUM", from?: string) {
 export default function ClientTerms() {
   const { user } = useAuth();
   const timeZone = useUserTimeZone();
-  const { terms, acceptance, requiredAssignment, hasAcceptedCurrentTerms, isLoading, error, refetch } = useCurrentTermsState();
+  const { terms, acceptance, requiredAssignment, hasAcceptedCurrentTerms, canDeferCurrentTerms, deferral, isLoading, error, refetch } = useCurrentTermsState();
   const [checked, setChecked] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [isDeferring, setIsDeferring] = useState(false);
   const [shouldAutoContinue, setShouldAutoContinue] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -77,6 +78,31 @@ export default function ClientTerms() {
       });
     } finally {
       setIsAccepting(false);
+    }
+  };
+
+  const deferTerms = async () => {
+    if (!user || !terms) {
+      return;
+    }
+
+    setIsDeferring(true);
+    try {
+      await deferPartnerTerms(user, terms, navigator.userAgent ?? null);
+      await refetch();
+      setShouldAutoContinue(true);
+      toast({
+        title: "Updated terms skipped for now",
+        description: "Please review and accept the updated terms soon.",
+      });
+    } catch (error) {
+      toast({
+        title: "Unable to skip updated terms",
+        description: error instanceof Error ? error.message : "Please accept the terms to continue.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeferring(false);
     }
   };
 
@@ -164,6 +190,17 @@ export default function ClientTerms() {
                   <Button className="w-full" disabled={!checked || isAccepting} onClick={acceptTerms}>
                     Accept & Continue
                   </Button>
+                  {canDeferCurrentTerms ? (
+                    <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
+                      <p className="font-medium text-foreground">Review later</p>
+                      <p className="mt-1 text-muted-foreground">
+                        You can skip this updated agreement {deferral?.remaining ?? 0} more time{deferral?.remaining === 1 ? "" : "s"} because a previous agreement is already on file.
+                      </p>
+                      <Button className="mt-3 w-full" variant="outline" disabled={isDeferring || isAccepting} onClick={deferTerms}>
+                        Skip This Login
+                      </Button>
+                    </div>
+                  ) : null}
                 </>
               )}
 
