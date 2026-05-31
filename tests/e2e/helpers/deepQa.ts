@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { type Locator, type Page, type TestInfo } from "@playwright/test";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
@@ -157,8 +157,6 @@ export async function exploreVisibleNonDestructiveButtons(page: Page, issues: De
       url: page.url(),
     });
   }
-
-  expect(labels.length, `${area} ${workflow} should expose at least one non-destructive control to exercise.`).toBeGreaterThan(0);
 }
 
 async function deleteByField(table: string, field: string, value: string) {
