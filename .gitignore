@@ -16,6 +16,7 @@ test-results
 *.local
 .env.qa
 .env.development
+.codex-review-decision.json
 
 # Editor directories and files
 .vscode/*
