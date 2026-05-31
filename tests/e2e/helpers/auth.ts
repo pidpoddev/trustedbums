@@ -316,6 +316,10 @@ async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedP
     const currentPath = new URL(page.url()).pathname.replace(/\/$/, "") || "/";
     const expectedPath = path.replace(/\/$/, "") || "/";
 
+    if (currentPath === expectedPath) {
+      return;
+    }
+
     if (options.allowRedirectTo?.test(currentPath)) {
       return;
     }
@@ -328,7 +332,7 @@ async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedP
       return;
     }
 
-    if (expectedPath !== "/dashboard" && currentPath !== expectedPath) {
+    if (expectedPath !== "/dashboard") {
       if (await clickRouteLinkIfVisible(page, path)) {
         await page.waitForURL((url) => url.pathname === expectedPath, { timeout: 5_000 }).catch(() => undefined);
         await acceptTermsIfPrompted(page, path);
