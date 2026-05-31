@@ -122,10 +122,10 @@ async function createClientTarget(page: Page, runId: string, records: QaCreatedR
   await page.getByLabel("Estimated deal value").fill("25000");
   await page.getByLabel("Expected product/service").fill("Deep QA validation");
   await page.getByLabel("Notes").fill(`Created by ${runId}; safe to delete.`);
+  records.push({ table: "customer_targets", field: "target_account_name", value: name });
   await page.getByRole("button", { name: "Save target account" }).click();
   await expect(page.getByText("Target account saved")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(name)).toBeVisible({ timeout: 20_000 });
-  records.push({ table: "customer_targets", field: "target_account_name", value: name });
 }
 
 async function createClientOpportunity(page: Page, runId: string, records: QaCreatedRecord[]) {
@@ -141,9 +141,9 @@ async function createClientOpportunity(page: Page, runId: string, records: QaCre
   await page.getByLabel("Expected timeline").fill("QA run");
   await page.getByLabel("Opportunity description").fill(`Created by ${runId}; safe to delete.`);
   await page.getByLabel("Notes").fill(`Created by ${runId}; safe to delete.`);
+  records.push({ table: "opportunity_registrations", field: "target_account_name", value: name });
   await page.getByRole("button", { name: /submit opportunity registration/i }).click();
   await expect(page.getByText("Registration submitted")).toBeVisible({ timeout: 20_000 });
-  records.push({ table: "opportunity_registrations", field: "target_account_name", value: name });
 }
 
 test.describe("deep workflow hotfix audit", () => {

@@ -2066,12 +2066,14 @@ export function markTermsSessionDeferral(user: Pick<AuthUser, "id" | "clientId">
   window.sessionStorage.setItem(getTermsDeferralSessionKey(user, termsVersionId), "true");
 }
 
-async function getPriorTermsAcceptance(user: AuthUser, termsVersionId: string) {
+async function getPriorStandardTermsAcceptance(user: AuthUser, terms: TermsVersion) {
   const query = scopePriorAcceptanceQuery(
     supabase
       .from("terms_acceptances")
-      .select("*")
-      .neq("terms_version_id", termsVersionId),
+      .select("*, terms_versions!inner(audience, is_custom)")
+      .neq("terms_version_id", terms.id)
+      .eq("terms_versions.audience", terms.audience)
+      .eq("terms_versions.is_custom", false),
     user,
   );
 
@@ -2106,7 +2108,7 @@ async function getStandardTermsDeferralState(user: AuthUser, terms: TermsVersion
     return { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null as TermsAcceptance | null };
   }
 
-  const priorAcceptance = await getPriorTermsAcceptance(user, terms.id);
+  const priorAcceptance = await getPriorStandardTermsAcceptance(user, terms);
   if (!priorAcceptance) {
     return { canDefer: false, remaining: 0, used: 0, limit: TERMS_DEFERRAL_LIMIT, priorAcceptance: null as TermsAcceptance | null };
   }
@@ -2302,7 +2304,7 @@ export async function deferPartnerTerms(user: AuthUser, terms: TermsVersion, use
     throw new Error("Assigned custom contracts must be accepted before continuing.");
   }
 
-  const priorAcceptance = await getPriorTermsAcceptance(user, terms.id);
+  const priorAcceptance = await getPriorStandardTermsAcceptance(user, terms);
   if (!priorAcceptance) {
     throw new Error("This agreement must be accepted before continuing.");
   }

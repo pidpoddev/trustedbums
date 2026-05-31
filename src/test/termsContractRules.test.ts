@@ -20,7 +20,10 @@ describe("terms contract rules", () => {
     expect(portalApiSource).toContain("query.eq(\"company_id\", user.clientId)");
     expect(portalApiSource).toContain("export async function deferPartnerTerms");
     expect(portalApiSource).toContain("if (terms.is_custom)");
-    expect(portalApiSource).toContain("const priorAcceptance = await getPriorTermsAcceptance(user, terms.id);");
+    expect(portalApiSource).toContain("async function getPriorStandardTermsAcceptance(user: AuthUser, terms: TermsVersion)");
+    expect(portalApiSource).toContain(".eq(\"terms_versions.audience\", terms.audience)");
+    expect(portalApiSource).toContain(".eq(\"terms_versions.is_custom\", false)");
+    expect(portalApiSource).toContain("const priorAcceptance = await getPriorStandardTermsAcceptance(user, terms);");
     expect(portalApiSource).toContain("return { terms: assignedTerms, acceptance: null, assignment, deferral: noTermsDeferral() };");
     expect(portalApiSource).toContain("terms_acceptance_deferred");
   });
