@@ -1,27 +1,22 @@
-name: E2E Smoke
+name: Deep QA Hotfix Audit
 
 on:
   workflow_dispatch:
     inputs:
       target_url:
-        description: URL to smoke test
+        description: URL to deep-audit
         required: true
         default: https://trustedbums.com
-      run_deep_audit:
-        description: Run the deep workflow hotfix audit after smoke tests
-        required: true
-        type: boolean
-        default: false
       mutation_mode:
-        description: Allow deep audit to create and clean up tagged QA records
+        description: Create and clean up tagged QA records
         required: true
         type: boolean
         default: false
 
 jobs:
-  smoke:
+  deep-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -44,20 +39,7 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run deployed smoke tests
-        env:
-          QA_BASE_URL: ${{ inputs.target_url }}
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-          QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
-          QA_CLIENT_ADMIN_EMAIL: ${{ secrets.QA_CLIENT_ADMIN_EMAIL }}
-          QA_CLIENT_FINANCE_EMAIL: ${{ secrets.QA_CLIENT_FINANCE_EMAIL }}
-          QA_CLIENT_MEMBER_EMAIL: ${{ secrets.QA_CLIENT_MEMBER_EMAIL }}
-          QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
-        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/staging-smoke.spec.ts tests/e2e/authenticated-role-smoke.spec.ts tests/e2e/portal-interaction-audit.spec.ts
-
       - name: Run deep workflow hotfix audit
-        if: ${{ inputs.run_deep_audit }}
         env:
           QA_BASE_URL: ${{ inputs.target_url }}
           QA_DEEP_MUTATION: ${{ inputs.mutation_mode && '1' || '0' }}
@@ -70,14 +52,15 @@ jobs:
           QA_CLIENT_FINANCE_EMAIL: ${{ secrets.QA_CLIENT_FINANCE_EMAIL }}
           QA_CLIENT_MEMBER_EMAIL: ${{ secrets.QA_CLIENT_MEMBER_EMAIL }}
           QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
-        run: pnpm run qa:deep
+        run: pnpm run qa:env && pnpm run qa:deep
 
-      - name: Upload Playwright report
+      - name: Upload deep QA artifacts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: deep-qa-hotfix-audit
           path: |
             playwright-report/
             test-results/
+          retention-days: 7
           if-no-files-found: ignore

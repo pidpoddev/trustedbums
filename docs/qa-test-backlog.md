@@ -10,6 +10,12 @@ The portal interaction audit is still blocked by a known test-design defect. `te
 
 ## Active Recommendations
 
+### P0 - Promote deep workflow QA into the release hotfix loop
+- Evidence: A Bum agreement acceptance failure reached the user with only a generic destructive toast even though existing QA covered route rendering and opportunistic terms acceptance. The new [`tests/e2e/deep-workflow-hotfix-audit.spec.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/tests/e2e/deep-workflow-hotfix-audit.spec.ts) adds a role-route exploration pass, explicit legal acceptance attempts, mutating client target/opportunity workflows, cleanup tracking, and a Lead Dev hotfix report artifact.
+- Why it matters: Route health is not enough for release confidence. Legal, RLS, payment, opportunity, target, and admin workflows can render cleanly while write actions fail silently or leave test data behind.
+- Recommendation: Run `pnpm run qa:deep` before high-risk releases. For write-path coverage, run it only against approved QA data with `QA_DEEP_MUTATION=1` and `QA_SUPABASE_SERVICE_ROLE_KEY` so created `qa-deep-*` records are cleaned up automatically.
+- Acceptance criteria: Deep QA produces a Lead Dev hotfix report on every run, P0/P1 findings are triaged before release, mutating runs prove legal acceptance plus client target/opportunity creation, and any cleanup failure includes the exact table/field/value that must be removed.
+
 ### P0 - Stabilize authenticated Playwright sign-in before treating role smoke as a release gate
 - Evidence: `pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium` failed 4 of 5 checks on 2026-05-31. Admin and Client Admin timed out in [`tests/e2e/helpers/auth.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/tests/e2e/helpers/auth.ts:303) after auth and terms handling with `page.waitForTimeout: Target page, context or browser has been closed`. Client Finance and Client Member timed out inside `clerk.signIn()` at [`tests/e2e/helpers/auth.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/tests/e2e/helpers/auth.ts:63), and Clerk testing logged repeated failures against `https://clerk.trustedbums.com/v1/client/sign_ins`.
 - Why it matters: Authenticated role smoke is the main executable proof for route guards and portal access. If sign-in is flaky or the helper cannot deterministically settle after auth, release risk is hidden behind test infrastructure noise.

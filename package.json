@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "qa": "pnpm run lint && pnpm run test && pnpm exec vite build --base=/",
     "qa:env": "node scripts/verify-qa-env.mjs",
+    "qa:deep": "playwright test tests/e2e/deep-workflow-hotfix-audit.spec.ts --project=chromium",
     "code-review:gate": "node scripts/code-review-gate.mjs",
     "install:hooks": "git config core.hooksPath .githooks",
     "test": "vitest run",

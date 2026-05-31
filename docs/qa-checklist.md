@@ -18,6 +18,20 @@ QA_BASE_URL=https://your-staging-or-production-url.example pnpm run test:e2e
 
 The automated gate covers linting, unit tests, and a production build. The browser suite includes a local configuration smoke test, deployed public-route checks, authenticated role checks, and a client-to-admin opportunity workflow when `QA_BASE_URL` and the matching account variables are provided.
 
+Run the deep workflow hotfix audit before high-risk releases or after changes to legal acceptance, RLS, data writes, payment/import behavior, or role-specific portal workflows:
+
+```sh
+QA_BASE_URL=https://your-staging-or-production-url.example pnpm run qa:deep
+```
+
+The deep audit explores each role's routes, clicks non-destructive controls, captures runtime/network/user-visible failures, and attaches a Lead Dev hotfix report to the Playwright result. To run mutating workflow checks, use a dedicated QA dataset and enable cleanup:
+
+```sh
+QA_DEEP_MUTATION=1 QA_SUPABASE_SERVICE_ROLE_KEY=... QA_BASE_URL=https://your-staging-or-production-url.example pnpm run qa:deep
+```
+
+Mutating deep QA tags created records with a unique `qa-deep-*` run id and attempts to delete them afterward. Do not run mutating deep QA against production unless the test accounts, data, and cleanup key are approved for that target.
+
 For local authenticated smoke testing, copy `.env.qa.example` to `.env.qa`, fill the dedicated QA account credentials, then run:
 
 ```sh
@@ -88,6 +102,7 @@ Run these checks after migrations, policy edits, or changes to `src/lib/portalAp
 - Terms acceptance writes the correct user id, company id where applicable, and terms version id.
 - Opportunity creation writes the registration, status history, and audit event.
 - Admin-visible audit events are created for opportunity submissions and sensitive status changes.
+- Deep mutating QA either deletes all records tagged with the `qa-deep-*` run id or reports exact cleanup failures to Lead Dev.
 
 ## Regression Matrix
 
