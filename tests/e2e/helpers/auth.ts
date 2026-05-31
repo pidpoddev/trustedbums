@@ -233,6 +233,13 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
     return;
   }
 
+  const isDestinationTermsPage = destinationPath.includes("/terms");
+  const acceptedStatus = page.getByText(/Current terms accepted/i).first();
+
+  if (isDestinationTermsPage && await acceptedStatus.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    return;
+  }
+
   const acceptButton = page.getByRole("button", { name: /accept.*continue/i });
 
   if (await acceptButton.isVisible({ timeout: 15_000 }).catch(() => false)) {
@@ -249,6 +256,10 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
   if (page.url().includes("/terms")) {
     await page.goto(destinationPath);
     await page.waitForLoadState("networkidle").catch(() => undefined);
+  }
+
+  if (isDestinationTermsPage && await acceptedStatus.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    return;
   }
 
   if (page.url().includes("/terms")) {
