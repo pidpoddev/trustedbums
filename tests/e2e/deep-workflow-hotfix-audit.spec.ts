@@ -194,6 +194,12 @@ test.describe("deep workflow hotfix audit", () => {
     test.skip(testInfo.project.name !== "chromium", "Run mutating workflow QA once on desktop Chromium.");
     test.skip(!isDeepMutationEnabled(), "Set QA_DEEP_MUTATION=1 to create and clean up QA workflow records.");
 
+    if (!process.env.QA_SUPABASE_URL || !process.env.QA_SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error(
+        "Mutating deep QA requires QA_SUPABASE_URL and QA_SUPABASE_SERVICE_ROLE_KEY so created qa-deep records can be cleaned up before the test exits.",
+      );
+    }
+
     const runId = createDeepQaRunId();
     const issues: DeepQaIssue[] = [];
     const createdRecords: QaCreatedRecord[] = [];

@@ -43,8 +43,8 @@ jobs:
         env:
           QA_BASE_URL: ${{ inputs.target_url }}
           QA_DEEP_MUTATION: ${{ inputs.mutation_mode && '1' || '0' }}
-          QA_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          QA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_ROLE_KEY }}
+          QA_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          QA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
