@@ -45,6 +45,7 @@ export default function ClientTerms() {
   const state = location.state as LocationState | null;
   const isBumTerms = user?.role === "BUM";
   const dashboardPath = user ? resolveDashboardPath(user.role, state?.from) : "/";
+  const canSkipThisLogin = canDeferCurrentTerms && Boolean(session?.id);
 
   useEffect(() => {
     if (!user || !canContinueWithCurrentTerms) {
@@ -88,9 +89,18 @@ export default function ClientTerms() {
       return;
     }
 
+    if (!session?.id) {
+      toast({
+        title: "Unable to skip updated terms",
+        description: "Please refresh your login session, then try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsDeferring(true);
     try {
-      await deferPartnerTerms(user, terms, navigator.userAgent ?? null, session?.id);
+      await deferPartnerTerms(user, terms, navigator.userAgent ?? null, session.id);
       await refetch();
       setShouldAutoContinue(true);
       toast({
@@ -192,7 +202,7 @@ export default function ClientTerms() {
                   <Button className="w-full" disabled={!checked || isAccepting} onClick={acceptTerms}>
                     Accept & Continue
                   </Button>
-                  {canDeferCurrentTerms ? (
+                  {canSkipThisLogin ? (
                     <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
                       <p className="font-medium text-foreground">Review later</p>
                       <p className="mt-1 text-muted-foreground">

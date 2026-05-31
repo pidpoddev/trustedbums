@@ -27,4 +27,12 @@ describe("terms contract rules", () => {
     expect(portalApiSource).toContain("return { terms: assignedTerms, acceptance: null, assignment, deferral: noTermsDeferral() };");
     expect(portalApiSource).toContain("terms_acceptance_deferred");
   });
+
+  it("requires a current auth session before the UI can spend a terms skip", () => {
+    const clientTermsSource = readFileSync("src/pages/client/ClientTerms.tsx", "utf8");
+
+    expect(clientTermsSource).toContain("const canSkipThisLogin = canDeferCurrentTerms && Boolean(session?.id);");
+    expect(clientTermsSource).toContain("if (!session?.id)");
+    expect(clientTermsSource).toContain("await deferPartnerTerms(user, terms, navigator.userAgent ?? null, session.id);");
+  });
 });
