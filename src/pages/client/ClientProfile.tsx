@@ -332,13 +332,13 @@ export default function ClientProfile() {
           <CardHeader>
             <CardTitle className="font-display flex items-center gap-2 text-lg">
               <FileCheck className="h-5 w-5 text-primary" />
-              Partner Terms
+              Client Agreement
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className={hasAcceptedCurrentTerms ? "rounded-md bg-success/10 p-4 text-sm" : "rounded-md bg-warning/10 p-4 text-sm"}>
               <p className={hasAcceptedCurrentTerms ? "font-medium text-success" : "font-medium text-warning"}>
-                {hasAcceptedCurrentTerms ? "Current terms accepted" : "New partner terms need review"}
+                {hasAcceptedCurrentTerms ? "Current agreement accepted" : "Updated Client Agreement needs review"}
               </p>
               <p className="mt-1 text-muted-foreground">
                 {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "Acceptance pending"} · Version {terms?.version ?? "current"}
@@ -347,7 +347,7 @@ export default function ClientProfile() {
             <div className="grid gap-2">
               <Button asChild variant={hasAcceptedCurrentTerms ? "outline" : "default"} className="w-full justify-between">
                 <Link to="/client/terms">
-                  {hasAcceptedCurrentTerms ? "Review terms" : "Review and accept terms"}
+                  {hasAcceptedCurrentTerms ? "Review Client Agreement" : "Review and accept Client Agreement"}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>

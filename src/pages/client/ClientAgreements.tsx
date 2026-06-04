@@ -29,7 +29,7 @@ export default function ClientAgreements() {
 
   return (
     <div>
-      <PageHeader title="Agreements" description="Review partner terms, FAQ, and your current acceptance status.">
+      <PageHeader title="Client Agreement" description="Review the current Client Agreement, FAQ, and agreement records.">
         <Button variant="outline" onClick={() => downloadPartnerTermsPdf(terms)}>
           <Download className="mr-2 h-4 w-4" />
           Download PDF
@@ -46,7 +46,7 @@ export default function ClientAgreements() {
                 ) : (
                   <FileText className="h-5 w-5 text-warning" />
                 )}
-                Current Partner Terms
+                Current Client Agreement
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -59,10 +59,10 @@ export default function ClientAgreements() {
                   Accepted {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "for this version"}.
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground">This terms version still needs acceptance.</p>
+                <p className="text-sm text-muted-foreground">This Client Agreement version still needs acceptance.</p>
               )}
               <Button asChild className="w-full">
-                <Link to="/client/terms">Open terms screen</Link>
+                <Link to="/client/terms">Review Client Agreement</Link>
               </Button>
             </CardContent>
           </Card>
@@ -72,7 +72,7 @@ export default function ClientAgreements() {
               <CardHeader>
                 <CardTitle className="font-display flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
-                  Custom Agreements
+                  Agreement records
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">

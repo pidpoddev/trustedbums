@@ -11,12 +11,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { listClientBumIntroRequests, listClientReverseOpportunities, type ClientBumIntroRequestStatus, type ReverseOpportunityStatus } from "@/lib/portalApi";
+import { opportunityOriginLabel, opportunityStageLabel, stageFromIntroRequestStatus, stageFromReverseOpportunityStatus } from "@/lib/opportunityModel";
 import { formatDateForTimeZone } from "@/lib/timezone";
 
 type RequestTypeFilter = "ALL" | "NEW" | "ACTIVE" | "CONVERTED" | "CLOSED";
 
 const requestTypeFilters: { value: RequestTypeFilter; label: string }[] = [
-  { value: "ALL", label: "All requests" },
+  { value: "ALL", label: "All Customer Leads" },
   { value: "NEW", label: "New" },
   { value: "ACTIVE", label: "Active outreach" },
   { value: "CONVERTED", label: "Converted" },
@@ -103,8 +104,8 @@ export default function ClientRequests() {
   return (
     <div>
       <PageHeader
-        title="Inbound Requests"
-        description="Demand-sourced opportunities that Bums have submitted against your company."
+        title="Customer Leads"
+        description="Bum-submitted buyer demand that may become Opportunities for your company."
       />
 
       <Card className="mb-6">
@@ -115,7 +116,7 @@ export default function ClientRequests() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search inbound requests, customers, or needs"
+                placeholder="Search Customer Leads, Customers, or needs"
                 className="pl-9"
               />
             </div>
@@ -146,9 +147,11 @@ export default function ClientRequests() {
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-display text-lg font-bold">{request.customer_company_name}</p>
+                    <StatusBadge label={opportunityOriginLabel("CUSTOMER_ORIGINATED")} variant="secondary" />
+                    <StatusBadge label={opportunityStageLabel(stageFromReverseOpportunityStatus(request.status))} variant="info" />
                     <StatusBadge label={request.status.replaceAll("_", " ")} variant={statusVariant(request.status)} />
                     <StatusBadge
-                      label={request.client_mode === "EXISTING_CLIENT" ? "Existing client" : "Prospect-converted"}
+                      label={request.client_mode === "EXISTING_CLIENT" ? "Existing Client" : "Client Prospect"}
                       variant="secondary"
                     />
                   </div>
@@ -168,7 +171,7 @@ export default function ClientRequests() {
                     </p>
                     <p className="inline-flex items-center gap-2">
                       <MessageSquarePlus className="h-4 w-4" />
-                      End customer contact: {request.customer_contact_name ?? "Not provided"}
+                      Customer contact: {request.customer_contact_name ?? "Not provided"}
                     </p>
                   </div>
                   {request.notes ? <p className="text-sm">{request.notes}</p> : null}
@@ -185,8 +188,8 @@ export default function ClientRequests() {
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground">
               {requestsQuery.data?.length
-                ? "No inbound requests match your current filters."
-                : "No Bum-submitted customer leads are targeting your company yet."}
+                ? "No Customer Leads match your current filters."
+                : "No Bum-submitted Customer Leads are targeting your company yet."}
             </CardContent>
           </Card>
         ) : null}
@@ -197,7 +200,7 @@ export default function ClientRequests() {
           <div className="mb-4 flex flex-col gap-1">
             <h2 className="font-display text-xl font-bold">Bum Intro Requests</h2>
             <p className="text-sm text-muted-foreground">
-              Requests your team sent from the Bum Directory, with the target and current handoff status.
+              Intro Requests your team sent from the Bum Directory, with the target and current handoff status.
             </p>
           </div>
           <Table>
@@ -206,6 +209,7 @@ export default function ClientRequests() {
                 <TableHead>Bum</TableHead>
                 <TableHead>Target</TableHead>
                 <TableHead>Context</TableHead>
+                <TableHead>Origin / Stage</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Updated</TableHead>
               </TableRow>
@@ -224,6 +228,12 @@ export default function ClientRequests() {
                   </TableCell>
                   <TableCell>{request.intro_context}</TableCell>
                   <TableCell>
+                    <div className="flex flex-wrap gap-1.5">
+                      <StatusBadge label={opportunityOriginLabel("CLIENT_ORIGINATED")} variant="secondary" />
+                      <StatusBadge label={opportunityStageLabel(stageFromIntroRequestStatus(request.status))} variant="info" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <StatusBadge label={request.status.replaceAll("_", " ")} variant={introRequestStatusVariant(request.status)} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">{formatDateForTimeZone(request.updated_at, timeZone)}</TableCell>
@@ -231,7 +241,7 @@ export default function ClientRequests() {
               ))}
               {!introRequestsQuery.isLoading && !(introRequestsQuery.data ?? []).length ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="text-sm text-muted-foreground">
                     No Bum intro requests have been submitted from the directory yet.
                   </TableCell>
                 </TableRow>

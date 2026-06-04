@@ -38,16 +38,16 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/client/opportunities/new", heading: "Opportunities", name: "client-register-opportunity" },
     { path: "/client/bum-directory", heading: "Bum Directory", name: "client-bum-directory" },
     { path: "/client/trainings", heading: "Training & Assets", name: "client-trainings" },
-    { path: "/client/requests", heading: "Inbound Requests", name: "client-requests" },
-    { path: "/client/payments", heading: "Customer Payments", name: "client-payments" },
+    { path: "/client/requests", heading: "Customer Leads", name: "client-requests" },
+    { path: "/client/payments", heading: "Customer Payment Reports", name: "client-payments" },
     { path: "/client/exports", heading: "Exports", name: "client-exports" },
     { path: "/client/reports", heading: "Client Reports", name: "client-reports" },
     { path: "/client/profile", heading: "Company Profile", name: "client-profile" },
-    { path: "/client/agreements", heading: "Agreements", name: "client-agreements" },
+    { path: "/client/agreements", heading: "Client Agreement", name: "client-agreements" },
   ],
   CLIENT_FINANCE: [
     { path: "/client/dashboard", heading: /Welcome back/i, name: "client-finance-dashboard" },
-    { path: "/client/payments", heading: "Customer Payments", name: "client-finance-payments" },
+    { path: "/client/payments", heading: "Customer Payment Reports", name: "client-finance-payments" },
     { path: "/client/exports", heading: "Exports", name: "client-finance-exports" },
     { path: "/client/reports", heading: "Client Reports", name: "client-finance-reports" },
   ],
@@ -58,7 +58,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/bum/clients", heading: "Clients We Represent", name: "bum-clients" },
     { path: "/bum/contacts", heading: "Contacts", name: "bum-contacts" },
     { path: "/bum/opportunities", heading: "Opportunities", name: "bum-opportunities" },
-    { path: "/bum/claims", heading: "Intro Requests", name: "bum-claims" },
+    { path: "/bum/claims", heading: "Claims", name: "bum-claims" },
     { path: "/bum/trainings", heading: "Training & Assets", name: "bum-trainings" },
     { path: "/bum/live-conversations", heading: "Live Conversations", name: "bum-live-conversations" },
     { path: "/bum/earnings", heading: "Earnings", name: "bum-earnings" },
@@ -120,7 +120,7 @@ const interactionsByRole: Record<RoleKey, VisualInteraction[]> = {
   CLIENT_FINANCE: [
     {
       path: "/client/payments",
-      heading: "Customer Payments",
+      heading: "Customer Payment Reports",
       name: "client-finance-payment-search",
       prepare: async (page) => {
         await page.getByPlaceholder(/Search invoices, customers, or accounts/i).first().fill("visual-audit-empty");

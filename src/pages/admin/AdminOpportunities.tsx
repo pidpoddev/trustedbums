@@ -34,6 +34,13 @@ import {
   type OpportunityRegistration,
   type ReverseOpportunityStatus,
 } from "@/lib/portalApi";
+import {
+  opportunityOriginLabel,
+  opportunityStageLabel,
+  stageFromRegistrationStatus,
+  stageFromReverseOpportunityStatus,
+  stageFromTargetStatus,
+} from "@/lib/opportunityModel";
 
 const ADMIN_OPPORTUNITY_PAGE_SIZE = 6;
 
@@ -368,13 +375,37 @@ export default function AdminOpportunities() {
   const priorityItems = useMemo(() => {
     const registrationItems = registrations
       .filter((registration) => ["Needs Clarification", "Disputed", "Draft"].includes(registration.status))
-      .map((item) => ({ type: "registration" as const, id: item.id, title: item.target_account_name, status: item.status, detail: item.companies?.name ?? "Company pending" }));
+      .map((item) => ({
+        type: "registration" as const,
+        id: item.id,
+        title: item.target_account_name,
+        status: item.status,
+        detail: item.companies?.name ?? "Company pending",
+        origin: opportunityOriginLabel("CLIENT_ORIGINATED"),
+        stage: opportunityStageLabel(stageFromRegistrationStatus(item.status)),
+      }));
     const targetItems = targets
       .filter((target) => ["INTRO_REQUESTED", "INTRO_IN_PROGRESS", "MEETING_SET", "OPEN_OPPORTUNITY"].includes(target.status))
-      .map((item) => ({ type: "target" as const, id: item.id, title: item.target_companies?.name ?? item.target_account_name, status: targetLabel(item.status), detail: item.client_companies?.name ?? "Client pending" }));
+      .map((item) => ({
+        type: "target" as const,
+        id: item.id,
+        title: item.target_companies?.name ?? item.target_account_name,
+        status: targetLabel(item.status),
+        detail: item.client_companies?.name ?? "Client pending",
+        origin: opportunityOriginLabel("CLIENT_ORIGINATED"),
+        stage: opportunityStageLabel(stageFromTargetStatus(item.status)),
+      }));
     const reverseItems = reverseOpportunities
       .filter((opportunity) => ["SUBMITTED", "CLIENT_INTERESTED"].includes(opportunity.status))
-      .map((item) => ({ type: "reverse" as const, id: item.id, title: item.customer_company_name, status: item.status.replaceAll("_", " "), detail: item.companies?.name ?? "Vendor pending" }));
+      .map((item) => ({
+        type: "reverse" as const,
+        id: item.id,
+        title: item.customer_company_name,
+        status: item.status.replaceAll("_", " "),
+        detail: item.companies?.name ?? "Vendor pending",
+        origin: opportunityOriginLabel("CUSTOMER_ORIGINATED"),
+        stage: opportunityStageLabel(stageFromReverseOpportunityStatus(item.status)),
+      }));
 
     return [...registrationItems, ...targetItems, ...reverseItems];
   }, [registrations, reverseOpportunities, targets]);
@@ -509,6 +540,8 @@ export default function AdminOpportunities() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge label={item.type} variant="secondary" />
+                      <StatusBadge label={item.origin} variant="secondary" />
+                      <StatusBadge label={item.stage} variant="info" />
                       <p className="font-display font-medium">{item.title}</p>
                       <StatusBadge label={item.status} variant="warning" />
                     </div>
@@ -560,11 +593,13 @@ export default function AdminOpportunities() {
                 <CardContent className="pt-6">
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         <Target className="h-4 w-4 text-primary" />
                         <p className="font-medium font-display">
                           {targetAccount.target_companies?.name ?? targetAccount.target_account_name}
                         </p>
+                        <StatusBadge label={opportunityOriginLabel("CLIENT_ORIGINATED")} variant="secondary" />
+                        <StatusBadge label={opportunityStageLabel(stageFromTargetStatus(targetAccount.status))} variant="info" />
                         <StatusBadge label={targetLabel(targetAccount.status)} variant={targetVariant(targetAccount.status)} />
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -698,9 +733,11 @@ export default function AdminOpportunities() {
                   <CardContent className="pt-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                           <Building2 className="h-4 w-4 text-primary" />
                           <p className="font-medium font-display">{registration.target_account_name}</p>
+                          <StatusBadge label={opportunityOriginLabel("CLIENT_ORIGINATED")} variant="secondary" />
+                          <StatusBadge label={opportunityStageLabel(stageFromRegistrationStatus(registration.status))} variant="info" />
                           <StatusBadge label={registration.status} variant={registrationVariant(registration.status)} />
                         </div>
                         <p className="text-sm text-muted-foreground">
@@ -811,6 +848,8 @@ export default function AdminOpportunities() {
                         <p className="font-medium font-display">
                           {opportunity.companies?.name ?? "Vendor"} for {opportunity.customer_company_name}
                         </p>
+                        <StatusBadge label={opportunityOriginLabel("CUSTOMER_ORIGINATED")} variant="secondary" />
+                        <StatusBadge label={opportunityStageLabel(stageFromReverseOpportunityStatus(opportunity.status))} variant="info" />
                         <StatusBadge
                           label={opportunity.status.replaceAll("_", " ")}
                           variant={reverseOpportunityVariant(opportunity.status)}

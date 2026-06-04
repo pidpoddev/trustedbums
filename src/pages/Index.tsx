@@ -467,8 +467,8 @@ const Index = () => {
               </div>
               <h3 className="font-display text-3xl font-black tracking-[-0.04em]">For Clients</h3>
               <p className="mt-4 text-muted-foreground">
-                Target the accounts your team struggles to reach, define commission terms, upload training, and track
-                introductions in a structured workflow.
+                Target the Customer accounts your team struggles to reach, define commission terms, upload training, and track
+                introductions in a structured Client workflow.
               </p>
               <div className="mt-6 space-y-3">
                 {["Hard account targeting", "Commission-aligned strategy", "Bum training and enablement"].map((item) => (
@@ -486,7 +486,7 @@ const Index = () => {
               </div>
               <h3 className="font-display text-3xl font-black tracking-[-0.04em]">For Bums</h3>
               <p className="mt-4 text-muted-foreground">
-                Turn trusted relationships and hard-earned credibility into a revenue channel. Bring Us More Sales is
+                Apply as a Bum Prospect and turn trusted relationships into a revenue channel once approved. Bring Us More Sales is
                 the joke, but it is also the job.
               </p>
               <div className="mt-6 space-y-3">

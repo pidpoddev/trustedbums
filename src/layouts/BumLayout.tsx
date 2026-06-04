@@ -39,7 +39,7 @@ const navGroups = [
   { title: "Clients", url: "/bum/clients", icon: Building2 },
   { title: "Contacts", url: "/bum/contacts", icon: ContactRound },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
-  { title: "Intro Requests", url: "/bum/claims", icon: Handshake },
+  { title: "Claims", url: "/bum/claims", icon: Handshake },
   { title: "Live Conversations", url: "/bum/live-conversations", icon: Calendar },
   { title: "Training & Assets", url: "/bum/trainings", icon: GraduationCap },
   ] },

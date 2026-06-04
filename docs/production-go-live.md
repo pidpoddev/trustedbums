@@ -51,12 +51,26 @@ Set these repository secrets before deploying:
 - `DREAMHOST_HOST`
 - `DREAMHOST_USER`
 - `DREAMHOST_TARGET`
+- `CLERK_SECRET_KEY`
+- `QA_ADMIN_EMAIL`
+- `QA_CLIENT_ADMIN_EMAIL`
+- `QA_CLIENT_FINANCE_EMAIL`
+- `QA_CLIENT_MEMBER_EMAIL`
+- `QA_BUM_EMAIL`
+
+Set these optional QA secrets for mutating deep-QA cleanup and extension coverage:
+
+- `QA_SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `QA_EXTENSION_API_TOKEN`
 
 ## Deploy
 
 Push to `main` to run the DreamHost deployment workflow:
 
 - `.github/workflows/deploy_dreamhost.yaml`
+
+After a successful DreamHost deploy, GitHub automatically runs the `E2E Smoke` workflow against `https://trustedbums.com`. Treat that GitHub run as the release QA source of truth. It includes public smoke, authenticated role smoke, portal interaction audit, and deep workflow hotfix audit. Also run or inspect `Visual UI Audit` for screenshot evidence before calling a production release complete.
 
 ## Important warning
 

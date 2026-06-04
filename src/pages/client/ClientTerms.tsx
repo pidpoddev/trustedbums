@@ -70,12 +70,12 @@ export default function ClientTerms() {
       await refetch();
       setShouldAutoContinue(true);
       toast({
-        title: isBumTerms ? "Bum agreement accepted" : "Partner terms accepted",
-        description: "Your acceptance was recorded for this terms version.",
+        title: isBumTerms ? "Bum Agreement accepted" : "Client Agreement accepted",
+        description: "Your acceptance was recorded for this agreement version.",
       });
     } catch (error) {
       toast({
-        title: isBumTerms ? "Unable to accept Bum agreement" : "Unable to accept terms",
+        title: isBumTerms ? "Unable to accept Bum Agreement" : "Unable to accept Client Agreement",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -121,13 +121,13 @@ export default function ClientTerms() {
   if (error) {
     return (
       <div className="rounded-md border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
-        Unable to load partner terms: {error instanceof Error ? error.message : "Please try again."}
+        Unable to load the current agreement: {error instanceof Error ? error.message : "Please try again."}
       </div>
     );
   }
 
   if (isLoading || !terms) {
-    return <div className="text-sm text-muted-foreground">Loading partner terms...</div>;
+    return <div className="text-sm text-muted-foreground">Loading current agreement...</div>;
   }
 
   return (
@@ -136,13 +136,13 @@ export default function ClientTerms() {
         <SubmitFeedbackButton />
       </div>
       <PageHeader
-        title={isBumTerms ? "Trusted Bums Bum Terms" : "Trusted Bums Terms & Legal Agreements"}
+        title={isBumTerms ? "Trusted Bums Bum Agreement" : "Trusted Bums Client Agreement"}
         description={
           requiredAssignment
             ? "Review and accept this assigned contract before continuing into the platform."
             : isBumTerms
               ? "Review and accept the current Bum agreement before continuing into the Bum portal."
-              : "Review and accept the current client legal terms before continuing into the platform."
+              : "Review and accept the current Client Agreement before continuing into the platform."
         }
       />
 
@@ -174,7 +174,7 @@ export default function ClientTerms() {
               ) : null}
               {hasAcceptedCurrentTerms ? (
                 <div className="rounded-md bg-success/10 p-4 text-sm">
-                  <p className="font-medium text-success">Current terms accepted</p>
+                  <p className="font-medium text-success">Current agreement accepted</p>
                   <p className="text-muted-foreground mt-1">
                     Accepted {acceptance ? formatDateTimeForTimeZone(acceptance.accepted_at, timeZone) : "for this version"}.
                   </p>
@@ -196,7 +196,7 @@ export default function ClientTerms() {
                     <Label htmlFor="partnerTerms" className="text-sm leading-6">
                       {isBumTerms
                         ? "I have read and agree to the Trusted Bums Bum Agreement, including the confidentiality, conduct, compliance, and payout eligibility terms."
-                        : "I have read and agree to the Trusted Bums Partner Terms, including the commission, non-circumvention, confidentiality, and opportunity registration terms."}
+                        : "I have read and agree to the Trusted Bums Client Agreement, including the commission, non-circumvention, confidentiality, and opportunity registration terms."}
                     </Label>
                   </div>
                   <Button className="w-full" disabled={!checked || isAccepting} onClick={acceptTerms}>
@@ -220,7 +220,7 @@ export default function ClientTerms() {
                 <Button variant="outline" asChild>
                   <a href="#top">
                     <ScrollText className="mr-2 h-4 w-4" />
-                    {isBumTerms ? "View Bum Agreement" : "View Partner Terms"}
+                    {isBumTerms ? "View Bum Agreement" : "View Client Agreement"}
                   </a>
                 </Button>
                 <Button variant="outline" asChild>

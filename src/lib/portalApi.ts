@@ -5415,7 +5415,7 @@ export async function createCustomerTarget(user: AuthUser, input: CustomerTarget
     companyWebsite: input.company_website,
     linkedinCompanyUrl: input.linkedin_company_url,
     email: input.key_contact_email,
-    relationshipStage: "INACTIVE",
+    relationshipStage: "PROSPECT",
   });
 
   const { data, error } = await supabase

@@ -4,27 +4,35 @@ Use this checklist before production releases and after changes that touch auth,
 
 ## Automated Gate
 
-Run the full local QA gate before merging:
+Use GitHub Actions as the authoritative QA runner. Local commands are useful preflight checks while developing, but release QA evidence should come from GitHub workflow logs and uploaded artifacts.
+
+For pull requests and `main`, confirm the `QA` workflow passed. It runs lint, unit tests, production build, and local browser configuration smoke in GitHub.
+
+Use the `E2E Smoke` workflow from GitHub Actions for deployed staging or production validation. It runs public smoke, authenticated role smoke, portal interaction audit, and the deep workflow hotfix audit against the selected target URL. After the DreamHost deploy workflow succeeds on `main`, `E2E Smoke` also runs automatically against `https://trustedbums.com`.
+
+Use the `Visual UI Audit` workflow from GitHub Actions for screenshot and responsive visual evidence. Use `Deep QA Hotfix Audit` directly only when you need a focused rerun of the deep page/control audit.
+
+Run the local gate only as a developer preflight:
 
 ```sh
 pnpm run qa
 ```
 
-Run browser smoke tests when validating a deployed target:
+Run local browser smoke tests only to reproduce or prepare for the GitHub run:
 
 ```sh
 QA_BASE_URL=https://your-staging-or-production-url.example pnpm run test:e2e
 ```
 
-The automated gate covers linting, unit tests, and a production build. The browser suite includes a local configuration smoke test, deployed public-route checks, authenticated role checks, and a client-to-admin opportunity workflow when `QA_BASE_URL` and the matching account variables are provided.
+The browser suite includes a local configuration smoke test, deployed public-route checks, authenticated role checks, portal interaction checks, and workflow checks when `QA_BASE_URL` and the matching account variables are provided.
 
-Run the deep workflow hotfix audit before high-risk releases or after changes to legal acceptance, RLS, data writes, payment/import behavior, or role-specific portal workflows:
+GitHub `E2E Smoke` always runs the non-mutating deep workflow hotfix audit. For local reproduction, run:
 
 ```sh
 QA_BASE_URL=https://your-staging-or-production-url.example pnpm run qa:deep
 ```
 
-The deep audit explores each role's routes, clicks non-destructive controls, captures runtime/network/user-visible failures, and attaches a Lead Dev hotfix report to the Playwright result. To run mutating workflow checks, use a dedicated QA dataset and enable cleanup:
+The deep audit explores each role's routes, checks every visible enabled button for Playwright actionability, clicks safe non-destructive controls, captures runtime/network/user-visible failures, and attaches a Lead Dev hotfix report to the Playwright result. To run mutating workflow checks, use the GitHub workflow with `mutation_mode=true` or use a dedicated QA dataset locally and enable cleanup:
 
 ```sh
 QA_DEEP_MUTATION=1 QA_SUPABASE_SERVICE_ROLE_KEY=... QA_BASE_URL=https://your-staging-or-production-url.example pnpm run qa:deep
@@ -71,6 +79,8 @@ Required repository secrets:
 - `QA_BUM_EMAIL`
 
 The workflow accepts a `target_url` input and runs the public, authenticated, and workflow smoke tests against that deployed app.
+
+The deep workflow hotfix audit is not optional in this workflow. It runs after smoke checks, uploads `playwright-report/` and `test-results/`, and should be reviewed for page-by-page button operability failures before a release is considered covered.
 
 ## Release Smoke Script
 
@@ -125,8 +135,9 @@ Use this matrix when deciding what to retest for a change:
 
 A release is ready when:
 
-- `pnpm run qa` passes.
-- Staging or production E2E smoke tests pass, or the manual release smoke script has been completed.
+- The GitHub `QA` workflow passes for the commit.
+- GitHub `E2E Smoke` passes against the deployed target, including authenticated role smoke, portal interaction audit, and deep workflow hotfix audit.
+- GitHub `Visual UI Audit` passes or any visual findings are explicitly accepted.
 - Any Supabase migrations have been applied and RLS checks pass.
 - Test data created during QA is either clearly labeled or cleaned up.
 - Production secrets are confirmed to use the live Clerk key and intended Supabase project.

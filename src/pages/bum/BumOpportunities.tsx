@@ -36,6 +36,7 @@ import {
   type BumSavedItemType,
   type OpportunityRegistration,
 } from "@/lib/portalApi";
+import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromTargetStatus } from "@/lib/opportunityModel";
 import type { RelationshipStrength } from "@/lib/claimConfig";
 import { cn } from "@/lib/utils";
 import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink, UserPlus } from "lucide-react";
@@ -645,6 +646,8 @@ export default function BumOpportunities() {
                     <h3 className="font-display text-lg font-bold">
                       {targetAccount.target_companies?.name ?? targetAccount.target_account_name}
                     </h3>
+                    <StatusBadge label={opportunityOriginLabel("CLIENT_ORIGINATED")} variant="secondary" />
+                    <StatusBadge label={opportunityStageLabel(stageFromTargetStatus(targetAccount.status))} variant="info" />
                     <StatusBadge label={targetAccount.status.replaceAll("_", " ")} variant="info" />
                     <StatusBadge label="Client target" variant="warning" />
                   </div>
@@ -787,6 +790,8 @@ export default function BumOpportunities() {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-display text-lg font-bold">{opportunity.target_account_name}</h3>
+                    <StatusBadge label={opportunityOriginLabel("CLIENT_ORIGINATED")} variant="secondary" />
+                    <StatusBadge label={opportunityStageLabel(stageFromRegistrationStatus(opportunity.status))} variant="info" />
                     <StatusBadge label={claimedBy ? "Already claimed" : "Open"} variant={claimedBy ? "warning" : "success"} />
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">

@@ -37,6 +37,7 @@ import {
   type OpportunityQuestionVisibility,
   type OpportunityRegistration,
 } from "@/lib/portalApi";
+import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromTargetResponseStatus } from "@/lib/opportunityModel";
 import { formatDateForTimeZone } from "@/lib/timezone";
 import { parseOpportunityImportFile, toOpportunityInput, type OpportunityImportRow } from "@/lib/opportunityImport";
 
@@ -734,6 +735,8 @@ export default function ClientOpportunityNew() {
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
+                          <StatusBadge label={opportunityOriginLabel("BUM_ORIGINATED")} variant="secondary" />
+                          <StatusBadge label={opportunityStageLabel(stageFromTargetResponseStatus(response.status))} variant="info" />
                           <StatusBadge label={response.status === "PROPOSED" ? "Awaiting client approval" : response.status.replaceAll("_", " ")} variant={response.status === "PROPOSED" ? "warning" : response.status === "ACCEPTED" ? "success" : response.status === "DECLINED" ? "destructive" : "info"} />
                           <StatusBadge label={response.relationship_strength.replaceAll("_", " ")} variant="secondary" />
                         </div>
@@ -1388,6 +1391,7 @@ export default function ClientOpportunityNew() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Opportunity</TableHead>
+                    <TableHead>Origin / Stage</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Last Activity</TableHead>
                     <TableHead>Next Step</TableHead>
@@ -1412,6 +1416,12 @@ export default function ClientOpportunityNew() {
                             <p className="text-xs text-muted-foreground">
                               {opportunity.expected_product_service ?? opportunity.business_unit ?? "No product or business unit set"}
                             </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1.5">
+                            <StatusBadge label={opportunityOriginLabel("CLIENT_ORIGINATED")} variant="secondary" />
+                            <StatusBadge label={opportunityStageLabel(stageFromRegistrationStatus(opportunity.status))} variant="info" />
                           </div>
                         </TableCell>
                         <TableCell>

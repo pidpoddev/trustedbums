@@ -82,8 +82,8 @@ export default function ClientReports() {
       return [
         {
           id: "customer-payment-ledger",
-          title: "Customer payment ledger",
-          description: "Customer payments reported for commission calculation and invoice generation.",
+          title: "Customer Payment Report ledger",
+          description: "Customer payments reported by the Client for commission calculation and invoice generation.",
           category: "Finance",
           dataLabel: "payment rows",
           rows: payments.map((payment) => ({
@@ -107,14 +107,14 @@ export default function ClientReports() {
           ],
           dateKey: "createdAt",
           groupByKey: "status",
-          groupByLabel: "payment status",
+          groupByLabel: "Customer Payment Report status",
           valueKey: "commissionableAmount",
           valueLabel: "Commissionable amount",
         },
         {
           id: "invoice-register",
-          title: "Invoice register",
-          description: "Generated Trusted Bums invoices by status, customer, and opportunity.",
+          title: "Commission invoice register",
+          description: "Generated Trusted Bums commission invoices by status, Customer, and Opportunity.",
           category: "Finance",
           dataLabel: "invoice rows",
           rows: invoices.map((invoice) => ({
@@ -145,7 +145,7 @@ export default function ClientReports() {
         {
           id: "revenue-by-customer",
           title: "Commissionable revenue by customer",
-          description: "Roll up commissionable payments by end customer.",
+          description: "Roll up Client-reported commissionable revenue by Customer.",
           category: "Revenue",
           dataLabel: "customer rows",
           rows: payments.map((payment) => ({
@@ -388,8 +388,8 @@ export default function ClientReports() {
     if (canReadFinance) {
       reports[3] = {
         id: "commission-and-invoices",
-        title: "Commission and invoices",
-        description: "Reported commissionable revenue alongside generated invoice amounts.",
+        title: "Customer Payment Reports and commission invoices",
+        description: "Client-reported commissionable revenue alongside generated commission invoice amounts.",
         category: "Finance",
         dataLabel: "finance rows",
         rows: [

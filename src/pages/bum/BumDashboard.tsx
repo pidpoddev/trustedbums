@@ -228,7 +228,7 @@ export default function BumDashboard() {
         <StatCard title="Prospected Clients" value={prospectsQuery.data?.length ?? 0} icon={Building2} to="/bum/prospects" />
         <StatCard title="Customer Leads" value={reverseOpportunitiesQuery.data?.length ?? 0} icon={Sparkles} to="/bum/reverse-opportunities" />
         <StatCard title="Open Opportunities" value={opportunitiesQuery.data?.length ?? 0} icon={Briefcase} to="/bum/opportunities" />
-        <StatCard title="Intro Requests" value={myClaims.length} icon={Handshake} to="/bum/claims" />
+        <StatCard title="Claims" value={myClaims.length} icon={Handshake} to="/bum/claims" />
         <StatCard title="Pending Earnings" value="$0" icon={TrendingUp} to="/bum/earnings" />
         <StatCard title="Lifetime Payouts" value="$0" icon={Wallet} to="/bum/earnings" />
       </div>

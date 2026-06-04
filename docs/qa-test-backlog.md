@@ -1,132 +1,155 @@
 # Trusted Bums QA And Test Backlog
 
-_Last updated: 2026-05-31 by Codex daily QA/test engineer automation._
+_Last updated: 2026-06-03 by Codex daily QA/test engineer automation._
 
 ## Executive Read
 
-The highest-confidence QA risk changed in this run. The base QA contract still loads `QA_BASE_URL` and `QA_EXTENSION_API_BASE_URL`, `pnpm run lint` still reports only the same 7 React hook warnings, `pnpm run test` still passes 24/24 assertions, and deployed anonymous extension smoke still passes. But authenticated deployed coverage is no longer stable evidence: `tests/e2e/authenticated-role-smoke.spec.ts --project=chromium` failed 4 of 5 checks on 2026-05-31 because Clerk test sign-in timed out for finance/member and admin/client-admin flows stalled before route settlement.
+Today's run keeps the same release-verification blocker in place: this runner cannot resolve or load `trustedbums.com`, so deployed public, authenticated role, visual, and portal interaction checks cannot produce useful route assertions. `curl -I -L --max-time 20 "$QA_BASE_URL"` timed out during DNS resolution, `dig trustedbums.com A/AAAA` reported no reachable DNS server, public staging smoke failed on first navigation, and authenticated role smoke failed all five roles at `tests/e2e/helpers/auth.ts:43` before Clerk sign-in.
 
-The portal interaction audit is still blocked by a known test-design defect. `tests/e2e/portal-interaction-audit.spec.ts --project=chromium` again flagged the shared `Skip to content -> #main-content` link as a broken anchor in Admin, Client Admin, and Bum layouts even though each layout ships the matching `<main id="main-content">` target. One Client Finance audit also hit `net::ERR_ADDRESS_UNREACHABLE` on `https://trustedbums.com/client/dashboard` after profile navigation, so the suite currently mixes a deterministic false positive with at least one environment or network-level instability.
+Local source checks remain usable but incomplete: `pnpm run qa:env` passed after sourcing `.env.qa`; `pnpm run test` passed 29 assertions across 9 files; `pnpm run lint` still has 7 React hook dependency warnings and no errors; and local configuration smoke passed. Extension API risk increased from "anonymous rejection passes" to "anonymous `/context` request timed out" against the Supabase function URL, while authenticated extension coverage still skipped because `QA_EXTENSION_API_TOKEN` is missing.
+
+## Implementation Recheck For Next Run
+
+- 2026-06-04 Codex implemented glossary label changes and added the Opportunity origin/stage model in commit `bbd75c4`; use `docs/codex-edit-log.md` as a required input before preserving stale route-label or opportunity-model coverage gaps.
+- New source-level proof exists in `src/test/opportunityModel.test.ts`; next QA run should decide whether this is enough for unit coverage and what additional route, visual, authenticated role, and direct data-path tests are still missing.
+- Recheck current route/visual assertions for updated labels such as `Client Agreement`, `Customer Leads`, `Claims`, `Client Admin`, `Client Finance`, `Client Member`, `Customer Payment Reports`, and `Origin / Stage`.
 
 ## Active Recommendations
 
-### P0 - Promote deep workflow QA into the release hotfix loop
-- Evidence: A Bum agreement acceptance failure reached the user with only a generic destructive toast even though existing QA covered route rendering and opportunistic terms acceptance. The new [`tests/e2e/deep-workflow-hotfix-audit.spec.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/tests/e2e/deep-workflow-hotfix-audit.spec.ts) adds a role-route exploration pass, explicit legal acceptance attempts, mutating client target/opportunity workflows, cleanup tracking, and a Lead Dev hotfix report artifact.
-- Why it matters: Route health is not enough for release confidence. Legal, RLS, payment, opportunity, target, and admin workflows can render cleanly while write actions fail silently or leave test data behind.
-- Recommendation: Run `pnpm run qa:deep` before high-risk releases. For write-path coverage, run it only against approved QA data with `QA_DEEP_MUTATION=1` and `QA_SUPABASE_SERVICE_ROLE_KEY` so created `qa-deep-*` records are cleaned up automatically.
-- Acceptance criteria: Deep QA produces a Lead Dev hotfix report on every run, P0/P1 findings are triaged before release, mutating runs prove legal acceptance plus client target/opportunity creation, and any cleanup failure includes the exact table/field/value that must be removed.
+### P0 - Add a deployed QA target and API preflight before E2E gates
+- Evidence: On 2026-06-03, `curl -I -L --max-time 20 "$QA_BASE_URL"` failed with `Resolving timed out after 20005 milliseconds`; `dig +time=5 +tries=1 trustedbums.com A` and `AAAA` both reported `no servers could be reached`; `pnpm exec playwright test tests/e2e/staging-smoke.spec.ts --project=chromium --grep 'loads public pages'` failed at first navigation to `https://trustedbums.com/`; and `pnpm exec playwright test tests/e2e/extension-api.spec.ts --project=chromium` timed out on anonymous `GET https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1/context`.
+- Why it matters: Route, auth, visual, interaction, and extension checks currently collapse into infrastructure-style failures. Without a preflight, release reports cannot distinguish DNS, hosting, Supabase function reachability, Clerk, app boot, and route-guard regressions.
+- Recommendation: Add a `qa:target-preflight` or Playwright setup check that verifies DNS resolution, HTTPS status, app shell load, Clerk script availability, and extension API anonymous 401 reachability before dependent suites run. Fail with a classification and skip dependent suites when the target or API is unavailable.
+- Acceptance criteria: A failed preflight produces one artifact with host, DNS result, HTTP status or timeout, app-shell status, extension API status, and skip reason for dependent E2E suites; a passing preflight lets staging smoke, role smoke, visual audit, portal interaction audit, and extension smoke proceed normally.
 
-### P0 - Stabilize authenticated Playwright sign-in before treating role smoke as a release gate
-- Evidence: `pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium` failed 4 of 5 checks on 2026-05-31. Admin and Client Admin timed out in [`tests/e2e/helpers/auth.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/tests/e2e/helpers/auth.ts:303) after auth and terms handling with `page.waitForTimeout: Target page, context or browser has been closed`. Client Finance and Client Member timed out inside `clerk.signIn()` at [`tests/e2e/helpers/auth.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/tests/e2e/helpers/auth.ts:63), and Clerk testing logged repeated failures against `https://clerk.trustedbums.com/v1/client/sign_ins`.
-- Why it matters: Authenticated role smoke is the main executable proof for route guards and portal access. If sign-in is flaky or the helper cannot deterministically settle after auth, release risk is hidden behind test infrastructure noise.
-- Recommendation: Move deployed auth setup to a Playwright `setup` project or worker-scoped `storageState` flow, capture per-role traces/screenshots on auth failure, and separate sign-in failures from post-login route assertions so QA can tell whether the break is Clerk, network, or app routing.
-- Acceptance criteria: Admin, Client Admin, Client Finance, Client Member, and Bum role smoke can each complete twice consecutively on Chromium against `QA_BASE_URL`, and auth failures produce role-specific trace artifacts plus the exact failed step.
+### P0 - Stabilize authenticated Playwright sign-in before using role smoke as a release gate
+- Evidence: `pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium` failed 5/5 checks on 2026-06-03 at the initial `page.goto("/")` because the QA target was unreachable from this runner. Historical 2026-05-31 evidence also showed timeouts inside Clerk sign-in and post-auth route settlement after target reachability.
+- Why it matters: Authenticated role smoke is the main executable proof for route guards and business-access boundaries. It cannot serve as a release gate while failures mix DNS, Clerk session setup, terms routing, and role assertions.
+- Recommendation: After target preflight is reliable, move deployed auth setup to a Playwright setup project or worker-scoped `storageState` flow, persist one auth artifact per role, and report "auth setup passed" separately from "role route assertions passed."
+- Acceptance criteria: Admin, Client Admin, Client Finance, Client Member, and Bum storage states are created in a dedicated setup phase; each role smoke completes twice consecutively on Chromium after a passing target preflight; failures include role-specific trace/error context and classify auth setup versus route assertion.
 
-### P0 - Fix the portal interaction audit’s anchor validation and rerun route-depth coverage
-- Evidence: `pnpm exec playwright test tests/e2e/portal-interaction-audit.spec.ts --project=chromium` failed 4 of 4 role audits on 2026-05-31. Admin, Client Admin, and Bum all failed [`expectNoBrokenInternalLinks()`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/tests/e2e/portal-interaction-audit.spec.ts:162) because it rejects every `href` starting with `#`, including the shipped skip link in [AdminLayout.tsx](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/layouts/AdminLayout.tsx:92), [ClientLayout.tsx](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/layouts/ClientLayout.tsx:82), and [BumLayout.tsx](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/layouts/BumLayout.tsx:60), all of which render `<main id="main-content">`. Client Finance additionally failed with `page.goto: net::ERR_ADDRESS_UNREACHABLE` when returning to `/client/dashboard` from the profile flow.
-- Why it matters: The deepest route and interaction audit is currently red for a deterministic test bug, so it cannot expose real nav, search, dialog, or role-control regressions. The finance network error also remains untriaged because the anchor failure masks later coverage for other roles.
-- Recommendation: Update the helper to flag only empty or dangling fragment links, keep valid in-page skip links allowed, then rerun the suite with traces retained long enough to determine whether the finance `ERR_ADDRESS_UNREACHABLE` is target instability or a test-navigation issue.
-- Acceptance criteria: The audit no longer fails on `#main-content`, reaches the route/search assertions for all configured roles, and any remaining Client Finance failure includes trace/network evidence that isolates environment versus app behavior.
+### P1 - Replace source-string target-stage coverage with behavior-level proof
+- Evidence: Commit `2003358` changed `createCustomerTarget()` in `src/lib/portalApi.ts` from `relationshipStage: "INACTIVE"` to `"PROSPECT"`, and `src/test/customerTargetRules.test.ts` verifies the change by reading source text. The test catches accidental string drift but does not exercise `ensureCompany()`, Supabase writes, audit creation, or the client-created target workflow.
+- Why it matters: Client-created target companies affect search, marketplace visibility, extension destinations, and Product Ops handoff semantics. A source-text test can pass while helper contracts or database write behavior still create the wrong relationship stage.
+- Recommendation: Add a behavior-level unit/integration test around `createCustomerTarget()` with mocked Supabase calls or a safe local fixture that proves `ensureCompany` receives `PROSPECT` and the created `customer_targets` row/audit event remains company-scoped.
+- Acceptance criteria: The test fails if `createCustomerTarget()` sends any non-`PROSPECT` relationship stage for new target companies, fails if the target row is not scoped to `user.clientId`, and does not depend on regex matching source text.
 
 ### P1 - Add explicit extension API env-contract checks and authenticated allow/deny coverage
-- Evidence: After sourcing `.env.qa`, `QA_EXTENSION_API_BASE_URL` is present but `QA_EXTENSION_API_TOKEN` is still missing. `pnpm exec playwright test tests/e2e/extension-api.spec.ts` passed only the anonymous `/context` checks and skipped both authenticated checks on 2026-05-31. `package.json`, `.env.qa.example`, and [`scripts/verify-qa-env.mjs`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/scripts/verify-qa-env.mjs) still do not make extension-auth requirements part of the enforceable QA contract.
-- Why it matters: The extension API remains one of the clearest cross-company data exposure paths. Without an authenticated token path and seeded deny cases, QA cannot prove that allowed roles keep access while unrelated roles stay blocked.
-- Recommendation: Add extension-specific env validation, document the required vars in `.env.qa.example`, and extend extension smoke into a seeded allow/deny matrix for own-company allow, foreign-company deny, Bum accepted-opportunity allow, Bum customer-target deny, and `/page-captures` authorization.
-- Acceptance criteria: Extension smoke fails fast when required vars are missing, and authenticated tests prove both positive and negative `/context` and `/page-captures` behavior against seeded two-company fixtures.
+- Evidence: `.env.qa` restores `QA_EXTENSION_API_BASE_URL`, but `QA_EXTENSION_API_TOKEN` is missing. `.env.qa.example` and `scripts/verify-qa-env.mjs` still omit extension API variables. On 2026-06-03, anonymous extension smoke timed out instead of proving 401 rejection, and authenticated extension smoke skipped because no token was available.
+- Why it matters: The extension API is a cross-company and cross-workflow data boundary. Anonymous rejection and authenticated allow/deny behavior both need deterministic proof because `/context` and `/page-captures` can expose destination and contact workflow data.
+- Recommendation: Add extension-specific env validation, document required variables in `.env.qa.example`, and extend extension smoke into seeded allow/deny checks for own-company allow, foreign-company deny, Bum accepted-opportunity allow, Bum customer-target deny, and `/page-captures` authorization.
+- Acceptance criteria: Extension smoke fails fast when authenticated extension inputs are required but missing; anonymous `/context` reliably returns the expected 401 envelope; and passing authenticated tests prove both positive and negative `/context` and `/page-captures` behavior against two-company fixtures.
 
-### P1 - Add direct allow/deny behavior coverage for Bum contact detail and admin performance telemetry
-- Evidence: [`src/pages/bum/BumContactDetail.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/pages/bum/BumContactDetail.tsx) ships save, unlink, and re-sync actions on `/bum/contacts/:id`, while [`src/App.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/App.tsx:112) and [`src/lib/portalApi.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/lib/portalApi.ts:4519) expose `/admin/performance`, `performance_metric_events`, and `admin_dashboard_summary()`. This run did not produce passing automated proof for either surface, and current automated suites still stop at shell-level or route-level evidence.
-- Why it matters: Represented-contact mutations and admin telemetry are both authorization-sensitive. They can regress or leak cross-role data without any existing test turning red on the actual behavior or direct data path.
-- Recommendation: Add targeted tests that prove Bum contact detail load/save/unlink/re-sync success for the owning Bum plus deny behavior for another Bum and client roles, and add `/admin/performance` admin-allow plus non-admin deny coverage at route and data-helper layers.
-- Acceptance criteria: `/bum/contacts/:id` has mutation success and unauthorized-failure coverage, `/admin/performance` has admin allow and non-admin deny coverage, and failures clearly distinguish route-guard breaks from backend authorization breaks.
+### P1 - Add direct allow/deny behavior coverage for represented contacts, telemetry, and profile bootstrap
+- Evidence: `docs/business-access-rules.md` treats profile bootstrap, extension captures/represented contacts, and performance telemetry as RLS/authorization-sensitive. Current tests cover route guards and source contracts, but this run produced no direct data-path proof for `/bum/contacts/:id`, `performance_metric_events`, `admin_dashboard_summary()`, or self-edit attempts against authorization-bearing profile fields.
+- Why it matters: These surfaces can leak cross-role or cross-company data while route rendering stays green. Profile bootstrap is especially risky because role, company, client access role, admin status, and Bum identity are authorization-bearing fields.
+- Recommendation: Add targeted portal/API/direct-data tests that prove owning-role success and unrelated-role denial for Bum contacts, admin telemetry, and profile self-edits. Product Ops/Security should own final policy; QA should own the allow/deny proof matrix.
+- Acceptance criteria: Tests prove owning Bum contact load/save/unlink/re-sync success plus another-Bum/client denial; Admin allow plus non-admin denial for `/admin/performance`, `performance_metric_events`, and `admin_dashboard_summary()`; and denial of direct or browser profile changes to `role`, `is_admin`, `company_id`, `client_access_role`, and Bum identity.
 
-### P2 - Replace placeholder unit coverage and add enforceable quality gates for visuals, accessibility, and source coverage
-- Evidence: [`src/test/example.test.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/test/example.test.ts) is still `expect(true).toBe(true)`. [`tests/e2e/visual-ui-audit.spec.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/tests/e2e/visual-ui-audit.spec.ts) captures screenshots but does not use `toHaveScreenshot()`. Repo search still finds no `@axe-core/playwright`, and [`vitest.config.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/vitest.config.ts) plus `package.json` still lack a coverage configuration or `coverage` script.
-- Why it matters: The unit suite can remain green on placeholder assertions, UI artifact capture does not fail CI on regressions, accessibility automation is still absent, and code coverage remains inferred instead of measured.
-- Recommendation: Remove the placeholder test, add behavior assertions around active dashboard/search logic, wire at least one public and one authenticated screenshot assertion, add `@axe-core/playwright` scans for critical flows, and add a `pnpm run coverage` path backed by Vitest V8 coverage.
+### P1 - Add client-team/domain approval allow-deny coverage
+- Evidence: `docs/business-access-rules.md` defines profile bootstrap, same-domain approval, related-domain approval, public-email company creation, and Client Admin team-management rules. Source scan found `/client/team` behind `ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN"]}` and the `client-team` edge function, but current tests do not prove same-company approval, cross-company denial, related-domain pending behavior, public-email denial, disabled-user denial, or audit event creation.
+- Why it matters: Client team approval can grant Client Admin, Client Finance, or Client Member access. A route guard alone cannot prove the server rejects self-join, cross-company, related-domain, or public-email escalation paths.
+- Recommendation: Add seeded client-team tests for same-domain approval allow, Client Finance/Member denial on `/client/team`, cross-company denial, related-domain pending-until-admin-approval, public/free email manual-review behavior, disabled-user denial, and audit logging.
+- Acceptance criteria: A Client Admin can approve and disable only same-company eligible users; Client Finance and Client Member cannot access team management; public/free-email and related-domain users cannot become company members without the approved Admin path; every approval, denial, disablement, and role change creates an audit event.
+
+### P2 - Replace placeholder unit coverage and add enforceable visual, accessibility, and coverage gates
+- Evidence: `src/test/example.test.ts` still contains `expect(true).toBe(true)`. `tests/e2e/visual-ui-audit.spec.ts` captures screenshots but does not use `toHaveScreenshot()`. Repo search still finds no `@axe-core/playwright`, and `vitest.config.ts` plus `package.json` still lack a coverage script.
+- Why it matters: Placeholder assertions inflate confidence, screenshots do not fail CI on visual regressions, accessibility automation is absent, and source coverage remains inferred instead of measured.
+- Recommendation: Remove the placeholder test, add behavior assertions around active dashboard/search logic, wire at least one public and one authenticated screenshot assertion, add axe scans for critical flows, and add a `pnpm run coverage` path backed by Vitest V8 coverage.
 - Acceptance criteria: Placeholder coverage is removed, CI can fail on agreed screenshot and axe regressions, and `pnpm run coverage` emits a tracked report with thresholds.
 
 ## Business Access Coverage
 
 - Profile bootstrap and self-editable identity:
-  Data each role needs: signed-in users need their own safe preferences; Admin needs audited control over role, company, client access role, Bum identity, and admin status.
-  Missing allow/deny coverage: No executable proof that users cannot self-mutate `role`, `is_admin`, `company_id`, `client_access_role`, or Bum identity through browser profile sync, direct Supabase calls, Clerk `unsafeMetadata`, or admin repair paths.
+  Data each role needs: signed-in users need safe preferences only; Admin needs audited control over role, company, client access role, Bum identity, and admin status.
+  Missing allow/deny coverage: No executable proof that users cannot self-mutate authorization fields through browser profile sync, Clerk metadata, direct Supabase calls, RPCs, edge functions, or extension APIs.
   Seeded records and credentials needed: one unassigned signup-intent user, one client user, one Bum, one admin, and a second client company for denied cross-company attachment.
-  Rule/doc impact: `docs/business-access-rules.md` now defines profile bootstrap as an authorization release gate; QA should block profile/RLS hardening until safe preference edits still pass and all authorization-bearing self-edits fail.
+  RLS-sensitive hold: Do not harden or expand bootstrap/profile policies until safe preference edits still pass and authorization-bearing self-edits fail.
+
+- Customer targets and target-company stage:
+  Data each role needs: Client Admin needs own-company target creation and management; Client Member needs only allowed workflow fields; Client Finance remains deny-by-default for target management; Bum needs only relationship-bound target detail; Admin needs operational visibility.
+  Missing allow/deny coverage: The new `PROSPECT` target-company stage is source-tested but not behavior-tested; there is still no stable direct proof that Client Finance cannot browse target-management data, unrelated Bums cannot read targets, and cross-company target reads fail.
+  Seeded records and credentials needed: two client companies, Client Admin, Client Member, Client Finance, two Bums, one own-company target, one foreign-company target, and deterministic labels.
+  RLS-sensitive hold: Do not broaden target, search, or extension destination visibility until own-company allow and foreign-company/role deny checks pass.
 
 - Extension API destinations and page captures:
-  Data each role needs: Admin needs full troubleshooting context. Client Admin needs own-company destinations. Bum needs only destinations tied to accepted or explicitly assigned workflow. Client Finance and Client Member should remain deny-by-default unless Product Ops expands the rule.
-  Missing allow/deny coverage: No authenticated proof yet for Client Admin own-company allow, Client Finance deny, Client Member deny, Bum accepted-opportunity allow, Bum customer-target deny, foreign-company deny, or `/page-captures` deny behavior.
+  Data each role needs: Admin needs troubleshooting context; Client Admin needs own-company destinations; Bum needs only accepted or explicitly assigned workflow destinations; Client Finance and Client Member remain deny-by-default unless Product Ops expands the rule.
+  Missing allow/deny coverage: No authenticated proof yet for Client Admin own-company allow, finance/member deny, Bum accepted-opportunity allow, Bum customer-target deny, foreign-company deny, or `/page-captures` deny behavior. Anonymous `/context` rejection also failed to complete in this run.
   Seeded records and credentials needed: `QA_EXTENSION_API_TOKEN`, one own-company target, one foreign-company target, one allowed accepted opportunity, one denied opportunity, and replay-safe capture payloads.
-  Rule/doc impact: `docs/business-access-rules.md` already requires Bum target denial without an explicit relationship; QA should keep extension release risk high until portal, API, and extension allow/deny proof all exist.
+  RLS-sensitive hold: Keep extension release risk high until portal, API, extension, and direct data-path allow/deny proof all exist.
 
 - Bum represented contacts:
-  Data each role needs: Bum should see and mutate only their own represented contacts plus linked workflow context. Admin troubleshooting access is still plausible but not yet proven as an implementation-safe final rule. Client roles should be denied by default.
-  Missing allow/deny coverage: No automated proof that one Bum cannot read or mutate another Bum’s contact, no client-role deny coverage, and no unauthorized unlink or re-sync assertion.
-  Seeded records and credentials needed: Two Bum accounts, one out-of-scope contact, and represented-contact rows sourced from claim, prospect, target-response, and extension-capture paths.
-  Rule/doc impact: `docs/business-access-rules.md` should gain a dedicated represented-contacts section before broader admin or client visibility is expanded.
-
-- Customer targets, opportunities, and global search:
-  Data each role needs: Client Admin needs own-company target and opportunity management. Client Member needs only explicitly allowed workflow data. Client Finance should remain finance/report scoped. Bum needs marketplace-safe summaries plus only relationship-bound detail. Admin needs cross-company visibility.
-  Missing allow/deny coverage: This run produced no stable passing authenticated proof for search-boundary behavior. The repo still lacks seeded runtime proof that Client Finance cannot discover target-management destinations through search, unrelated Bums cannot reach accepted-opportunity detail, and accepted intro/request locking remains enforced across multiple Bums.
-  Seeded records and credentials needed: Two client companies, Client Admin, Client Member, Client Finance, two Bums, one open opportunity, one accepted opportunity, one explicit target-response workflow, and deterministic searchable labels.
-  Rule/doc impact: Do not tighten RLS or search-surface behavior further without the allow/deny matrix because the current business doc still leaves some pre-relationship marketplace-detail questions open.
+  Data each role needs: Bum should see and mutate only their own represented contacts plus approved linked workflow context; Admin needs troubleshooting access; client roles should be denied raw represented-contact details by default.
+  Missing allow/deny coverage: No automated proof that one Bum cannot read or mutate another Bum's contact, no client-role deny coverage, and no unauthorized unlink or re-sync assertion.
+  Seeded records and credentials needed: two Bum accounts, one out-of-scope contact, and represented-contact rows sourced from claim, prospect, target-response, and extension-capture paths.
+  RLS-sensitive hold: Do not expand admin/client represented-contact visibility without a business-rule update and matching allow/deny tests.
 
 - Performance telemetry and admin observability:
-  Data each role needs: Admin needs raw and summary telemetry for troubleshooting. Non-admin roles should be denied `/admin/performance`, `performance_metric_events`, and `admin_dashboard_summary()`.
-  Missing allow/deny coverage: No passing current-session route test for `/admin/performance`, no non-admin deny test, and no executable proof in this run that the helper and table stay admin-only under browser-authenticated sessions.
-  Seeded records and credentials needed: Seeded telemetry rows for multiple routes and one non-admin account.
-  Rule/doc impact: Treat the existing business rule as a release gate for any telemetry or admin-summary changes until route and direct data-path deny proof exists.
+  Data each role needs: Admin needs raw and summary telemetry for troubleshooting; non-admin roles must be denied `/admin/performance`, `performance_metric_events`, and `admin_dashboard_summary()`.
+  Missing allow/deny coverage: No passing current-session route test for `/admin/performance`, no non-admin deny test, and no browser-authenticated direct-data proof.
+  Seeded records and credentials needed: seeded telemetry rows for multiple routes plus one admin and one non-admin account.
+  RLS-sensitive hold: Treat the existing business rule as a release gate for telemetry or admin-summary changes until route and data-helper deny proof exists.
+
+- Client team, domain approval, and access-role assignment:
+  Data each role needs: Client Admin needs same-company access requests, related-domain request status, team member status, and allowed company-scoped role assignments; Client Finance and Client Member need no team-management authority by default; Admin needs public-email, unmatched-domain, related-domain, stale-admin, and override queues.
+  Missing allow/deny coverage: No executable proof that Client Admin can approve only eligible same-company users, cannot manage another company, cannot approve related domains before Admin review, and cannot use the `client-team` function to grant cross-company authority.
+  Seeded records and credentials needed: one claimed client domain, one related-domain request, one public-email signup intent, one same-company pending user, one cross-company user, one Client Admin, one Client Finance, one Client Member, and one Admin override account.
+  RLS-sensitive hold: Do not expand client-team, signup, or profile-bootstrap authority until approval/denial/audit cases pass at route, edge-function, and direct-data levels.
 
 ## Coverage Map
 
 - Verified this run:
-  `set -a; . ./.env.qa; set +a` showed `QA_BASE_URL` and `QA_EXTENSION_API_BASE_URL` present while `QA_EXTENSION_API_TOKEN` remained unset.
-  `pnpm run qa:env` completed with the current base QA contract after sourcing `.env.qa`.
-  `pnpm run lint` reported the same 7 `react-hooks/exhaustive-deps` warnings and no errors.
-  `pnpm run test` passed 24 assertions across 6 files.
-  `pnpm exec playwright test tests/e2e/extension-api.spec.ts` passed 2 anonymous `/context` checks and skipped 2 authenticated checks because `QA_EXTENSION_API_TOKEN` was missing.
+  `.env.qa` sourcing showed `QA_BASE_URL`, `QA_EXTENSION_API_BASE_URL`, and all five role emails present; `QA_EXTENSION_API_TOKEN`, `QA_DEEP_MUTATION`, `QA_SUPABASE_URL`, and `QA_SUPABASE_SERVICE_ROLE_KEY` were missing.
+  `pnpm run qa:env` passed.
+  `pnpm run lint` completed with 7 warnings and 0 errors.
+  `pnpm run test` passed 29 assertions across 9 files.
+  `pnpm exec playwright test tests/e2e/configuration-smoke.spec.ts --project=chromium` passed locally against the Vite preview harness.
 
 - Failed this run:
-  `pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium` failed 4 of 5 tests because Clerk sign-in and post-auth route settlement were not deterministic for Admin, Client Admin, Client Finance, and Client Member.
-  `pnpm exec playwright test tests/e2e/portal-interaction-audit.spec.ts --project=chromium` failed all 4 role audits; 3 failed on the skip-link false positive and 1 failed with `net::ERR_ADDRESS_UNREACHABLE` on `/client/dashboard`.
+  `curl -I -L --max-time 20 "$QA_BASE_URL"` timed out during DNS resolution.
+  `dig trustedbums.com A` and `dig trustedbums.com AAAA` timed out with no reachable DNS server.
+  `pnpm exec playwright test tests/e2e/staging-smoke.spec.ts --project=chromium --grep 'loads public pages'` failed at initial public navigation.
+  `pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium` failed all 5 roles at initial navigation before sign-in.
+  `pnpm exec playwright test tests/e2e/extension-api.spec.ts --project=chromium` failed anonymous `/context` with a 30s request timeout and skipped authenticated coverage because `QA_EXTENSION_API_TOKEN` was missing.
 
 - Current direct route gaps:
   `/sign-in`, `/legal/:slug`, `/admin/performance`, `/bum/contacts/:id`, and the `*` Not Found route still lack direct passing assertions from this run.
 
 - Current behavior gaps:
-  Deterministic Clerk-authenticated role smoke, extension authenticated allow/deny paths, Bum contact mutation allow/deny behavior, admin performance allow/deny behavior, role-scoped search boundaries, and route-depth interaction coverage after the anchor helper is fixed.
-
-- Current suite skew:
-  Unit coverage is still helper-heavy and includes a placeholder assertion, deployed anonymous API smoke is healthier than authenticated browser smoke, and CI still enforces only lint, Vitest, build, and local configuration smoke on pull requests and `main`.
+  Deterministic target reachability, deterministic extension API reachability, deterministic Clerk-authenticated role smoke, extension authenticated allow/deny paths, target-company stage behavior coverage, Bum contact mutation allow/deny behavior, admin performance allow/deny behavior, role-scoped search boundaries, and route-depth interaction coverage after target reachability is restored.
 
 ## Watchlist
 
-- Clerk-backed Playwright sign-in is not currently deterministic for Admin, Client Admin, Client Finance, and Client Member on the deployed QA target.
-- `tests/e2e/portal-interaction-audit.spec.ts` still treats valid `#main-content` skip links as broken anchors.
-- The Client Finance portal audit also recorded `net::ERR_ADDRESS_UNREACHABLE` on `https://trustedbums.com/client/dashboard`, which may indicate target or runner instability separate from the skip-link issue.
+- QA runner DNS resolution for `trustedbums.com` failed again on 2026-06-03; independent hosting/DNS monitor evidence is needed before treating it as a confirmed site outage.
+- Supabase extension API anonymous `/context` timed out from this runner on 2026-06-03; rerun from an independent network path or with Supabase function logs before classifying it as a live function outage.
+- Clerk-backed Playwright sign-in remains unfit as a release gate until target preflight and role auth setup are separated.
 - `QA_EXTENSION_API_TOKEN` is still unavailable, so authenticated extension authorization coverage remains skipped.
+- `QA_DEEP_MUTATION`, `QA_SUPABASE_URL`, and `QA_SUPABASE_SERVICE_ROLE_KEY` are missing locally, so mutating deep QA and cleanup-backed workflow checks cannot run from this session.
 - `pnpm run lint` still reports the same 7 `react-hooks/exhaustive-deps` warnings.
 - React Router v7 future-flag warnings still appear during `routeGuards.test.tsx`.
 
 ## Current Standards And Time-Sensitive Notes
 
-- Checked 2026-05-31: Playwright still recommends authenticating once and reusing saved `storageState` instead of signing in separately inside each spec. Source: [Playwright Authentication](https://playwright.dev/docs/auth)
-- Checked 2026-05-31: Playwright CI guidance still treats traces and CI-specific debugging artifacts as the primary way to isolate failed browser runs, which fits the current Clerk sign-in failures. Source: [Playwright CI](https://playwright.dev/docs/ci)
-- Checked 2026-05-31: Vitest still defaults coverage to the V8 provider, and the official low-friction script pattern remains `vitest run --coverage`. Source: [Vitest Coverage](https://main.vitest.dev/guide/coverage)
-- Checked 2026-05-31: Supabase still documents RLS as the core browser-data authorization control and recommends explicit authenticated-versus-unauthenticated checks rather than relying on implicit `auth.uid()` behavior. Source: [Supabase Row Level Security](https://supabase.com/docs/learn/auth-deep-dive/auth-row-level-security)
+- Checked 2026-06-03: Playwright 1.60 release notes document `testConfig.webServer.gracefulShutdown`, which is relevant to local preview reliability and clean teardown in CI. Source: [Playwright release notes](https://playwright.dev/docs/release-notes)
+- Checked 2026-06-03: Vitest release guidance says Vitest 3.x is no longer supported and current regular patches are for `vitest@5.0`, with important fixes/security patches backported to `vitest@4.1`; this repo is on `vitest@3.2.4`, so plan a controlled upgrade path before relying on new coverage/reporting behavior. Source: [Vitest releases](https://main.vitest.dev/releases)
+- Checked 2026-06-03: OWASP WSTG keeps authorization testing split across bypassing authorization schema, privilege escalation, IDOR, OAuth weaknesses, and API BOLA; this supports separate route, role, object, and API allow/deny tests rather than one role smoke. Source: [OWASP WSTG authorization testing](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/05-Authorization_Testing/README)
+- Checked 2026-06-03: OWASP Developer Guide recommends deny-by-default access control, least privilege, unit/integration tests that document business authorization criteria, and manual documentation for controls that cannot be automated. Source: [OWASP Enforce Access Controls](https://devguide.owasp.org/en/04-design/02-web-app-checklist/07-access-controls/)
 
 ## Access Requests And Evidence Gaps
 
-- Provide deterministic Clerk QA auth support: role-ready accounts, known-good sign-in path, and access to Clerk or edge logs for failed QA sign-ins.
+- Provide independent QA target health evidence: DNS provider status, hosting/CDN monitor, deployment status, and an external HTTP check for `https://trustedbums.com`.
+- Provide deterministic extension API reachability evidence: Supabase function logs, deployment status, and an external anonymous `/context` check for `extension-api-v1`.
+- Provide deterministic Clerk QA auth support: role-ready accounts, known-good sign-in path, and Clerk or edge logs for failed QA sign-ins after target preflight passes.
 - Provide `QA_EXTENSION_API_TOKEN` and document extension env requirements in the enforceable QA contract.
-- Provide seeded multi-company authorization fixtures for extension destinations, accepted opportunities, customer targets, represented contacts, and telemetry deny checks.
-- Provide CI run history, flaky-test history, and recent deploy or release evidence so QA prioritization can use observed failures instead of source review alone.
+- Provide seeded multi-company authorization fixtures for extension destinations, accepted opportunities, customer targets, represented contacts, profile bootstrap denial checks, and telemetry deny checks.
+- Provide seeded client-team/domain-approval fixtures for same-domain approval, related-domain pending/approval, public-email manual review, cross-company denial, disabled-user denial, and audit-event checks.
+- Provide `QA_DEEP_MUTATION`, `QA_SUPABASE_URL`, and `QA_SUPABASE_SERVICE_ROLE_KEY` only for approved QA environments where cleanup-backed mutating checks are safe.
+- Provide CI run history, flaky-test history, recent deploy/release evidence, and current Playwright artifacts so QA prioritization can use observed failures instead of source review alone.
 - Provide live Supabase SQL, advisor, and catalog validation in-session if QA is expected to verify direct RLS allow/deny behavior rather than keep those findings source-backed.
 
 ## Agent Inputs
 
-- Date of run: 2026-05-31
-- Files, tests, docs, routes, internet sources, and commands reviewed: `docs/consultant-team-rules.md`, `docs/consultant-access-needs.md`, `docs/business-access-rules.md`, previous `docs/qa-test-backlog.md`, `docs/test-accounts.md`, `package.json`, `playwright.config.ts`, `vitest.config.ts`, `src/App.tsx`, `src/pages/admin/AdminDashboard.tsx`, `src/pages/admin/AdminPerformanceMetrics.tsx`, `src/pages/bum/BumContactDetail.tsx`, `src/components/PortalGlobalSearch.tsx`, `src/lib/portalApi.ts`, `src/lib/contactApi.ts`, all current `tests/e2e/*.spec.ts`, all current `src/test/*.test.ts*`, `.github/workflows/qa.yml`, `.github/workflows/e2e-smoke.yml`, `.github/workflows/visual-ui-audit.yml`, `supabase/migrations/*` related to targets, extension captures, performance metrics, and dashboard summary; commands: `git status --short`, `git log --oneline -n 12`, env-presence checks after sourcing `.env.qa`, `pnpm run qa:env`, `pnpm run lint`, `pnpm run test`, `pnpm exec playwright test tests/e2e/extension-api.spec.ts`, `pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium`, and `pnpm exec playwright test tests/e2e/portal-interaction-audit.spec.ts --project=chromium`.
-- Internet sources reviewed: official Playwright authentication docs, official Playwright CI docs, official Vitest coverage guide, and official Supabase RLS docs.
-- Checks that could not run and why: Authenticated extension API smoke still skipped because `QA_EXTENSION_API_TOKEN` was missing after sourcing `.env.qa`. Live CI history, flaky-test history, release history, and Clerk dashboard/log evidence were not available in this session. Direct Supabase SQL or advisor validation was not used in this run, so RLS-sensitive conclusions here remain repo- and test-backed rather than live-policy-backed.
+- Date of run: 2026-06-03
+- Files, tests, docs, routes, internet sources, and commands reviewed: `docs/consultant-team-rules.md`, `docs/consultant-access-needs.md`, `docs/business-access-rules.md`, previous `docs/qa-test-backlog.md`, `package.json`, `playwright.config.ts`, `vitest.config.ts`, `scripts/verify-qa-env.mjs`, `.env.qa.example`, `src/App.tsx`, `src/lib/portalApi.ts`, `src/test/customerTargetRules.test.ts`, all current `tests/e2e/*.spec.ts`, all current `src/test/*.test.ts*`, `git status --short`, `git log --oneline -n 12`, `git show --stat --oneline -n 5`, `.env.qa` presence checks, `pnpm run qa:env`, `pnpm run lint`, `pnpm run test`, `pnpm exec playwright test tests/e2e/configuration-smoke.spec.ts --project=chromium`, `pnpm exec playwright test tests/e2e/extension-api.spec.ts --project=chromium`, `pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium`, `curl -I -L --max-time 20 "$QA_BASE_URL"`, `dig +time=5 +tries=1 trustedbums.com A`, `dig +time=5 +tries=1 trustedbums.com AAAA`, and `pnpm exec playwright test tests/e2e/staging-smoke.spec.ts --project=chromium --grep 'loads public pages'`.
+- Internet sources reviewed: official Playwright release notes, official Vitest releases page, OWASP Web Security Testing Guide authorization testing, and OWASP Developer Guide access-control checklist.
+- Checks that could not run and why: Authenticated extension API smoke skipped because `QA_EXTENSION_API_TOKEN` was missing. Mutating deep QA was not run because `QA_DEEP_MUTATION`, `QA_SUPABASE_URL`, and `QA_SUPABASE_SERVICE_ROLE_KEY` were missing. Portal interaction and visual audits were not rerun after DNS failed because they depend on the same unreachable deployed target. Live CI history, flaky-test history, release history, hosting/DNS dashboard evidence, Clerk dashboard/log evidence, and Supabase SQL/advisor/catalog validation were unavailable in this session.

@@ -95,7 +95,7 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
         <DialogHeader>
           <DialogTitle>Create your account</DialogTitle>
           <DialogDescription>
-            Choose the account type and email you want attached to your Trusted Bums access.
+            Choose whether you are a Client Prospect or Bum Prospect, then add the email you want attached to Trusted Bums access.
           </DialogDescription>
         </DialogHeader>
 
@@ -111,7 +111,7 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
                 <span>
                   <span className="flex items-center gap-2 font-medium">
                     <Briefcase className="h-4 w-4" />
-                    Client
+                    Client Prospect
                   </span>
                   <span className="mt-1 block text-sm font-normal text-muted-foreground">
                     Company workspace
@@ -126,7 +126,7 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
                 <span>
                   <span className="flex items-center gap-2 font-medium">
                     <Users className="h-4 w-4" />
-                    Bum
+                    Bum Prospect
                   </span>
                   <span className="mt-1 block text-sm font-normal text-muted-foreground">
                     Bum account
@@ -134,7 +134,7 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
                 </span>
               </Label>
             </RadioGroup>
-            {submitted && !role ? <p className="text-sm text-destructive">Select Client or Bum.</p> : null}
+            {submitted && !role ? <p className="text-sm text-destructive">Select Client Prospect or Bum Prospect.</p> : null}
           </div>
 
           <div className="space-y-2">
@@ -160,9 +160,9 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
                 placeholder="Company name"
               />
               {knownClient ? (
-                <p className="text-sm text-muted-foreground">Matched existing client workspace for {knownClient.company}.</p>
+                <p className="text-sm text-muted-foreground">Matched existing Client workspace for {knownClient.company}.</p>
               ) : (
-                <p className="text-sm text-muted-foreground">Required for a first-time client workspace.</p>
+                <p className="text-sm text-muted-foreground">Required for a first-time Client workspace request.</p>
               )}
               {submitted && !companyIsValid ? <p className="text-sm text-destructive">Enter the company name.</p> : null}
             </div>

@@ -1,6 +1,6 @@
 # Trusted Bums Consultant Team Rules
 
-_Last updated: 2026-05-31 by Codex daily lead developer automation._
+_Last updated: 2026-06-04 by Codex._
 
 ## Global Rules
 
@@ -12,6 +12,7 @@ _Last updated: 2026-05-31 by Codex daily lead developer automation._
 - Revalidate live findings in the current session. If a fact came from a prior run and the current session cannot re-check it, label it as historical or source-backed, not freshly verified.
 - Distinguish partial live access from full live access. If Supabase exposes only project metadata, URL, logs, or edge-function inventory, report that as partial verification and do not imply current schema, policy, advisor, or catalog validation.
 - Do not cite tools or connector capabilities that were not actually callable in the current run.
+- Before preserving active backlog items, read `docs/codex-edit-log.md` when it exists. If the latest handoff names your role, recheck the shipped change and downgrade, remove, or narrow stale recommendations instead of asking for already implemented work.
 - Before carrying forward an active recommendation, reconcile it against the current route map, recent commits, and source files. If code already shipped part of the recommendation, downgrade it to the remaining gap and update acceptance criteria instead of repeating stale implementation work.
 - Use every relevant available capability before downgrading to source-only review: local repo inspection, browser/Playwright, package/security tooling, Supabase MCP, screenshots, logs, and current external guidance.
 - Source `.env.qa` for local QA checks when present, but never print or persist secret values. Mention only variable names when reporting missing or invalid configuration.
@@ -21,11 +22,13 @@ _Last updated: 2026-05-31 by Codex daily lead developer automation._
 - When dependency scanning finds current advisories, distinguish shipped runtime dependencies from dev-only tooling, record the first patched version, and prioritize direct runtime risk first.
 - Keep recommendations concise, implementation-ready, and removable when resolved.
 - Remove stale, duplicative, speculative, or low-value items without keeping a completed-items archive.
+- After implementing or pushing a change, append a dated entry to `docs/codex-edit-log.md` with the commit or branch, changed surfaces, validation, and which specialist agents should recheck it on their next run.
 - Never include API keys, secrets, credentials, or private user data in any backlog.
 - Treat web-security blocking risk, domain reputation, email reputation, and public credibility as product-critical trust issues. If a role sees evidence that `trustedbums.com` may be blocked, distrusted, flagged, spoofable, or credibility-weak, mirror it to `docs/trust-reputation-backlog.md` or the Trust & Reputation consultant.
 - Treat every unauthenticated public intake, contact, signup, email-trigger, or webhook-style endpoint as both a security surface and a trust/reputation surface. Recommendations should check business intent, abuse controls, rate limits, mail or reputation impact, and rollback-safe QA.
 - Treat `bums@trustedbums.com` as the shared operations mailbox. When a role recommends mailbox-reading workflows, it must use `docs/shared-mailbox-operations.md`, require mailbox-scoped Microsoft Graph access, and avoid broad tenant-mailbox access unless there is an explicit business rule and security review.
 - Cross-functional recommendations must not be treated as single-discipline decisions. Before Lead Developer promotes or implements a specialist recommendation that materially affects another discipline, record the affected specialists and the tradeoff check needed. Examples: Security/RLS changes must check UX, Product Ops, QA, Data, and Support impact; UI density changes must check Accessibility and UX; Performance changes must check Analytics, UX, and QA; Content/legal wording changes must check Trust, Legal/Compliance owner, UX, and Product Ops.
+- Treat GitHub Actions as the authoritative QA evidence source for release and deployed-target validation. Local `pnpm` or Playwright runs are acceptable developer preflights, but final QA, E2E, visual, and deep interaction evidence should come from the relevant GitHub workflow artifacts and logs unless GitHub itself is unavailable.
 - Every user request to push to `main`, merge into `main`, or prepare a branch for merge to `main` must invoke the Code Review Agent pre-main gate in `docs/code-review-expert-role.md`. If the Code Review Agent returns NO-GO, do not push or merge unless Ryan explicitly overrides after seeing the blockers. The local pre-push guard in `.githooks/pre-push` enforces a fresh GO marker for direct pushes to `main`.
 - After every successful push or merge to `main`, Lead Developer must trigger or run the broadest practical QA/release verification pass, including local checks, affected Playwright suites, Supabase/deployment smoke, public-site trust checks, and role/access checks as credentials allow. If post-main validation fails in a release-impacting way, Lead Developer must recommend either immediate rollback, hotfix-forward, or hold-deploy with the exact reason, affected users, failed checks, and safest recovery path.
 
@@ -41,6 +44,7 @@ _Last updated: 2026-05-31 by Codex daily lead developer automation._
 
 - Focus on hierarchy, spacing, density, typography, component consistency, mobile polish, and visible states.
 - Separate visual evidence from deeper UX or process recommendations.
+- Use GitHub Visual QA as the visual evidence source. Inspect or trigger the GitHub Actions workflow named `Visual UI Audit` and its `visual-ui-audit` artifact instead of running local Vite, local browser, or local Playwright visual checks.
 - Request screenshot or browser evidence, design sources, brand guidance, and component references when visual confidence is limited.
 
 ## Content Copyeditor Rules
@@ -59,6 +63,8 @@ _Last updated: 2026-05-31 by Codex daily lead developer automation._
 ## QA/Test Engineer Rules
 
 - Focus on critical path coverage, regression risk, route coverage, auth coverage, visual coverage, and flaky tests.
+- Run release QA from GitHub Actions by default. Use `QA`, `E2E Smoke`, `Visual UI Audit`, and `Deep QA Hotfix Audit` workflow runs and artifacts as the source of truth; record local-only results as preflight evidence, not final release evidence.
+- Deep QA must include a page-by-page interaction audit that verifies every visible enabled button is operable by actionability checks and clicks safe non-destructive controls. Any skipped destructive or mutating controls must be covered by the approved mutating deep-QA path or called out as an evidence gap.
 - Maintain a post-main verification checklist that Lead Developer can run after every `main` push. It should include the broadest practical combination of lint, unit tests, build, authenticated role smoke, visual/interaction audits, extension/API checks, Supabase migration/function verification, public contact intake, telemetry, and trust/reputation smoke, with clear skip reasons for missing credentials or unavailable environments.
 - Maintain a `Business Access Coverage` section in `docs/qa-test-backlog.md` when access-risk work is active. For each major object, identify role data needs, missing allow/deny scenarios, required seeded records, and workflows that should block RLS hardening until tested.
 - For RLS-sensitive workflows, require both positive and negative QA proof: legitimate access still works and unrelated cross-role or cross-company access is denied.

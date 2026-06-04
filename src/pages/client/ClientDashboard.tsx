@@ -112,22 +112,22 @@ export default function ClientDashboard() {
   const unpaidInvoices = invoices.filter((invoice) => !["PAID", "VOID"].includes(invoice.status)).length;
   const financeNextActions: DashboardAction[] = [
     !hasAcceptedCurrentTerms
-      ? { title: "Review partner terms", description: "Terms need acceptance before the workspace is current.", to: "/client/profile", primary: true }
+      ? { title: "Review Client Agreement", description: "The current agreement needs acceptance before the workspace is current.", to: "/client/profile", primary: true }
       : null,
     paymentReports.length
-      ? { title: "Import next payment file", description: "Add the latest customer payment CSV.", to: "/client/payments", primary: !pendingPaymentReports && !unpaidInvoices }
-      : { title: "Import first payment file", description: "Generate Trusted Bums invoices from paid customer deals.", to: "/client/payments", primary: true },
+      ? { title: "Import next Customer Payment Report", description: "Add the latest Customer revenue CSV after Customers pay you directly.", to: "/client/payments", primary: !pendingPaymentReports && !unpaidInvoices }
+      : { title: "Import first Customer Payment Report", description: "Calculate Trusted Bums commission invoices from Client-reported Customer revenue.", to: "/client/payments", primary: true },
     pendingPaymentReports
-      ? { title: "Review pending payment records", description: `${pendingPaymentReports} payment record${pendingPaymentReports === 1 ? "" : "s"} still need invoice review.`, to: "/client/payments" }
+      ? { title: "Review pending Customer Payment Reports", description: `${pendingPaymentReports} report${pendingPaymentReports === 1 ? "" : "s"} still need commission invoice review.`, to: "/client/payments" }
       : null,
     unpaidInvoices
-      ? { title: "Review outstanding invoices", description: `${unpaidInvoices} Trusted Bums invoice${unpaidInvoices === 1 ? "" : "s"} not marked paid.`, to: "/client/payments" }
+      ? { title: "Review outstanding commission invoices", description: `${unpaidInvoices} Trusted Bums commission invoice${unpaidInvoices === 1 ? "" : "s"} not marked paid.`, to: "/client/payments" }
       : null,
-    { title: "Export finance data", description: "Download payments, meetings, and account CSVs.", to: "/client/exports" },
+    { title: "Export finance data", description: "Download Customer Payment Reports, commission invoices, and account CSVs.", to: "/client/exports" },
   ].filter(Boolean) as DashboardAction[];
   const clientNextActions: DashboardAction[] = [
     !hasAcceptedCurrentTerms
-      ? { title: "Review partner terms", description: "Accept the current terms from Company Profile before working new activity.", to: "/client/profile", primary: true }
+      ? { title: "Review Client Agreement", description: "Accept the current agreement from Company Profile before working new activity.", to: "/client/profile", primary: true }
       : null,
     targets.length
       ? { title: "Register an opportunity", description: "Submit a deal for review and commission tracking.", to: "/client/opportunities/new", primary: !activeCount }
@@ -136,13 +136,13 @@ export default function ClientDashboard() {
       ? { title: "Review Bum responses", description: `${pendingTargetResponses.length} Bum response${pendingTargetResponses.length === 1 ? "" : "s"} awaiting approval.`, to: "/client/opportunities?tab=responses", primary: true }
       : null,
     reverseOpportunities.length
-      ? { title: "Review inbound requests", description: `${reverseOpportunities.length} Bum-initiated request${reverseOpportunities.length === 1 ? "" : "s"} need review.`, to: "/client/requests" }
+      ? { title: "Review Customer Leads", description: `${reverseOpportunities.length} Bum-submitted Customer Lead${reverseOpportunities.length === 1 ? "" : "s"} need review.`, to: "/client/requests" }
       : null,
     activeCount
       ? { title: "Check active opportunities", description: `${activeCount} active opportunit${activeCount === 1 ? "y" : "ies"} need progress tracking.`, to: "/client/opportunities" }
       : null,
     canManagePayments
-      ? { title: "Record customer payment", description: "Generate a Trusted Bums invoice from a paid deal.", to: "/client/payments" }
+      ? { title: "Record Customer Payment Report", description: "Calculate a Trusted Bums commission invoice from Client-reported Customer revenue.", to: "/client/payments" }
       : null,
   ].filter(Boolean) as DashboardAction[];
 
@@ -151,27 +151,27 @@ export default function ClientDashboard() {
       <div>
         <PageHeader
           title={`Welcome back, ${user?.name ?? "Finance"}`}
-          description={`Review imported payments and generated invoices for ${user?.companyName ?? "your client workspace"}.`}
+          description={`Review Customer Payment Reports and generated commission invoices for ${user?.companyName ?? "your client workspace"}.`}
         >
           <Button asChild>
             <Link to="/client/payments">
               <CreditCard className="mr-2 h-4 w-4" />
-              Open Payments
+              Open Payment Reports
             </Link>
           </Button>
         </PageHeader>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <StatCard title="Reported Payments" value={paymentReports.length} icon={CreditCard} to="/client/payments" />
-          <StatCard title="Generated Invoices" value={invoices.length} icon={FileCheck} to="/client/payments" />
+          <StatCard title="Customer Payment Reports" value={paymentReports.length} icon={CreditCard} to="/client/payments" />
+          <StatCard title="Commission Invoices" value={invoices.length} icon={FileCheck} to="/client/payments" />
           <StatCard title="Commissionable Revenue" value={`$${totalCommissionableRevenue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Target} to="/client/payments" />
-          <StatCard title="Invoice Value" value={`$${generatedInvoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Download} to="/client/payments" />
+          <StatCard title="Commission Invoice Value" value={`$${generatedInvoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Download} to="/client/payments" />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Recent generated invoices</CardTitle>
+              <CardTitle className="font-display">Recent commission invoices</CardTitle>
             </CardHeader>
             <CardContent>
               {invoices.length ? (
@@ -195,12 +195,12 @@ export default function ClientDashboard() {
                 </div>
               ) : (
                 <div className="rounded-md border border-dashed p-6 text-center">
-                  <p className="font-medium">No invoices generated yet</p>
+                  <p className="font-medium">No commission invoices generated yet</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Import your first customer payment CSV to generate invoices for AP.
+                    Import your first Customer Payment Report to calculate commission invoices for AP.
                   </p>
                   <Button asChild className="mt-4">
-                    <Link to="/client/payments">Go to Payments</Link>
+                    <Link to="/client/payments">Go to Payment Reports</Link>
                   </Button>
                 </div>
               )}
@@ -216,13 +216,13 @@ export default function ClientDashboard() {
               </CardHeader>
               <CardContent className="grid gap-2">
                 <Button asChild>
-                  <Link to="/client/payments">Import monthly payments</Link>
+                  <Link to="/client/payments">Import monthly Customer Payment Reports</Link>
                 </Button>
                 <Button asChild variant="outline">
                   <Link to="/client/exports">Open exports</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/client/agreements">View acceptance records</Link>
+                  <Link to="/client/agreements">View agreement records</Link>
                 </Button>
                 <Button asChild variant="outline">
                   <a href="mailto:bums@trustedbums.com?subject=Trusted%20Bums%20Finance%20Question">Email Trusted Bums Finance</a>
@@ -252,7 +252,7 @@ export default function ClientDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Target Accounts" value={targets.length} icon={Target} to="/client/targets" />
         <StatCard title="Bum Responses" value={pendingTargetResponses.length} icon={Handshake} to="/client/opportunities?tab=responses" />
-        <StatCard title="Inbound Requests" value={reverseOpportunities.length} icon={Clock} to="/client/requests" />
+        <StatCard title="Customer Leads" value={reverseOpportunities.length} icon={Clock} to="/client/requests" />
         <StatCard title="Active Opportunities" value={activeCount} icon={Target} to="/client/opportunities" />
         <StatCard title="Accepted" value={acceptedCount} icon={FileCheck} to="/client/opportunities" />
         <StatCard title="Target Prospects" value={targetProspectCount} icon={Clock} to="/client/targets" />
@@ -327,7 +327,7 @@ export default function ClientDashboard() {
             </CardHeader>
             <CardContent className="grid gap-2">
               <Button asChild variant="outline">
-                <Link to="/client/requests">Review inbound requests</Link>
+                <Link to="/client/requests">Review Customer Leads</Link>
               </Button>
               <Button asChild>
                 <Link to="/client/targets">Add target account</Link>
@@ -337,11 +337,11 @@ export default function ClientDashboard() {
               </Button>
               {canManagePayments ? (
                 <Button asChild variant="outline">
-                  <Link to="/client/payments">Record customer payment</Link>
+                  <Link to="/client/payments">Record Customer Payment Report</Link>
                 </Button>
               ) : null}
               <Button asChild variant="outline">
-                <Link to="/client/agreements">View acceptance records</Link>
+                <Link to="/client/agreements">View agreement records</Link>
               </Button>
               <Button asChild variant="outline">
                 <a href="mailto:bums@trustedbums.com?subject=Trusted%20Bums%20Client%20Portal">Contact Trusted Bums</a>

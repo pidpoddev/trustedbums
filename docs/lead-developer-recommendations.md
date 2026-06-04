@@ -1,6 +1,6 @@
 # Trusted Bums Lead Developer Recommendations
 
-_Last updated: 2026-05-31 by Codex daily lead developer automation._
+_Last updated: 2026-06-01 by Codex glossary implementation review._
 
 ## Executive Read
 
@@ -10,7 +10,33 @@ The second priority is authorization bootstrap. Current source still lets Clerk 
 
 The third priority is executable proof. `pnpm run qa:env` passed after sourcing `.env.qa`, and targeted Vitest checks passed, but authenticated Playwright role smoke is currently unreliable, extension authenticated checks still skip without `QA_EXTENSION_API_TOKEN`, and `/admin/handoffs` is not yet in visual/interaction route coverage. Product, QA, Security, Data, and Product Ops should converge on a smaller allow/deny matrix before any broad RLS or grant cleanup ships.
 
+## Implementation Handoff For Next Lead Run
+
+- 2026-06-04: Recommendation 1, `Apply founder-approved glossary to site and portal copy`, was implemented and pushed in commit `bbd75c4`. Next Lead Developer run should verify current source/rendered copy and move any residual work to narrower legal approval, remaining copy gaps, or QA evidence rather than reissuing the original broad copy pass.
+- 2026-06-04: Recommendation 2, `Design unified Opportunity workspace before expanding opportunity-like routes`, was implemented as a design-first/source-labeling pass and pushed in commit `bbd75c4`. The app now has a shared origin/stage model and badges in existing opportunity-like workspaces; remaining recommendations should focus on durable schema fields, route consolidation, migration/backfill, access tests, and role-specific workspace UX.
+- Detailed changed surfaces, validation, and specialist recheck requests are tracked in `docs/codex-edit-log.md`.
+
 ## Recommended Implementation Queue
+
+### P1 - Apply founder-approved glossary to site and portal copy
+- Implementation status: Implemented in commit `bbd75c4`; keep only residual verification or legal/product approval gaps after rechecking current source.
+- Source: `docs/content-copyeditor-backlog.md` glossary updated on 2026-06-01; `docs/glossary-site-change-review.md`; current source scan of client legal, request, role, and finance surfaces.
+- Why now: Ryan has clarified the core party, opportunity, claim, finance, and legal terms. The site still exposes old labels that blur Customer vs Client, Client Agreement vs Partner Terms, generic requests vs Customer Leads/Bum Intro Requests/Claims, and bare role names vs company-scoped Client roles.
+- Recommended fix: Ship staged copy-only PRs that apply approved glossary terms before deeper workflow/status model changes. Start with legal noun family and Client role labels, then marketplace object labels, then finance language that avoids implying Customer money passes through Trusted Bums.
+- Likely files/routes: `src/layouts/ClientLayout.tsx`, `src/components/PortalGlobalSearch.tsx`, `src/pages/client/ClientAgreements.tsx`, `src/pages/client/ClientTerms.tsx`, `src/pages/client/ClientProfile.tsx`, `src/pages/client/ClientDashboard.tsx`, `src/pages/client/ClientRequests.tsx`, `src/pages/client/ClientTeam.tsx`, `src/pages/client/ClientPayments.tsx`, `src/pages/client/ClientReports.tsx`, `src/pages/bum/BumReverseOpportunities.tsx`, `src/pages/bum/BumClaims.tsx`, `src/pages/Index.tsx`, and route/visual audit tests.
+- Dependencies/risks: Legal should review `Claim` vs `Introduction Claim`, `Commission` vs `Revenue Share`, and use of `Bum` in agreements. Data/Product Ops should review CRM stage names before status enum changes. QA must update visible-label assertions in the same PR as copy changes. Ryan has also clarified that Opportunities, Reverse Opportunities, Customer Leads, target responses, and intro-request-like workflows should probably become one Opportunity workspace with origin and stage; do not accidentally cement old route names while doing the copy pass.
+- Acceptance criteria: Client legal surfaces use `Client Agreement`; team surfaces use `Client Admin`, `Client Finance`, and `Client Member`; `/client/requests` stops using generic `Requests` as the umbrella for all marketplace objects; finance copy uses `Customer Payment Report` and `Commission Invoice Generator` without implying payment processing; route/visual audits pass with updated labels.
+- Validation: Targeted unit/route tests for labels where present, route guard tests if navigation names change, and focused Playwright visual/interaction audit once authenticated QA is stable.
+
+### P1 - Design unified Opportunity workspace before expanding opportunity-like routes
+- Implementation status: Initial model and visible origin/stage projection implemented in commit `bbd75c4`; remaining work is schema/route consolidation, migration/backfill, role-specific workspace UX, and access-rule proof.
+- Source: Ryan clarification on 2026-06-01; `docs/glossary-site-change-review.md`; `docs/product-ops-workflow-backlog.md`; current routes `src/pages/client/ClientOpportunityNew.tsx`, `src/pages/client/ClientRequests.tsx`, `src/pages/bum/BumOpportunities.tsx`, `src/pages/bum/BumReverseOpportunities.tsx`, `src/pages/bum/BumClaims.tsx`, and `src/pages/admin/AdminOpportunities.tsx`.
+- Why now: The app currently has too many entry points for the same business concept. They are all Opportunities with different originators and stages, and each claimable Opportunity needs a route to create or review a Claim.
+- Recommended fix: Before adding more route-specific opportunity workflows, define a canonical Opportunity workspace by role. Add `Opportunity Origin` and `Opportunity Stage` to the product model, keep `Claim` as the action attached to an Opportunity, and decide which current routes become filters, tabs, or redirects inside the unified workspace.
+- Likely files/routes: `src/pages/client/ClientOpportunityNew.tsx`, `src/pages/client/ClientRequests.tsx`, `src/pages/bum/BumOpportunities.tsx`, `src/pages/bum/BumReverseOpportunities.tsx`, `src/pages/bum/BumClaims.tsx`, `src/pages/admin/AdminOpportunities.tsx`, `src/lib/portalApi.ts`, `docs/business-access-rules.md`, route/visual audit tests, and possibly migrations if the canonical model needs new origin/stage fields.
+- Dependencies/risks: This is product architecture, not a copy-only change. Product Ops, Data, Security, Legal, QA, and UX should approve origin values, stage values, access rules, and migration strategy before implementation. Avoid destructive migrations until current records are mapped.
+- Acceptance criteria: Product spec defines unified Opportunity object behavior, origin values, stage values, Claim creation rules, role visibility, and migration/compatibility plan; site navigation no longer exposes separate opportunity-like concepts where filters or tabs would be clearer; tests cover Client-Originated, Bum-Originated, and Customer-Originated Opportunities.
+- Validation: Source-level route review, updated route/visual audits, targeted role smoke, and direct data-path access tests once implementation begins.
 
 ### P0 - Make profile bootstrap admin-approved and remove self-service authorization mutation
 - Source: `docs/business-access-rules.md` Profile Bootstrap rule; live Supabase `profiles` RLS policies and grants on 2026-05-31; `src/contexts/AuthContext.tsx`; `src/components/SignupIntentDialog.tsx`; `src/lib/portalApi.ts`; Clerk metadata docs: `unsafeMetadata` can be changed from the frontend.

@@ -126,11 +126,11 @@ export function readClientAccessRole(value: unknown): ClientAccessRole | undefin
 
 export function getClientAccessLabel(role?: ClientAccessRole) {
   if (role === "CLIENT_FINANCE") {
-    return "Finance";
+    return "Client Finance";
   }
 
   if (role === "CLIENT_MEMBER") {
-    return "Member";
+    return "Client Member";
   }
 
   return "Client Admin";

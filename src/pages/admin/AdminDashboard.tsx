@@ -182,7 +182,7 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [newTerms, setNewTerms] = useState({
     version: "",
-    title: "Trusted Bums Partner Terms",
+    title: "Trusted Bums Client Agreement",
     body: PARTNER_TERMS_BODY,
     faq_body: PARTNER_FAQ_BODY,
     change_summary: ACTIVE_TERMS_CHANGE_SUMMARY,
@@ -229,7 +229,7 @@ export default function AdminDashboard() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-terms-versions"] });
       await queryClient.invalidateQueries({ queryKey: ["active-terms-version"] });
-      toast({ title: "Terms version created", description: "The partner terms library was updated." });
+      toast({ title: "Agreement version created", description: "The Client Agreement library was updated." });
       setNewTerms((current) => ({ ...current, version: "" }));
     },
     onError: (error) => {
