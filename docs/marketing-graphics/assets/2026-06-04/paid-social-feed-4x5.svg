@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">Trusted Bums paid social warm route plate</title>
+  <desc id="desc">Text-free portrait plate with a guarded buyer door near the top, a central connector, and a single warm route rising through a restrained network field.</desc>
+  <defs>
+    <linearGradient id="paper" x1="120" y1="80" x2="940" y2="1250" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8ef"/>
+      <stop offset="1" stop-color="#f4efe8"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="180" y1="160" x2="920" y2="1160" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08111f"/>
+      <stop offset="1" stop-color="#16273b"/>
+    </linearGradient>
+    <linearGradient id="route" x1="178" y1="1100" x2="812" y2="240" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#178b83"/>
+      <stop offset="0.55" stop-color="#ff7a1a"/>
+      <stop offset="1" stop-color="#ffb16d"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="20" stdDeviation="20" flood-color="#08111f" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1350" rx="42" fill="url(#paper)"/>
+  <rect x="42" y="42" width="996" height="1266" rx="36" fill="url(#paper)" stroke="#eadbc9" stroke-width="2"/>
+
+  <circle cx="868" cy="184" r="112" fill="#08111f" opacity="0.08"/>
+  <circle cx="212" cy="1170" r="146" fill="#ff7a1a" opacity="0.1"/>
+  <circle cx="884" cy="1090" r="124" fill="#178b83" opacity="0.1"/>
+
+  <g opacity="0.55">
+    <circle cx="210" cy="930" r="18" fill="#08111f"/>
+    <circle cx="292" cy="814" r="14" fill="#08111f"/>
+    <circle cx="414" cy="700" r="15" fill="#08111f"/>
+    <circle cx="598" cy="598" r="14" fill="#08111f"/>
+    <circle cx="714" cy="438" r="16" fill="#08111f"/>
+    <circle cx="782" cy="292" r="18" fill="#08111f"/>
+  </g>
+
+  <path d="M210 930c62-52 110-101 144-148 34-48 70-93 108-136 41-47 85-88 131-123 45-35 108-79 189-131" fill="none" stroke="#0b1627" stroke-width="34" stroke-linecap="round" opacity="0.08"/>
+  <path d="M210 930c62-52 110-101 144-148 34-48 70-93 108-136 41-47 85-88 131-123 45-35 108-79 189-131" fill="none" stroke="url(#route)" stroke-width="12" stroke-linecap="round"/>
+
+  <circle cx="210" cy="930" r="94" fill="url(#ink)" filter="url(#shadow)"/>
+  <circle cx="210" cy="900" r="34" fill="#fff8ef"/>
+  <path d="M146 992c12-42 34-64 64-64 30 0 52 22 64 64" fill="#fff8ef"/>
+
+  <circle cx="536" cy="676" r="86" fill="#ff7a1a" filter="url(#shadow)"/>
+  <circle cx="536" cy="648" r="30" fill="#fff8ef"/>
+  <path d="M478 748c11-36 30-54 58-54 28 0 47 18 58 54" fill="#fff8ef"/>
+
+  <g filter="url(#shadow)">
+    <path d="M706 188h118c38 0 68 30 68 68v312H706V188Z" fill="url(#ink)"/>
+    <path d="M760 556V328c0-26 21-47 47-47s47 21 47 47v228" fill="#fff8ef"/>
+    <circle cx="820" cy="416" r="12" fill="#ff7a1a"/>
+    <path d="M690 568h230" stroke="#08111f" stroke-width="34" stroke-linecap="round"/>
+  </g>
+
+  <rect x="118" y="1068" width="844" height="166" rx="42" fill="#08111f" opacity="0.08"/>
+  <rect x="120" y="94" width="520" height="150" rx="34" fill="#ffffff" opacity="0.52"/>
+</svg>

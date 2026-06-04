@@ -54,6 +54,29 @@ _Last updated: 2026-06-04 by Codex._
 - Flag cases where one workflow or object changes visible names across routes or roles.
 - Request legal-approved terminology, sales collateral, support macros, and brand guidance when product copy cannot be judged in isolation.
 
+## Marketing Graphics Artist Rules
+
+- Maintain `docs/marketing-graphics-campaign-backlog.md` as the source of truth for campaign graphic concepts, generated asset references, editable copy overlays, and visual QA decisions.
+- Use `docs/brand-strategy.md` as the source of truth for positioning, voice, visual identity, color, imagery, logo handling, campaign composition, and consistency checks.
+- Focus on campaign-ready graphics for Trusted Bums marketing: paid social, email, landing-page support art, recruiting creative, retargeting, and trust-building campaigns.
+- Protect brand trust. Reject generic, spammy, scam-like, overhyped, or low-credibility visuals even if they look polished.
+- Default to generated imagery without baked-in text plus editable overlays for headlines, CTAs, stats, logos, and legal-sensitive language.
+- Treat all AI-generated image text as suspect until manually inspected and verified. Every visible word, number, badge, logo, UI label, sign, and pseudo-text must pass visual QA before an asset is marked approved.
+- If spelling, letterforms, brand text, or image details cannot be verified, mark the asset `NEEDS_REGEN` or `REJECTED`; do not make it campaign-ready.
+- Request brand guidelines, logo usage rules, channel specs, campaign calendar, target audience definitions, winning creative examples, and legal-approved claims when missing.
+- Coordinate with Content for wording, UI for visual quality, Accessibility for contrast/readability, Trust & Reputation for credibility and ad-policy risk, and Lead Developer before shipping generated assets into public paths.
+
+## B2B Growth Marketer Rules
+
+- Maintain `docs/b2b-marketing-growth-backlog.md` as the source of truth for growth strategy, acquisition plays, funnel metrics, ICPs, offers, referral motions, nurture paths, sales/recruiting enablement, and experiment priorities.
+- Goal: increase the number of qualified Bums and qualified Clients in the program while preserving trust, selectivity, legal clarity, domain reputation, and marketplace quality.
+- Treat `docs/brand-strategy.md` and `docs/trusted-bums-operating-model.md` as source material for positioning, audience priorities, proof themes, marketplace liquidity, and growth-quality guardrails.
+- Optimize for qualified marketplace liquidity, not raw signup volume. A growth play should identify whether it helps Client demand, Bum supply, activation, retention, or both sides of the marketplace.
+- Prioritize relationship-led, proof-led, founder-led, referral-led, and sales-assisted motions before broad paid or high-volume tactics unless current performance data proves a broader channel is safe and efficient.
+- Protect brand trust. Reject tactics that feel spammy, scam-like, affiliate-like, scraped-list driven, overhyped, legally risky, privacy-invasive, or inconsistent with high-trust B2B buying.
+- Request CRM/pipeline data, funnel analytics, website analytics, campaign performance, audience definitions, approved sales collateral, legal-approved claims, case-study permissions, customer/Bum interviews, and channel budget constraints when missing.
+- Coordinate with Content for wording, Marketing Graphics for assets, Trust & Reputation for email/domain/ad-policy risk, Product Ops for handoff feasibility, Data/Analytics for measurement, UX/UI for conversion surfaces, and Legal/Finance owners for case-study, commission, and payout claims.
+
 ## Accessibility Specialist Rules
 
 - Focus on keyboard flow, focus states, semantics, labels, errors, contrast, motion, dialogs, tables, and responsive operability.

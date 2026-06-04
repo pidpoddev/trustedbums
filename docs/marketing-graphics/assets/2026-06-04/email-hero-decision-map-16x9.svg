@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Decision map marketing plate</title>
+  <desc id="desc">A text-free wide illustration that contrasts cold outreach clutter with one structured relationship route into a buyer conversation.</desc>
+  <defs>
+    <linearGradient id="ink" x1="88" y1="74" x2="1482" y2="822" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08111f"/>
+      <stop offset="1" stop-color="#18263d"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="170" y1="152" x2="620" y2="660" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8ef"/>
+      <stop offset="1" stop-color="#f2e8db"/>
+    </linearGradient>
+    <linearGradient id="route" x1="468" y1="452" x2="1210" y2="434" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff8a1f"/>
+      <stop offset="1" stop-color="#f15a16"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="900" fill="#fff8ef"/>
+  <rect x="56" y="56" width="1488" height="788" rx="44" fill="url(#ink)"/>
+
+  <circle cx="1380" cy="154" r="96" fill="#178b83" opacity=".13"/>
+  <circle cx="188" cy="732" r="122" fill="#ff7a1a" opacity=".11"/>
+  <circle cx="740" cy="124" r="72" fill="#fff8ef" opacity=".05"/>
+
+  <rect x="132" y="150" width="404" height="416" rx="36" fill="url(#panel)"/>
+  <rect x="174" y="214" width="300" height="30" rx="15" fill="#eadbc9"/>
+  <rect x="174" y="272" width="246" height="30" rx="15" fill="#eadbc9"/>
+  <rect x="174" y="330" width="330" height="30" rx="15" fill="#eadbc9"/>
+  <rect x="174" y="388" width="268" height="30" rx="15" fill="#eadbc9"/>
+  <rect x="174" y="446" width="314" height="30" rx="15" fill="#eadbc9"/>
+  <circle cx="468" cy="228" r="18" fill="#08111f" opacity=".12"/>
+  <circle cx="430" cy="286" r="18" fill="#08111f" opacity=".12"/>
+  <circle cx="490" cy="344" r="18" fill="#08111f" opacity=".12"/>
+  <circle cx="452" cy="402" r="18" fill="#08111f" opacity=".12"/>
+  <circle cx="498" cy="460" r="18" fill="#08111f" opacity=".12"/>
+
+  <path d="M536 438c76 0 126-76 204-76 86 0 128 112 240 112 70 0 126-48 216-48" fill="none" stroke="#fff8ef" stroke-width="24" stroke-linecap="round" opacity=".16"/>
+  <path d="M536 438c76 0 126-76 204-76 86 0 128 112 240 112 70 0 126-48 216-48" fill="none" stroke="url(#route)" stroke-width="10" stroke-linecap="round"/>
+
+  <circle cx="536" cy="438" r="18" fill="#fff8ef"/>
+  <circle cx="760" cy="362" r="16" fill="#ff7a1a"/>
+  <circle cx="986" cy="474" r="16" fill="#178b83"/>
+  <circle cx="1196" cy="426" r="18" fill="#fff8ef"/>
+
+  <circle cx="760" cy="362" r="68" fill="#ff7a1a"/>
+  <circle cx="760" cy="340" r="24" fill="#fff8ef"/>
+  <path d="M710 418c12-30 30-44 50-44s38 14 50 44" fill="#fff8ef"/>
+
+  <rect x="1122" y="232" width="288" height="300" rx="38" fill="#fff8ef"/>
+  <rect x="1164" y="278" width="204" height="158" rx="28" fill="#08111f"/>
+  <path d="M1206 372h120" stroke="#fff8ef" stroke-width="12" stroke-linecap="round"/>
+  <path d="M1206 330h84" stroke="#fff8ef" stroke-width="12" stroke-linecap="round" opacity=".72"/>
+  <circle cx="1330" cy="446" r="52" fill="#ff7a1a"/>
+  <path d="M1114 534h304" stroke="#08111f" stroke-width="28" stroke-linecap="round"/>
+
+  <rect x="148" y="620" width="488" height="26" rx="13" fill="#fff8ef" opacity=".12"/>
+  <rect x="148" y="666" width="396" height="22" rx="11" fill="#fff8ef" opacity=".1"/>
+  <rect x="980" y="122" width="314" height="18" rx="9" fill="#fff8ef" opacity=".12"/>
+</svg>

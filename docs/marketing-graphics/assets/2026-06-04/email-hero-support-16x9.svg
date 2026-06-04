@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Trusted Bums email hero support plate</title>
+  <desc id="desc">Text-free wide plate with a calm relationship map connecting from a crowded outreach zone toward a protected buyer conversation zone.</desc>
+  <defs>
+    <linearGradient id="hero-bg" x1="60" y1="60" x2="1540" y2="840" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08111f"/>
+      <stop offset="1" stop-color="#13243a"/>
+    </linearGradient>
+    <linearGradient id="cream" x1="220" y1="140" x2="700" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8ef"/>
+      <stop offset="1" stop-color="#f3eadf"/>
+    </linearGradient>
+    <linearGradient id="route" x1="470" y1="604" x2="1176" y2="262" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff7a1a"/>
+      <stop offset="0.52" stop-color="#ffb16d"/>
+      <stop offset="1" stop-color="#178b83"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#02060d" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" rx="42" fill="#fff8ef"/>
+  <rect x="30" y="30" width="1540" height="840" rx="34" fill="url(#hero-bg)"/>
+
+  <circle cx="1374" cy="190" r="122" fill="#ff7a1a" opacity="0.18"/>
+  <circle cx="1352" cy="702" r="152" fill="#178b83" opacity="0.18"/>
+  <circle cx="230" cy="730" r="138" fill="#ff7a1a" opacity="0.08"/>
+
+  <g opacity="0.96">
+    <rect x="118" y="196" width="334" height="72" rx="28" fill="#f4ede4"/>
+    <rect x="118" y="296" width="296" height="72" rx="28" fill="#f4ede4" opacity="0.9"/>
+    <rect x="118" y="396" width="344" height="72" rx="28" fill="#f4ede4" opacity="0.84"/>
+    <rect x="118" y="496" width="284" height="72" rx="28" fill="#f4ede4" opacity="0.78"/>
+    <circle cx="394" cy="232" r="18" fill="#ff7a1a"/>
+    <circle cx="356" cy="332" r="18" fill="#ff7a1a"/>
+    <circle cx="404" cy="432" r="18" fill="#ff7a1a"/>
+    <circle cx="344" cy="532" r="18" fill="#ff7a1a"/>
+  </g>
+
+  <path d="M336 232c126 0 234 34 322 102 58 45 102 68 132 68 32 0 77-26 136-78 102-90 232-136 388-136" fill="none" stroke="#fff8ef" stroke-width="28" stroke-linecap="round" opacity="0.12"/>
+  <path d="M336 232c126 0 234 34 322 102 58 45 102 68 132 68 32 0 77-26 136-78 102-90 232-136 388-136" fill="none" stroke="url(#route)" stroke-width="12" stroke-linecap="round"/>
+
+  <circle cx="760" cy="402" r="92" fill="#ff7a1a" filter="url(#soft-shadow)"/>
+  <circle cx="760" cy="372" r="34" fill="#fff8ef"/>
+  <path d="M698 478c14-42 35-64 62-64s48 22 62 64" fill="#fff8ef"/>
+
+  <g filter="url(#soft-shadow)">
+    <rect x="1090" y="182" width="332" height="304" rx="38" fill="url(#cream)"/>
+    <rect x="1138" y="232" width="236" height="158" rx="28" fill="#0d1828"/>
+    <circle cx="1256" cy="310" r="64" fill="#178b83"/>
+    <circle cx="1256" cy="288" r="24" fill="#fff8ef"/>
+    <path d="M1212 356c10-33 25-50 44-50s34 17 44 50" fill="#fff8ef"/>
+  </g>
+
+  <rect x="960" y="546" width="474" height="120" rx="34" fill="#ffffff" opacity="0.08"/>
+  <rect x="92" y="612" width="510" height="144" rx="34" fill="#ffffff" opacity="0.06"/>
+  <circle cx="1008" cy="274" r="12" fill="#fff8ef"/>
+  <circle cx="1038" cy="462" r="12" fill="#178b83"/>
+  <circle cx="934" cy="510" r="12" fill="#ff7a1a"/>
+</svg>

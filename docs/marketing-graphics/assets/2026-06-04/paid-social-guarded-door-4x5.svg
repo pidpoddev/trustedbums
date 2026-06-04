@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">Guarded account marketing plate</title>
+  <desc id="desc">A text-free portrait illustration with one warm relationship route moving from a client node toward a guarded buyer door.</desc>
+  <defs>
+    <linearGradient id="cream-bg" x1="102" y1="88" x2="936" y2="1240" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8ef"/>
+      <stop offset="1" stop-color="#f4ebdf"/>
+    </linearGradient>
+    <linearGradient id="door-ink" x1="568" y1="258" x2="902" y2="980" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08111f"/>
+      <stop offset="1" stop-color="#18253a"/>
+    </linearGradient>
+    <linearGradient id="route" x1="260" y1="1006" x2="794" y2="450" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff8a1f"/>
+      <stop offset="1" stop-color="#f15a16"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1080" height="1350" fill="#fff8ef"/>
+  <rect x="54" y="54" width="972" height="1242" rx="46" fill="url(#cream-bg)"/>
+
+  <circle cx="884" cy="208" r="92" fill="#178b83" opacity=".12"/>
+  <circle cx="224" cy="1174" r="124" fill="#ff7a1a" opacity=".14"/>
+  <circle cx="320" cy="268" r="104" fill="#08111f" opacity=".05"/>
+
+  <rect x="664" y="258" width="210" height="518" rx="38" fill="url(#door-ink)"/>
+  <path d="M746 336h50c26 0 48 22 48 48v310H746V336Z" fill="#fff8ef"/>
+  <circle cx="792" cy="538" r="16" fill="#ff7a1a"/>
+  <path d="M650 776h236" stroke="#08111f" stroke-width="26" stroke-linecap="round"/>
+
+  <path d="M250 1008c112-120 170-214 232-280 94-102 174-124 278-220" fill="none" stroke="#08111f" stroke-width="26" stroke-linecap="round" opacity=".08"/>
+  <path d="M250 1008c112-120 170-214 232-280 94-102 174-124 278-220" fill="none" stroke="url(#route)" stroke-width="10" stroke-linecap="round"/>
+
+  <circle cx="250" cy="1008" r="78" fill="#08111f"/>
+  <circle cx="250" cy="982" r="30" fill="#fff8ef"/>
+  <path d="M194 1062c12-36 31-54 56-54s44 18 56 54" fill="#fff8ef"/>
+
+  <circle cx="508" cy="724" r="56" fill="#ff7a1a"/>
+  <circle cx="508" cy="706" r="20" fill="#fff8ef"/>
+  <path d="M468 768c10-26 24-38 40-38s30 12 40 38" fill="#fff8ef"/>
+
+  <circle cx="662" cy="580" r="14" fill="#178b83"/>
+  <circle cx="740" cy="518" r="14" fill="#fff8ef"/>
+
+  <rect x="156" y="156" width="356" height="260" rx="34" fill="#ffffff" opacity=".86"/>
+  <rect x="198" y="214" width="214" height="22" rx="11" fill="#eadbc9"/>
+  <rect x="198" y="264" width="254" height="22" rx="11" fill="#eadbc9"/>
+  <rect x="198" y="314" width="188" height="22" rx="11" fill="#eadbc9"/>
+  <rect x="198" y="364" width="230" height="22" rx="11" fill="#eadbc9"/>
+
+  <rect x="156" y="1120" width="480" height="26" rx="13" fill="#08111f" opacity=".08"/>
+  <rect x="156" y="1166" width="388" height="22" rx="11" fill="#08111f" opacity=".08"/>
+</svg>

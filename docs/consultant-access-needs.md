@@ -1,12 +1,17 @@
 # Trusted Bums Consultant Access Needs
 
-_Last updated: 2026-06-04 by Codex daily security engineer automation._
+_Last updated: 2026-06-04 by Codex daily product ops workflow analyst automation._
 
 ## Executive Read
 
 This file tracks access, credentials, dashboards, logs, fixtures, and third-party systems that would materially improve consultant output. Missing access belongs here, not buried inside product recommendations.
 
 ## Active Access Requests
+
+### P0 - Provide CRM, analytics, and approved GTM evidence for B2B growth
+- Why it matters: B2B Growth Marketer, Content, Marketing Graphics, Trust & Reputation, Product Ops, Data/Analytics, and Lead Developer need real funnel evidence before scaling acquisition. Without it, growth recommendations stay source-backed and low-risk by necessity, which is appropriate but slower.
+- Needed access: CRM or pipeline views for Client Prospects and Bum Prospects including source, owner, stage, qualification status, disqualification reason, and conversion timestamps; website analytics and source tracking; LinkedIn organic analytics; LinkedIn paid account access or exports; email/campaign performance; referral-source tracking; approved sales collateral; founder scripts; outreach examples; objection notes; approved case-study permissions; legal-approved claims boundaries for logos, outcomes, commissions, and payouts; customer/Bum interview notes; and budget constraints by channel.
+- Current status: Added by B2B Growth Marketer on 2026-06-04. The repo now has a stronger growth strategy backlog, but the run still had no CRM, analytics, ad-account, email-platform, interview, approved-collateral, or claims-approval source. Current public acquisition evidence is limited to source inspection: one homepage with broad Client and Bum CTAs, one shared contact form, one signup-intent modal, Bum-side activation workflows, and proof-safe marketing graphics concepts. Until GTM evidence is available, the backlog should prioritize founder-led, referral-led, proof-led, and sales-assisted motions over scaled paid or lifecycle automation.
 
 ### P0 - Provide domain reputation, DNS, and webmaster access
 - Why it matters: Trust & Reputation, Security, Content, UX, and Lead Developer need to know whether `trustedbums.com` is blocked, distrusted, misconfigured, spoofable, poorly indexed, or weakly credible to web-security systems and buyers.
@@ -71,7 +76,7 @@ This file tracks access, credentials, dashboards, logs, fixtures, and third-part
 ### P1 - Provide seeded telemetry samples and role access proof for admin performance monitoring
 - Why it matters: QA/Test, Performance, Security, and Product Ops need to verify the new `/admin/performance` route with realistic data and prove that telemetry remains admin-scoped.
 - Needed access: Seeded or production-safe `performance_metric_events` aggregate access covering multiple metrics and routes, one admin account, one non-admin account for deny checks, and a route-level aggregate/query-plan path that does not expose raw private telemetry.
-- Current status: The raw telemetry shortage is no longer the main issue. Historical live SQL on 2026-05-31 showed `2,355` `performance_metric_events` rows across `42` routes, and 2026-06-04 edge-function logs still show ongoing `performance-beacon` writes. What is still missing is current route-level aggregate access, live admin walkthrough proof for `/admin/performance`, non-admin deny proof, and query-plan evidence for the slow route-backed statements. Today's source review also found `/admin/performance` computes p75 from the latest raw `500` rows in the browser, so Performance needs an admin-safe server aggregate before using that page as the primary prioritization source.
+- Current status: The raw telemetry shortage is no longer the main issue. Historical live SQL on 2026-05-31 showed `2,355` `performance_metric_events` rows across `42` routes, and 2026-06-04 edge-function logs still show ongoing `performance-beacon` writes with current execution times. What is still missing is current route-level aggregate access, live admin walkthrough proof for `/admin/performance`, non-admin deny proof, and query-plan evidence for the slow route-backed statements. Today's source review also found `/admin/performance` computes p75 from the latest raw `500` rows in the browser, so Performance needs an admin-safe server aggregate before using that page as the primary prioritization source.
 
 ### P2 - Confirm telemetry retention and deployment-provider values
 - Why it matters: The app now treats performance telemetry as necessary operational monitoring, stores Web Vitals in Supabase, and gives admins a review tool.
@@ -80,8 +85,8 @@ This file tracks access, credentials, dashboards, logs, fixtures, and third-part
 
 ### P1 - Provide product, design, and operations source-of-truth artifacts
 - Why it matters: UX, UI, Content, Product Ops, and Data/Analytics need stronger non-code evidence to validate terminology, queue design, workflow ownership, access handoffs, visual intent, funnel friction, and customer trust objections.
-- Needed access: Brand and design sources, approved screenshot baselines, funnel or product analytics, session recordings, support tickets or macros, support queue exports with current statuses and SLAs, customer-feedback exports, sales-objection notes, CRM or sales-pipeline exports for reverse-opportunity and target-response follow-through, onboarding materials, finance reconciliation and exception samples, admin audit/log examples, operations SOPs, and narrated role walkthroughs for Admin, Client Admin, Client Finance, Client Member, and Bum accounts.
-- Current status: This gap remains open on 2026-06-04. UI evidence improved because GitHub Visual QA run `26931897223` passed with fresh public, Admin, Client Admin, Client Finance, and Bum screenshots in the `visual-ui-audit` artifact, so UI is no longer blocked by local screenshot capture. Product Ops still lacks support queue export with SLA buckets, CRM stage history, finance exception samples, admin rescue logs, operations SOPs, approved access-proof categories, and narrated role walkthroughs for Admin, Client Admin, Client Finance, Client Member, and Bum roles. UI/UX/Content still lack brand guidance, component-library references, approved screenshot baselines, analytics, support evidence, and design source files. Current recommendations are implementation-ready and evidence-backed, but not yet validated against approved design intent or day-to-day operating proof.
+- Needed access: Brand and design sources, approved logo usage rules, campaign visual guidelines, campaign calendar, ad-account/channel priorities, audience definitions by channel, ad-account performance exports, examples of winning creative, legal-approved marketing claims, approved screenshot baselines, funnel or product analytics, session recordings, support tickets or macros, support queue exports with current statuses and SLAs, customer-feedback exports, sales-objection notes, CRM or sales-pipeline exports for reverse-opportunity and target-response follow-through, onboarding materials, finance reconciliation and exception samples, admin audit/log examples, operations SOPs, and narrated role walkthroughs for Admin, Client Admin, Client Finance, Client Member, and Bum accounts.
+- Current status: This gap remains open on 2026-06-04. `docs/brand-strategy.md` is now an inferred, repo-backed first brand source of truth based on current public-site copy, assets, typography, colors, and consultant rules. UI evidence also improved because GitHub Visual QA run `26931897223` passed with fresh public, Admin, Client Admin, Client Finance, and Bum screenshots in the `visual-ui-audit` artifact. Those screenshots are implementation evidence, not an approved design baseline. Product Ops still lacks support queue export with SLA buckets, CRM stage history, finance exception samples, admin rescue logs, access-request proof examples, operations SOPs, and narrated role walkthroughs for Admin, Client Admin, Client Finance, Client Member, and Bum roles. Marketing still lacks approved logo usage rules, campaign visual guidelines, campaign calendar, audience definitions, ad-account performance, winning creative examples, and legal-approved claims.
 
 ## Role Access Matrix
 
@@ -92,6 +97,14 @@ This file tracks access, credentials, dashboards, logs, fixtures, and third-part
 ### UI Consultant
 - Core access: Browser screenshots, design sources, component references, and brand guidance.
 - If missing: Keep visual recommendations narrow and route-specific.
+
+### Marketing Graphics Artist
+- Core access: Brand guidelines, approved logo/source assets, channel specs, campaign calendar, target audiences, ad-account performance data, examples of winning creative, legal-approved claims, image generation or design tooling, and visual QA/OCR capability.
+- If missing: Keep concepts clearly marked as source-backed creative drafts, avoid factual or legal-sensitive claims, and do not mark generated assets campaign-ready without visual and spelling QA.
+
+### B2B Growth Marketer
+- Core access: CRM/pipeline data for Client Prospects and Bum candidates, funnel analytics, website analytics, source tracking, campaign performance, LinkedIn/email/ad data, audience definitions, approved sales collateral, legal-approved claims, case-study permissions, customer/Bum interview notes, objection notes, and channel budget constraints.
+- If missing: Keep growth plays source-backed, prioritize low-risk founder/referral motions, and avoid claiming performance confidence or scale readiness.
 
 ### Content Copyeditor
 - Core access: Product copy, legal-approved terminology, sales collateral, onboarding and support language.

@@ -11,7 +11,7 @@ This file is the running handoff log for implementation work Codex has made in t
 - Do not paste secrets, raw private data, credential values, or mailbox contents.
 - If a pushed commit included pre-existing dirty files outside the current implementation scope, call that out instead of implying Codex authored every line.
 
-## Latest Agent Recheck Requests
+## Additional Agent Recheck Requests
 
 ### 2026-06-04 - Recheck glossary copy implementation
 
@@ -38,3 +38,35 @@ This file is the running handoff log for implementation work Codex has made in t
 
 - `bbd75c4` was created after Ryan explicitly asked to push all local changes. The commit contains 66 files, including the implementation work above plus documentation, workflow, and screenshot files that were already present in the dirty worktree before the final push request.
 - Future agents should inspect the commit diff before assigning authorship or treating every changed doc as a fresh implementation by Codex in the glossary/opportunity pass.
+
+## Latest Agent Recheck Requests
+
+### 2026-06-04 - Recheck B2B growth marketer agent setup
+
+- Trigger: Ryan asked to create an agent that is the best B2B marketer in the world with the goal of increasing the number of Bums and Clients in the program.
+- Implementation branch: Current local workspace with uncommitted documentation/process changes.
+- What changed: Added a daily B2B Growth Marketer automation prompt snapshot, created the first `docs/b2b-marketing-growth-backlog.md`, and added role rules/access expectations so the agent optimizes for qualified marketplace liquidity rather than raw signup volume.
+- Main surfaces changed: `docs/agents/automation-prompts/trusted-bums-daily-b2b-growth-marketer.toml`, `docs/b2b-marketing-growth-backlog.md`, `docs/agents/README.md`, `docs/agents/consultant-team-rules.md`, `docs/consultant-team-rules.md`, and `docs/consultant-access-needs.md`.
+- Checks run: Source review of existing agent prompt patterns, brand strategy, operating model growth strategy, content guidance, marketing graphics guidance, and access-needs structure.
+- Recheck agents: B2B Growth Marketer, Content Copyeditor, Marketing Graphics Artist, Trust And Reputation Consultant, Product Ops Workflow Analyst, Data And Analytics Engineer, Lead Developer.
+- Next run should verify: whether CRM, funnel analytics, campaign performance, case-study permissions, approved claims, and customer/Bum interview inputs are available enough to move from source-backed plays to performance-backed growth priorities.
+
+### 2026-06-04 - Recheck first marketing graphics asset set
+
+- Trigger: Daily Trusted Bums marketing graphics artist automation run.
+- Implementation branch: `codex/p0-access-contact-handoffs` with uncommitted working-tree changes.
+- What changed: Added a first campaign-ready asset pack of three text-free vector background plates plus rendered previews and production notes, then replaced the placeholder marketing graphics backlog with approved concept entries, QA decisions, reusable prompt fragments, and campaign evidence. Also expanded the access-needs request to explicitly ask for audience definitions and ad-account performance data.
+- Main surfaces changed: `docs/marketing-graphics-campaign-backlog.md`, `docs/consultant-access-needs.md`, and `docs/marketing-graphics/assets/2026-06-04/`.
+- Checks run: source review of brand/public-site assets, targeted `git log` inspection, local Quick Look renders via `qlmanage -t -s 2400`, manual inspection of the rendered PNG previews, and SVG-source spelling review confirming no visible text in the approved assets.
+- Recheck agents: Marketing Graphics Artist, Content Copyeditor, UI Consultant, Trust And Reputation Consultant, UX Consultant, Lead Developer.
+- Next run should verify: whether editable overlay copy was applied in design tooling without rasterized brand text, whether audience/performance inputs narrow the concept priority order, and whether any new legal-approved claims or brand-template guidance should replace the current source-backed overlay suggestions.
+
+### 2026-06-04 - Recheck objection-led selective-access graphics set
+
+- Trigger: Follow-up Trusted Bums marketing graphics artist automation run on the same day.
+- Implementation branch: Current local workspace with uncommitted documentation and asset changes.
+- What changed: Replaced the earlier same-day concept set in `docs/marketing-graphics-campaign-backlog.md` with a sharper objection-led lineup focused on the buyer fear that Trusted Bums could look like generic lead-gen. Added three new approved text-free SVG plates plus rendered PNG previews and updated `asset-notes.md` with overlay-safe usage guidance.
+- Main surfaces changed: `docs/marketing-graphics-campaign-backlog.md`, `docs/marketing-graphics/assets/2026-06-04/linkedin-selective-access-191x1.svg`, `docs/marketing-graphics/assets/2026-06-04/paid-social-guarded-door-4x5.svg`, `docs/marketing-graphics/assets/2026-06-04/email-hero-decision-map-16x9.svg`, their rendered `.png` previews, and `docs/marketing-graphics/assets/2026-06-04/asset-notes.md`.
+- Checks run: source review of homepage/public SVG brand surfaces, recent `git log` inspection, current platform-guidance review for LinkedIn/Google/Meta/WCAG, local Quick Look renders via `qlmanage -t -s 2400`, manual inspection of all three rendered PNG previews, and SVG-source inspection confirming no visible text or pseudo-text in the approved assets.
+- Recheck agents: Marketing Graphics Artist, Content Copyeditor, UI Consultant, Trust And Reputation Consultant, UX Consultant, Lead Developer.
+- Next run should verify: whether editable overlay copy and approved logo assets were applied outside raster layers, whether live ad-manager previews introduce crop pressure on the portrait concept, and whether campaign-performance or audience-priority inputs justify narrowing to one lead concept.
