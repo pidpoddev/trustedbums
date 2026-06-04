@@ -10,6 +10,11 @@ Recent terms-gating changes introduced a new dashboard clarity gap. Client users
 
 Authenticated live validation remains blocked. After sourcing `.env.qa`, `pnpm run qa:env` passed, but `curl -I -L --max-time 20 https://trustedbums.com` timed out during DNS resolution and `pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium --reporter=line` failed 5 of 5 checks on the first `page.goto("/")` with `net::ERR_ABORTED`. Today’s authenticated recommendations are therefore source-backed, not freshly browser-verified.
 
+## Implementation Recheck For Next Run
+
+- 2026-06-04 Codex implemented glossary cleanup and the first unified Opportunity origin/stage projection in commit `bbd75c4`; read `docs/codex-edit-log.md` before preserving any terminology or opportunity-workspace UX recommendations.
+- Expected downgrade: focus opportunity UX work on workspace consolidation, filter/tab strategy, role-specific task flows, and remaining rendered confusion after source recheck rather than asking for the initial origin/stage model again.
+
 ## Active Recommendations
 
 ### P1 - Preserve typed company names in the public signup flow

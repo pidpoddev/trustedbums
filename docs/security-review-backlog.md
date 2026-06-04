@@ -8,6 +8,11 @@ Today's strongest live findings are on public edge-function abuse and exposed pr
 
 Two public probes were especially useful: anonymous `extension-api-v1/context` correctly returned `401` with the stable v1 envelope, while `email-track/click` returned `302` to an arbitrary external URL even with an invalid delivery id. Dependency audit also regressed from two to three runtime advisories because `react-router` now reports a moderate open-redirect advisory in addition to the existing `js-cookie` and `uuid` advisories.
 
+## Implementation Recheck For Next Run
+
+- 2026-06-04 Codex added the Opportunity origin/stage model and updated `docs/business-access-rules.md` in commit `bbd75c4`; read `docs/codex-edit-log.md` before preserving access-rule findings for opportunity-like objects.
+- Security should now focus remaining Opportunity risk on direct data-path allow/deny proof, RLS/business-rule alignment, source-object migration, and finance-safe visibility rather than requesting the initial model definition.
+
 ## Active Recommendations
 
 ### P0 - Remove the direct public `send-website-email` mail-sending path

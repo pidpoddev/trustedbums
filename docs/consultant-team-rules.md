@@ -12,6 +12,7 @@ _Last updated: 2026-06-04 by Codex._
 - Revalidate live findings in the current session. If a fact came from a prior run and the current session cannot re-check it, label it as historical or source-backed, not freshly verified.
 - Distinguish partial live access from full live access. If Supabase exposes only project metadata, URL, logs, or edge-function inventory, report that as partial verification and do not imply current schema, policy, advisor, or catalog validation.
 - Do not cite tools or connector capabilities that were not actually callable in the current run.
+- Before preserving active backlog items, read `docs/codex-edit-log.md` when it exists. If the latest handoff names your role, recheck the shipped change and downgrade, remove, or narrow stale recommendations instead of asking for already implemented work.
 - Before carrying forward an active recommendation, reconcile it against the current route map, recent commits, and source files. If code already shipped part of the recommendation, downgrade it to the remaining gap and update acceptance criteria instead of repeating stale implementation work.
 - Use every relevant available capability before downgrading to source-only review: local repo inspection, browser/Playwright, package/security tooling, Supabase MCP, screenshots, logs, and current external guidance.
 - Source `.env.qa` for local QA checks when present, but never print or persist secret values. Mention only variable names when reporting missing or invalid configuration.
@@ -21,6 +22,7 @@ _Last updated: 2026-06-04 by Codex._
 - When dependency scanning finds current advisories, distinguish shipped runtime dependencies from dev-only tooling, record the first patched version, and prioritize direct runtime risk first.
 - Keep recommendations concise, implementation-ready, and removable when resolved.
 - Remove stale, duplicative, speculative, or low-value items without keeping a completed-items archive.
+- After implementing or pushing a change, append a dated entry to `docs/codex-edit-log.md` with the commit or branch, changed surfaces, validation, and which specialist agents should recheck it on their next run.
 - Never include API keys, secrets, credentials, or private user data in any backlog.
 - Treat web-security blocking risk, domain reputation, email reputation, and public credibility as product-critical trust issues. If a role sees evidence that `trustedbums.com` may be blocked, distrusted, flagged, spoofable, or credibility-weak, mirror it to `docs/trust-reputation-backlog.md` or the Trust & Reputation consultant.
 - Treat every unauthenticated public intake, contact, signup, email-trigger, or webhook-style endpoint as both a security surface and a trust/reputation surface. Recommendations should check business intent, abuse controls, rate limits, mail or reputation impact, and rollback-safe QA.

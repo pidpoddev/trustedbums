@@ -8,6 +8,12 @@ Three terminology problems still deserve active backlog space, and all three rem
 
 Current guidance still supports tightening this. W3C’s current [consistent identification](https://www.w3.org/WAI/WCAG22/Understanding/consistent-identification) and [labels or instructions](https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions) guidance both reinforce keeping repeated functions labeled consistently. W3C’s [clear visible labels pattern](https://www.w3.org/WAI/WCAG2/supplemental/patterns/o4p06-clear-labels/) and Digital.gov’s [plain-language writing guidance](https://digital.gov/guides/plain-language/writing) favor familiar, explicit words. USWDS and GOV.UK button guidance also continue to prefer short, action-first labels that make the next step obvious: [USWDS buttons](https://designsystem.digital.gov/components/button), [GOV.UK buttons](https://design-system.service.gov.uk/components/button/).
 
+## Implementation Recheck For Next Run
+
+- 2026-06-04 Codex implemented the glossary copy pass in commit `bbd75c4`; before preserving the active recommendations below, re-scan current source and rendered labels against `docs/codex-edit-log.md`.
+- Expected downgrade: remove or narrow stale findings that still describe pre-implementation labels such as `Partner Terms`, generic `Requests`, `Inbound Requests`, `Prospect-converted`, `Intro Requests` for `/bum/claims`, or finance wording that was already updated.
+- Keep only residual issues that remain in current code, rendered evidence, legal approval, support/sales terminology gaps, or route-test assertions.
+
 ## Active Recommendations
 
 ### P1 - Unify legal workspace, terms, and deferral copy

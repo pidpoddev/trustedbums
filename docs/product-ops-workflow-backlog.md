@@ -8,6 +8,12 @@ The current Product Ops backlog should stay anchored in shipped workflow risk: a
 
 The top current operating risk remains a shipped Client Finance export mismatch: `/client/exports` is still available to `CLIENT_FINANCE` and still exports target contacts, meeting attendees, Teams join URLs, and transcript sync status even though the business access rules deny operational exports to finance by default. The second risk changed since the prior backlog: Admin access-request review now exists on `/admin/clients`, so the remaining gap is review quality, proof capture, side-effect preview, and request-type triage rather than total absence of an admin queue. The third access-risk item is raw extension capture visibility: business rules say clients should see only approved converted outputs, while the original capture policy still allows same-company reads of raw capture rows containing source URL, selected text, notes, and metadata.
 
+## Implementation Recheck For Next Run
+
+- 2026-06-04 Codex added a canonical Opportunity origin/stage model and visible projections in existing Client, Bum, and Admin opportunity-like workspaces in commit `bbd75c4`; review `docs/codex-edit-log.md` before preserving opportunity-workspace recommendations.
+- Expected downgrade: do not repeat the request for initial origin/stage modeling or visible badges. Focus remaining Product Ops work on durable schema fields, route consolidation, queue ownership, aging, exception handling, finance-safe projections, and migration/backfill sequencing.
+- Recheck `docs/trusted-bums-operating-model.md` and `docs/business-access-rules.md` for the current Claim, Bum Intro Request, Customer Lead, and Opportunity boundaries before adding new workflow rules.
+
 ## Active Recommendations
 
 ### P0 - Split finance-safe exports from operational exports

@@ -8,6 +8,12 @@ Today's run keeps the same release-verification blocker in place: this runner ca
 
 Local source checks remain usable but incomplete: `pnpm run qa:env` passed after sourcing `.env.qa`; `pnpm run test` passed 29 assertions across 9 files; `pnpm run lint` still has 7 React hook dependency warnings and no errors; and local configuration smoke passed. Extension API risk increased from "anonymous rejection passes" to "anonymous `/context` request timed out" against the Supabase function URL, while authenticated extension coverage still skipped because `QA_EXTENSION_API_TOKEN` is missing.
 
+## Implementation Recheck For Next Run
+
+- 2026-06-04 Codex implemented glossary label changes and added the Opportunity origin/stage model in commit `bbd75c4`; use `docs/codex-edit-log.md` as a required input before preserving stale route-label or opportunity-model coverage gaps.
+- New source-level proof exists in `src/test/opportunityModel.test.ts`; next QA run should decide whether this is enough for unit coverage and what additional route, visual, authenticated role, and direct data-path tests are still missing.
+- Recheck current route/visual assertions for updated labels such as `Client Agreement`, `Customer Leads`, `Claims`, `Client Admin`, `Client Finance`, `Client Member`, `Customer Payment Reports`, and `Origin / Stage`.
+
 ## Active Recommendations
 
 ### P0 - Add a deployed QA target and API preflight before E2E gates

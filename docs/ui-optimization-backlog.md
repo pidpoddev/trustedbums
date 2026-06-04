@@ -8,6 +8,11 @@ GitHub Visual QA is now the authoritative visual evidence source for this agent.
 
 The strongest current UI issues are now mobile floating-control collisions and trust-control polish. GitHub screenshots show the `Privacy` tab and `Chat` launcher overlaying dashboard content, tabs, and forms on authenticated mobile pages; public Mobile Chrome screenshots still show a tiny `Privacy` reopen tab and dense legal-link clusters. Source review still confirms hardcoded Bum payout KPIs, missing mobile route labels inside authenticated shell headers, and missing `/admin/handoffs` coverage in the GitHub Visual QA route map.
 
+## Implementation Recheck For Next Run
+
+- 2026-06-04 Codex added visible Opportunity origin/stage badges and glossary label updates in commit `bbd75c4`; read `docs/codex-edit-log.md` before preserving badge, label, or opportunity-workspace visual recommendations.
+- Recheck affected Client, Bum, and Admin opportunity-like pages for badge density, mobile wrapping, color contrast, and table/card scanability before adding new UI polish items.
+
 ## Active Recommendations
 
 ### P1 - Reserve a mobile-safe zone for floating privacy and chat controls

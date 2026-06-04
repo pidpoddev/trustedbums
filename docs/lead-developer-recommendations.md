@@ -10,9 +10,16 @@ The second priority is authorization bootstrap. Current source still lets Clerk 
 
 The third priority is executable proof. `pnpm run qa:env` passed after sourcing `.env.qa`, and targeted Vitest checks passed, but authenticated Playwright role smoke is currently unreliable, extension authenticated checks still skip without `QA_EXTENSION_API_TOKEN`, and `/admin/handoffs` is not yet in visual/interaction route coverage. Product, QA, Security, Data, and Product Ops should converge on a smaller allow/deny matrix before any broad RLS or grant cleanup ships.
 
+## Implementation Handoff For Next Lead Run
+
+- 2026-06-04: Recommendation 1, `Apply founder-approved glossary to site and portal copy`, was implemented and pushed in commit `bbd75c4`. Next Lead Developer run should verify current source/rendered copy and move any residual work to narrower legal approval, remaining copy gaps, or QA evidence rather than reissuing the original broad copy pass.
+- 2026-06-04: Recommendation 2, `Design unified Opportunity workspace before expanding opportunity-like routes`, was implemented as a design-first/source-labeling pass and pushed in commit `bbd75c4`. The app now has a shared origin/stage model and badges in existing opportunity-like workspaces; remaining recommendations should focus on durable schema fields, route consolidation, migration/backfill, access tests, and role-specific workspace UX.
+- Detailed changed surfaces, validation, and specialist recheck requests are tracked in `docs/codex-edit-log.md`.
+
 ## Recommended Implementation Queue
 
 ### P1 - Apply founder-approved glossary to site and portal copy
+- Implementation status: Implemented in commit `bbd75c4`; keep only residual verification or legal/product approval gaps after rechecking current source.
 - Source: `docs/content-copyeditor-backlog.md` glossary updated on 2026-06-01; `docs/glossary-site-change-review.md`; current source scan of client legal, request, role, and finance surfaces.
 - Why now: Ryan has clarified the core party, opportunity, claim, finance, and legal terms. The site still exposes old labels that blur Customer vs Client, Client Agreement vs Partner Terms, generic requests vs Customer Leads/Bum Intro Requests/Claims, and bare role names vs company-scoped Client roles.
 - Recommended fix: Ship staged copy-only PRs that apply approved glossary terms before deeper workflow/status model changes. Start with legal noun family and Client role labels, then marketplace object labels, then finance language that avoids implying Customer money passes through Trusted Bums.
@@ -22,6 +29,7 @@ The third priority is executable proof. `pnpm run qa:env` passed after sourcing 
 - Validation: Targeted unit/route tests for labels where present, route guard tests if navigation names change, and focused Playwright visual/interaction audit once authenticated QA is stable.
 
 ### P1 - Design unified Opportunity workspace before expanding opportunity-like routes
+- Implementation status: Initial model and visible origin/stage projection implemented in commit `bbd75c4`; remaining work is schema/route consolidation, migration/backfill, role-specific workspace UX, and access-rule proof.
 - Source: Ryan clarification on 2026-06-01; `docs/glossary-site-change-review.md`; `docs/product-ops-workflow-backlog.md`; current routes `src/pages/client/ClientOpportunityNew.tsx`, `src/pages/client/ClientRequests.tsx`, `src/pages/bum/BumOpportunities.tsx`, `src/pages/bum/BumReverseOpportunities.tsx`, `src/pages/bum/BumClaims.tsx`, and `src/pages/admin/AdminOpportunities.tsx`.
 - Why now: The app currently has too many entry points for the same business concept. They are all Opportunities with different originators and stages, and each claimable Opportunity needs a route to create or review a Claim.
 - Recommended fix: Before adding more route-specific opportunity workflows, define a canonical Opportunity workspace by role. Add `Opportunity Origin` and `Opportunity Stage` to the product model, keep `Claim` as the action attached to an Opportunity, and decide which current routes become filters, tabs, or redirects inside the unified workspace.

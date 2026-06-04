@@ -6,6 +6,11 @@ _Last updated: 2026-06-03 by Codex daily data analytics engineer automation._
 
 Trusted Bums still has five active analytics/reporting gaps with direct current evidence: finance reports still key off audit timestamps instead of business-effective dates, `CLIENT_FINANCE` still has access to mixed operational and finance exports, the admin dashboard still depends on an exposed `SECURITY DEFINER` summary RPC, access-request and terms-deferral workflows still lack admin-grade aging and outcome reporting, and admin email analytics still cap core reads at 50 rows while leaning on open data that is no longer trustworthy as a primary KPI. Live Supabase verification was partial this run: project and function inventory were available, but deeper project actions already required reauthentication and direct SQL/RLS inspection was not callable from the available tool surface.
 
+## Implementation Recheck For Next Run
+
+- 2026-06-04 Codex introduced canonical Opportunity origin/stage values in commit `bbd75c4`; read `docs/codex-edit-log.md`, `src/lib/opportunityModel.ts`, and `docs/trusted-bums-operating-model.md` before preserving analytics recommendations about opportunity taxonomy.
+- Remaining data work should focus on durable schema fields, backfill/mapping rules, event/reporting definitions, and finance-safe projections rather than asking for the already shipped source-level taxonomy.
+
 ## Active Recommendations
 
 ### P1 - Finish business-effective finance dates across reports and exports
