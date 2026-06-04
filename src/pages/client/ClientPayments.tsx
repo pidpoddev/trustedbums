@@ -97,9 +97,9 @@ const clientInvoiceTypeFilters: { value: ClientInvoiceTypeFilter; label: string 
 ];
 
 const clientReportTypeFilters: { value: ClientReportTypeFilter; label: string }[] = [
-  { value: "ALL", label: "All payments" },
-  { value: "INVOICED", label: "Invoice generated" },
-  { value: "PENDING_INVOICE", label: "Pending invoice" },
+  { value: "ALL", label: "All Customer Payment Reports" },
+  { value: "INVOICED", label: "Commission invoice generated" },
+  { value: "PENDING_INVOICE", label: "Pending commission invoice" },
   { value: "HAS_EXCLUSIONS", label: "Has exclusions" },
 ];
 
@@ -381,8 +381,8 @@ export default function ClientPayments() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Customer Payments"
-        description="Record customer payments and generate Trusted Bums invoices from approved deals with active commission structures."
+        title="Customer Payment Reports"
+        description="Record Customer payments made directly to your company and calculate Trusted Bums commission invoices from approved deals."
       />
 
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
@@ -394,14 +394,14 @@ export default function ClientPayments() {
                 variant={paymentEntryMode === "import" ? "default" : "outline"}
                 onClick={() => setPaymentEntryMode("import")}
               >
-                Import payment CSV
+                Import report CSV
               </Button>
               <Button
                 type="button"
                 variant={paymentEntryMode === "manual" ? "default" : "outline"}
                 onClick={() => setPaymentEntryMode("manual")}
               >
-                Record one payment
+                Record one report
               </Button>
             </CardContent>
           </Card>
@@ -409,11 +409,11 @@ export default function ClientPayments() {
           {paymentEntryMode === "import" ? (
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Import customer payment CSV</CardTitle>
+              <CardTitle className="font-display">Import Customer Payment Report CSV</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="payment-import-file">Payment CSV</Label>
+                <Label htmlFor="payment-import-file">Customer Payment Report CSV</Label>
                 <Input
                   key={importInputKey}
                   id="payment-import-file"
@@ -521,7 +521,7 @@ export default function ClientPayments() {
                     disabled={!matchedImportRows.length || importMutation.isPending}
                     onClick={() => importMutation.mutate()}
                   >
-                    {importMutation.isPending ? "Importing payments..." : `Import ${matchedImportRows.length} payment${matchedImportRows.length === 1 ? "" : "s"} and generate invoices`}
+                    {importMutation.isPending ? "Importing reports..." : `Import ${matchedImportRows.length} report${matchedImportRows.length === 1 ? "" : "s"} and generate commission invoices`}
                   </Button>
                 </div>
               ) : null}
@@ -532,7 +532,7 @@ export default function ClientPayments() {
           {paymentEntryMode === "manual" ? (
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Record one customer payment</CardTitle>
+              <CardTitle className="font-display">Record one Customer Payment Report</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
@@ -598,7 +598,7 @@ export default function ClientPayments() {
                 <div className="rounded-xl border bg-muted/30 p-4 text-sm">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="font-medium">Trusted Bums invoice preview</p>
+                      <p className="font-medium">Commission invoice preview</p>
                       <p className="mt-1 text-muted-foreground">{selectedProgram.name} · {buildTieredCommissionSummary(selectedProgram)}</p>
                     </div>
                     <div className="text-right">
@@ -619,7 +619,7 @@ export default function ClientPayments() {
                 disabled={!selectedClaim || !grossAmount || reportMutation.isPending}
                 onClick={() => reportMutation.mutate()}
               >
-                Record payment and generate Trusted Bums invoice
+                Record Customer Payment Report and generate commission invoice
               </Button>
             </CardContent>
           </Card>
@@ -629,7 +629,7 @@ export default function ClientPayments() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Trusted Bums invoices</CardTitle>
+              <CardTitle className="font-display">Commission invoices</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)] md:items-end">
@@ -672,16 +672,16 @@ export default function ClientPayments() {
                   <p className="text-xs text-muted-foreground">{invoice.commission_rate}% of commissionable revenue</p>
                 </div>
               ))}
-              {!invoices.length ? <p className="text-sm text-muted-foreground">No invoices generated yet.</p> : null}
+              {!invoices.length ? <p className="text-sm text-muted-foreground">No commission invoices generated yet.</p> : null}
               {invoices.length > 0 && !filteredInvoices.length ? (
-                <p className="text-sm text-muted-foreground">No invoices match your current filters.</p>
+                <p className="text-sm text-muted-foreground">No commission invoices match your current filters.</p>
               ) : null}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Recorded customer payments</CardTitle>
+              <CardTitle className="font-display">Customer Payment Reports</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)] md:items-end">
@@ -727,9 +727,9 @@ export default function ClientPayments() {
                   </div>
                 </div>
               ))}
-              {!reports.length ? <p className="text-sm text-muted-foreground">No customer payments recorded yet.</p> : null}
+              {!reports.length ? <p className="text-sm text-muted-foreground">No Customer Payment Reports recorded yet.</p> : null}
               {reports.length > 0 && !filteredReports.length ? (
-                <p className="text-sm text-muted-foreground">No payment reports match your current filters.</p>
+                <p className="text-sm text-muted-foreground">No Customer Payment Reports match your current filters.</p>
               ) : null}
             </CardContent>
           </Card>

@@ -1,6 +1,6 @@
 # Trusted Bums Company-Wide Rules
 
-_Last updated: 2026-05-31 by Codex._
+_Last updated: 2026-06-04 by Codex._
 
 ## Purpose
 
@@ -108,6 +108,22 @@ When adding a rule, include:
 - Open questions: None for the first implementation pass.
 
 ## Specialist And Release Coordination
+
+### UI consultant visual evidence comes from GitHub Visual QA
+- Rule: The UI consultant should use the GitHub Actions workflow named `Visual UI Audit` and its `visual-ui-audit` artifacts for visual QA evidence instead of attempting local Vite, local browser, or local Playwright visual checks.
+- Applies to: Daily UI consultant automation, `docs/ui-optimization-backlog.md`, `docs/consultant-team-rules.md`, `.github/workflows/visual-ui-audit.yml`, and UI visual evidence collection.
+- Why it matters: The GitHub workflow has the intended deployed target, role secrets, and artifact capture path, while local runs have repeatedly produced environment-specific blockers that weaken UI evidence.
+- Implementation notes: UI recommendations may still use source inspection, current rules, internet guidance, and narrow non-visual local checks such as lint or unit tests when useful. Fresh screenshot or route-render evidence should come from GitHub Visual QA runs or be recorded as an access/evidence gap.
+- QA proof: Agent Inputs should cite the relevant GitHub Visual QA run/artifact or explicitly state why GitHub Visual QA evidence was unavailable.
+- Open questions: None.
+
+### Release QA, E2E, and deep interaction QA run from GitHub
+- Rule: Release QA should run from GitHub Actions. E2E, visual QA, and deep QA evidence should come from GitHub workflow logs and artifacts, with local `pnpm` or Playwright runs treated as developer preflight or reproduction evidence only.
+- Applies to: `QA`, `E2E Smoke`, `Visual UI Audit`, `Deep QA Hotfix Audit`, Lead Developer release handoff, QA/Test Engineer automation, Code Review Agent post-main plans, and production deploy verification.
+- Why it matters: GitHub has the intended CI runner, deployed target, repository secrets, role accounts, and artifact retention path. Local runs have repeatedly been affected by environment-specific blockers that weaken release evidence.
+- Implementation notes: The `E2E Smoke` workflow should include public smoke, authenticated role smoke, portal interaction audit, and a non-optional deep workflow hotfix audit. Deep QA should verify every visible enabled button on every audited route is operable by actionability checks, click safe non-destructive controls, and route mutating/destructive controls through approved mutating deep-QA coverage when needed.
+- QA proof: Release notes, QA backlogs, and post-main handoffs cite GitHub workflow run names, pass/fail status, artifact names, and skipped/missing-secret reasons. Local-only QA is explicitly labeled as preflight unless GitHub is unavailable.
+- Open questions: None.
 
 ### Specialist recommendations require cross-specialist impact review
 - Rule: A recommendation from one specialist should be checked with other affected specialists before implementation when tradeoffs are likely.

@@ -192,7 +192,7 @@ export default function AdminPayments() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Payments" description="Track client-reported customer payments and Trusted Bums invoices" />
+      <PageHeader title="Payments" description="Track Client-reported Customer Payment Reports and Trusted Bums commission invoices" />
 
       <Card>
         <CardHeader>
@@ -372,7 +372,7 @@ export default function AdminPayments() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="font-display">Client-Reported Customer Payments</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="font-display">Client-Reported Customer Payment Reports</CardTitle></CardHeader>
         <CardContent>
           <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-end">
             <div className="relative min-w-0">

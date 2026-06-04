@@ -325,7 +325,7 @@ export async function escalateContactToProspectiveBum(user: AuthUser, submission
   const { error: bumError } = await supabase.from("bum_profiles").upsert(
     {
       user_id: prospectiveBumId,
-      headline: "Prospective Bum from contact form",
+      headline: "Bum Prospect from contact form",
       bio: submission.message,
       relationship_companies: relatedCompanies,
       worked_with_companies: relatedCompanies,
@@ -341,7 +341,7 @@ export async function escalateContactToProspectiveBum(user: AuthUser, submission
 
   const updated = await updateContactSubmission(user, submission.id, {
     status: "ESCALATED",
-    adminNotes: "Created a prospective Bum profile from this contact submission. Keep hidden from clients until reviewed.",
+    adminNotes: "Created a Bum Prospect profile from this contact submission. Keep hidden from clients until reviewed.",
     escalatedTo: "BUM_PROFILE",
     escalatedEntityId: prospectiveBumId,
   });

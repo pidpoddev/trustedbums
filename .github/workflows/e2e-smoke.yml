@@ -7,25 +7,31 @@ on:
         description: URL to smoke test
         required: true
         default: https://trustedbums.com
-      run_deep_audit:
-        description: Run the deep workflow hotfix audit after smoke tests
-        required: true
-        type: boolean
-        default: false
       mutation_mode:
         description: Allow deep audit to create and clean up tagged QA records
         required: true
         type: boolean
         default: false
+  workflow_run:
+    workflows:
+      - Deploy TrustedBums to DreamHost
+    types:
+      - completed
 
 jobs:
   smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      QA_TARGET_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.target_url || 'https://trustedbums.com' }}
+      QA_MUTATION_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mutation_mode && '1' || '0' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -46,7 +52,7 @@ jobs:
 
       - name: Run deployed smoke tests
         env:
-          QA_BASE_URL: ${{ inputs.target_url }}
+          QA_BASE_URL: ${{ env.QA_TARGET_URL }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
@@ -57,10 +63,10 @@ jobs:
         run: pnpm run qa:env && pnpm exec playwright test tests/e2e/staging-smoke.spec.ts tests/e2e/authenticated-role-smoke.spec.ts tests/e2e/portal-interaction-audit.spec.ts
 
       - name: Run deep workflow hotfix audit
-        if: ${{ always() && inputs.run_deep_audit }}
+        if: always()
         env:
-          QA_BASE_URL: ${{ inputs.target_url }}
-          QA_DEEP_MUTATION: ${{ inputs.mutation_mode && '1' || '0' }}
+          QA_BASE_URL: ${{ env.QA_TARGET_URL }}
+          QA_DEEP_MUTATION: ${{ env.QA_MUTATION_MODE }}
           QA_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
           QA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}

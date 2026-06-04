@@ -108,7 +108,7 @@ export default function BumProspects() {
       <Card>
         <CardHeader>
           <CardTitle className="font-display flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" /> Add prospected client
+            <Plus className="h-5 w-5 text-primary" /> Add Client Prospect
           </CardTitle>
         </CardHeader>
         <CardContent>

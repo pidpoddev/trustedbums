@@ -48,10 +48,10 @@ const navGroups: Array<{
   { title: "Opportunities", url: "/client/opportunities", icon: Briefcase, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Bums", url: "/client/bum-directory", icon: Users, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Training & Assets", url: "/client/trainings", icon: GraduationCap, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
-  { title: "Requests", url: "/client/requests", icon: MessageSquarePlus, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
+  { title: "Customer Leads", url: "/client/requests", icon: MessageSquarePlus, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   ] },
   { label: "Finance", items: [
-  { title: "Payments", url: "/client/payments", icon: CreditCard, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
+  { title: "Payment Reports", url: "/client/payments", icon: CreditCard, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
   { title: "Exports", url: "/client/exports", icon: Download, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
   { title: "Reports", url: "/client/reports", icon: BarChart3 },
   ] },
@@ -59,7 +59,7 @@ const navGroups: Array<{
   { title: "Team Management", url: "/client/team", icon: Users, allowedAccessRoles: ["CLIENT_ADMIN"] },
   { title: "Company Profile", url: "/client/profile", icon: Building2 },
   { title: "User Profile", url: "/client/user-profile", icon: User },
-  { title: "Agreements", url: "/client/agreements", icon: FileCheck },
+  { title: "Client Agreement", url: "/client/agreements", icon: FileCheck },
   ] },
 ];
 

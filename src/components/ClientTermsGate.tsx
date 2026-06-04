@@ -16,7 +16,7 @@ export function ClientTermsGate() {
   if (error) {
     return (
       <div className="rounded-md border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
-        Unable to check partner terms: {error instanceof Error ? error.message : "Please try again."}
+        Unable to check the current agreement: {error instanceof Error ? error.message : "Please try again."}
       </div>
     );
   }
@@ -24,7 +24,7 @@ export function ClientTermsGate() {
   if (isLoading || !terms) {
     return (
       <div className="rounded-md border bg-card p-6 text-sm text-muted-foreground">
-        Checking partner terms...
+        Checking current agreement...
       </div>
     );
   }

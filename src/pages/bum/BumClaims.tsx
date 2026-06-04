@@ -12,6 +12,7 @@ import {
   calculateTopLineSharePercent,
   listOpportunityClaims,
 } from "@/lib/portalApi";
+import { opportunityOriginLabel, opportunityStageLabel, stageFromClaimStatus } from "@/lib/opportunityModel";
 import { formatDateForTimeZone } from "@/lib/timezone";
 
 function formatDate(value: string | null | undefined, timeZone: string) {
@@ -37,17 +38,17 @@ export default function BumClaims() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Intro Requests"
-        description="Track the opportunity intros you requested and jump back in when it's time to schedule or update."
+        title="Claims"
+        description="Track the Claims you requested on Opportunities and jump back in when it's time to schedule or update."
       />
 
       {claimsQuery.isLoading ? (
-        <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground">Loading your claims...</div>
+        <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground">Loading your Claims...</div>
       ) : null}
 
       {!claimsQuery.isLoading && claimsQuery.isError ? (
         <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center text-sm text-destructive">
-          Unable to load claims right now.
+          Unable to load Claims right now.
         </div>
       ) : null}
 
@@ -58,9 +59,9 @@ export default function BumClaims() {
               <Handshake className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-medium">No claims yet</p>
+              <p className="font-medium">No Claims yet</p>
               <p className="text-sm text-muted-foreground">
-                When you request or receive an approved intro, it will show up here.
+                When you request a Claim on an Opportunity or receive an accepted Claim, it will show up here.
               </p>
             </div>
             <Button variant="outline" asChild>
@@ -92,7 +93,11 @@ export default function BumClaims() {
                     {claim.contact_name} at {claim.contact_company}
                   </p>
                 </div>
-                <StatusBadge {...statusConfig} />
+                <div className="flex flex-wrap gap-1.5">
+                  <StatusBadge label={opportunityOriginLabel("BUM_ORIGINATED")} variant="secondary" />
+                  <StatusBadge label={opportunityStageLabel(stageFromClaimStatus(claim.status))} variant="info" />
+                  <StatusBadge {...statusConfig} />
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">

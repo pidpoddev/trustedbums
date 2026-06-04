@@ -119,20 +119,42 @@ export async function collectVisibleErrorText(page: Page) {
 export async function exploreVisibleNonDestructiveButtons(page: Page, issues: DeepQaIssue[], area: string, workflow: string) {
   const buttons = page.getByRole("button");
   const count = await buttons.count();
-  const labels: string[] = [];
 
-  for (let index = 0; index < Math.min(count, 30); index += 1) {
+  for (let index = 0; index < count; index += 1) {
     const button = buttons.nth(index);
     if (!(await button.isVisible().catch(() => false)) || !(await button.isEnabled().catch(() => false))) {
       continue;
     }
 
     const label = await buttonLabel(button);
-    if (!label || !safeExploratoryActionPattern.test(label)) {
+    if (!label) {
+      const box = await button.boundingBox().catch(() => null);
+      issues.push({
+        severity: "P2",
+        area,
+        workflow,
+        evidence: `Visible enabled button ${index + 1}${box ? ` at ${Math.round(box.x)},${Math.round(box.y)}` : ""} has no accessible name.`,
+        recommendation: "Give every interactive button visible text, aria-label, title, or equivalent accessible name.",
+        url: page.url(),
+      });
       continue;
     }
 
-    labels.push(label);
+    await button.click({ timeout: 5_000, trial: true }).catch((error) => {
+      issues.push({
+        severity: "P2",
+        area,
+        workflow,
+        evidence: `Button "${label}" is not operable by Playwright actionability checks: ${error instanceof Error ? error.message : String(error)}`,
+        recommendation: "Confirm the control is reachable, enabled, visible, and not obscured; add a focused interaction regression test.",
+        url: page.url(),
+      });
+    });
+
+    if (!safeExploratoryActionPattern.test(label)) {
+      continue;
+    }
+
     await button.click({ timeout: 5_000 }).catch((error) => {
       issues.push({
         severity: "P2",

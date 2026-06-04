@@ -141,10 +141,10 @@ export const legalDocuments: LegalDocument[] = [
   {
     slug: "client-agreement",
     title: "Client Agreement",
-    description: "Client-facing partner terms for introductions, opportunity registration, commissions, and platform use.",
+    description: "Client Agreement terms for introductions, opportunity registration, commissions, and platform use.",
     effectiveDate,
     sections: [
-      { title: "Client Terms", body: ["The Client Agreement is the current Trusted Bums Partner Terms accepted in the Client Portal. It covers services, introduced accounts, opportunity registration, commission plans, payment and reporting, non-circumvention, confidentiality, recording/transcription, and custom terms."] },
+      { title: "Client Agreement", body: ["The Client Agreement is the current Trusted Bums contract accepted in the Client Portal. It covers services, introduced accounts, opportunity registration, commission plans, Customer Payment Reports, non-circumvention, confidentiality, recording/transcription, and custom terms."] },
       { title: "Commission Plans", body: ["Commissions are defined and approved per project or opportunity. A default commission plan may be set for a client, but the approved project, opportunity, commission plan, or signed agreement controls the economics for the specific opportunity."] },
       { title: "Portal Record", body: ["The accepted portal version and any approved opportunity-specific commission plans should be reviewed inside the Client Portal. Contact bums@trustedbums.com for a copy or questions."] },
     ],

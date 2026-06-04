@@ -25,9 +25,9 @@ import {
 } from "@/lib/portalApi";
 
 const roleOptions: Array<{ value: ClientAccessRole; label: string; detail: string }> = [
-  { value: "CLIENT_ADMIN", label: "Admin", detail: "Full client portal access and team management." },
-  { value: "CLIENT_FINANCE", label: "Finance", detail: "Payments, exports, reports, and account access." },
-  { value: "CLIENT_MEMBER", label: "Member", detail: "Workspace, Bums, training, requests, and reports." },
+  { value: "CLIENT_ADMIN", label: "Client Admin", detail: "Full client portal access and company team management." },
+  { value: "CLIENT_FINANCE", label: "Client Finance", detail: "Customer Payment Reports, commission invoices, exports, and reports." },
+  { value: "CLIENT_MEMBER", label: "Client Member", detail: "Workspace, Bums, training, Customer Leads, and reports." },
 ];
 
 function formatDate(value?: string | null) {
@@ -177,7 +177,7 @@ export default function ClientTeam() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Team Management" description="Invite client users and assign company access roles." />
+      <PageHeader title="Team Management" description="Invite Client users and assign company-scoped Client roles." />
 
       <div className="grid max-w-6xl gap-4 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start">
         <div className="space-y-4">

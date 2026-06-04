@@ -90,7 +90,7 @@ export default function BumReports() {
       {
         id: "earnings-and-payouts",
         title: "Earnings and payouts",
-        description: "Payouts connected to your approved claims and paid Trusted Bums invoices.",
+        description: "Payouts connected to your approved Claims and paid Trusted Bums commission invoices.",
         category: "Earnings",
         dataLabel: "payout rows",
         rows: payouts.map((payout) => ({

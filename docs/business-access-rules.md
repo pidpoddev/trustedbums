@@ -123,6 +123,41 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - Hone proof requirements for Gmail/public-email company creation and Client Admin assignment as real client cases come in.
   - Hone the blocked/manual-review domain list over time. Public/shared/disposable domains should not auto-create companies; agencies, consultants, partner/referral domains, and ambiguous school/franchise/subsidiary domains should start as manual-review unless explicitly approved.
 
+### Access Requests And Bootstrap Exceptions
+- Roles: Public Visitor, signed-in unassigned user, Client Admin, Admin, Bum applicant.
+- Data needed: Requester profile, email and email domain, requested company, requested domain, requested role, request type, evidence summary, proof category, request status, reviewer, review note, audit event, and resulting profile/company/domain state.
+- Allowed actions:
+  - Signed-in users may create their own access request when profile bootstrap cannot safely approve them automatically.
+  - Client Admins may review same-company `SAME_DOMAIN_ACCESS` requests for users from already-approved company domains.
+  - Client Admins may request `RELATED_DOMAIN` additions, but only Admin may approve those domains.
+  - Admins may review `PUBLIC_EMAIL_COMPANY`, `RELATED_DOMAIN`, `BUM_SIGNUP`, stale-owner, unmatched-domain, denied-user repair, and any other bootstrap exception that changes company/domain/role authority.
+  - Admins may approve or deny requests through audited server-side paths that update the request and the affected profile, company, or domain records together.
+- Allowed when:
+  - `SAME_DOMAIN_ACCESS` is pending, the requester belongs to the same approved company domain, and the reviewing Client Admin belongs to that company.
+  - `PUBLIC_EMAIL_COMPANY` is pending and Admin has recorded alternate company-identity and administrative-identity proof before creating the company and assigning the requester.
+  - `RELATED_DOMAIN` is pending and Admin has verified the requested domain belongs to, aliases, or is contractually controlled by the client company.
+  - `BUM_SIGNUP` is pending and Admin approves the user as a Bum or approves a documented automated Bum onboarding path.
+  - `AUTO_DOMAIN_CLAIM` is generated as part of a validated first-domain claim and remains auditable.
+  - Approval or denial writes an audit event with actor, request type, target profile, company/domain context, resulting state, and reason or evidence category.
+- Denied when:
+  - Pending, denied, disabled, or unassigned users try to view company data before an approved request changes their profile state.
+  - A Client Admin tries to approve public-email company creation, related-domain claims, Bum signup, cross-company requests, or requests outside their company.
+  - A user attempts to approve their own role, company, client access role, admin status, Bum identity, or related-domain authority.
+  - A request lacks required proof for public-email company creation, related-domain approval, or stale-admin repair.
+- Sensitive fields: Email, requested company/domain, request evidence, proof documents or notes, review notes, requester profile state, requested role, denied reasons, audit events, and any alternate identity proof.
+- Source of truth: `client_company_access_requests`, `profiles.access_status`, `profiles.role`, `profiles.company_id`, `profiles.client_access_role`, `company_domains`, `client-team`, `profile-bootstrap`, `admin-access-requests`, and `audit_events`.
+- RLS/authorization owner: Security Engineer plus Product Ops, with QA allow/deny coverage before hardening release.
+- QA proof:
+  - Same-domain pending request is visible and reviewable by an authorized Client Admin for that company.
+  - Public-email company request is visible only to Admin and approval requires recorded proof or review note.
+  - Related-domain request is visible to Admin, does not grant access while pending, and grants access only after approval.
+  - Bum signup request cannot view client data while pending and becomes Bum-scoped only after Admin approval.
+  - Denied and disabled users cannot view company data through portal routes, direct Supabase reads, edge functions, or extension APIs.
+  - Approval and denial create audit events with request type, actor, target profile, resulting state, and reason/category.
+- Open questions:
+  - Which proof categories are mandatory versus optional for public-email company approvals and related-domain approvals?
+  - Should `BUM_SIGNUP` approval be manual-only at launch or delegated to an approved recruitment/onboarding workflow later?
+
 ### Customer Targets
 - Roles: Admin, Client Admin, Client Member where assigned, Bum where explicitly entitled.
 - Data needed: Target company/person details, status, linked opportunities, linked responses, linked conversations, relevant activity history.
@@ -174,26 +209,34 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - Should `DECLINED` responses remain visible to all target-managing client users indefinitely, or age into admin-only history?
 
 ### Opportunities, Claims, And Intro Requests
-- Roles: Admin, Client Admin, Client Member where assigned, Bum.
-- Data needed: Opportunity status, client, target, assigned/requesting Bum, claim/request status, split details, meeting/conversation context.
-- Allowed actions: Clients create/manage company opportunities; Bums request visible opportunities; Admins manage exceptions and disputes.
+- Roles: Admin, Client Admin, Client Member where assigned, Client Finance by finance-safe exception only, Bum.
+- Data needed: Opportunity origin, Opportunity stage, source object, client, target/customer, assigned/requesting Bum, claim/request status, split details, meeting/conversation context, Customer Payment Report and commission-invoice links where finance-safe.
+- Allowed actions: Clients create/manage company Opportunities; Bums request visible Opportunities, submit relationship responses, submit Customer Leads, and request Claims where eligible; Admins create, manage, convert, rescue, and dispute Opportunity work.
 - Allowed when:
-  - Bum can see opportunities open to the marketplace or specifically assigned/invited to them.
+  - The source object maps to one of the approved Opportunity origins: `Client-Originated`, `Bum-Originated`, `Customer-Originated`, `Admin-Originated`, or `Imported`.
+  - The source object maps to one approved stage label, such as `Intake`, `Qualifying`, `Intro Requested`, `Intro In Progress`, `Meeting Set`, `Open Opportunity`, `Needs Clarification`, `Accepted Claim`, `Revenue Confirmed`, or `Closed Lost`.
+  - Bum can see Opportunities open to the marketplace or specifically assigned/invited to them.
   - Multiple Bums can request before client acceptance.
   - After an accepted or approved handoff, the opportunity should no longer be visible as claimable to unrelated Bums.
   - Splits are visible only to parties involved plus Admins.
+  - Client Finance can see only finance-safe Opportunity context needed for Customer Payment Reports, commission invoices, approved finance exceptions, and finance exports.
 - Denied when:
   - Bum is unrelated after a claim/request is accepted and has no split relationship.
   - Client user belongs to a different company.
-- Sensitive fields: Customer identity, client relationship, payout/split details, acceptance status, notes.
-- Source of truth: Opportunity registrations, claims/intro request tables, split/commission tables, company membership.
+  - Client Finance tries to browse operational Opportunity details, target contacts, Bum relationship notes, Teams join URLs, transcript details, or non-finance workflow context by default.
+- Sensitive fields: Customer identity, client relationship, payout/split details, acceptance status, relationship notes, target contacts, meeting details, transcript context, raw capture context, and dispute notes.
+- Source of truth: Opportunity registrations, customer targets, customer target responses, reverse/customer lead records, client-to-Bum intro request tables, claims, split/commission tables, payment reports, invoices, payouts, company membership, and approved read-model projections.
 - QA proof:
-  - Two Bums can request before client acceptance.
+  - Client-Originated, Bum-Originated, Customer-Originated, Admin-Originated, and Imported Opportunity paths each show origin and stage in the relevant workspace before any route consolidation ships.
+  - Two Bums can request before Client acceptance.
   - Accepted or approved handoff locks the opportunity from unrelated Bum claim flows.
   - Split participants can see their relevant split context.
   - Unrelated Bums cannot read accepted opportunity private details.
+  - Client Finance can read finance-safe Opportunity context but cannot read operational target/contact/meeting/transcript details by default.
 - Open questions:
-  - Should "claim" become "Intro Request" in all user-facing flows?
+  - Which existing source tables should become permanent source objects versus migrate into one canonical Opportunity table?
+  - Which origin value should backfill historical opportunity registrations created by Admin on behalf of a Client?
+  - Should `Claim` remain the public noun everywhere, or become a legal/finance term behind a different user-facing action label?
 
 ### Client-To-Bum Intro Requests
 - Roles: Admin, Client Admin, Client Member, assigned Bum.
@@ -253,6 +296,7 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - The capture is tied to an accepted or explicitly assigned opportunity or target relationship for the Bum.
   - The represented contact is owned by the Bum or is being reviewed by Admin for support or compliance.
   - A client-facing view shows derived workflow context that Product Ops has approved for that client company, not raw private capture notes by default.
+  - Raw `extension_page_captures` remain Bum/Admin scoped unless a separate converted projection or workflow object explicitly allows selected fields for the client company.
 - Denied when:
   - A Bum tries to capture against or read a target/opportunity they are not entitled to access.
   - A different Bum tries to read or mutate another Bum's represented contact.
@@ -268,7 +312,7 @@ RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed ac
   - Admin can troubleshoot with audit trail.
   - Extension `/context` and `/page-captures` prove one allowed and one denied case.
 - Open questions:
-  - Which converted capture fields, if any, are safe for Client Admin or Client Member views?
+  - Which converted capture fields, if any, are safe for Client Admin or Client Member views? Until decided, client-facing output should be limited to the linked workflow context already approved elsewhere, not raw capture rows.
   - What retention period applies to raw selected text and source URLs?
 
 ### Payments, Invoices, Payouts, And Reports

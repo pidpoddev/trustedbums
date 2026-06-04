@@ -2,7 +2,7 @@ export const DEFAULT_COMMISSION_DURATION =
   "For so long as Client receives revenue from the Introduced Account or substantially related opportunity";
 
 export const ACTIVE_TERMS_VERSION = "1.3";
-export const ACTIVE_TERMS_TITLE = "Trusted Bums Partner Terms";
+export const ACTIVE_TERMS_TITLE = "Trusted Bums Client Agreement";
 export const ACTIVE_TERMS_CHANGE_SUMMARY = `This update clarifies that commissions are defined and approved per project or opportunity, that a default commission plan may be set but does not override approved opportunity-specific terms, and that meetings scheduled or supported through Trusted Bums may be recorded or transcribed where enabled.`;
 
 export const PARTNER_TERMS_BODY = `Trusted Bums provides business development support, strategic introductions, relationship facilitation, account access, and related services. By using the Client Portal, requesting introductions, registering opportunities, or accepting support from Trusted Bums, Client agrees that Trusted Bums’ introductions, account access, and relationship support create commercial value and may result in commission obligations as described below.
@@ -69,7 +69,7 @@ These terms are governed by the laws of the State of Delaware unless a separate 
 
 15. Custom Terms
 
-The parties may agree to custom commission plans, account-specific terms, enterprise schedules, or other written overrides. If an approved assigned commission plan or separate signed agreement conflicts with these Partner Terms, the approved assigned commission plan or separate signed agreement controls for that specific opportunity.`;
+The parties may agree to custom commission plans, account-specific terms, enterprise schedules, or other written overrides. If an approved assigned commission plan or separate signed agreement conflicts with this Client Agreement, the approved assigned commission plan or separate signed agreement controls for that specific opportunity.`;
 
 export const PARTNER_FAQ_BODY = `Q: Why does Trusted Bums receive commissions?
 A: Trusted Bums creates value by helping clients access strategic accounts, build credibility, navigate relationships, and increase the likelihood of commercial success. When that support leads to revenue, Trusted Bums participates in the upside.
