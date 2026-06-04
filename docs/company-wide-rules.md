@@ -31,6 +31,14 @@ When adding a rule, include:
 
 ## Company Identity And Trust
 
+### Brand strategy is the consistency source of truth
+- Rule: `docs/brand-strategy.md` is the durable source of truth for Trusted Bums positioning, voice, visual identity, campaign motifs, logo handling, and spelling-aware generated-graphics QA.
+- Applies to: Public website, marketing graphics, campaign copy, presentations, emails, social ads, landing pages, UI polish, Content, UI, UX, Trust & Reputation, and Marketing Graphics Artist work.
+- Why it matters: Trusted Bums has a playful name but must consistently feel credible, high-trust, relationship-led, and commercially serious across every touchpoint.
+- Implementation notes: New campaign assets, public-site creative, generated images, and major copy changes should check `docs/brand-strategy.md` before shipping. If Ryan clarifies brand direction, update that document and mirror any operational rule here or in the relevant specialist backlog.
+- QA proof: Agent Inputs, PR notes, or backlog entries cite the brand strategy when brand consistency affects the work.
+- Open questions: Final logo clear-space rules, campaign templates, legal-approved marketing claims, and winning creative examples still need source-of-truth inputs.
+
 ### Trusted Bums should be treated as a high-trust B2B marketplace
 - Rule: Product, website, email, copy, and security decisions should increase buyer confidence and avoid patterns that make Trusted Bums look spammy, scam-like, blocked, spoofable, or low-trust.
 - Applies to: Public website, contact forms, email sending, DMARC/DKIM/SPF, browser reputation, Safe Browsing/SmartScreen-style systems, content, UI, and Trust & Reputation work.
@@ -108,6 +116,14 @@ When adding a rule, include:
 - Open questions: None for the first implementation pass.
 
 ## Specialist And Release Coordination
+
+### Marketing graphics require spelling-aware visual QA
+- Rule: AI-generated campaign graphics must not be treated as campaign-ready until every visible word, number, logo, badge, sign, UI label, or pseudo-text has passed a visual QA pass. Prefer text-free generated imagery plus editable copy overlays, and render brand text from approved vector/HTML/text layers rather than baked into generated bitmaps.
+- Applies to: Daily Marketing Graphics Artist automation, paid social, email graphics, landing-page art, public-site campaign assets, brand/logo usage, generated images, and any campaign creative used by Trusted Bums.
+- Why it matters: AI image models often misspell or deform text, and visible spelling mistakes would make Trusted Bums look careless or low-trust in marketing campaigns.
+- Implementation notes: Any generated asset with visible letters must be inspected at readable zoom and checked manually, with OCR or model-assisted inspection when available. Misspelled `Trusted Bums`, gibberish, fake UI copy, malformed logo text, unreadable overlays, or unverified text requires regeneration or rejection. Keep unapproved generated graphics outside public shipping paths until approved.
+- QA proof: Marketing graphics backlog entries include an explicit visual QA result, spelling QA notes for every visible word, asset status, and the files or screenshots reviewed.
+- Open questions: Which brand guidelines, approved templates, campaign channels, and legal-approved claims should become the default creative source of truth?
 
 ### UI consultant visual evidence comes from GitHub Visual QA
 - Rule: The UI consultant should use the GitHub Actions workflow named `Visual UI Audit` and its `visual-ui-audit` artifacts for visual QA evidence instead of attempting local Vite, local browser, or local Playwright visual checks.

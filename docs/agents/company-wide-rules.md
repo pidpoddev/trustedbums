@@ -31,6 +31,14 @@ When adding a rule, include:
 
 ## Company Identity And Trust
 
+### Brand strategy is the consistency source of truth
+- Rule: `docs/brand-strategy.md` is the durable source of truth for Trusted Bums positioning, voice, visual identity, campaign motifs, logo handling, and spelling-aware generated-graphics QA.
+- Applies to: Public website, marketing graphics, campaign copy, presentations, emails, social ads, landing pages, UI polish, Content, UI, UX, Trust & Reputation, and Marketing Graphics Artist work.
+- Why it matters: Trusted Bums has a playful name but must consistently feel credible, high-trust, relationship-led, and commercially serious across every touchpoint.
+- Implementation notes: New campaign assets, public-site creative, generated images, and major copy changes should check `docs/brand-strategy.md` before shipping. If Ryan clarifies brand direction, update that document and mirror any operational rule here or in the relevant specialist backlog.
+- QA proof: Agent Inputs, PR notes, or backlog entries cite the brand strategy when brand consistency affects the work.
+- Open questions: Final logo clear-space rules, campaign templates, legal-approved marketing claims, and winning creative examples still need source-of-truth inputs.
+
 ### Trusted Bums should be treated as a high-trust B2B marketplace
 - Rule: Product, website, email, copy, and security decisions should increase buyer confidence and avoid patterns that make Trusted Bums look spammy, scam-like, blocked, spoofable, or low-trust.
 - Applies to: Public website, contact forms, email sending, DMARC/DKIM/SPF, browser reputation, Safe Browsing/SmartScreen-style systems, content, UI, and Trust & Reputation work.

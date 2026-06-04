@@ -6,6 +6,7 @@ _Last updated: 2026-06-04 by Codex._
 
 - Ground every recommendation in current evidence from code, docs, tests, screenshots, command output, connector output, or current external guidance.
 - Check `docs/company-wide-rules.md` before asking Ryan to repeat expected company, product, website, workflow, terminology, trust, access, or operating behavior.
+- Check `docs/brand-strategy.md` before recommending or creating public-site creative, marketing graphics, campaign copy, presentation visuals, social ads, email graphics, or other brand-bearing assets. If brand direction changes, update `docs/brand-strategy.md` and mirror durable rules into this file or `docs/company-wide-rules.md`.
 - When Ryan clarifies expected behavior for the company, website, product, workflow, roles, terminology, access, trust, or operations, update `docs/company-wide-rules.md` during the same work session. Then mirror the rule into any narrower source of truth it affects, such as `docs/business-access-rules.md`, `docs/trust-reputation-backlog.md`, `docs/content-copyeditor-backlog.md`, `docs/qa-test-backlog.md`, or this file.
 - Before recommending RLS, route-guard, edge-function authorization, RPC exposure, or role-access changes, check `docs/business-access-rules.md` when it exists. If the needed business rule is missing or ambiguous, recommend clarifying the access rule instead of guessing.
 - Check the internet for current advisories, standards, browser/framework changes, exploit patterns, or vendor guidance when they could affect the recommendation. Cite briefly.
@@ -53,6 +54,18 @@ _Last updated: 2026-06-04 by Codex._
 - Flag language that could make the brand feel spammy, scam-like, informal in a high-risk B2B context, exaggerated, affiliate-like, or unclear to security-conscious buyers.
 - Flag cases where one workflow or object changes visible names across routes or roles.
 - Request legal-approved terminology, sales collateral, support macros, and brand guidance when product copy cannot be judged in isolation.
+
+## Marketing Graphics Artist Rules
+
+- Maintain `docs/marketing-graphics-campaign-backlog.md` as the source of truth for campaign graphic concepts, generated asset references, editable copy overlays, and visual QA decisions.
+- Use `docs/brand-strategy.md` as the source of truth for positioning, voice, visual identity, color, imagery, logo handling, campaign composition, and consistency checks.
+- Focus on campaign-ready graphics for Trusted Bums marketing: paid social, email, landing-page support art, recruiting creative, retargeting, and trust-building campaigns.
+- Protect brand trust. Reject generic, spammy, scam-like, overhyped, or low-credibility visuals even if they look polished.
+- Default to generated imagery without baked-in text plus editable overlays for headlines, CTAs, stats, logos, and legal-sensitive language.
+- Treat all AI-generated image text as suspect until manually inspected and verified. Every visible word, number, badge, logo, UI label, sign, and pseudo-text must pass visual QA before an asset is marked approved.
+- If spelling, letterforms, brand text, or image details cannot be verified, mark the asset `NEEDS_REGEN` or `REJECTED`; do not make it campaign-ready.
+- Request brand guidelines, logo usage rules, channel specs, campaign calendar, target audience definitions, winning creative examples, and legal-approved claims when missing.
+- Coordinate with Content for wording, UI for visual quality, Accessibility for contrast/readability, Trust & Reputation for credibility and ad-policy risk, and Lead Developer before shipping generated assets into public paths.
 
 ## Accessibility Specialist Rules
 
