@@ -1,6 +1,6 @@
 # Trusted Bums Agent Operating Pack
 
-_Last updated: 2026-05-31 by Codex._
+_Last updated: 2026-06-04 by Codex._
 
 This folder is the repo-shared source for Trusted Bums consultant agents, operating rules, and review gates. It exists so every developer can inspect the same expected behaviors instead of relying on one person's local Codex automation registry.
 
@@ -10,6 +10,7 @@ This folder is the repo-shared source for Trusted Bums consultant agents, operat
 - `consultant-team-rules.md`: shared behavioral rules and handoff expectations for every specialist.
 - `company-wide-rules.md`: durable company, product, website, workflow, terminology, trust, and operating rules Ryan has clarified.
 - `../codex-edit-log.md`: running implementation log and next-run recheck queue that specialists should consult before preserving stale recommendations.
+- `../trusted-bums-gtm-agent-stack.md`: GTM agent stack map linking growth, creative, trust, data, product ops, QA, and implementation handoffs.
 - `consultant-access-needs.md`: durable list of access, dashboard, connector, QA, and evidence gaps that limit consultant quality.
 - `business-access-rules.md`: role and data access expectations used by Security, QA, Data, Product Ops, Lead Developer, and Code Review.
 - `code-review-agent.md`: pre-main Code Review Agent contract, GO/NO-GO output format, and Lead Developer handoff rules.
