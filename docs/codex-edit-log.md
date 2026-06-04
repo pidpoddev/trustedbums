@@ -41,6 +41,16 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Latest Agent Recheck Requests
 
+### 2026-06-04 - Recheck GTM agent stack first run
+
+- Trigger: Ryan asked to "Do a first run" of the Trusted Bums GTM agent stack.
+- Implementation branch: `codex/gtm-agent-stack-cleanup`.
+- What changed: Added the first combined GTM stack run artifact with Agent 1 positioning dossier, Agent 6 competitor/category monitor, Agent 2 30-day content and enablement plan, Agent 3 first copy batch, Agent 4 one-week distribution plan, and Agent 5 deferral criteria.
+- Main surfaces changed: `docs/gtm-agent-runs/2026-06-04-first-run.md`.
+- Checks run: repo source review, homepage/product workflow inspection, current competitor/category web review, `git diff --check`, and first-run guardrail review. No app tests were run because this was documentation and GTM planning only.
+- Recheck agents: B2B Growth Marketer, Content Copyeditor, Marketing Graphics Artist, Trust And Reputation Consultant, Data And Analytics Engineer, Product Ops Workflow Analyst, UX Consultant, Lead Developer.
+- Next run should verify: whether the first-week LinkedIn/email assets produce qualified replies, whether one objection repeats enough to trigger Agent 5, whether `docs/brand-strategy.md` should be restored because it is referenced but missing on this branch, and whether the first-run proof log can move recommendations from source-backed to performance-backed.
+
 ### 2026-06-04 - Recheck B2B growth marketer agent setup
 
 - Trigger: Ryan asked to create an agent that is the best B2B marketer in the world with the goal of increasing the number of Bums and Clients in the program.
