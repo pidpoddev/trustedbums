@@ -1,103 +1,99 @@
 # Trusted Bums Performance Engineering Backlog
 
-_Last updated: 2026-06-04 by Codex daily performance engineer automation._
+_Last updated: 2026-06-06 by Codex daily performance engineer automation._
 
 ## Executive Read
 
-The highest-confidence performance blocker is still frontend startup cost. Today's `pnpm run build` passed but emitted a single app JavaScript asset, `dist/assets/index-3bFWxhoh.js`, at `1,975.42 kB` minified and `515.90 kB` gzip, with Vite's large-chunk warning. `src/App.tsx` still statically imports the public, admin, client, and Bum route tree, so public visitors and every authenticated role pay for code they may never execute.
+The strongest current performance issue is still startup JavaScript cost. `pnpm run build` on 2026-06-06 produced a single `dist/assets/index-3bFWxhoh.js` bundle at `1,975.42 kB` minified and `515.90 kB` gzip, and Vite emitted its large-chunk warning. `src/App.tsx` still statically imports the full public, admin, client, and Bum route trees, so every session pays for code it may never execute.
 
-The second recurring bottleneck is broad data loading on high-value portal routes. Client dashboard, targets, payments, reports, global search, and Bum report surfaces still fetch broad Supabase lists, then filter, summarize, paginate, or slice in the browser. Prior SQL-backed RUM from 2026-05-31 showed authenticated client LCP pressure on `/client/trainings`, `/client/bum-directory`, `/client/targets`, `/client/dashboard`, and `/client/payments`; this run could not refresh route-level RUM because read-only SQL/query tools were not exposed and local QA env does not provide `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`.
+Production-origin telemetry still gives enough live signal to narrow scope. A 7-day aggregate from `public.performance_metric_events` now shows `17,438` samples from `https://trustedbums.com`, with LCP p75 at `2330 ms` on `/client/dashboard`, `2108 ms` on `/bum/dashboard`, `1959 ms` on `/admin`, and `1892 ms` on `/client/targets`. Those values are still under the `2.5 s` LCP good threshold, but `/client/dashboard` and `/bum/dashboard` are close enough that reducing startup and route data fan-out should stay ahead of threshold regressions.
 
-Supabase evidence is partial but useful. The Supabase project `vaoqvtxqvbptyxddpoju` is `ACTIVE_HEALTHY` on Postgres `17.6.1`, performance advisors still flag many unindexed foreign keys and multiple permissive RLS policies, and edge-function logs show active `performance-beacon` writes plus recurring multi-second `sync-teams-attendees` and `sync-teams-transcripts` executions. The latest sampled beacon writes ranged from roughly `159-1204 ms`, while Teams sync jobs commonly ran around `3.2-8.8 s`, so backend tuning should stay focused on user-visible route/query work first and operational sync paths second.
+Backend evidence still does not justify a broad database-index sprint. Most report-domain tables are still small in this environment, while Supabase performance advisors continue to flag schema-wide unindexed foreign keys and multiple permissive RLS policies. That work should stay targeted and measurement-led until query-plan access or route traces show which warnings overlap with slow user-visible paths.
 
 ## Active Recommendations
 
-### P0 - Split route groups and heavy leaves out of the startup bundle
-- Evidence: `pnpm run build` on 2026-06-04 emitted one JS bundle at `1,975.42 kB` minified and `515.90 kB` gzip, above the 2026-05-31 `512.39 kB` gzip baseline, and Vite warned that chunks exceed `500 kB`. `src/App.tsx` still imports all admin, client, Bum, public, reports, performance, and troubleshooting pages statically. `src/components/reports/ReportsWorkspace.tsx` still statically imports chart code through the report route tree.
-- Why it matters: Large startup JS increases transfer, parse, compile, and execution time before the first meaningful route can become interactive. It also makes slow authenticated routes harder to isolate because every role shares the same startup payload.
-- Recommendation: Convert top-level admin, client, and Bum route groups plus heavy leaves such as reports, performance metrics, legal/admin tooling, and troubleshooting screens to module-scope `React.lazy` with `Suspense`. Keep lazy declarations at module scope and enable the React Router `v7_startTransition` future flag as part of the same migration check.
-- Acceptance criteria: Production build emits separate route chunks, no emitted JS chunk exceeds `500 kB` minified, initial gzip JS falls below the current `515.90 kB` baseline, and route-guard tests no longer emit the `v7_startTransition` warning.
+### P0 - Split the route tree and report/admin leaves out of the startup bundle
+- Evidence: `pnpm run build` on 2026-06-06 emitted one JS asset at `1,975.42 kB` minified and `515.90 kB` gzip, and Vite warned about chunks over `500 kB`. `src/App.tsx` still statically imports the full public, admin, client, and Bum page trees with no `React.lazy`, `Suspense`, or manual chunk strategy in `vite.config.ts`.
+- Why it matters: Public visitors and authenticated users are downloading and parsing far more code than their route needs, which directly pressures FCP, LCP, and main-thread responsiveness.
+- Recommendation: Move route groups and heavy leaves such as reports, admin performance, troubleshooting, legal, and finance/reporting pages to module-scope `React.lazy` boundaries with `Suspense` fallbacks. As part of that migration, enable the React Router `v7_startTransition` future flag and keep lazy declarations out of render scope.
+- Acceptance criteria: Production build emits multiple route-aligned chunks instead of one app-wide JS file; initial bundle gzip size drops materially from the current `515.90 kB`; and follow-up production telemetry shows improved p75 LCP on `/client/dashboard`, `/bum/dashboard`, and `/admin`.
 
-### P1 - Replace client portal whole-list fetches with route-scoped summaries and server pagination
-- Evidence: Current code still mounts broad list queries on client routes: `ClientDashboard` fetches opportunity registrations, targets, reverse opportunities, target responses, payment reports, and invoices to compute counts; `ClientTargets` fetches all targets, then filters and paginates locally; `ClientPayments` fetches claims, reports, and invoices, then filters locally. The 2026-05-31 SQL-backed RUM snapshot, not refreshed today, showed p75 LCP above the `2.5s` good threshold on `/client/trainings`, `/client/bum-directory`, `/client/targets`, `/client/dashboard`, and `/client/payments`.
-- Why it matters: Whole-list reads increase Supabase transfer, policy evaluation, browser memory, and main-thread work even when the user only needs a summary, a first page, or a filtered view.
-- Recommendation: Add route-specific summary helpers or RPCs for dashboard counts and finance totals. Move targets, payments, trainings, and Bum directory views to server-side filters, slim select lists, and page limits. Keep client-side filtering only for the current page of already-scoped results.
-- Acceptance criteria: `/client/dashboard` loads counts without downloading full working sets; `/client/targets`, `/client/payments`, `/client/trainings`, and `/client/bum-directory` request filtered/paginated data from Supabase; and follow-up RUM or Lighthouse/network traces show lower transfer volume and p75 LCP below the current route baselines.
+### P1 - Replace whole-list route loading with server-scoped summaries, filters, and pagination
+- Evidence: `src/pages/client/ClientDashboard.tsx`, `src/pages/client/ClientReports.tsx`, `src/pages/client/ClientExports.tsx`, `src/pages/client/ClientTargets.tsx`, `src/pages/bum/BumReports.tsx`, and `src/pages/admin/AdminReports.tsx` still fetch broad Supabase lists and then summarize, filter, paginate, or export in the browser. Helper functions in `src/lib/portalApi.ts` such as `listCompanies` still use `select("*")`, and `listPerformanceMetricEvents` plus multiple route helpers still default to unpaginated or large bounded reads. Production telemetry shows the most sample-heavy authenticated routes are still `/client/dashboard` (`1023` LCP samples), `/admin` (`750`), `/bum/dashboard` (`640`), and `/client/targets` (`101`) over the last 7 days.
+- Why it matters: Whole-list reads increase Supabase transfer, browser memory, RLS evaluation, and render work on the exact authenticated routes that already dominate current production samples.
+- Recommendation: Introduce role-scoped summary endpoints or RPCs for dashboard counters, and add server-side pagination/filtering for targets, payments, exports, and reports before rows reach React. Keep export flows server-shaped as well so CSV generation does not require hydrating entire working sets in the page.
+- Acceptance criteria: Dashboard cards and report landing views load from summary queries instead of full table reads; list pages request bounded server pages and filters; export flows no longer depend on preloading all rows in the browser; and network traces or RUM show lower transfer and faster route completion on `/client/dashboard` and `/client/targets`.
 
-### P1 - Stop report routes from fetching every dataset before report selection
-- Evidence: `AdminReports` still mounts 14 queries on entry. `ClientReports` mounts up to 6 queries depending on access role. `BumReports` mounts 5 queries, then filters claims and payouts to the current Bum in the browser. These routes call broad helpers such as `listCompanies()`, `listCustomerTargets()`, `listOpportunityRegistrations()`, `listOpportunityClaims()`, `listCustomerPaymentReports()`, `listClaimInvoices()`, `listBumPayouts()`, and `listAuditEvents()`.
-- Why it matters: Report entry cost scales with total data volume, not with the report the user is actually reading. This hurts perceived speed and creates avoidable backend read pressure on admin, finance, and Bum reporting workflows.
-- Recommendation: Land report pages on a lightweight default summary, fetch only the selected report's dataset, and dynamically load report/chart workspace code only when a chart-capable report is opened. For Bum reports, prefer user-scoped backend queries over fetching global claims/payouts and filtering in the browser.
-- Acceptance criteria: Entering `/admin/reports`, `/client/reports`, or `/bum/reports` triggers only the default visible report query; selecting another report issues one scoped follow-up request; Bum report queries are scoped by the current Bum before data reaches the browser; and chart code is absent from the initial route chunk.
+### P1 - Stop global search from fanning out into multi-list warm loads
+- Evidence: `src/components/PortalGlobalSearch.tsx` issues up to 14 role-dependent `useQuery` calls as soon as the field is focused, the mobile sheet opens, or the query reaches two characters. Those queries currently pull broad datasets from helpers such as `listCompanies`, `listCustomerTargets`, `listOpportunityClaims`, `listProfiles`, `listConversationThreads`, and training/reporting sources, then assemble and filter all results client-side.
+- Why it matters: Search is mounted in shared portal chrome, so this pattern can add unnecessary Supabase work, RLS checks, memory growth, and keystroke-time filtering cost on already hot authenticated routes.
+- Recommendation: Replace the current fan-out model with a scoped search endpoint or per-role capped search queries that accept the user term, return only top matches, and defer category fetches until there is an actual query string.
+- Acceptance criteria: Focusing the search UI no longer triggers broad background list loads; search requests are term-scoped and capped server-side; and route traces show materially less network activity and scripting when opening shared portal layouts.
 
-### P1 - Replace global-search focus prefetching with explicit server-side search
-- Evidence: `PortalGlobalSearch` sets `shouldFetchSearchData` when the input is focused, mobile search opens, or a query reaches two characters. Focus alone can mount broad role-dependent queries across opportunities, targets, companies, contacts, claims, prospects, reverse opportunities, profiles, Bum profiles, conversations, and training materials.
-- Why it matters: Opening search should not preload large slices of the portal. The current behavior spends Supabase reads and browser work before the user has expressed a concrete search term.
-- Recommendation: Gate remote search on a debounced typed term with a minimum length, reduce select lists, cap per-entity results, and move mixed-entity search to dedicated server-side search helpers or RPCs rather than client-side filtering over full lists.
-- Acceptance criteria: Focusing or opening global search with an empty term issues no broad data fetches; typing a valid term issues only scoped server-side search requests; result sets are capped per entity; and search no longer mounts the current whole-table query set on focus.
+### P1 - Make admin performance monitoring aggregate-first and route-prioritized
+- Evidence: `src/pages/admin/AdminPerformanceMetrics.tsx` still calls `listPerformanceMetricEvents({ days, metricName, rating, limit: 500 })`, and `src/lib/portalApi.ts` reads raw rows directly from `performance_metric_events` before computing p75 in the browser. Live SQL on 2026-06-06 shows `performance_metric_events` is now the largest relevant table at about `17,469` rows and `12 MB`, with roughly `17,438` 7-day samples from `https://trustedbums.com`. Current 7-day LCP p75s are `/client/dashboard` `2330 ms`, `/bum/dashboard` `2108 ms`, `/admin` `1959 ms`, and `/client/targets` `1892 ms`.
+- Why it matters: The current admin view is good enough for spot inspection, but it is not the right shape for sustained prioritization as telemetry volume grows. Pulling raw rows to the browser also makes route-level tuning harder to automate and verify.
+- Recommendation: Add an admin-only aggregate query surface that returns route, metric, time window, sample count, poor count, and p75 directly from the database. Use that aggregate to rank real hotspots and only then sequence targeted advisor cleanup or route-specific optimization work.
+- Acceptance criteria: `/admin/performance` renders server-computed route/metric aggregates instead of raw-row p75 math in the client; the page exposes 7-day and 28-day route summaries with sample counts; and performance follow-up items can point to exact route aggregates instead of browser-side approximations.
 
-### P2 - Make performance telemetry reporting aggregate-first before tuning advisor noise
-- Evidence: `AdminPerformanceMetrics` calls `listPerformanceMetricEvents({ limit: 500 })`, and `listPerformanceMetricEvents` caps reads at `1000`, then computes p75 and counts in the browser from the most recent raw rows. Supabase performance advisors still flag many unindexed foreign keys and multiple permissive-policy warnings, including tables touched by reports/search such as `claim_invoices`, `bum_contacts`, `bum_payouts`, `profiles`, `opportunity_registrations`, `reverse_opportunities`, `teams_meetings`, and `training_materials`. This run had advisors and logs, but no query plans, `pg_stat_statements`, or refreshed SQL-backed RUM aggregates.
-- Why it matters: A raw latest-500 admin view can misstate route p75s as telemetry grows, and advisor lists are too broad to prioritize without tying them to slow routes and statements.
-- Recommendation: Add an admin-only aggregate endpoint, view, or RPC that returns route/metric/day p75, sample count, poor count, and origin count over 7/28-day windows. Use that output plus query plans to prioritize only advisor fixes that overlap with slow portal routes and broad list helpers.
-- Acceptance criteria: `/admin/performance` displays server-computed p75s by route and metric, not just the latest raw rows; aggregate queries include sample counts and origin counts; slow route recommendations link to exact backend statements or plans; and foreign-key index/policy consolidation work is sequenced by measured route impact.
+### P2 - Target Supabase advisor cleanup only on route-hot tables
+- Evidence: Supabase performance advisors are callable in this run and still report `multiple_permissive_policies` on route-hot tables including `profiles`, `opportunity_registrations`, `reverse_opportunities`, and `teams_meetings`, plus many `unindexed_foreign_keys` across the schema. At the same time, live size checks show most user-facing tables here are still small: `opportunity_registrations` `97` rows, `customer_targets` `82`, `teams_meetings` `4`, `profiles` `18`, and `companies` `89`.
+- Why it matters: Advisor findings on hot-path tables can still add avoidable RLS and join overhead, but a blanket index-and-policy sweep would spend time on low-value tables before frontend bundle and query-shape work lands.
+- Recommendation: After the route and summary-query work above, profile only the advisor findings that overlap sampled routes and shared search/dashboard reads, starting with permissive-policy consolidation on `profiles`, `opportunity_registrations`, `reverse_opportunities`, and `teams_meetings`, then add only the foreign-key indexes those routes actually need.
+- Acceptance criteria: Follow-up query-plan or trace evidence ties each schema change to a route-hot query; advisor counts drop for the targeted tables; and no broad schema cleanup ships without measured overlap with user-visible paths.
 
 ## Measurement Notes
 
-- `pnpm run build` passed on 2026-06-04 in about `3.90s`.
-- Current production bundle output:
-  - `dist/index.html`: `1.48 kB` (`0.55 kB` gzip)
-  - `dist/assets/index-BH_M0tg9.css`: `88.55 kB` (`15.38 kB` gzip)
-  - `dist/assets/index-3bFWxhoh.js`: `1,975.42 kB` (`515.90 kB` gzip)
-- `pnpm run lint` passed with `7` warnings and `0` errors. The warnings are the existing `react-hooks/exhaustive-deps` findings in `AdminCommissionPlans`, `AdminPayments`, `AdminPayouts`, `ClientPayments`, and `ClientTargets`.
-- `pnpm run test` passed: `10` files and `32` tests. `routeGuards.test.tsx` still emits React Router future-flag warnings for `v7_startTransition` and `v7_relativeSplatPath`.
-- `set -a; source .env.qa; set +a; pnpm run qa:env` passed. The same environment does not expose `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY`, so a local Supabase client aggregate against `performance_metric_events` could not run.
-- Deployed target preflight still failed from this runner: `curl -I -L --max-time 20 "$QA_BASE_URL"` timed out during DNS resolution, and `dig trustedbums.com A` / `AAAA` reported no reachable DNS server. This is runner-visible evidence, not proof of a public outage.
-- Supabase MCP project metadata returned `ACTIVE_HEALTHY` for project `vaoqvtxqvbptyxddpoju`, hosted in `us-west-2`, running Postgres `17.6.1`.
-- Supabase MCP performance advisors were available and still returned many `unindexed_foreign_keys` and `multiple_permissive_policies` findings. Read-only SQL, query plans, and `pg_stat_statements` were not available in this session.
-- Supabase edge-function logs from the last 24 hours showed many `performance-beacon` `POST 202` writes between about `159-1204 ms`, plus recurring `sync-teams-attendees` and `sync-teams-transcripts` jobs commonly around `3.2-8.8 s`. Postgres logs sampled in this run showed normal checkpoint/cron-style entries, not slow-query detail.
-- Historical route RUM from 2026-05-31 remains useful but was not refreshed today: live SQL then showed `2,355` `performance_metric_events` rows across `42` routes and one origin in the prior 7 days, with authenticated client LCP hotspots led by `/client/trainings`, `/client/bum-directory`, `/client/targets`, `/client/dashboard`, and `/client/payments`.
+- `pnpm run build` passed on 2026-06-06:
+  - `dist/assets/index-3bFWxhoh.js`: `1,975.42 kB` minified, `515.90 kB` gzip
+  - `dist/assets/index-BH_M0tg9.css`: `88.55 kB` minified, `15.38 kB` gzip
+- `pnpm run lint` passed with warnings only. The warnings in `AdminCommissionPlans`, `AdminPayments`, `AdminPayouts`, `ClientPayments`, and `ClientTargets` indicate unstable `useMemo` dependencies that can trigger avoidable recalculation.
+- `pnpm run test` passed: 10 files, 32 tests.
+- Largest local public assets still include `public/downloads/trusted-bums-bum-welcome-line-animation.webm` at about `1.5 MB`.
+- Live Supabase SQL on 2026-06-06 showed approximate table sizes:
+  - `performance_metric_events`: `17,469` rows, `12 MB`
+  - `opportunity_registrations`: `97` rows, `296 kB`
+  - `customer_targets`: `82` rows, `144 kB`
+  - `teams_meetings`: `4` rows, `160 kB`
+  - `profiles`: `18` rows, `64 kB`
+  - `companies`: `89` rows, `32 kB`
+- Live 7-day production-origin telemetry from `performance_metric_events`:
+  - origin mix: `https://trustedbums.com` `17,438` samples, local `http://127.0.0.1:5173` `16`, unknown `2`
+  - top LCP-sampled routes: `/client/dashboard` `1023`, `/admin` `750`, `/bum/dashboard` `640`, `/` `446`, `/login` `156`, `/client/targets` `101`
+  - route LCP p75: `/client/dashboard` `2330 ms`, `/bum/dashboard` `2108 ms`, `/admin` `1959 ms`, `/client/targets` `1892 ms`, `/` `1023 ms`
+- Supabase performance advisors are callable in this run and still report broad `unindexed_foreign_keys` plus `multiple_permissive_policies`, including on `profiles`, `opportunity_registrations`, `reverse_opportunities`, `teams_meetings`, and `training_materials`.
 
 ## Watchlist
 
-- `public/downloads/trusted-bums-bum-welcome-line-animation.webm` is still a `1.53 MB` deploy asset, and source search only finds it referenced from `public/video-assets/trusted-bums-bum-welcome-line-animation.html`, not app routes. Keep it on deployment-weight watch until a real route serves it.
-- `sync-teams-attendees` and `sync-teams-transcripts` are routinely multi-second in current edge-function logs. They are not proven route blockers yet, but they should stay on the operational latency watchlist until query plans and route-level traces can link them to user-facing workflows.
-- `performance-beacon` execution time is not currently the main bottleneck, but today's sampled `159-1204 ms` writes warrant monitoring as telemetry volume grows.
-- Vite/build-tool upgrades should follow route splitting rather than replace it. Upgrading can improve build speed and support posture, but it will not by itself remove the monolithic app chunk or broad route data loading.
+- Supabase performance advisors still report many `unindexed_foreign_keys` and `multiple_permissive_policies` findings, but current local evidence does not show which of those materially affect user-facing routes yet.
+- `performance_metric_events` is growing quickly enough that raw-row admin reads should not remain the long-term monitoring shape.
+- `public/downloads/trusted-bums-bum-welcome-line-animation.webm` is large enough to watch if it becomes part of a high-traffic page path or autoplay experience.
 
 ## Current Standards And Time-Sensitive Notes
 
-- web.dev's current LCP article says good LCP is `2.5s` or less at the 75th percentile, segmented across mobile and desktop: https://web.dev/articles/lcp?hl=en.
-- web.dev's current INP guidance still frames responsiveness work around keeping the main thread available for interactions: https://web.dev/articles/optimize-inp.
-- React Router v6 future-flag guidance for `v7_startTransition` says `React.lazy` should be moved to module scope before opting in: https://reactrouter.com/6.30.4/upgrading/future.
-- Vite's supported versions page now lists regular patches for `vite@8.0`, important/security fixes for `vite@7.3`, security fixes for `vite@6.4`, and says older versions are unsupported: https://vite.dev/releases. This repo currently builds with installed `vite@5.4.21`.
-- Vite 8 requires Node `20.19+` or `22.12+`, ships with the Rolldown integration, and releases `@vitejs/plugin-react` v6; the Vite announcement notes v5 of the React plugin still works with Vite 8: https://vite.dev/blog/announcing-vite8.
-- `pnpm outdated` on 2026-06-04 shows performance-relevant packages behind current releases: `vite` `5.4.21` -> `8.0.16`, `@vitejs/plugin-react` `5.1.0` -> `6.0.2`, `react-router-dom` `6.30.3` -> `7.16.0`, `recharts` `2.15.4` -> `3.8.1`, `@supabase/supabase-js` `2.105.4` -> `2.107.0`, and `@tanstack/react-query` `5.100.10` -> `5.101.0`.
-- Supabase introduced a hosted-platform rate limit on recursive or nested Edge Function-to-Edge Function calls on 2026-03-06. That does not appear to explain the current telemetry path, but it is relevant if future sync or reporting work starts chaining functions: https://supabase.com/changelog/43644-edge-functions-rate-limits-on-recursive-nested-edge-functions-calls.
+- web.dev still defines good LCP as `2.5 s` or less at the 75th percentile and continues to recommend breaking route-level LCP into discovery, request, and render delays when pages are close to threshold: [web.dev LCP](https://web.dev/articles/lcp).
+- web.dev still frames INP improvement around cutting long main-thread tasks and expensive script evaluation, which supports reducing startup JS and client-side list shaping before micro-tuning paint work: [web.dev optimize long tasks](https://web.dev/articles/optimize-long-tasks), [web.dev script evaluation and long tasks](https://web.dev/articles/script-evaluation-and-long-tasks).
+- React Router `v6.30.x` still exposes the `v7_startTransition` future flag, and the docs continue to recommend enabling it ahead of v7 while keeping `React.lazy` declarations at module scope: [React Router future flags](https://reactrouter.com/en/v6/upgrading/future).
+- Vite 8 shipped in March 2026 with Rolldown as the default bundler and newer Node requirements. This repo is still on Vite 5.4.x, so any upgrade should be staged for compatibility and measured separately from route-splitting gains: [Vite 8 announcement](https://vite.dev/blog/announcing-vite8).
 
 ## Access Requests And Evidence Gaps
 
 Material missing access, production/staging telemetry, traces, query plans, Supabase advisors, authenticated routes, or other evidence needed for a stronger performance review. Mirror durable requests in `docs/consultant-access-needs.md`.
 
-- Current production/staging Lighthouse reports, browser network waterfalls, bundle-analyzer artifacts, and authenticated route performance traces are still unavailable.
-- Supabase performance advisors and logs are available, but read-only SQL, query plans, `pg_stat_statements`, slow-query history, and telemetry aggregate queries were not exposed in this session.
-- Local `.env.qa` passes the current QA contract but lacks `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, so source-local read-only telemetry aggregation could not run.
-- Deployed `QA_BASE_URL` still cannot be resolved from this runner. That blocked fresh deployed Lighthouse or authenticated browser performance checks and should remain an access/process blocker, not a product defect, until corroborated externally.
-- Current RUM depth is incomplete. The latest route-level p75 values in this backlog are historical from 2026-05-31, while today's live evidence is limited to Supabase project health, advisors, and edge-function logs.
-- No fresh authenticated performance walkthrough ran for admin, client admin, client finance, client member, or Bum roles in this run.
+- Current production/staging Lighthouse reports, browser network waterfalls, and bundle-analyzer artifacts are still unavailable.
+- Supabase read-only SQL, performance advisors, and logs were available in this run, but query plans, `pg_stat_statements`, and slow-query history were not.
+- No fresh authenticated route walkthrough ran for admin, client admin, client finance, client member, or Bum roles in this run, so route payload and interaction cost are still source-backed rather than browser-verified.
+- Runner-side DNS or deployed-browser issues still prevent treating this machine as a reliable source of deployed navigation timing proof.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-04
+- Date of run: 2026-06-06
 - Files, tests, routes, screenshots, measurements, Supabase MCP queries/advisors, internet sources, access sources, or commands reviewed:
-  - Reviewed `docs/consultant-team-rules.md`, `docs/consultant-access-needs.md`, `docs/codex-edit-log.md`, previous `docs/performance-engineering-backlog.md`, `package.json`, `vite.config.ts`, `scripts/verify-qa-env.mjs`, `.env.qa.example`, `src/App.tsx`, `src/components/PortalGlobalSearch.tsx`, `src/components/PerformanceMonitoring.tsx`, `src/components/reports/ReportsWorkspace.tsx`, `src/pages/admin/AdminReports.tsx`, `src/pages/admin/AdminPerformanceMetrics.tsx`, `src/pages/client/ClientDashboard.tsx`, `src/pages/client/ClientTargets.tsx`, `src/pages/client/ClientPayments.tsx`, `src/pages/client/ClientReports.tsx`, `src/pages/bum/BumReports.tsx`, and relevant helpers in `src/lib/portalApi.ts`.
-  - Reviewed recent changes with `git log --since='2026-05-31' --name-only --pretty=format:'COMMIT %h %ad %s' --date=short`.
-  - Inspected `dist/assets` output and largest `public/` assets.
-  - Ran `pnpm run build`, `pnpm run lint`, `pnpm run test`, `set -a; source .env.qa; set +a; pnpm run qa:env`, `pnpm outdated vite @vitejs/plugin-react react-router-dom @tanstack/react-query recharts @supabase/supabase-js web-vitals --format json`, targeted `rg`, `sed`, `find`, `stat`, `curl`, and `dig`.
-  - Attempted a local read-only Supabase telemetry aggregate after sourcing `.env.qa`; it could not run because `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` were not exported in that QA env contract.
-  - Queried Supabase MCP project metadata, performance advisors, edge-function logs, and Postgres logs for project `vaoqvtxqvbptyxddpoju`.
-  - Reviewed current guidance from web.dev LCP, web.dev INP, React Router v6 future flags, Vite supported releases, Vite 8 announcement, and Supabase changelog.
+  - Reviewed `docs/consultant-team-rules.md`, `docs/consultant-access-needs.md`, previous `docs/performance-engineering-backlog.md`, `package.json`, `vite.config.ts`, `src/App.tsx`, `src/main.tsx`, `src/components/PerformanceMonitoring.tsx`, `src/components/PortalGlobalSearch.tsx`, `src/components/reports/ReportsWorkspace.tsx`, `src/pages/admin/AdminReports.tsx`, `src/pages/admin/AdminPerformanceMetrics.tsx`, `src/pages/client/ClientDashboard.tsx`, `src/pages/client/ClientReports.tsx`, `src/pages/client/ClientTargets.tsx`, `src/pages/client/ClientExports.tsx`, `src/pages/bum/BumDashboard.tsx`, `src/pages/bum/BumReports.tsx`, and `src/lib/portalApi.ts`.
+  - Reviewed recent changes with `git log --since='2026-06-05 00:00' --name-only`; no matching app/doc changes were returned for the scoped paths.
+  - Ran `pnpm run build`, `pnpm run lint`, `pnpm run test`, `find dist/assets`, `find public`, targeted `rg`, and targeted `sed`.
+  - Queried Supabase performance advisors, Postgres logs, table-size aggregates, telemetry origin/sample aggregates, and route-level 7-day LCP p75 aggregates for project `vaoqvtxqvbptyxddpoju`.
+  - Reviewed current guidance from web.dev LCP, web.dev long-task guidance, React Router future flags, and the Vite 8 announcement.
 - Checks that could not run and why:
-  - No Lighthouse artifact set, bundle-analyzer report, browser network waterfall, or deployed authenticated performance walkthrough was available.
-  - Deployed route checks could not run because `trustedbums.com` DNS resolution timed out from this runner.
-  - No live query plans, `pg_stat_statements`, slow-query history, or refreshed route-level RUM SQL aggregates were exposed by the available Supabase tool surface.
+  - No Lighthouse artifact set, bundle-analyzer report, or authenticated browser waterfall was available in-session.
+  - No query plans or `pg_stat_statements` surface was exposed by the available Supabase tool set.

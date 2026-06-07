@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="628" viewBox="0 0 1200 628" role="img" aria-labelledby="title desc">
+  <title>Trusted Bums executive proof room ad plate</title>
+  <desc>Text-free B2B illustration with a protected account brief, connector path, and buyer review board.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#08111f"/>
+      <stop offset="100%" stop-color="#13223a"/>
+    </linearGradient>
+    <linearGradient id="warmGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff8b2b" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#f15a16" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="tealGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#178b83" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#178b83" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#020611" flood-opacity="0.24"/>
+    </filter>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#020611" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="628" fill="#f6f0e7"/>
+  <rect y="138" width="1200" height="360" rx="30" fill="url(#bg)"/>
+  <circle cx="198" cy="236" r="116" fill="#f6f0e7" opacity="0.06"/>
+  <circle cx="1018" cy="200" r="88" fill="#ff8b2b" opacity="0.12"/>
+  <ellipse cx="1018" cy="526" rx="160" ry="110" fill="#178b83" opacity="0.08"/>
+  <rect x="76" y="180" width="420" height="268" rx="38" fill="#202a3b" opacity="0.92"/>
+  <rect x="118" y="214" width="252" height="34" rx="17" fill="#4a5262" opacity="0.8"/>
+  <rect x="118" y="286" width="308" height="28" rx="14" fill="#3c4455"/>
+  <rect x="118" y="354" width="276" height="28" rx="14" fill="#3c4455"/>
+  <rect x="118" y="236" width="334" height="156" rx="30" fill="none" stroke="#ffffff" stroke-opacity="0.05"/>
+  <circle cx="448" cy="300" r="16" fill="#db7a28"/>
+  <circle cx="412" cy="368" r="16" fill="#db7a28"/>
+  <circle cx="468" cy="424" r="18" fill="#db7a28"/>
+
+  <path d="M516 300 C 578 300, 548 472, 640 472 L 820 472" fill="none" stroke="#d9d6d1" stroke-width="20" stroke-linecap="round"/>
+  <path d="M516 300 C 578 300, 548 472, 640 472 L 820 472" fill="none" stroke="#ff741a" stroke-width="12" stroke-linecap="round"/>
+  <rect x="612" y="340" width="84" height="84" rx="28" fill="#fff2e4" stroke="#ffc38e" stroke-width="3" filter="url(#cardShadow)"/>
+  <circle cx="654" cy="382" r="16" fill="#08111f"/>
+  <path d="M639 420 L 669 420 L 660 398 L 648 398 Z" fill="#08111f"/>
+  <rect x="696" y="372" width="26" height="10" rx="5" fill="#178b83"/>
+
+  <g filter="url(#softShadow)">
+    <rect x="770" y="180" width="332" height="268" rx="42" fill="#fbf5eb"/>
+    <rect x="804" y="220" width="230" height="28" rx="14" fill="#efe5d7"/>
+    <rect x="806" y="298" width="126" height="126" rx="28" fill="#0a1424"/>
+    <circle cx="868" cy="352" r="34" fill="#fbf5eb"/>
+    <path d="M832 410 Q 868 334 904 410 Z" fill="#fbf5eb"/>
+    <rect x="952" y="296" width="108" height="144" rx="24" fill="#efe9df"/>
+    <rect x="974" y="324" width="64" height="16" rx="8" fill="#d7d0c7"/>
+    <rect x="974" y="358" width="64" height="16" rx="8" fill="#d7d0c7"/>
+    <rect x="974" y="392" width="52" height="16" rx="8" fill="#cedfd7"/>
+    <rect x="812" y="458" width="226" height="22" rx="11" fill="#eee5d9"/>
+  </g>
+
+  <rect x="1018" y="206" width="74" height="74" rx="37" fill="#ff6c16" filter="url(#cardShadow)"/>
+  <rect x="1050" y="222" width="10" height="42" rx="5" fill="#fff7ef"/>
+  <rect x="1034" y="238" width="42" height="10" rx="5" fill="#fff7ef"/>
+
+  <rect x="0" y="498" width="1200" height="130" fill="#f6f0e7"/>
+  <path d="M0 492 C 118 466, 220 470, 332 492 S 560 526, 688 496 S 932 456, 1200 492 L 1200 628 L 0 628 Z" fill="#0d1829"/>
+  <path d="M0 506 C 144 540, 260 542, 376 518 S 620 480, 758 522 S 972 546, 1200 514" fill="none" stroke="#15324c" stroke-width="8" opacity="0.55"/>
+</svg>

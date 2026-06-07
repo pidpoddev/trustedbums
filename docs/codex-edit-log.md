@@ -41,6 +41,36 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Latest Agent Recheck Requests
 
+### 2026-06-06 - Recheck data analytics backlog refresh
+
+- Trigger: Daily data analytics engineer automation run.
+- Implementation branch: Current local workspace with pre-existing unrelated dirty documentation files.
+- What changed: Rewrote `docs/data-analytics-backlog.md` for 2026-06-06 to keep only current evidence-backed analytics recommendations. Preserved the active finance-date, client-finance export scope, admin dashboard RPC exposure, access-request and terms-deferral reporting, and admin email analytics items; downgraded telemetry and terms-acceptance access concerns to watchlist items; and updated Agent Inputs to reflect that this run had live Supabase project metadata, edge-function inventory, and logs, but not direct SQL or advisor access.
+- Main surfaces changed: `docs/data-analytics-backlog.md`.
+- Checks run: `set -a; [ -f .env.qa ] && source .env.qa; set +a; pnpm run qa:env`; `pnpm run lint`; `pnpm run build`; `pnpm run test -- src/test/paymentCommission.test.ts src/test/routeGuards.test.tsx src/test/termsContractRules.test.ts src/test/opportunityModel.test.ts`; Supabase MCP `list_projects`, `get_project`, `list_edge_functions`, `get_logs` for `postgres` and `edge-function`; current official web review for Supabase API/RLS/security-definer guidance, web.dev SPA vitals guidance, Apple Mail Privacy Protection, and ICO storage-and-access guidance.
+- Recheck agents: Data And Analytics Engineer, Security Engineer, QA/Test Engineer, Product Ops Workflow Analyst, Performance Engineer, Lead Developer.
+- Next run should verify: whether finance report workspaces now use business-effective dates, whether `/client/exports` is split or narrowed for `CLIENT_FINANCE`, whether `admin_dashboard_summary()` execute scope is tightened, whether admin reporting now includes historical access-request and deferral outcomes, and whether admin email analytics moved beyond fixed 50-row reads.
+
+### 2026-06-06 - Recheck UX backlog against current finance and intake evidence
+
+- Trigger: Daily UX consultant automation run.
+- Implementation branch: Current local workspace with pre-existing unrelated dirty documentation files.
+- What changed: Refreshed `docs/ux-optimization-backlog.md` for 2026-06-06, kept only current evidence-backed UX recommendations, preserved the signup company-name loss, contact-form recovery, client access-recovery, finance search-routing, and admin-handoff findings, and downgraded the signup validation copy mismatch to QA drift instead of a live product UX issue.
+- Main surfaces changed: `docs/ux-optimization-backlog.md`.
+- Checks run: `git status --short`; `git log --since='10 days ago' --name-only --pretty=format:'COMMIT %h %ad %s' --date=short -- docs src tests`; `set -a; source .env.qa; set +a; pnpm run qa:env`; `pnpm run lint`; `gh run list --repo pidpoddev/trustedbums --limit 12`; `gh run view 26933527284 --repo pidpoddev/trustedbums --log-failed`; `curl -I -L --max-time 20 https://trustedbums.com`.
+- Recheck agents: UX Consultant, UI Consultant, QA/Test Engineer, Product Ops Workflow Analyst, Accessibility Specialist, Lead Developer.
+- Next run should verify: whether client-finance search now lands on `/client/payments`, whether the payment page keeps a single primary `Customer Payment Reports` heading, whether dashboard redirects now explain blocked routes and route agreement recovery correctly, whether the public signup flow preserves typed company names after email edits, and whether local DNS/browser reachability is restored on this runner.
+
+### 2026-06-05 - Recheck UX backlog refresh
+
+- Trigger: Daily UX consultant automation run.
+- Implementation branch: `codex/gtm-agent-stack-cleanup` with pre-existing unrelated dirty docs in the workspace.
+- What changed: Rewrote `docs/ux-optimization-backlog.md` to remove stale scaffolding and keep only current, evidence-backed UX priorities. Added a new deployed-evidence-backed client-finance search/navigation issue, kept the active signup/contact-form/client-recovery/admin-handoff findings, and updated the evidence/access sections to distinguish GitHub-hosted route proof from this runner's DNS-limited local browser checks.
+- Main surfaces changed: `docs/ux-optimization-backlog.md`.
+- Checks run: `set -a; source .env.qa; set +a; pnpm run qa:env`; `pnpm run lint`; `pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium --reporter=line`; `curl -I -L --max-time 20 https://trustedbums.com`; `gh run list --repo pidpoddev/trustedbums --workflow visual-ui-audit.yml --limit 3`; `gh run list --repo pidpoddev/trustedbums --workflow 'E2E Smoke' --limit 3`; `gh run view 26933527284 --repo pidpoddev/trustedbums --log-failed`.
+- Recheck agents: UX Consultant, UI Consultant, QA/Test Engineer, Product Ops Workflow Analyst, Accessibility Specialist, Lead Developer.
+- Next run should verify: whether client-finance search now prioritizes `/client/payments`, whether the payment page keeps a single primary heading, whether dashboard redirects now explain blocked routes and point terms recovery to agreement routes, and whether local runner DNS/browser reachability is restored or GitHub-hosted evidence remains the only live route source.
+
 ### 2026-06-04 - Recheck GTM agent stack first run
 
 - Trigger: Ryan asked to "Do a first run" of the Trusted Bums GTM agent stack.

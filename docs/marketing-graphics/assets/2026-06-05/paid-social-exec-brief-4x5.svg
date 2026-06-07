@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">Executive brief route illustration</title>
+  <desc id="desc">Portrait Trusted Bums ad plate with a clean account brief, one connector, and a guarded decision lane.</desc>
+  <defs>
+    <linearGradient id="paper" x1="120" y1="74" x2="944" y2="1236" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8ef"/>
+      <stop offset="1" stop-color="#f3ede4"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="304" y1="140" x2="940" y2="1200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08111f"/>
+      <stop offset="1" stop-color="#17243a"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="378" y1="368" x2="748" y2="968" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff8a1f"/>
+      <stop offset="1" stop-color="#f15a16"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="20" flood-color="#08111f" flood-opacity=".18"/>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1350" fill="url(#paper)"/>
+  <circle cx="902" cy="198" r="110" fill="#ff7a1a" opacity=".12"/>
+  <circle cx="174" cy="1168" r="130" fill="#178b83" opacity=".1"/>
+  <circle cx="228" cy="176" r="92" fill="#08111f" opacity=".04"/>
+
+  <rect x="88" y="116" width="452" height="1118" rx="46" fill="#fffdf8" stroke="#eadbc9" stroke-width="4" filter="url(#shadow)"/>
+  <rect x="132" y="172" width="250" height="68" rx="24" fill="#08111f" opacity=".08"/>
+  <rect x="132" y="286" width="360" height="44" rx="22" fill="#08111f" opacity=".07"/>
+  <rect x="132" y="356" width="304" height="44" rx="22" fill="#08111f" opacity=".07"/>
+  <rect x="132" y="426" width="334" height="44" rx="22" fill="#08111f" opacity=".07"/>
+  <circle cx="464" cy="308" r="14" fill="#ff7a1a" opacity=".76"/>
+  <circle cx="408" cy="378" r="14" fill="#ff7a1a" opacity=".76"/>
+  <circle cx="438" cy="448" r="14" fill="#ff7a1a" opacity=".76"/>
+
+  <rect x="132" y="566" width="216" height="302" rx="28" fill="#08111f"/>
+  <circle cx="240" cy="652" r="46" fill="#fff8ef"/>
+  <path d="M188 744c14-45 31-68 52-68s38 23 52 68" fill="#fff8ef"/>
+  <rect x="166" y="804" width="148" height="22" rx="11" fill="#ff7a1a"/>
+
+  <rect x="132" y="922" width="316" height="170" rx="30" fill="#f3ede4"/>
+  <rect x="166" y="962" width="248" height="22" rx="11" fill="#08111f" opacity=".13"/>
+  <rect x="166" y="1002" width="194" height="22" rx="11" fill="#08111f" opacity=".1"/>
+  <rect x="166" y="1042" width="142" height="22" rx="11" fill="#178b83" opacity=".18"/>
+
+  <path d="M540 438c42 0 74 32 74 74v232c0 62 48 110 110 110h60" fill="none" stroke="#08111f" stroke-width="18" stroke-linecap="round" opacity=".12"/>
+  <path d="M540 456c34 0 56 22 56 56v248c0 50 38 88 88 88h128" fill="none" stroke="url(#orange)" stroke-width="12" stroke-linecap="round"/>
+
+  <rect x="672" y="242" width="274" height="274" rx="42" fill="url(#ink)" filter="url(#shadow)"/>
+  <circle cx="810" cy="340" r="58" fill="#fff8ef"/>
+  <path d="M746 454c18-56 39-84 64-84s46 28 64 84" fill="#fff8ef"/>
+  <path d="M838 208v54" stroke="#08111f" stroke-width="14" stroke-linecap="round" opacity=".12"/>
+  <circle cx="838" cy="184" r="48" fill="url(#orange)"/>
+  <path d="M818 184h40" stroke="#fff8ef" stroke-width="10" stroke-linecap="round"/>
+  <path d="M838 164v40" stroke="#fff8ef" stroke-width="10" stroke-linecap="round"/>
+
+  <rect x="690" y="618" width="298" height="430" rx="44" fill="#08111f"/>
+  <rect x="730" y="676" width="164" height="164" rx="30" fill="#fff8ef"/>
+  <path d="M768 758h90" stroke="#08111f" stroke-width="14" stroke-linecap="round"/>
+  <path d="M768 792h128" stroke="#08111f" stroke-width="14" stroke-linecap="round" opacity=".72"/>
+  <path d="M768 826h74" stroke="#178b83" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="922" cy="760" r="24" fill="#ff7a1a"/>
+  <rect x="730" y="892" width="218" height="26" rx="13" fill="#fff8ef" opacity=".18"/>
+  <rect x="730" y="942" width="190" height="26" rx="13" fill="#fff8ef" opacity=".14"/>
+  <rect x="730" y="992" width="146" height="26" rx="13" fill="#178b83" opacity=".3"/>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Serious intro workflow illustration</title>
+  <desc id="desc">Wide Trusted Bums support illustration showing one serious intro route from account brief to protected buyer conversation.</desc>
+  <defs>
+    <linearGradient id="bg" x1="102" y1="82" x2="1504" y2="842" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8ef"/>
+      <stop offset="1" stop-color="#f1f7f4"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="654" y1="124" x2="1364" y2="780" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08111f"/>
+      <stop offset="1" stop-color="#17243a"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="436" y1="220" x2="972" y2="562" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff8a1f"/>
+      <stop offset="1" stop-color="#f15a16"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#08111f" flood-opacity=".18"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1360" cy="136" r="98" fill="#ff7a1a" opacity=".12"/>
+  <circle cx="1422" cy="702" r="138" fill="#178b83" opacity=".1"/>
+  <circle cx="222" cy="758" r="110" fill="#08111f" opacity=".05"/>
+  <path d="M0 770c240-70 434-54 626-6s368 58 536 18 292-54 438-18v136H0Z" fill="#fff8ef" opacity=".4"/>
+
+  <rect x="88" y="96" width="558" height="704" rx="46" fill="#fffdf9" stroke="#eadbc9" stroke-width="4" filter="url(#shadow)"/>
+  <rect x="146" y="152" width="318" height="74" rx="26" fill="#08111f" opacity=".08"/>
+  <rect x="146" y="278" width="420" height="34" rx="17" fill="#08111f" opacity=".07"/>
+  <rect x="146" y="334" width="382" height="34" rx="17" fill="#08111f" opacity=".07"/>
+  <rect x="146" y="390" width="344" height="34" rx="17" fill="#08111f" opacity=".07"/>
+  <circle cx="544" cy="295" r="12" fill="#ff7a1a" opacity=".78"/>
+  <circle cx="498" cy="351" r="12" fill="#ff7a1a" opacity=".78"/>
+  <circle cx="454" cy="407" r="12" fill="#ff7a1a" opacity=".78"/>
+
+  <rect x="146" y="500" width="230" height="212" rx="30" fill="#08111f"/>
+  <circle cx="260" cy="574" r="42" fill="#fff8ef"/>
+  <path d="M214 658c12-38 28-58 46-58s34 20 46 58" fill="#fff8ef"/>
+  <rect x="182" y="672" width="156" height="20" rx="10" fill="#ff7a1a"/>
+
+  <rect x="410" y="500" width="190" height="212" rx="30" fill="#f3ede4"/>
+  <rect x="444" y="548" width="122" height="20" rx="10" fill="#08111f" opacity=".14"/>
+  <rect x="444" y="588" width="98" height="20" rx="10" fill="#08111f" opacity=".11"/>
+  <rect x="444" y="628" width="76" height="20" rx="10" fill="#178b83" opacity=".2"/>
+  <circle cx="548" cy="676" r="18" fill="#ff7a1a" opacity=".82"/>
+
+  <path d="M662 300c42 0 74 32 74 74v78c0 52 36 88 88 88h72" fill="none" stroke="#08111f" stroke-width="22" stroke-linecap="round" opacity=".11"/>
+  <path d="M678 318c32 0 54 22 54 54v92c0 40 28 68 68 68h126" fill="none" stroke="url(#orange)" stroke-width="14" stroke-linecap="round"/>
+
+  <rect x="912" y="128" width="600" height="644" rx="48" fill="url(#ink)" filter="url(#shadow)"/>
+  <rect x="976" y="196" width="222" height="416" rx="34" fill="#fff8ef"/>
+  <rect x="1016" y="244" width="144" height="24" rx="12" fill="#08111f" opacity=".14"/>
+  <rect x="1016" y="286" width="108" height="24" rx="12" fill="#08111f" opacity=".1"/>
+  <rect x="1016" y="328" width="86" height="24" rx="12" fill="#178b83" opacity=".18"/>
+  <circle cx="1090" cy="442" r="54" fill="#08111f"/>
+  <path d="M1032 548c16-52 35-78 58-78s42 26 58 78" fill="#08111f"/>
+
+  <rect x="1244" y="220" width="192" height="330" rx="36" fill="#08111f" stroke="#fff8ef" stroke-opacity=".14" stroke-width="3"/>
+  <circle cx="1340" cy="314" r="62" fill="#fff8ef"/>
+  <path d="M1274 432c18-56 40-84 66-84s48 28 66 84" fill="#fff8ef"/>
+  <circle cx="1436" cy="246" r="42" fill="#ff7a1a"/>
+  <path d="M1418 246h36" stroke="#fff8ef" stroke-width="10" stroke-linecap="round"/>
+  <path d="M1436 228v36" stroke="#fff8ef" stroke-width="10" stroke-linecap="round"/>
+
+  <rect x="1000" y="654" width="418" height="30" rx="15" fill="#fff8ef" opacity=".16"/>
+  <rect x="1000" y="708" width="310" height="30" rx="15" fill="#fff8ef" opacity=".12"/>
+  <rect x="1000" y="762" width="210" height="30" rx="15" fill="#178b83" opacity=".32"/>
+</svg>

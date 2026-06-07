@@ -1,203 +1,212 @@
 # Trusted Bums B2B Marketing Growth Backlog
 
-_Last updated: 2026-06-04 by Codex daily B2B growth marketer automation._
+_Last updated: 2026-06-06 by Codex daily B2B growth marketer automation._
 
 ## Executive Growth Thesis
 
-Trusted Bums should treat Client demand as the tighter marketplace constraint right now. The product already has meaningful Bum-facing workflow depth, profile completion, prospecting, claims, customer leads, and extension-assisted relationship capture, while the public-site acquisition path for Clients is still one broad homepage CTA plus a shared contact form. The safest path to more qualified liquidity is not broad paid scale. It is a selective Client-demand motion first: founder-led and referral-led outreach into funded companies with hard target-account problems, packaged with a proof-safe narrative and a clear “request intro strategy” conversion path. In parallel, Bum supply should grow through invite-only referrals from current trusted operators, not open-volume recruiting.
+Client demand is still the tighter liquidity constraint. Trusted Bums already has meaningfully deeper Bum-side product activation than Client-side acquisition: Bums can complete profiles, submit Client Prospects, review opportunities, request Claims, and build contact context in-product, while public acquisition for Clients is still one homepage plus one shared contact form and one signup-intent modal. The safest path to more qualified marketplace liquidity is to sharpen Client intake, proof, referral asks, and founder-led conversion before expanding scale channels. Bum growth should stay invite-only and referral-scored so supply quality grows with real buyer demand instead of outrunning it.
 
 ## North Star And Guardrails
 
-- Primary growth goal: Increase qualified marketplace liquidity by growing active Client companies with real target-account demand and approved Bums with credible relationship access.
-- Quality guardrail: Do not optimize for raw form fills, signups, or follower growth if approval quality, relationship credibility, or target-account seriousness drops.
-- Trust guardrail: Growth motions must make Trusted Bums feel like a serious, controlled B2B marketplace, not an affiliate scheme, appointment-setting shop, lead farm, or high-volume outbound engine.
-- Legal and claims guardrail: Do not publish customer logos, revenue outcomes, meeting guarantees, payout promises, partner claims, or case-study specifics without explicit approval.
-- Marketplace liquidity guardrail: Client-side growth should prioritize companies that can create repeated high-value opportunities for Bums; Bum-side growth should prioritize people with believable buyer access, not generic “networking” interest.
-- Channel constraints: Favor founder-led sales, referrals, LinkedIn thought leadership, sales-assisted nurture, and carefully permissioned lifecycle email before paid social or scaled outbound. Keep public email volume low until trust and reputation controls are stronger.
+- Primary growth goal: Increase qualified marketplace liquidity by increasing active Client companies with live target-account demand and activated approved Bums with credible relationship access.
+- Quality guardrail: Do not optimize for raw signups, email volume, ad clicks, or follower growth if target-account seriousness, approval quality, or approved-to-activated rates fall.
+- Trust guardrail: Trusted Bums must read as a controlled B2B marketplace, not a lead-gen shop, affiliate loop, passive-income pitch, or spray-and-pray outbound engine.
+- Legal and claims guardrail: No guaranteed meetings, guaranteed revenue, logo-dropping, partner claims, payout promises, or outcome claims without explicit approval.
+- Marketplace liquidity guardrail: More Clients only matter if they bring named-account demand; more Bums only matter if they bring believable relationship access and can operate within the workflow.
+- Channel constraints: Keep email, DMs, and referrals low-volume, manual, and high-intent until CRM, attribution, and deliverability evidence are available. No bought lists, scraped lists, or broad automated outreach.
 
 ## Active Growth Plays
 
-### P0 - Build a segmented Client demand path around hard-account access
+### P0 - Split Client demand from the mixed public contact path
 - Growth goal: Qualified Client acquisition.
-- Audience: Founder, VP Sales, CRO, or GTM leader at a funded startup or growth company with a live hard-account access problem.
-- Channel: Website, founder-led sales, referral follow-up, LinkedIn organic, sales collateral.
-- Evidence: The homepage currently routes Client demand to one broad CTA, `Request an intro strategy`, and one mixed contact form instead of a dedicated Client conversion path ([Index](src/pages/Index.tsx)). The operating model says the sharpest early customer is a funded startup that may not reach the next stage without major customer access ([operating model](docs/trusted-bums-operating-model.md)). Gartner reported on May 20, 2026 that 69% of B2B buyers still want sales reps to validate AI-generated insights, which supports a human, seller-led motion for high-stakes deals. LinkedIn’s 2026 B2B guidance also emphasizes that buyers increasingly trust people over logos and thought leadership over product sheets.
-- Message and offer: `Bring us the accounts your team cannot crack.` Offer a short intro-strategy session for companies with named target accounts, current deal stakes, and willingness to work inside a structured commission-aligned workflow.
-- Activation path: Click from founder post, referral note, or homepage into a Client-specific landing/contact surface; submit company, role, target accounts, and current access blocker; Admin qualifies seriousness and domain legitimacy; founder or GTM owner runs a strategy call; qualified accounts enter Client Prospect or company-creation workflow.
-- Metric: Primary success metric is qualified Client strategy requests that pass manual review. Quality metric is the share of requests with named target accounts, credible company domains, and a clear internal buyer owner.
-- Trust and brand risk: If this path sounds like guaranteed meetings or outsourced SDR help, it will reduce trust and attract the wrong leads.
-- Recommendation: Split the current broad public-site demand path into an explicit Client offer with tighter qualification copy, fields for hard-account context, and a visible expectation that Trusted Bums is selective. Coordinate with UX/UI and Content before implementation.
-- Acceptance criteria: A Client-specific CTA, page section, or landing surface exists; it asks for target-account context instead of generic interest; it clearly screens for serious companies; and Product Ops can name the post-submit handoff and qualification owner.
+- Audience: Founder, CRO, VP Sales, or GTM lead at a funded company with a live hard-account access problem.
+- Channel: Website, founder-led sales, referral follow-up, LinkedIn organic.
+- Evidence: The homepage still sends Client and Bum interest through one shared contact form with a generic interest selector, while signup still begins with a broad `Client Prospect` or `Bum Prospect` choice instead of a Client-specific qualification path ([`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/pages/Index.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/pages/Index.tsx), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/components/SignupIntentDialog.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/components/SignupIntentDialog.tsx)). The intake backend already supports manual review, statusing, escalation, and admin ownership, so the ops side can handle a higher-signal path if the front-end intake is improved ([`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/lib/contactApi.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/lib/contactApi.ts)).
+- Message and offer: `Bring us the accounts your team cannot crack.` Offer an intro-strategy request for companies with named accounts, real deal stakes, and willingness to work inside a selective process.
+- Activation path: Founder post, referral note, or homepage CTA -> Client-specific intake with role, account list, current blocker, and urgency -> manual seriousness review -> founder strategy call -> Client Prospect or company onboarding path.
+- Metric: Primary success metric is qualified Client strategy requests that pass manual review. Quality metric is the share with named target accounts, credible company identity, and a clear internal owner.
+- Trust and brand risk: If the page sounds like outsourced SDR or open-access lead gen, it will attract weak-fit demand and lower trust.
+- Recommendation: Create a distinct Client acquisition surface or routed intake branch with explicit disqualifiers, manual-review expectations, and an account-seriousness prompt. Coordinate with UX/UI, Content, Product Ops, and Trust before shipping.
+- Acceptance criteria: A distinct Client acquisition surface exists; it collects target-account and role context; it explains selectivity and review; and Product Ops can name the qualification owner and post-submit workflow.
 
-### P0 - Turn the Fortune 500-style proof point into a claim-safe sales spine
-- Growth goal: Proof and qualified Client acquisition.
-- Audience: Client buyer/admin, investor/operator referral source, Bum candidate evaluating seriousness.
-- Channel: Founder-led sales, referral emails, LinkedIn organic, one-pager, homepage module, sales calls.
-- Evidence: The operating model records an early proof story where Trusted Bums helped a startup reach a Fortune 500 opportunity with potential to become company-changing revenue, but the repo does not contain an approved case-study asset, claims policy, or permissioned proof pack ([operating model](docs/trusted-bums-operating-model.md)). Brand strategy says proof should emphasize hard accounts, warm routes, structured workflows, and outcome alignment without unsupported claims ([brand strategy](docs/brand-strategy.md)).
-- Message and offer: `One trusted route can change a company’s trajectory.` Offer a proof narrative that explains the hard-account problem, the trusted route, the structured workflow, and the commercial stakes without publishing unapproved logos or outcomes.
-- Activation path: Founder or marketer uses the proof spine in LinkedIn posts, investor/advisor asks, client one-pagers, and sales calls; high-intent prospects then move into the Client intro-strategy flow.
-- Metric: Primary success metric is proof-assisted strategy-call conversion rate. Quality metric is zero unapproved claims, logo leakage, or objection feedback about hype.
-- Trust and brand risk: Unapproved outcome claims, customer inference, or revenue-number overreach would create legal and credibility risk.
-- Recommendation: Build one approved proof spine with three channel variants: client acquisition, Bum recruiting, and referral-source ask. Pair it with a claims checklist owned by Legal/Finance or founder approval.
-- Acceptance criteria: One proof narrative exists in backlog-ready format; it defines what can be said publicly, privately, and not at all; and Sales/Content can reuse it consistently without improvising claims.
+### P0 - Build a claim-safe proof spine before scaling demand gen
+- Growth goal: Proof, qualified Client acquisition, referral conversion, and sales enablement.
+- Audience: Client buyers, investor or advisor referral sources, and high-quality Bum candidates evaluating marketplace seriousness.
+- Channel: Founder-led sales, referral asks, one-pagers, sales calls, LinkedIn organic, nurture follow-up.
+- Evidence: The operating model still supports a hard-account-access story, but there is still no approved proof library, case-study permission set, or public versus private claims checklist in repo evidence. `docs/brand-strategy.md` is still missing, so proof hierarchy and voice remain inferred rather than confirmed.
+- Message and offer: `One trusted route can change the odds on a company-defining account.` Explain the hard-account problem, controlled warm-intro workflow, and commercial seriousness without unsupported outcome claims.
+- Activation path: Founder, advisors, and operators reuse the same proof spine in posts, referral asks, one-pagers, and calls -> qualified prospect requests strategy conversation.
+- Metric: Primary success metric is strategy-call conversion among prospects who receive the proof narrative. Quality metric is zero unapproved claims, logo leakage, or hype-based objections.
+- Trust and brand risk: Overclaiming or implying unnamed customer outcomes would create immediate legal and credibility risk.
+- Recommendation: Produce one approval-ready proof spine with variants for Client acquisition, Bum recruiting, and investor or advisor referrals, plus a simple public/private/do-not-say checklist.
+- Acceptance criteria: One reusable proof narrative exists; it defines public versus private proof boundaries; and Content, founder, and sales users can apply it without improvising risky claims.
 
-### P1 - Launch an invite-only Bum recruiting referral motion
-- Growth goal: Qualified Bum acquisition.
-- Audience: Existing trusted operators, advisors, investors, senior sellers, former executives, and current Bums who know other credible relationship holders.
-- Channel: Founder-led referral asks, direct email, LinkedIn DMs, selective community outreach, lifecycle nurture.
-- Evidence: The Bum portal already emphasizes profile completeness, client prospecting, claims, customer leads, and payout visibility, which means Bum-side activation surfaces exist ([Bum dashboard](src/pages/bum/BumDashboard.tsx), [Bum profile](src/pages/bum/BumProfile.tsx)). The operating model says the ideal Bum is a senior credible operator with real trust capital, and even considers a future Managing Bum model for trusted supply expansion ([operating model](docs/trusted-bums-operating-model.md)).
-- Message and offer: `We are looking for a small number of credible operators who can open real doors.` Offer selective approval, structured workflow, and transparent economics, not passive income or generic referral hype.
-- Activation path: Trusted source makes intro or referral; candidate receives a short screening form or invite; Admin reviews relationship credibility, sector fit, conduct fit, and approval risk; approved candidate completes profile/training and submits first claim, intro path, or customer lead.
-- Metric: Primary success metric is approved Bum candidates per referral source. Quality metric is approved-to-activated Bum rate, where activation means profile completion plus first meaningful marketplace action.
-- Trust and brand risk: Open recruiting or “monetize your network” language would attract low-quality applicants and make the brand look affiliate-like.
-- Recommendation: Keep Bum recruiting closed-loop for now. Build a referral ask, screening rubric, and follow-up sequence that reinforce selectivity and conduct expectations before adding broader recruiting channels.
-- Acceptance criteria: Referral ask, screening questions, approval rubric, and onboarding handoff are documented; copy avoids passive-income framing; and Product Ops can process new Bum prospects without manual ambiguity.
+### P1 - Package investor and advisor referrals as a Client-demand motion
+- Growth goal: Qualified Client acquisition.
+- Audience: Investors, advisors, operators, and current marketplace insiders who know companies blocked on named-account access.
+- Channel: Referral-led, founder-led direct asks, email, LinkedIn DM.
+- Evidence: Trusted Bums is positioned as a high-trust marketplace for strategic access, which fits warm third-party referrals better than cold top-of-funnel scale. The current repo still lacks a referral ask pack, referral qualification rubric, or approved compensation and disclosure language, so the motion should stay tightly controlled and explicit ([`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/trusted-bums-operating-model.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/trusted-bums-operating-model.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/consultant-access-needs.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/consultant-access-needs.md)).
+- Message and offer: `Do you know a founder or GTM lead with one or two accounts that really matter and no credible way in?`
+- Activation path: Advisor or investor referral ask -> referred company intro -> Client strategy intake -> founder qualification -> company onboarding only if account seriousness is clear.
+- Metric: Primary success metric is qualified referred companies per referral source. Quality metric is referral-to-strategy-call rate and pass-through to approved Client demand.
+- Trust and brand risk: Public referral compensation or vague “send us anyone” language would feel promotional and undermine selectivity.
+- Recommendation: Build one short referral ask, one screening rubric, and one operator-safe follow-up script. Keep compensated-referral and disclosure language pending legal review.
+- Acceptance criteria: One referral ask pack exists; it names ideal company shape and disqualifiers; and any referral-compensation language is either legally approved or explicitly excluded from use.
 
-### P1 - Start founder-led LinkedIn thought leadership for hidden buyers and referral sources
+### P1 - Launch founder-led LinkedIn around hard-account access, not generic growth
 - Growth goal: Qualified Client acquisition and referral.
-- Audience: Founders, GTM leaders, investors, advisors, and operators who influence hard-account access decisions.
+- Audience: Founders, GTM leaders, investors, advisors, and operators who influence strategic-account access.
 - Channel: Founder LinkedIn organic.
-- Evidence: LinkedIn’s 2026 B2B guidance says people increasingly buy from people, not companies, and notes that nearly three in four decision-makers trust thought leadership more than product sheets; the same piece says 95% of hidden buyers become more open to outreach when thought leadership is strong. Gartner’s May 20, 2026 survey also indicates buyers still rely on humans to validate decisions, even in AI-heavy research journeys. Trusted Bums currently has strong homepage positioning but no visible repo-backed thought-leadership series or founder-message system.
-- Message and offer: Focus posts on three recurring themes: why cold gets ignored in hard accounts, why relationship credibility changes risk for buyers, and why structured warm introductions outperform stranger volume in high-stakes deals.
-- Activation path: Founder post -> profile visit / DM / referral reply -> Client strategy request or Bum referral conversation -> manual qualification.
-- Metric: Primary success metric is qualified inbound conversations sourced from founder posts. Quality metric is percentage of inbound that matches the defined ICPs instead of generic recruiter/affiliate noise.
-- Trust and brand risk: If the content becomes meme-first, growth-hack-heavy, or overclaims marketplace outcomes, it will undermine the serious B2B posture.
-- Recommendation: Create a 3-part founder post series and one proof-led comment-to-DM follow-up pattern. Keep the CTA light: invite the right accounts or the right operators, not everyone.
-- Acceptance criteria: Three founder post prompts exist with CTA rules, disqualifier notes, and follow-up workflow; Trust & Reputation confirms the motion does not depend on risky automated outreach.
+- Evidence: LinkedIn B2B Institute guidance still supports memory-building and buyer-committee education via the 95-5 rule and hidden-buyer-gap framing, while Gartner reported on May 20, 2026 that 69% of B2B buyers validate AI-generated insights with sales reps. Current marketing graphics now support a more executive-proof visual direction, but there is still no documented founder post sequence in repo evidence ([`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/marketing-graphics-campaign-backlog.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/marketing-graphics-campaign-backlog.md)).
+- Message and offer: Post around three themes: why cold fails in guarded accounts, why buyer trust changes response quality, and why one credible route beats more activity.
+- Activation path: Founder post -> profile visit, comment, DM, or referral reply -> Client intake or referral conversation -> manual qualification.
+- Metric: Primary success metric is qualified inbound conversations sourced from founder posts. Quality metric is the share that matches Client ICP or credible referral-source ICP.
+- Trust and brand risk: Meme-heavy tone or aggressive CTA language would make the brand feel unserious or spammy.
+- Recommendation: Draft a three-post founder sequence, one comment-to-DM follow-up, and rules for when to route to Client intake versus when to pause or disqualify.
+- Acceptance criteria: Three founder posts, one follow-up script, CTA rules, and disqualifier rules are documented; Trust confirms no risky automation is required; Graphics has one approved overlay treatment ready if used.
 
-### P1 - Add a sales-assisted nurture path for qualified Client Prospects
-- Growth goal: Marketplace activation.
-- Audience: Qualified Client Prospect not ready to sign immediately.
-- Channel: Email, one-pager, founder follow-up, sales collateral.
-- Evidence: The public flow can capture target accounts and message context today, but there is no documented nurture sequence, approved one-pager, or objection-handling asset in repo evidence. Buyers and Client Admins care about confidentiality, workflow visibility, and commission clarity according to the brand strategy. The current legal and trust backlogs also show that claims, metadata, and domain trust still require careful handling.
-- Message and offer: Move prospects through four questions: why hard accounts fail in cold channels, how Trusted Bums controls claims and access, what proof exists, and what the next operational step is.
-- Activation path: Qualified contact submission -> admin/founder review -> send one-pager and proof-safe follow-up -> schedule strategy call or keep in manual nurture.
-- Metric: Primary success metric is qualified contact-to-call conversion rate. Quality metric is objection resolution rate on trust, legality, and payout/commission clarity.
-- Trust and brand risk: Premature automation or broad nurture volume can harm sender reputation and create compliance risk.
-- Recommendation: Build one short Client nurture sequence and one one-pager before scaling any email motion. Keep sends low-volume, high-intent, and manual until CRM/deliverability instrumentation exists.
-- Acceptance criteria: A Client nurture sequence exists with explicit send triggers, copy themes, CTA, and stop conditions; Data/Analytics defines how source and progression will be tracked.
+### P1 - Keep Bum recruiting invite-only and referral-scored
+- Growth goal: Qualified Bum acquisition.
+- Audience: Existing Bums, trusted operators, former executives, investors, advisors, and senior sellers with credible buyer access.
+- Channel: Founder-led referral asks, direct email, LinkedIn DMs, selective operator communities.
+- Evidence: Bum-side product surfaces are materially deeper than Client-side acquisition surfaces today: the dashboard pushes profile completion, claims, customer leads, Client Prospects, and prospect activity, while the profile flow supports progressive completion and LinkedIn import ([`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/pages/bum/BumDashboard.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/pages/bum/BumDashboard.tsx), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/pages/bum/BumProfile.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/pages/bum/BumProfile.tsx)). That means the immediate supply risk is low-fit admissions, not missing activation mechanics.
+- Message and offer: `We are looking for a small number of credible operators who can open real doors.` Emphasize selectivity, conduct, structured workflow, and transparent economics.
+- Activation path: Referral or direct intro -> screening -> approval review -> profile completion -> first meaningful marketplace action such as claim, customer lead, or Client Prospect submission.
+- Metric: Primary success metric is approved Bum candidates per referral source. Quality metric is approved-to-activated rate by source.
+- Trust and brand risk: Open recruiting or “monetize your network” framing would attract weak-fit applicants and damage trust.
+- Recommendation: Keep Bum recruiting closed-loop. Build the referral ask, screening rubric, and activation handoff before any broader recruiting surface.
+- Acceptance criteria: A referral ask, screening rubric, and activation workflow are documented; passive-income framing is explicitly excluded; and Product Ops can process new Bum candidates consistently.
 
-### P2 - Prepare a tightly scoped LinkedIn paid test only after proof, landing, and tracking are ready
-- Growth goal: Qualified Client acquisition.
-- Audience: Lookalike GTM leaders and founders in best-fit segments.
-- Channel: LinkedIn paid.
-- Evidence: Marketing Graphics now has approved text-free background plates sized for LinkedIn and mobile placements ([graphics backlog](docs/marketing-graphics-campaign-backlog.md)). LinkedIn’s current ad guidance recommends short headlines, short descriptive copy, clear CTAs, and 4 to 5 ads per campaign, with horizontal creative for desktop and mobile plus 4:5 vertical for stronger mobile CTR. But current repo evidence still lacks ad-account performance, audience definitions, campaign budget rules, attribution, and approved landing-page segmentation.
-- Message and offer: Test one objection-led message: `Selective access beats more outreach.` Offer the same Client intro-strategy conversation, not a generic signup.
-- Activation path: Ad click -> Client-specific landing/contact surface -> manual qualification -> strategy call.
-- Metric: Primary success metric is qualified strategy requests per spend. Quality metric is percentage of submissions that pass manual review and move to founder conversation.
-- Trust and brand risk: Running paid before offer clarity and filtering are in place would buy low-quality lead volume and potentially stress the domain or contact workflow.
-- Recommendation: Keep LinkedIn paid in the queue, not live priority, until the Client path, proof spine, and source tracking are in place. If activated, use a small creative set and one audience hypothesis at a time.
-- Acceptance criteria: Paid does not launch until the segmented Client landing path, approved copy, source tracking, and manual review workflow are defined; test plan specifies budget cap, stop rule, and review owner.
+### P1 - Add a manual Client nurture path for qualified but not-yet-ready prospects
+- Growth goal: Marketplace activation and sales enablement.
+- Audience: Qualified Client Prospects who engage but do not book or convert immediately.
+- Channel: Manual email follow-up, one-pager, founder follow-up, sales collateral.
+- Evidence: The current public flow can capture contact data, but there is still no approved nurture sequence, one-pager, objection sheet, or proof asset bundle in repo evidence. Google’s sender guidance still reinforces low spam rates, authentication, and one-click unsubscribe obligations at bulk marketing scale, which supports manual, low-volume nurture until the stack is instrumented.
+- Message and offer: Answer four questions in order: why cold fails here, how Trusted Bums controls claims and access, what proof can be shared safely, and what the next operational step looks like.
+- Activation path: Qualified contact -> manual review -> one-pager plus short follow-up -> strategy call or paused nurture with explicit stop conditions.
+- Metric: Primary success metric is qualified contact-to-call conversion rate. Quality metric is objection-resolution rate without spam complaints or sender-risk signals.
+- Trust and brand risk: Premature automation could create domain and deliverability risk before suppression hygiene, reporting, and legal-safe proof are ready.
+- Recommendation: Build one short manual nurture sequence and one one-pager before any lifecycle scaling. Track source, objections, and disposition manually if no CRM workflow exists yet.
+- Acceptance criteria: The sequence has send triggers, CTA, stop conditions, and objection themes; Data/Analytics defines minimum tracking fields; and Trust confirms the send pattern stays low-risk.
 
 ## ICP And Offer Matrix
 
 | Segment | Triggers | Disqualifiers | Value proposition | Proof | First CTA | Follow-up path |
 | --- | --- | --- | --- | --- | --- | --- |
-| Seed-to-Series-A or growth-stage founder-led company | Named strategic accounts blocked in cold channels; urgent logo/revenue need; founder or GTM leader directly involved | No named target accounts; no budget owner; wants commodity lead volume; public-email ambiguity without proof | Warm routes into hard accounts with structured workflow and aligned economics | Anonymized Fortune 500-style narrative; hard-account positioning; workflow control | Request intro strategy | Manual qualification -> founder call -> Client Prospect or company-creation flow |
-| VP Sales / CRO at lean revenue team | Team can identify accounts but lacks trusted route; wants controlled intros, not outsourced SDR spam | Mature team only wants list volume or meetings quota | Access alignment for hard accounts, not more activity | Buyer-trust thesis; controlled claims and workflow | Request intro strategy | Strategy call -> target-account scoping -> Client onboarding |
-| Investor, advisor, or operator referral source | Portfolio company or peer has a hard-account access gap | Referrals with no company urgency or no warm context | Trusted Bums can help the right company crack a few critical doors | Proof spine + founder message | Refer a company or operator | Founder follow-up -> qualification |
-| Former executive / senior operator Bum candidate | Deep trust with specific buyers or sectors; willing to operate inside review and payout rules | Generic “networking” interest; unclear buyer access; passive-income motivation | Structured way to turn valuable trust capital into commercial outcomes | Portal workflow, profile depth, transparent payout tracking | Apply by referral / become a Bum Prospect | Screening -> approval -> profile/training -> first action |
-| Current Bum or advisor referring another Bum | Knows another credible operator with buyer access | Candidate lacks relevance or conduct fit | Selective marketplace expansion through trusted trees | Selective recruiting narrative | Refer a Bum | Screening -> approval or decline |
+| Founder-led Seed to Series A or growth-stage company | Named target accounts blocked in cold channels; founder or GTM leader directly involved; one account materially affects growth | Wants generic lead volume; no named accounts; no internal owner; public-email ambiguity with no proof | Trusted, selective access into hard accounts through structured warm-intro workflows | Claim-safe hard-account narrative; workflow control; seriousness screening | Request intro strategy | Manual review -> founder call -> Client Prospect or company onboarding |
+| VP Sales or CRO at a lean revenue team | Team knows targets but lacks a credible route in; prefers controlled introductions over meeting volume | Wants outsourced SDR volume; no account specificity; unclear deal stakes | More credible access motion for strategic accounts | Buyer-risk narrative plus controlled process | Request intro strategy | Strategy call -> account scoping -> agreement and first target submission |
+| Investor, advisor, or operator referral source | Knows a portfolio or peer company with a strategic-account blockage | Broad low-fit referral list; weak urgency; no warm context | Trusted Bums helps the right company crack a few critical doors | Proof spine plus founder ask | Refer a company | Founder follow-up -> qualification |
+| Former executive or senior operator Bum candidate | Deep buyer trust in specific sectors; willing to operate within review and payout rules | Generic networking interest; weak proof of access; passive-income framing | Structured way to turn trust capital into commercial outcomes | Selective recruiting narrative plus portal workflow depth | Refer or apply by invitation | Screening -> approval -> profile completion -> first action |
+| Current Bum or advisor referring another Bum | Knows a credible operator with real buyer access | Candidate lacks relevance, conduct fit, or responsiveness | Marketplace expansion through trusted referral trees | Selective recruiting narrative | Refer a Bum | Screening -> approve or decline |
 
 ## Funnel Map
 
 ### Bum funnel
 
-- Source: Founder network, current Bums, client referrals, advisor referrals, investor/operator referrals, selective LinkedIn outreach.
-- Conversion points: Referral received -> Bum Prospect submitted -> screening completed -> approved -> profile completed -> training completed -> first claim, intro path, customer lead, or client prospect submitted.
-- Activation definition: Approved Bum completes profile/training and takes one meaningful marketplace action.
-- Retention signals: Repeated claim activity, accepted work, client prospect submissions, transparent payout trust, profile freshness.
+- Source: Founder network, current Bums, client referrals, investor or advisor referrals, selective operator outreach.
+- Conversion points: Referral received -> Bum candidate submitted -> screening completed -> approved -> profile completed -> first claim, customer lead, or Client Prospect submission.
+- Activation definition: Approved Bum completes profile and takes one meaningful marketplace action.
+- Retention signals: Repeated claim activity, accepted work, customer-lead submissions, profile freshness, and payout trust.
 - Drop-off questions: Which referral sources produce approved Bums? Where do candidates stall: screening, legal, profile completion, or first action?
 
 ### Client funnel
 
-- Source: Founder network, investor/operator referrals, LinkedIn thought leadership, homepage CTA, selective paid only after readiness.
-- Conversion points: Visitor or referred prospect -> Client strategy request -> manual qualification -> founder strategy call -> Client Prospect / company setup -> Client Agreement accepted -> target accounts submitted -> first intro request or accepted claim.
-- Activation definition: Company is approved, agreement is accepted, and at least one target-account or intro workflow is live.
-- Retention signals: Additional target accounts, repeated intro requests, accepted claims, meetings, payment reports, and finance clarity.
-- Drop-off questions: How many site contacts are actual Client ICPs? Which trust objections block calls? How many qualified calls reach agreement and first target submission?
+- Source: Founder network, investor or advisor referrals, founder LinkedIn, homepage CTA, later paid only after readiness.
+- Conversion points: Visitor or referred prospect -> Client strategy request -> manual qualification -> founder strategy call -> Client Prospect or company setup -> Client Agreement accepted -> first target account submitted -> first intro request or accepted claim.
+- Activation definition: Company is approved, current agreement is accepted, and at least one target-account workflow is live.
+- Retention signals: Additional target accounts, repeated intro requests, accepted claims, payment-report activity, and finance clarity.
+- Drop-off questions: How many public inquiries are true Client ICPs? Which objections block calls? How many qualified calls reach agreement and first target-account submission?
 
 ## Experiment Queue
 
-1. Hypothesis: A Client-specific landing/contact path will increase qualified Client submissions and reduce mixed low-intent contacts.
-- Audience: Founder-led companies and GTM leaders with hard-account demand.
-- Channel: Website + founder/referral traffic.
-- Asset needs: New copy, segmented form, qualification fields, source tagging.
+1. Hypothesis: A dedicated Client intake will increase qualified strategy requests and reduce mixed low-intent submissions.
+- Audience: Founder-led companies and GTM leaders with named target-account demand.
+- Channel: Website and founder or referral traffic.
+- Asset needs: New Client copy, qualification fields, source tagging, ops handoff.
 - Measurement: Qualified submission rate and strategy-call rate.
 - Owner: Growth + UX/UI + Product Ops.
-- Stop/scale criteria: Scale only if qualified-rate improves without increasing trust-risk or ops burden.
+- Stop or scale criteria: Scale only if qualified rate rises without raising trust risk or manual-review burden.
 
-2. Hypothesis: A proof-safe founder post series will create more qualified inbound than generic brand posts.
-- Audience: Founders, GTM leaders, investors, advisors.
+2. Hypothesis: A claim-safe proof spine will improve Client call conversion more than generic positioning alone.
+- Audience: Qualified Client prospects and referral sources.
+- Channel: Founder follow-up, one-pager, sales calls.
+- Asset needs: Proof narrative, claims checklist, one-pager.
+- Measurement: Strategy-call booking rate and objection mix.
+- Owner: Founder + Content + Legal or Finance owner.
+- Stop or scale criteria: Stop if proof language creates confusion or claim risk; scale if it consistently reduces trust objections.
+
+3. Hypothesis: Founder posts focused on hard-account access will generate more qualified inbound than general brand posts.
+- Audience: Founders, revenue leaders, investors, advisors.
 - Channel: LinkedIn organic.
-- Asset needs: Three post drafts, proof spine, follow-up script.
+- Asset needs: Three posts, follow-up DM script, comment triage rules, one optional image treatment.
 - Measurement: Qualified inbound conversations per post.
-- Owner: Founder + Content.
-- Stop/scale criteria: Stop if inbound is mostly low-fit or affiliate-like; scale if posts generate repeat high-fit conversations.
+- Owner: Founder + Content + Graphics.
+- Stop or scale criteria: Stop if replies skew low-fit; scale if repeated high-fit conversations emerge.
 
-3. Hypothesis: Invite-only Bum referrals will produce a higher approved-to-activated rate than open recruiting.
-- Audience: Current trusted operators and networks.
+4. Hypothesis: Invite-only Bum referrals will produce better approved-to-activated quality than broader recruiting asks.
+- Audience: Current Bums, trusted operators, investor or advisor network.
 - Channel: Referral email, DM, direct ask.
 - Asset needs: Referral ask, screening rubric, onboarding notes.
 - Measurement: Approved Bum rate and activated Bum rate by source.
 - Owner: Growth + Product Ops.
-- Stop/scale criteria: Stop sources that produce low-fit volume; scale sources that consistently produce approved operators.
+- Stop or scale criteria: Stop sources that generate weak-fit volume; scale sources that consistently produce approved operators.
 
-4. Hypothesis: A one-pager plus short nurture sequence will improve qualified contact-to-call conversion for Client Prospects.
-- Audience: Qualified but not yet scheduled Client Prospects.
+5. Hypothesis: Manual nurture plus a one-pager will improve qualified contact-to-call conversion without creating sender risk.
+- Audience: Qualified Client Prospects who do not schedule immediately.
 - Channel: Manual email follow-up.
-- Asset needs: One-pager, 2-3 email steps, objection notes, proof-safe FAQ.
-- Measurement: Call-booking rate and objection mix.
-- Owner: Founder + Content + Sales enablement.
-- Stop/scale criteria: Scale if nurture reduces drop-off without increasing unsubscribe or spam risk.
+- Asset needs: One-pager, two to three email steps, objection FAQ, tracking sheet or CRM fields.
+- Measurement: Call-booking rate, objection-resolution rate, and spam-risk signals.
+- Owner: Founder + Content + Data/Analytics.
+- Stop or scale criteria: Scale only if conversion improves with no trust or deliverability downside.
 
-5. Hypothesis: A small LinkedIn paid test can produce qualified strategy requests once segmentation and manual review are in place.
-- Audience: Narrow founder/CRO segments in best-fit industries.
+6. Hypothesis: A narrow LinkedIn paid pilot can work only after segmentation, proof, routing, and shutdown rules are ready.
+- Audience: Narrow founder and revenue-leader segments in approved ICP slices.
 - Channel: LinkedIn paid.
-- Asset needs: 4-5 ads, landing path, source tracking, budget cap.
-- Measurement: Qualified strategy requests per spend.
-- Owner: Growth + Marketing Graphics + Data.
-- Stop/scale criteria: Stop if lead quality is weak or if trust/ops risk appears; scale only on manual-quality proof.
+- Asset needs: Audience definitions, budget cap, approved creative, Client-specific landing, source tracking.
+- Measurement: Qualified strategy requests per spend and accepted-founder-conversation rate.
+- Owner: Growth + Graphics + Data/Analytics + Trust.
+- Stop or scale criteria: Do not launch until intake, proof, tracking, and manual review are in place; stop immediately if low-fit volume or trust risk rises.
 
 ## Sales And Recruiting Enablement
 
-- Client one-pager needed: hard-account problem, how trusted routes work, how claims/workflow stay controlled, what a Client does first, what Trusted Bums is not.
-- Bum recruiting one-pager needed: who should apply, why selectivity matters, what conduct and credibility are expected, what activation looks like, how payouts are governed.
-- Founder talk tracks needed: one for Client demand, one for Bum recruiting, one for investor/advisor referrals.
-- Objection handling needed: `Is this just lead gen?`, `How do you control claims?`, `How selective are Bums?`, `How are commissions/payouts governed?`, `What proof can you share?`
-- Referral asks needed: one short ask for investors/advisors to refer companies, and one short ask for trusted operators to refer Bum candidates.
-- Legal/finance review needed: public proof narrative, commission language, payout language, and any claim involving customer outcomes, meetings, or revenue.
+- Client one-pager needed: hard-account problem, how trusted routes work, what selectivity means, workflow controls, and what Trusted Bums is not.
+- Bum recruiting one-pager needed: who should be referred, expected conduct, why selectivity matters, and what activation looks like.
+- Founder talk tracks needed: one for Client demand, one for investor or advisor referrals, and one for Bum recruiting.
+- Objection handling needed: `Is this just lead gen?`, `How do you control claims and access?`, `How selective are Bums?`, `What proof can you actually share?`, and `How are commissions and payouts governed?`
+- Referral asks needed: one investor or advisor ask for Client referrals and one operator-network ask for Bum referrals.
+- Legal and finance review needed: proof language, commission language, payout language, referral-compensation disclosure rules, and any outcome-adjacent claim.
 
 ## Measurement Plan
 
 - North-star metric: Active qualified liquidity = active Client companies with live target-account demand plus activated approved Bums with current credible access.
-- Input metrics: Qualified Client strategy requests, qualified Bum referrals, approved Bum candidates, Client strategy calls, Client Agreements accepted, first target accounts submitted, first claims or intro requests submitted.
-- Quality metrics: Qualified-to-approved rate by source, approved-to-activated Bum rate, strategy-request-to-call rate, target-account seriousness rate, domain-verified company rate, spam/low-fit submission rate.
-- Source tracking: At minimum capture source, campaign, referring person, segment, and manual qualification outcome for every Client Prospect and Bum Prospect.
-- Attribution limits: Current session has no CRM or analytics evidence, so attribution should begin with simple source-of-truth logging before multi-touch reporting.
-- Reporting needs: Weekly marketplace-liquidity report with Client demand, Bum supply, activation, and source quality.
-- Data gaps: Missing CRM pipeline data, campaign performance, web analytics, LinkedIn metrics, email performance, and interview evidence limit prioritization confidence.
+- Input metrics: Qualified Client strategy requests, qualified referred companies, qualified Bum referrals, approved Bum candidates, founder strategy calls, Client Agreements accepted, first target accounts submitted, and first claims or intro requests submitted.
+- Quality metrics: Qualified-to-approved rate by source, approved-to-activated Bum rate, strategy-request-to-call rate, target-account seriousness rate, verified-company-domain rate, and spam or low-fit submission rate.
+- Source tracking: Capture source, campaign, referring person, segment, manual qualification outcome, objection category, and next-step disposition for every Client Prospect and Bum candidate.
+- Attribution limits: Current session still has no CRM or analytics evidence, so measurement should begin with simple source-of-truth logging before any multi-touch model.
+- Reporting needs: Weekly marketplace-liquidity review covering Client demand, Bum supply, activation, source quality, and trust-risk signals.
+- Data gaps: Missing CRM pipeline data, website analytics, campaign analytics, LinkedIn analytics, email performance, interview evidence, approved proof boundaries, and budget constraints materially limit prioritization confidence.
 
 ## Current Standards And Time-Sensitive Notes
 
-- Google’s current sender guidance still requires authenticated domains, low spam rates, DMARC alignment for direct email, and one-click unsubscribe for marketing/subscribed mail at bulk volume. This matters because Trusted Bums should keep nurture and referral email low-volume and high-intent until sender-reputation controls are stronger. Sources: [Google Email sender guidelines](https://support.google.com/a/answer/81126?hl=en), [Google Email sender guidelines FAQ](https://support.google.com/a/answer/14229414?hl=en).
-- LinkedIn’s current ad guidance still favors concise copy, clear CTA, larger visuals, and 4 to 5 ads per campaign; its current single-image specs recommend horizontal creative for desktop/mobile and 4:5 vertical for stronger mobile CTR. This supports a tightly scoped, creative-tested LinkedIn motion rather than one-off ads. Sources: [LinkedIn Sponsored Content tips](https://business.linkedin.com/advertise/ads/best-practices/sponsored-content-tips), [LinkedIn single image ad specs](https://business.linkedin.com/advertise/ads/sponsored-content/single-image-ads-specs?src=bl-po).
-- LinkedIn’s 2026 B2B thought-leadership guidance says buyers increasingly trust people over companies; it cites that nearly three in four decision-makers trust thought leadership more than product sheets and that 95% of hidden buyers become more open to outreach when thought leadership is strong. This supports founder-led and operator-led organic distribution for Trusted Bums. Source: [LinkedIn 2026 B2B marketing insights](https://www.linkedin.com/business/marketing/blog/trends-tips/b2b-marketing-insights-creators-thought-leadership).
-- Gartner reported on May 20, 2026 that 69% of B2B buyers still want sales reps to validate AI-generated insights and that buyers use an average of seven information sources. This supports sales-assisted validation for high-stakes Client demand instead of pure self-serve acquisition. Source: [Gartner press release](https://www.gartner.com/en/newsroom/press-releases/2026-05-20-gartner-survey-finds-sixty-nine-percent-of-b-two-b-buyers-turn-to-sales-reps-to-validate-ai-generated-insights).
-- The ICO updated its electronic-mail direct-marketing guidance on April 28, 2026. For Trusted Bums, the practical implication is that list buying, public-contact-detail use, and nurture-email scope should stay tightly permissioned and documented, especially if the business targets UK contacts. Source: [ICO guidance on direct marketing using electronic mail](https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communications/guidance-on-direct-marketing-using-electronic-mail/?search=pixel).
-- FTC endorsement guidance still requires clear disclosure logic around affiliate or paid-link relationships. Trusted Bums should avoid ambiguous referral-fee language and make any compensated referral relationship legible if public-facing referral content ever ships. Source: [FTC Endorsement Guides FAQ](https://www.ftc.gov/business-guidance/resources/ftcs-endorsement-guides-what-people-are-asking).
+- Google’s sender guidance still requires authenticated domains, accurate sender identity, low spam rates, and one-click unsubscribe for marketing or subscribed mail at bulk volume. Trusted Bums should keep nurture and referral email low-volume and high-intent until sender controls and instrumentation are stronger. Sources: [Google Email sender guidelines](https://support.google.com/mail/answer/81126?hl=en), [Google Email sender guidelines FAQ](https://support.google.com/a/answer/14229414?hl=en).
+- LinkedIn still recommends concise ad copy, clear CTA, and multiple creative variants per campaign, while current single-image guidance supports landscape and square broadly and vertical selectively for mobile-heavy placements. That supports small, tested paid experiments later, not broad early spend. Sources: [LinkedIn Sponsored Content tips](https://business.linkedin.com/marketing-solutions/best-practices/ad-tips/sponsored-content-tips), [LinkedIn single image ad specs](https://business.linkedin.com/advertise/ads/sponsored-content/single-image-ads-specs).
+- LinkedIn B2B Institute guidance on the 95-5 rule and the hidden-buyer gap still supports founder-led thought leadership and buyer-committee education rather than only bottom-funnel capture. Sources: [LinkedIn 95-5 rule](https://business.linkedin.com/marketing-solutions/b2b-institute/b2b-research/trends/95-5-rule), [LinkedIn hidden buyer gap](https://business.linkedin.com/marketing-solutions/b2b-institute/b2b-research/trends/the-hidden-buyer-gap).
+- Gartner reported on May 20, 2026 that 69% of B2B buyers prefer to validate AI-generated insights with sales reps. Trusted Bums should therefore keep a human validation step in high-stakes Client acquisition instead of over-indexing on self-serve conversion. Source: [Gartner press release](https://www.gartner.com/en/newsroom/press-releases/2026-05-20-gartner-survey-finds-sixty-nine-percent-of-b-two-b-buyers-turn-to-sales-reps-to-validate-ai-generated-insights).
+- The ICO updated its electronic-mail direct-marketing guidance on April 28, 2026. If Trusted Bums targets UK contacts, permission basis, suppression hygiene, and list-source discipline matter even more; bought lists and loosely permissioned nurture should stay out of scope. Source: [ICO guidance on direct marketing using electronic mail](https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communications/guidance-on-direct-marketing-using-electronic-mail/).
+- FTC endorsement guidance still requires clear disclosure of material connections. Trusted Bums should keep any compensated referral or advisor endorsement language explicit if public referral content ever ships. Source: [FTC Endorsement Guides FAQ](https://www.ftc.gov/business-guidance/resources/ftcs-endorsement-guides-what-people-are-asking).
 
 ## Access Requests And Evidence Gaps
 
-- CRM and pipeline visibility for Client Prospects and Bum Prospects is still missing: source, stage, qualification status, disqualification reasons, owner, and conversion timing.
+- `docs/brand-strategy.md` is still missing, so positioning, proof hierarchy, and voice decisions remain inferred rather than confirmed from a dedicated source-of-truth file.
+- CRM and pipeline visibility for Client Prospects and Bum candidates is still missing: source, owner, stage, qualification status, disqualification reason, and conversion timing.
 - Website analytics, source tracking, LinkedIn organic analytics, LinkedIn paid performance, email performance, and referral-source tracking are still missing.
-- No approved case-study permissions, proof-claim boundaries, founder scripts, sales collateral, objection notes, or legal-safe commission/payout language were available in this run.
-- No customer interviews, Bum interviews, call notes, or budget constraints were available in this run.
-- Mirror durable access needs in [consultant access needs](docs/consultant-access-needs.md), especially the GTM evidence request added this run.
+- No approved case-study permissions, proof-claim boundaries, founder scripts, sales collateral, objection notes, or legal-safe commission and payout language were available in this run.
+- No customer interviews, Bum interviews, call notes, or channel budget constraints were available in this run.
+- Mirror durable access needs in [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/consultant-access-needs.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/consultant-access-needs.md), especially the GTM evidence request and missing brand-strategy source request.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-04
-- Files, routes, campaigns, and commands reviewed: [brand strategy](docs/brand-strategy.md), [company-wide rules](docs/company-wide-rules.md), [consultant team rules](docs/consultant-team-rules.md), [consultant access needs](docs/consultant-access-needs.md), [operating model](docs/trusted-bums-operating-model.md), [content copyeditor backlog](docs/content-copyeditor-backlog.md), [marketing graphics campaign backlog](docs/marketing-graphics-campaign-backlog.md), [trust and reputation backlog](docs/trust-reputation-backlog.md), [product ops workflow backlog](docs/product-ops-workflow-backlog.md), [data analytics backlog](docs/data-analytics-backlog.md), prior [B2B marketing growth backlog](docs/b2b-marketing-growth-backlog.md), [homepage](src/pages/Index.tsx), [signup intent dialog](src/components/SignupIntentDialog.tsx), [contact API](src/lib/contactApi.ts), [Bum dashboard](src/pages/bum/BumDashboard.tsx), [Bum profile](src/pages/bum/BumProfile.tsx), [Client terms](src/pages/client/ClientTerms.tsx), `git log --oneline --decorate -n 12`, `git status --short`, targeted `rg`, `sed`, and `tail -n 80 docs/codex-edit-log.md`.
-- Internet sources reviewed: [Google Email sender guidelines](https://support.google.com/a/answer/81126?hl=en), [Google Email sender guidelines FAQ](https://support.google.com/a/answer/14229414?hl=en), [LinkedIn Sponsored Content tips](https://business.linkedin.com/advertise/ads/best-practices/sponsored-content-tips), [LinkedIn single image ad specs](https://business.linkedin.com/advertise/ads/sponsored-content/single-image-ads-specs?src=bl-po), [LinkedIn 2026 B2B marketing insights](https://www.linkedin.com/business/marketing/blog/trends-tips/b2b-marketing-insights-creators-thought-leadership), [Gartner B2B buyer validation press release](https://www.gartner.com/en/newsroom/press-releases/2026-05-20-gartner-survey-finds-sixty-nine-percent-of-b-two-b-buyers-turn-to-sales-reps-to-validate-ai-generated-insights), [ICO direct marketing electronic mail guidance](https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communications/guidance-on-direct-marketing-using-electronic-mail/?search=pixel), and [FTC Endorsement Guides FAQ](https://www.ftc.gov/business-guidance/resources/ftcs-endorsement-guides-what-people-are-asking).
-- Checks that could not run and why: No CRM, analytics, LinkedIn ad account, LinkedIn organic account analytics, email platform, case-study approval source, legal claims matrix, interview archive, or campaign budget source was available in the repo or connected tools, so prioritization remains source-backed and standards-backed rather than performance-backed.
+- Date of run: 2026-06-06.
+- Files, routes, assets, and commands reviewed: [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/company-wide-rules.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/company-wide-rules.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/consultant-team-rules.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/consultant-team-rules.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/consultant-access-needs.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/consultant-access-needs.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/trusted-bums-operating-model.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/trusted-bums-operating-model.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/content-copyeditor-backlog.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/content-copyeditor-backlog.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/marketing-graphics-campaign-backlog.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/marketing-graphics-campaign-backlog.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/trust-reputation-backlog.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/trust-reputation-backlog.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/product-ops-workflow-backlog.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/product-ops-workflow-backlog.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/data-analytics-backlog.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/data-analytics-backlog.md), prior [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/b2b-marketing-growth-backlog.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/b2b-marketing-growth-backlog.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/codex-edit-log.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/codex-edit-log.md), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/pages/Index.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/pages/Index.tsx), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/components/SignupIntentDialog.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/components/SignupIntentDialog.tsx), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/lib/contactApi.ts`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/lib/contactApi.ts), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/App.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/App.tsx), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/pages/client/ClientTerms.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/pages/client/ClientTerms.tsx), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/pages/client/ClientDashboard.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/pages/client/ClientDashboard.tsx), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/pages/bum/BumDashboard.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/pages/bum/BumDashboard.tsx), [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/src/pages/bum/BumProfile.tsx`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/src/pages/bum/BumProfile.tsx), `git status --short`, `git log --oneline --decorate -n 12`, targeted `rg`, and targeted `sed`.
+- Internet sources reviewed: Google email sender guidance, LinkedIn Sponsored Content tips, LinkedIn single-image ad specs, LinkedIn 95-5 rule, LinkedIn hidden buyer gap, Gartner’s May 20, 2026 B2B buyer validation press release, ICO direct-marketing guidance updated April 28, 2026, and FTC endorsement guidance FAQ.
+- Checks that could not run and why: `docs/brand-strategy.md` was not present in the repo; no CRM, analytics, LinkedIn account analytics, email platform, approved claims matrix, interview archive, case-study approval source, or budget source was available in repo or connected tools, so prioritization remains source-backed and standards-backed rather than performance-backed. No automation memory file existed at the start of this run, so continuity came from the current backlog and [`/Users/ryan.peterson/Documents/Trusted Bums LOCAL/trustedbums/docs/codex-edit-log.md`](/Users/ryan.peterson/Documents/Trusted%20Bums%20LOCAL/trustedbums/docs/codex-edit-log.md).
