@@ -12,6 +12,11 @@ on:
         required: true
         type: boolean
         default: false
+      contact_smoke:
+        description: Submit a real QA contact form request and verify notification sending
+        required: true
+        type: boolean
+        default: false
   workflow_run:
     workflows:
       - Deploy TrustedBums to DreamHost
@@ -26,6 +31,7 @@ jobs:
     env:
       QA_TARGET_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.target_url || 'https://trustedbums.com' }}
       QA_MUTATION_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mutation_mode && '1' || '0' }}
+      QA_CONTACT_SMOKE_ENABLED: ${{ github.event_name == 'workflow_dispatch' && inputs.contact_smoke && 'true' || 'false' }}
 
     steps:
       - name: Checkout repository
@@ -53,6 +59,11 @@ jobs:
       - name: Run deployed smoke tests
         env:
           QA_BASE_URL: ${{ env.QA_TARGET_URL }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          QA_SUPABASE_FUNCTIONS_URL: ${{ vars.QA_SUPABASE_FUNCTIONS_URL }}
+          QA_CONTACT_ALLOWED_ORIGIN: ${{ env.QA_TARGET_URL }}
+          QA_CONTACT_SMOKE_ENABLED: ${{ env.QA_CONTACT_SMOKE_ENABLED }}
+          QA_CONTACT_TURNSTILE_TOKEN: ${{ secrets.QA_CONTACT_TURNSTILE_TOKEN }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
@@ -60,7 +71,7 @@ jobs:
           QA_CLIENT_FINANCE_EMAIL: ${{ secrets.QA_CLIENT_FINANCE_EMAIL }}
           QA_CLIENT_MEMBER_EMAIL: ${{ secrets.QA_CLIENT_MEMBER_EMAIL }}
           QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
-        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/staging-smoke.spec.ts tests/e2e/authenticated-role-smoke.spec.ts tests/e2e/portal-interaction-audit.spec.ts
+        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/contact-intake.spec.ts tests/e2e/staging-smoke.spec.ts tests/e2e/authenticated-role-smoke.spec.ts tests/e2e/portal-interaction-audit.spec.ts
 
       - name: Run deep workflow hotfix audit
         if: always()

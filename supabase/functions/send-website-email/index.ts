@@ -11,10 +11,9 @@ interface ContactSubmissionEmail {
   website?: string;
 }
 
-const corsHeaders = {
+const responseHeaders = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Origin": "*",
   "Content-Type": "application/json",
 };
 
@@ -22,12 +21,14 @@ const microsoftTenantId = Deno.env.get("MICROSOFT_TENANT_ID");
 const microsoftClientId = Deno.env.get("MICROSOFT_CLIENT_ID");
 const microsoftClientSecret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
 const microsoftSenderEmail = Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
+const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const websiteEmailInternalSecret = Deno.env.get("WEBSITE_EMAIL_INTERNAL_SECRET");
 const websiteContactNotifyTo = Deno.env.get("WEBSITE_CONTACT_NOTIFY_TO") ?? microsoftSenderEmail;
 
 function json(status: number, payload: Record<string, unknown>) {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: corsHeaders,
+    headers: responseHeaders,
   });
 }
 
@@ -37,6 +38,26 @@ function toCleanString(value: unknown, maxLength: number) {
 
 function isEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function getBearerToken(request: Request) {
+  const authorization = request.headers.get("authorization") ?? "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1] ?? "";
+}
+
+function hasConfiguredCallerProof() {
+  return Boolean(supabaseServiceRoleKey || websiteEmailInternalSecret);
+}
+
+function isTrustedCaller(request: Request) {
+  const bearerToken = getBearerToken(request);
+  const internalSecret = request.headers.get("x-trustedbums-internal-secret") ?? "";
+
+  return Boolean(
+    (supabaseServiceRoleKey && bearerToken === supabaseServiceRoleKey) ||
+      (websiteEmailInternalSecret && internalSecret === websiteEmailInternalSecret),
+  );
 }
 
 function escapeHtml(value: string) {
@@ -170,11 +191,20 @@ async function sendMicrosoftEmail(input: { accessToken: string; subject: string;
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: responseHeaders });
   }
 
   if (request.method !== "POST") {
     return json(405, { error: "Method not allowed." });
+  }
+
+  if (!hasConfiguredCallerProof()) {
+    console.error("Website email internal caller proof is not configured.");
+    return json(503, { error: "Website email is not configured." });
+  }
+
+  if (!isTrustedCaller(request)) {
+    return json(403, { error: "Website email is only available to trusted internal callers." });
   }
 
   try {
