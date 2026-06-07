@@ -58,15 +58,16 @@ export default function ClientExports() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [exportRange, setExportRange] = useState<ExportRange>("ALL");
+  const canExportOperationalData = user?.clientAccessRole === "CLIENT_ADMIN";
   const targetsQuery = useQuery({
     queryKey: ["client-export-targets", user?.clientId],
     queryFn: () => listCustomerTargets(user),
-    enabled: Boolean(user),
+    enabled: Boolean(user && canExportOperationalData),
   });
   const meetingsQuery = useQuery({
     queryKey: ["client-export-meetings", user?.clientId],
     queryFn: listTeamsMeetings,
-    enabled: Boolean(user),
+    enabled: Boolean(user && canExportOperationalData),
   });
   const outcomesQuery = useQuery({
     queryKey: ["client-export-outcomes", user?.clientId],
@@ -125,7 +126,7 @@ export default function ClientExports() {
     [exportRange, outcomesQuery.data],
   );
 
-  const isLoading = targetsQuery.isLoading || meetingsQuery.isLoading || outcomesQuery.isLoading;
+  const isLoading = (canExportOperationalData && (targetsQuery.isLoading || meetingsQuery.isLoading)) || outcomesQuery.isLoading;
 
   const exportFile = (filename: string, rows: CsvRow[]) => {
     if (!rows.length) {
@@ -137,20 +138,24 @@ export default function ClientExports() {
   };
 
   const exportCards = [
-    {
-      title: "Target accounts",
-      description: "Customer accounts, priority, status, contacts, product context, and estimated value.",
-      filename: "trustedbums-target-accounts.csv",
-      rows: targetRows,
-      action: "Export target accounts",
-    },
-    {
-      title: "Meetings and transcripts",
-      description: "Teams meeting subjects, times, attendees, related accounts, and transcript sync status.",
-      filename: "trustedbums-meetings.csv",
-      rows: meetingRows,
-      action: "Export meetings",
-    },
+    ...(canExportOperationalData
+      ? [
+          {
+            title: "Target accounts",
+            description: "Customer accounts, priority, status, contacts, product context, and estimated value.",
+            filename: "trustedbums-target-accounts.csv",
+            rows: targetRows,
+            action: "Export target accounts",
+          },
+          {
+            title: "Meetings and transcripts",
+            description: "Teams meeting subjects, times, attendees, related accounts, and transcript sync status.",
+            filename: "trustedbums-meetings.csv",
+            rows: meetingRows,
+            action: "Export meetings",
+          },
+        ]
+      : []),
     {
       title: "Customer payments",
       description: "Recorded payments, commissionable revenue, non-commissionable amounts, and invoice status.",

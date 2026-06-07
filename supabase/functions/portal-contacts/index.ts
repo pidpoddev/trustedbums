@@ -471,27 +471,50 @@ async function fetchContact(userId: string, contactId: string) {
   return data;
 }
 
-async function listOpportunityOptions(currentOpportunityId?: string | null) {
+async function assertOpportunityEntitlement(userId: string, opportunityRegistrationId: string) {
   const { data, error } = await supabaseAdmin
-    .from("opportunity_registrations")
-    .select("id, target_account_name, status, companies(name)")
-    .eq("status", "Accepted")
-    .order("target_account_name", { ascending: true })
-    .returns<OpportunityRow[]>();
+    .from("opportunity_claims")
+    .select("id")
+    .eq("bum_user_id", userId)
+    .eq("opportunity_registration_id", opportunityRegistrationId)
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+  if (error) throw error;
+  if (!data) throw new Error("Opportunity not found or not available for this contact.");
+}
+
+async function assertCustomerTargetEntitlement(userId: string, customerTargetId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("customer_target_responses")
+    .select("id")
+    .eq("bum_user_id", userId)
+    .eq("customer_target_id", customerTargetId)
+    .in("status", ["ACCEPTED", "CONTACTED", "MEETING_SET"])
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+  if (error) throw error;
+  if (!data) throw new Error("Client target not found or not available for this contact.");
+}
+
+async function listOpportunityOptions(userId: string, currentOpportunityId?: string | null) {
+  const { data, error } = await supabaseAdmin
+    .from("opportunity_claims")
+    .select("opportunity_registrations(id, target_account_name, status, companies(name))")
+    .eq("bum_user_id", userId)
+    .returns<Array<{ opportunity_registrations?: OpportunityRow | null }>>();
   if (error) throw error;
 
-  const options = [...(data ?? [])];
-  if (currentOpportunityId && !options.some((opportunity) => opportunity.id === currentOpportunityId)) {
-    const currentResult = await supabaseAdmin
-      .from("opportunity_registrations")
-      .select("id, target_account_name, status, companies(name)")
-      .eq("id", currentOpportunityId)
-      .maybeSingle<OpportunityRow>();
-    if (currentResult.error) throw currentResult.error;
-    if (currentResult.data) options.unshift(currentResult.data);
+  const optionsById = new Map<string, OpportunityRow>();
+  for (const row of data ?? []) {
+    const opportunity = row.opportunity_registrations;
+    if (opportunity?.id) optionsById.set(opportunity.id, opportunity);
   }
 
-  return options;
+  if (currentOpportunityId && !optionsById.has(currentOpportunityId)) {
+    await assertOpportunityEntitlement(userId, currentOpportunityId);
+  }
+
+  return [...optionsById.values()].sort((a, b) => (a.target_account_name ?? "").localeCompare(b.target_account_name ?? ""));
 }
 
 async function listContacts(userId: string) {
@@ -509,11 +532,11 @@ async function listContacts(userId: string) {
 async function getContactDetail(userId: string, contactId: string) {
   await syncSourceContacts(userId);
   const contact = await fetchContact(userId, contactId);
-  const opportunities = await listOpportunityOptions(contact.opportunity_registration_id);
+  const opportunities = await listOpportunityOptions(userId, contact.opportunity_registration_id);
   return { contact: mapContact(contact), opportunities };
 }
 
-async function contactPayloadFromPatch(patch: Record<string, unknown>) {
+async function contactPayloadFromPatch(userId: string, patch: Record<string, unknown>) {
   const payload: Record<string, unknown> = {};
   if ("name" in patch) payload.full_name = normalizeText(patch.name);
   if ("title" in patch) payload.title = normalizeText(patch.title);
@@ -527,13 +550,7 @@ async function contactPayloadFromPatch(patch: Record<string, unknown>) {
   if ("opportunityRegistrationId" in patch) {
     const opportunityRegistrationId = normalizeText(patch.opportunityRegistrationId);
     if (opportunityRegistrationId) {
-      const { data, error } = await supabaseAdmin
-        .from("opportunity_registrations")
-        .select("id")
-        .eq("id", opportunityRegistrationId)
-        .maybeSingle<{ id: string }>();
-      if (error) throw error;
-      if (!data) throw new Error("Opportunity not found.");
+      await assertOpportunityEntitlement(userId, opportunityRegistrationId);
     }
     payload.opportunity_registration_id = opportunityRegistrationId;
   }
@@ -541,6 +558,7 @@ async function contactPayloadFromPatch(patch: Record<string, unknown>) {
   if ("customerTargetId" in patch) {
     const customerTargetId = normalizeText(patch.customerTargetId);
     if (customerTargetId) {
+      await assertCustomerTargetEntitlement(userId, customerTargetId);
       const { data, error } = await supabaseAdmin
         .from("customer_targets")
         .select("id, target_account_name, target_companies:companies!customer_targets_target_company_id_fkey(name)")
@@ -558,7 +576,7 @@ async function contactPayloadFromPatch(patch: Record<string, unknown>) {
 }
 
 async function updateContact(userId: string, contactId: string, patch: Record<string, unknown>) {
-  const payload = await contactPayloadFromPatch(patch);
+  const payload = await contactPayloadFromPatch(userId, patch);
   if (payload.full_name === null) throw new Error("Contact name is required.");
   if (!Object.keys(payload).length) return getContactDetail(userId, contactId);
 
@@ -573,7 +591,7 @@ async function updateContact(userId: string, contactId: string, patch: Record<st
 }
 
 async function createContact(userId: string, patch: Record<string, unknown>) {
-  const payload = await contactPayloadFromPatch(patch);
+  const payload = await contactPayloadFromPatch(userId, patch);
   if (!payload.full_name) throw new Error("Contact name is required.");
 
   const { data, error } = await supabaseAdmin

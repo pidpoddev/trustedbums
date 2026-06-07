@@ -119,6 +119,15 @@ export interface PerformanceMetricEventFilters {
   limit?: number;
 }
 
+export interface PerformanceMetricSummaryRecord {
+  metric_name: PerformanceMetricName;
+  sample_count: number;
+  poor_count: number;
+  needs_improvement_count: number;
+  p75_value: number | null;
+  route_count: number;
+}
+
 
 export interface ClerkAdminUserRecord {
   id: string | null;
@@ -6301,6 +6310,26 @@ export async function listPerformanceMetricEvents(filters: PerformanceMetricEven
   }
 
   const { data, error } = await query.returns<PerformanceMetricEventRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listPerformanceMetricSummaries(filters: Omit<PerformanceMetricEventFilters, "limit"> = {}) {
+  const days = Math.min(Math.max(filters.days ?? 7, 1), 90);
+  const metricName = filters.metricName && filters.metricName !== "ALL" ? filters.metricName : null;
+  const rating = filters.rating && filters.rating !== "ALL" ? filters.rating : null;
+
+  const { data, error } = await supabase
+    .rpc("admin_performance_metric_summary", {
+      days_window: days,
+      metric_name_filter: metricName,
+      rating_filter: rating,
+    })
+    .returns<PerformanceMetricSummaryRecord[]>();
 
   if (error) {
     throw error;

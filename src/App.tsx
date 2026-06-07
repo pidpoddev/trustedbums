@@ -14,59 +14,61 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import LegalDocumentPage from "./pages/LegalDocumentPage";
-import AdminLayout from "./layouts/AdminLayout";
-import ClientLayout from "./layouts/ClientLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminClients from "./pages/admin/AdminClients";
-import AdminBums from "./pages/admin/AdminBums";
-import AdminOpportunities from "./pages/admin/AdminOpportunities";
-import AdminCredits from "./pages/admin/AdminCredits";
-import AdminCommissionPlans from "./pages/admin/AdminCommissionPlans";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminPayouts from "./pages/admin/AdminPayouts";
-import AdminLiveConversations from "./pages/admin/AdminLiveConversations";
-import AdminEmails from "./pages/admin/AdminEmails";
-import AdminProfile from "./pages/admin/AdminProfile";
-import AdminReports from "./pages/admin/AdminReports";
-import AdminPerformanceMetrics from "./pages/admin/AdminPerformanceMetrics";
-import AdminHandoffs from "./pages/admin/AdminHandoffs";
-import AdminTrainingAssets from "./pages/admin/AdminTrainingAssets";
-import AdminTroubleshooting from "./pages/admin/AdminTroubleshooting";
-import AdminLegal from "./pages/admin/AdminLegal";
-import ClientDashboard from "./pages/client/ClientDashboard";
-import ClientAgreements from "./pages/client/ClientAgreements";
-import ClientTerms from "./pages/client/ClientTerms";
-import ClientOpportunityNew from "./pages/client/ClientOpportunityNew";
-import ClientTargets from "./pages/client/ClientTargets";
-import ClientProfile from "./pages/client/ClientProfile";
-import ClientUserProfile from "./pages/client/ClientUserProfile";
-import ClientTeam from "./pages/client/ClientTeam";
-import ClientBums from "./pages/client/ClientBums";
-import ClientTrainings from "./pages/client/ClientTrainings";
-import ClientRequests from "./pages/client/ClientRequests";
-import ClientExports from "./pages/client/ClientExports";
-import ClientPayments from "./pages/client/ClientPayments";
-import ClientReports from "./pages/client/ClientReports";
-import BumLayout from "./layouts/BumLayout";
-import BumDashboard from "./pages/bum/BumDashboard";
-import BumProspects from "./pages/bum/BumProspects";
-import BumReverseOpportunities from "./pages/bum/BumReverseOpportunities";
-import BumOpportunities from "./pages/bum/BumOpportunities";
-import BumClaims from "./pages/bum/BumClaims";
-import BumLiveConversations from "./pages/bum/BumLiveConversations";
-import BumEarnings from "./pages/bum/BumEarnings";
-import BumProfile from "./pages/bum/BumProfile";
-import BumClients from "./pages/bum/BumClients";
-import BumContacts from "./pages/bum/BumContacts";
-import BumContactDetail from "./pages/bum/BumContactDetail";
-import BumTrainings from "./pages/bum/BumTrainings";
-import BumOpportunityDetail from "./pages/bum/BumOpportunityDetail";
-import BumReports from "./pages/bum/BumReports";
+import { lazy, Suspense } from "react";
+
+const Index = lazy(() => import("./pages/Index"));
+const Login = lazy(() => import("./pages/Login"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const LegalDocumentPage = lazy(() => import("./pages/LegalDocumentPage"));
+const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
+const ClientLayout = lazy(() => import("./layouts/ClientLayout"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminClients = lazy(() => import("./pages/admin/AdminClients"));
+const AdminBums = lazy(() => import("./pages/admin/AdminBums"));
+const AdminOpportunities = lazy(() => import("./pages/admin/AdminOpportunities"));
+const AdminCredits = lazy(() => import("./pages/admin/AdminCredits"));
+const AdminCommissionPlans = lazy(() => import("./pages/admin/AdminCommissionPlans"));
+const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminPayouts = lazy(() => import("./pages/admin/AdminPayouts"));
+const AdminLiveConversations = lazy(() => import("./pages/admin/AdminLiveConversations"));
+const AdminEmails = lazy(() => import("./pages/admin/AdminEmails"));
+const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
+const AdminPerformanceMetrics = lazy(() => import("./pages/admin/AdminPerformanceMetrics"));
+const AdminHandoffs = lazy(() => import("./pages/admin/AdminHandoffs"));
+const AdminTrainingAssets = lazy(() => import("./pages/admin/AdminTrainingAssets"));
+const AdminTroubleshooting = lazy(() => import("./pages/admin/AdminTroubleshooting"));
+const AdminLegal = lazy(() => import("./pages/admin/AdminLegal"));
+const ClientDashboard = lazy(() => import("./pages/client/ClientDashboard"));
+const ClientAgreements = lazy(() => import("./pages/client/ClientAgreements"));
+const ClientTerms = lazy(() => import("./pages/client/ClientTerms"));
+const ClientOpportunityNew = lazy(() => import("./pages/client/ClientOpportunityNew"));
+const ClientTargets = lazy(() => import("./pages/client/ClientTargets"));
+const ClientProfile = lazy(() => import("./pages/client/ClientProfile"));
+const ClientUserProfile = lazy(() => import("./pages/client/ClientUserProfile"));
+const ClientTeam = lazy(() => import("./pages/client/ClientTeam"));
+const ClientBums = lazy(() => import("./pages/client/ClientBums"));
+const ClientTrainings = lazy(() => import("./pages/client/ClientTrainings"));
+const ClientRequests = lazy(() => import("./pages/client/ClientRequests"));
+const ClientExports = lazy(() => import("./pages/client/ClientExports"));
+const ClientPayments = lazy(() => import("./pages/client/ClientPayments"));
+const ClientReports = lazy(() => import("./pages/client/ClientReports"));
+const BumLayout = lazy(() => import("./layouts/BumLayout"));
+const BumDashboard = lazy(() => import("./pages/bum/BumDashboard"));
+const BumProspects = lazy(() => import("./pages/bum/BumProspects"));
+const BumReverseOpportunities = lazy(() => import("./pages/bum/BumReverseOpportunities"));
+const BumOpportunities = lazy(() => import("./pages/bum/BumOpportunities"));
+const BumClaims = lazy(() => import("./pages/bum/BumClaims"));
+const BumLiveConversations = lazy(() => import("./pages/bum/BumLiveConversations"));
+const BumEarnings = lazy(() => import("./pages/bum/BumEarnings"));
+const BumProfile = lazy(() => import("./pages/bum/BumProfile"));
+const BumClients = lazy(() => import("./pages/bum/BumClients"));
+const BumContacts = lazy(() => import("./pages/bum/BumContacts"));
+const BumContactDetail = lazy(() => import("./pages/bum/BumContactDetail"));
+const BumTrainings = lazy(() => import("./pages/bum/BumTrainings"));
+const BumOpportunityDetail = lazy(() => import("./pages/bum/BumOpportunityDetail"));
+const BumReports = lazy(() => import("./pages/bum/BumReports"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -88,6 +90,7 @@ const App = () => (
           <AuthProvider>
             <AppErrorBoundary>
               <PerformanceMonitoring />
+              <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading...</div>}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
@@ -182,6 +185,7 @@ const App = () => (
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
               <ConsentManager />
             </AppErrorBoundary>
           </AuthProvider>

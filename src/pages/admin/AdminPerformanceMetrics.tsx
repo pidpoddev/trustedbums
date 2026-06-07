@@ -10,9 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   listPerformanceMetricEvents,
+  listPerformanceMetricSummaries,
   type PerformanceMetricEventRecord,
   type PerformanceMetricName,
   type PerformanceMetricRating,
+  type PerformanceMetricSummaryRecord,
 } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
@@ -34,20 +36,6 @@ function ratingBadge(rating: PerformanceMetricRating) {
   return <Badge>Good</Badge>;
 }
 
-function percentile(values: number[], percent: number) {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const index = Math.ceil((percent / 100) * sorted.length) - 1;
-  return sorted[Math.max(0, Math.min(sorted.length - 1, index))];
-}
-
-function summarizeMetric(rows: PerformanceMetricEventRecord[], name: PerformanceMetricName) {
-  const values = rows.filter((row) => row.metric_name === name).map((row) => Number(row.metric_value)).filter(Number.isFinite);
-  const p75 = percentile(values, 75);
-  const poor = rows.filter((row) => row.metric_name === name && row.metric_rating === "poor").length;
-  return { count: values.length, p75, poor };
-}
-
 export default function AdminPerformanceMetrics() {
   const timeZone = useUserTimeZone();
   const [days, setDays] = useState(7);
@@ -55,26 +43,33 @@ export default function AdminPerformanceMetrics() {
   const [rating, setRating] = useState<PerformanceMetricRating | "ALL">("ALL");
 
   const metricsQuery = useQuery({
-    queryKey: ["admin-performance-metrics", days, metricName, rating],
-    queryFn: () => listPerformanceMetricEvents({ days, metricName, rating, limit: 500 }),
+    queryKey: ["admin-performance-metrics-recent", days, metricName, rating],
+    queryFn: () => listPerformanceMetricEvents({ days, metricName, rating, limit: 100 }),
+  });
+  const summaryQuery = useQuery({
+    queryKey: ["admin-performance-metrics-summary", days, metricName, rating],
+    queryFn: () => listPerformanceMetricSummaries({ days, metricName, rating }),
   });
 
   const rows = useMemo(() => metricsQuery.data ?? [], [metricsQuery.data]);
   const summary = useMemo(() => {
-    const uniqueRoutes = new Set(rows.map((row) => row.page_path)).size;
-    const poor = rows.filter((row) => row.metric_rating === "poor").length;
-    const needsImprovement = rows.filter((row) => row.metric_rating === "needs-improvement").length;
+    const summaries = summaryQuery.data ?? [];
+    const summaryByMetric = new Map<PerformanceMetricName, PerformanceMetricSummaryRecord>(
+      summaries.map((row) => [row.metric_name, row]),
+    );
     return {
-      total: rows.length,
-      uniqueRoutes,
-      poor,
-      needsImprovement,
+      total: summaries.reduce((total, row) => total + Number(row.sample_count), 0),
+      uniqueRoutes: summaries.reduce((max, row) => Math.max(max, Number(row.route_count)), 0),
+      poor: summaries.reduce((total, row) => total + Number(row.poor_count), 0),
+      needsImprovement: summaries.reduce((total, row) => total + Number(row.needs_improvement_count), 0),
       metricSummaries: metricOptions.filter((name): name is PerformanceMetricName => name !== "ALL").map((name) => ({
         name,
-        ...summarizeMetric(rows, name),
+        count: Number(summaryByMetric.get(name)?.sample_count ?? 0),
+        p75: summaryByMetric.get(name)?.p75_value ?? null,
+        poor: Number(summaryByMetric.get(name)?.poor_count ?? 0),
       })),
     };
-  }, [rows]);
+  }, [summaryQuery.data]);
 
   return (
     <div>
@@ -82,7 +77,14 @@ export default function AdminPerformanceMetrics() {
         title="Performance Metrics"
         description="Review necessary operational telemetry from Cloudflare and the Trusted Bums performance beacon."
       >
-        <Button variant="outline" onClick={() => metricsQuery.refetch()} disabled={metricsQuery.isFetching}>
+        <Button
+          variant="outline"
+          onClick={() => {
+            metricsQuery.refetch();
+            summaryQuery.refetch();
+          }}
+          disabled={metricsQuery.isFetching || summaryQuery.isFetching}
+        >
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
@@ -189,7 +191,7 @@ export default function AdminPerformanceMetrics() {
           <CardTitle className="text-lg">Recent samples</CardTitle>
         </CardHeader>
         <CardContent>
-          {metricsQuery.isLoading ? (
+          {metricsQuery.isLoading || summaryQuery.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading performance metrics...</p>
           ) : rows.length ? (
             <div className="overflow-x-auto">

@@ -23,6 +23,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/admin/clients", heading: "Clients", name: "admin-clients" },
     { path: "/admin/bums", heading: "Bums", name: "admin-bums" },
     { path: "/admin/opportunities", heading: "Opportunities", name: "admin-opportunities" },
+    { path: "/admin/handoffs", heading: "Handoffs", name: "admin-handoffs" },
     { path: "/admin/credits", heading: "Credits & Disputes", name: "admin-credits" },
     { path: "/admin/commission-plans", heading: "Commission Plans", name: "admin-commission-plans" },
     { path: "/admin/payments", heading: "Payments", name: "admin-payments" },

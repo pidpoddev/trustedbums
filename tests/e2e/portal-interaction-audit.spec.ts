@@ -31,6 +31,7 @@ const roleAudits: RoleAuditConfig[] = [
       { path: "/admin/clients", heading: "Clients", navName: "Clients" },
       { path: "/admin/bums", heading: "Bums", navName: "Bums" },
       { path: "/admin/opportunities", heading: "Opportunities", navName: "Opportunities" },
+      { path: "/admin/handoffs", heading: "Handoffs", navName: "Handoffs" },
       { path: "/admin/credits", heading: "Credits & Disputes", navName: "Credits" },
       { path: "/admin/commission-plans", heading: "Commission Plans", navName: "Commission Plans" },
       { path: "/admin/payments", heading: "Payments", navName: "Payments" },
