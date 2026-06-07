@@ -20,9 +20,26 @@ describe("deep QA triage coverage", () => {
     expect(deepQaHelperSource).toContain("## Route Completion");
     expect(deepQaSpecSource).toContain('status: "passed"');
     expect(deepQaSpecSource).toContain('status: "failed"');
-    expect(deepQaSpecSource).toContain("test.setTimeout(activeSuite ? 900_000 : 1_800_000)");
+    expect(deepQaSpecSource).toContain("test.setTimeout(activeSuite ? 420_000 : 1_200_000)");
     expect(deepQaSpecSource).toContain("await attachLeadDevHotfixReport(testInfo, runId, issues, [], routeResults);");
-    expect(deepQaSpecSource).toContain("await context.close().catch(() => undefined);");
+    expect(deepQaSpecSource).toContain("await Promise.all([...sessions.values()].map");
+  });
+
+  it("bounds live auth bootstrap and prevents browser error pages from becoming product findings", () => {
+    expect(authHelperSource).toContain("const appBootstrapTimeoutMs = 15_000");
+    expect(authHelperSource).toContain('await page.goto("/", { waitUntil: "domcontentloaded", timeout: appBootstrapTimeoutMs })');
+    expect(authHelperSource).toContain("Unable to load the app root for QA auth within the bounded bootstrap window.");
+    expect(authHelperSource).toContain("try {\n      window.localStorage.setItem");
+    expect(deepQaHelperSource).toContain('url.startsWith("chrome-error://")');
+    expect(deepQaHelperSource).toContain("isAppPageUrl(page.url())");
+    expect(deepQaHelperSource).toContain("isAppPageUrl(url)");
+  });
+
+  it("keeps role coverage while reducing client deep QA blast radius", () => {
+    expect(deepQaSpecSource).toContain("test.describe.configure({ mode: \"serial\" });");
+    expect(deepQaSpecSource).toContain("const sessions = new Map<RoleKey, RoleAuditSession>();");
+    expect(deepQaSpecSource).toContain("goToPathWithCurrentSession");
+    expect(deepQaSpecSource).toContain("Client Deep QA failed fast because the base app could not load");
   });
 
   it("splits GitHub deep QA into admin, client, and bum suites from a single deep pass trigger", () => {

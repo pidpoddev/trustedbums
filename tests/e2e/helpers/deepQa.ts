@@ -30,6 +30,22 @@ export interface DeepQaRouteResult {
 const safeExploratoryActionPattern =
   /view|open|close|show|hide|expand|collapse|filter|search|clear|download|copy|cancel|details|help|faq|profile|settings|accessibility|feedback/i;
 
+function getQaBaseOrigin() {
+  return new URL(process.env.QA_BASE_URL ?? "http://127.0.0.1:4173").origin;
+}
+
+function isAppPageUrl(url: string) {
+  if (!url || url === "about:blank" || url.startsWith("chrome-error://")) {
+    return false;
+  }
+
+  try {
+    return new URL(url).origin === getQaBaseOrigin();
+  } catch {
+    return false;
+  }
+}
+
 export function createDeepQaRunId() {
   return `qa-deep-${new Date().toISOString().replace(/[:.]/g, "-")}`;
 }
@@ -97,11 +113,17 @@ export async function attachLeadDevHotfixReport(
   await fs.writeFile(outputPath, markdown, "utf8");
 }
 
-export function installDeepQaMonitors(page: Page, issues: DeepQaIssue[], area: string) {
+export function installDeepQaMonitors(page: Page, issues: DeepQaIssue[], area: string | (() => string)) {
+  const currentArea = () => (typeof area === "function" ? area() : area);
+
   page.on("pageerror", (error) => {
+    if (!isAppPageUrl(page.url())) {
+      return;
+    }
+
     issues.push({
       severity: "P1",
-      area,
+      area: currentArea(),
       workflow: "Browser runtime",
       evidence: `Uncaught page error: ${error.message}`,
       recommendation: "Fix the runtime exception and add a focused regression test for the affected route.",
@@ -112,10 +134,10 @@ export function installDeepQaMonitors(page: Page, issues: DeepQaIssue[], area: s
   page.on("response", (response) => {
     const status = response.status();
     const url = response.url();
-    if (status >= 500 && !url.includes("clerk") && !url.includes("browser-intake")) {
+    if (status >= 500 && isAppPageUrl(url) && !url.includes("clerk") && !url.includes("browser-intake")) {
       issues.push({
         severity: "P1",
-        area,
+        area: currentArea(),
         workflow: "Network request",
         evidence: `${status} response from ${url}`,
         recommendation: "Investigate the failed backend request and expose a user-actionable error in the UI.",

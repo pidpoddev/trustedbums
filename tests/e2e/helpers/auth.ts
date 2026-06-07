@@ -1,6 +1,9 @@
 import { clerk, clerkSetup } from "@clerk/testing/playwright";
 import { type Page } from "@playwright/test";
 
+const appBootstrapTimeoutMs = 15_000;
+const protectedRouteTimeoutMs = 25_000;
+
 export interface QaAccount {
   email: string;
   password?: string;
@@ -21,6 +24,23 @@ export function hasExternalQaTarget() {
   return Boolean(process.env.QA_BASE_URL);
 }
 
+export function getQaBaseOrigin() {
+  const baseUrl = process.env.QA_BASE_URL ?? "http://127.0.0.1:4173";
+  return new URL(baseUrl).origin;
+}
+
+export function isAppPageUrl(url: string) {
+  if (!url || url === "about:blank" || url.startsWith("chrome-error://")) {
+    return false;
+  }
+
+  try {
+    return new URL(url).origin === getQaBaseOrigin();
+  } catch {
+    return false;
+  }
+}
+
 let clerkSetupPromise: Promise<void> | null = null;
 
 async function ensureClerkTestingSetup() {
@@ -28,20 +48,48 @@ async function ensureClerkTestingSetup() {
   await clerkSetupPromise;
 }
 
+async function loadAppRootForAuth(page: Page) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      await page.goto("/", { waitUntil: "domcontentloaded", timeout: appBootstrapTimeoutMs });
+      await page.waitForFunction(() => Boolean(window.Clerk?.loaded), undefined, { timeout: appBootstrapTimeoutMs });
+      return;
+    } catch (error) {
+      lastError = error;
+      await page.goto("about:blank").catch(() => undefined);
+    }
+  }
+
+  throw new Error(
+    [
+      "Unable to load the app root for QA auth within the bounded bootstrap window.",
+      `Target origin: ${getQaBaseOrigin()}`,
+      `Last URL: ${page.url()}`,
+      `Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+      "Treat this as a base-target availability or QA auth harness failure before triaging individual protected routes.",
+    ].join(" "),
+  );
+}
+
 export async function signIn(page: Page, account: QaAccount) {
   await page.addInitScript(() => {
-    window.localStorage.setItem(
-      "trustedbums:consent-preferences",
-      JSON.stringify({
-        version: "2026-05-19-eu-v1",
-        preferences: { necessary: true, preferences: true, analytics: true, marketing: true },
-        decidedAt: new Date().toISOString(),
-        source: "settings",
-      }),
-    );
+    try {
+      window.localStorage.setItem(
+        "trustedbums:consent-preferences",
+        JSON.stringify({
+          version: "2026-05-19-eu-v1",
+          preferences: { necessary: true, preferences: true, analytics: true, marketing: true },
+          decidedAt: new Date().toISOString(),
+          source: "settings",
+        }),
+      );
+    } catch {
+      // Browser error documents can deny localStorage; the app page will receive this init script again.
+    }
   });
-  await page.goto("/");
-  await page.waitForFunction(() => Boolean(window.Clerk?.loaded), undefined, { timeout: 20_000 });
+  await loadAppRootForAuth(page);
 
   const currentSessionEmail = await page
     .evaluate(() => {
@@ -211,7 +259,7 @@ async function waitForClerkSession(page: Page) {
 }
 
 export async function expectTrustedBumsSession(page: Page) {
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded", timeout: appBootstrapTimeoutMs });
   await page.waitForLoadState("networkidle").catch(() => undefined);
 
   if (page.url().replace(/\/$/, "") === `${process.env.QA_BASE_URL}`.replace(/\/$/, "")) {
@@ -278,7 +326,7 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
   }
 
   if (page.url().includes("/terms")) {
-    await page.goto(destinationPath);
+    await page.goto(destinationPath, { waitUntil: "domcontentloaded", timeout: protectedRouteTimeoutMs });
     await page.waitForLoadState("networkidle").catch(() => undefined);
   }
 
@@ -330,7 +378,7 @@ async function clickRouteLinkIfVisible(page: Page, path: string) {
 
 async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedPathOptions = {}) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    await page.goto(path);
+    await page.goto(path, { waitUntil: "domcontentloaded", timeout: protectedRouteTimeoutMs });
     await page.waitForLoadState("networkidle").catch(() => undefined);
 
     await page.waitForURL((url) => url.pathname.includes("/terms"), { timeout: 3_000 }).catch(() => undefined);
@@ -390,6 +438,10 @@ async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedP
 export async function goToAuthedPath(page: Page, account: QaAccount, path: string) {
   await signIn(page, account);
   await expectTrustedBumsSession(page);
+  await goToPathAfterTerms(page, path);
+}
+
+export async function goToPathWithCurrentSession(page: Page, path: string) {
   await goToPathAfterTerms(page, path);
 }
 

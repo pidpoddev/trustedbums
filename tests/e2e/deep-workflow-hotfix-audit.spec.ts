@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { getQaAccount, goToAuthedPath, hasExternalQaTarget, type QaAccount } from "./helpers/auth";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { getQaAccount, goToAuthedPath, goToPathWithCurrentSession, hasExternalQaTarget, type QaAccount } from "./helpers/auth";
 import {
   attachLeadDevHotfixReport,
   cleanupCreatedRecords,
@@ -21,6 +21,14 @@ interface WorkflowRoute {
   heading: string | RegExp;
   area: string;
   workflow: string;
+}
+
+interface RoleAuditSession {
+  context: BrowserContext;
+  page: Page;
+  account: QaAccount;
+  currentArea: string;
+  visitedRoutes: number;
 }
 
 const routeInventory: WorkflowRoute[] = [
@@ -204,39 +212,62 @@ async function createClientOpportunity(page: Page, runId: string, records: QaCre
 }
 
 test.describe("deep workflow hotfix audit", () => {
+  test.describe.configure({ mode: "serial" });
+
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run deep workflow hotfix audit against the deployed QA target.");
 
   test("explores role routes and non-destructive controls for Lead Dev hotfix candidates", async ({ browser }, testInfo) => {
     const activeSuite = getActiveDeepQaSuite();
     const routes = getRoutesForSuite(activeSuite);
 
-    test.setTimeout(activeSuite ? 900_000 : 1_800_000);
+    test.setTimeout(activeSuite ? 420_000 : 1_200_000);
     test.skip(testInfo.project.name !== "chromium", "Run the deep route audit once on desktop Chromium.");
 
     const runId = createDeepQaRunId();
     const issues: DeepQaIssue[] = [];
     const routeResults: DeepQaRouteResult[] = [];
+    const sessions = new Map<RoleKey, RoleAuditSession>();
+
+    const shouldFailFast = (evidence: string) =>
+      activeSuite === "client" &&
+      /Unable to load the app root for QA auth|net::ERR_CONNECTION_TIMED_OUT at https:\/\/trustedbums\.com\/|net::ERR_ABORTED at https:\/\/trustedbums\.com\//.test(
+        evidence,
+      );
 
     try {
       for (const route of routes) {
-        const account = getRequiredAccount(route.role);
-        const context = await browser.newContext();
-        const page = await context.newPage();
-        installDeepQaMonitors(page, issues, route.area);
+        let session = sessions.get(route.role);
+        if (!session) {
+          const context = await browser.newContext();
+          const page = await context.newPage();
+          page.setDefaultNavigationTimeout(25_000);
+          const account = getRequiredAccount(route.role);
+          session = { context, page, account, currentArea: route.area, visitedRoutes: 0 };
+          installDeepQaMonitors(page, issues, () => session?.currentArea ?? route.area);
+          sessions.set(route.role, session);
+        }
+
+        session.currentArea = route.area;
         const startedAt = Date.now();
 
         try {
-          await goToAuthedPath(page, account, route.path);
-          await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
-          await reportVisibleFailure(page, issues, route.area, route.workflow);
-          await exploreVisibleNonDestructiveButtons(page, issues, route.area, route.workflow);
+          if (session.visitedRoutes === 0) {
+            await goToAuthedPath(session.page, session.account, route.path);
+          } else {
+            await goToPathWithCurrentSession(session.page, route.path);
+          }
+          session.visitedRoutes += 1;
+
+          await expect(session.page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 15_000 });
+          await reportVisibleFailure(session.page, issues, route.area, route.workflow);
+          await exploreVisibleNonDestructiveButtons(session.page, issues, route.area, route.workflow);
           routeResults.push({
             area: route.area,
             workflow: route.workflow,
             path: route.path,
             status: "passed",
             durationMs: Date.now() - startedAt,
-            url: page.url(),
+            url: session.page.url(),
           });
         } catch (error) {
           const evidence = error instanceof Error ? error.message : String(error);
@@ -246,7 +277,7 @@ test.describe("deep workflow hotfix audit", () => {
             workflow: route.workflow,
             evidence,
             recommendation: "Reproduce this route/workflow directly, then fix either the product failure or the QA selector/session assumption.",
-            url: page.url(),
+            url: session.page.url(),
           });
           routeResults.push({
             area: route.area,
@@ -254,16 +285,26 @@ test.describe("deep workflow hotfix audit", () => {
             path: route.path,
             status: "failed",
             durationMs: Date.now() - startedAt,
-            url: page.url(),
+            url: session.page.url(),
             evidence,
           });
+
+          if (shouldFailFast(evidence)) {
+            throw new Error(
+              [
+                "Client Deep QA failed fast because the base app could not load before protected-route triage.",
+                `Route: ${route.path}`,
+                `Evidence: ${evidence}`,
+              ].join(" "),
+            );
+          }
         } finally {
           await attachLeadDevHotfixReport(testInfo, runId, issues, [], routeResults);
-          await context.close().catch(() => undefined);
         }
       }
     } finally {
       await attachLeadDevHotfixReport(testInfo, runId, issues, [], routeResults);
+      await Promise.all([...sessions.values()].map((session) => session.context.close().catch(() => undefined)));
     }
 
     const blockerIssues = issues.filter((issue) => issue.severity === "P0" || issue.severity === "P1");
