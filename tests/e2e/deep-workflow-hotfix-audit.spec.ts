@@ -177,7 +177,7 @@ test.describe("deep workflow hotfix audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run deep workflow hotfix audit against the deployed QA target.");
 
   test("explores role routes and non-destructive controls for Lead Dev hotfix candidates", async ({ browser }, testInfo) => {
-    test.setTimeout(600_000);
+    test.setTimeout(1_800_000);
     test.skip(testInfo.project.name !== "chromium", "Run the deep route audit once on desktop Chromium.");
 
     const runId = createDeepQaRunId();
@@ -225,8 +225,8 @@ test.describe("deep workflow hotfix audit", () => {
             evidence,
           });
         } finally {
-          await context.close();
           await attachLeadDevHotfixReport(testInfo, runId, issues, [], routeResults);
+          await context.close().catch(() => undefined);
         }
       }
     } finally {

@@ -18,6 +18,8 @@ describe("deep QA triage coverage", () => {
     expect(deepQaHelperSource).toContain("## Route Completion");
     expect(deepQaSpecSource).toContain('status: "passed"');
     expect(deepQaSpecSource).toContain('status: "failed"');
+    expect(deepQaSpecSource).toContain("test.setTimeout(1_800_000)");
     expect(deepQaSpecSource).toContain("await attachLeadDevHotfixReport(testInfo, runId, issues, [], routeResults);");
+    expect(deepQaSpecSource).toContain("await context.close().catch(() => undefined);");
   });
 });
