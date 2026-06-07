@@ -1,12 +1,12 @@
 # Trusted Bums Agent Operating Pack
 
-_Last updated: 2026-06-04 by Codex._
+_Last updated: 2026-06-07 by Codex._
 
 This folder is the repo-shared source for Trusted Bums consultant agents, operating rules, and review gates. It exists so every developer can inspect the same expected behaviors instead of relying on one person's local Codex automation registry.
 
 ## Contents
 
-- `automation-prompts/`: snapshots of the Trusted Bums Codex automation prompts. These are reference definitions for daily UX, UI, content, B2B growth marketing, marketing graphics, accessibility, QA, security, performance, data, product ops, trust/reputation, and lead developer agents.
+- `automation-prompts/`: snapshots of the Trusted Bums Codex automation prompts. These are reference definitions for daily UX, UI, content, B2B growth marketing, marketing graphics, accessibility, QA, QA harness reliability, release verification, security, performance, data, product ops, trust/reputation, lead developer, weekly agent operations, and on-demand legal/compliance agents.
 - `consultant-team-rules.md`: shared behavioral rules and handoff expectations for every specialist.
 - `company-wide-rules.md`: durable company, product, website, workflow, terminology, trust, and operating rules Ryan has clarified.
 - `../codex-edit-log.md`: running implementation log and next-run recheck queue that specialists should consult before preserving stale recommendations.
@@ -15,6 +15,9 @@ This folder is the repo-shared source for Trusted Bums consultant agents, operat
 - `business-access-rules.md`: role and data access expectations used by Security, QA, Data, Product Ops, Lead Developer, and Code Review.
 - `code-review-agent.md`: pre-main Code Review Agent contract, GO/NO-GO output format, and Lead Developer handoff rules.
 - `../b2b-marketing-growth-backlog.md`: growth strategy backlog for increasing qualified Bums and Clients while preserving marketplace quality and trust.
+- `../release-verification-backlog.md`: release evidence, GO/NO-GO/HOLD/HOTFIX/ROLLBACK status, and cross-agent release follow-ups.
+- `../qa-harness-reliability-backlog.md`: QA workflow, Playwright, env-contract, artifact, and Deep QA reliability backlog.
+- `../agent-operations-backlog.md`: weekly automation, prompt, schedule, and source-of-truth synchronization audit.
 
 ## Code Review Gate
 
@@ -27,6 +30,19 @@ pnpm run install:hooks
 ```
 
 The hook blocks direct pushes to `main` unless `.codex-review-decision.json` exists locally with a fresh GO decision for the exact commit. That file is ignored by git because it is local review state.
+
+The Code Review Agent remains on-demand and commit-bound. It should not be replaced by a daily automation. Use it when a branch is being pushed or merged to `main`, then let Lead Developer and Release Verification handle post-main evidence.
+
+## Recurring And On-Demand Roles
+
+- Daily QA Test Engineer: product QA coverage, release-risk findings, business-access test matrix, and cross-agent failure feedback.
+- Daily QA Harness Reliability Agent: QA machinery health, flaky workflow diagnosis, Deep QA splitting, browser/session helpers, artifact capture, and `.env.qa` contract reliability.
+- Daily Release Verification Agent: release evidence status after QA or main changes, including GO/NO-GO/HOLD/HOTFIX/ROLLBACK recommendations.
+- Daily specialist agents: UX, UI, Content, Marketing Graphics, B2B Growth, Accessibility, Security, Performance, Data, Product Ops, Trust & Reputation.
+- Daily Lead Developer Scrum: synthesis, engineering priority, cross-specialist tradeoff classification, and implementation sequencing.
+- Weekly Agent Operations Steward: prompt/schedule/source-of-truth synchronization.
+- On-demand Code Review Agent: exact-commit pre-main GO/NO-GO review.
+- On-demand Legal/Compliance Reviewer: legal, finance, privacy, consent, agreement, commission, endorsement, and claims-sensitive review.
 
 ## Updating This Pack
 

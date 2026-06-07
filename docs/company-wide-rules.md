@@ -1,6 +1,6 @@
 # Trusted Bums Company-Wide Rules
 
-_Last updated: 2026-06-04 by Codex._
+_Last updated: 2026-06-07 by Codex._
 
 ## Purpose
 
@@ -109,6 +109,14 @@ When adding a rule, include:
 
 ## Specialist And Release Coordination
 
+### Consultant local preview and external DNS checks use fixed targets
+- Rule: When consultant work needs a local preview or local route check from the Codex runner, use port `8080` only. When external DNS context is needed from the same runner, use `https://rcdl.tplinkdns.com` as the external target unless Ryan specifies a different host for that run.
+- Applies to: UX, UI, Content, QA, Trust & Reputation, Lead Developer, and any Codex-run local preview or external reachability check.
+- Why it matters: The runner needs predictable ports and a single known external host so evidence is comparable across specialist runs and local test setup does not drift.
+- Implementation notes: Do not start local preview servers on alternate ports during consultant runs. If a specialist needs external DNS or TLS context, record results against `rcdl.tplinkdns.com` and distinguish runner-local failures from confirmed production outages.
+- QA proof: Agent Inputs cite local preview checks on `127.0.0.1:8080` when used, and external reachability/TLS notes cite `rcdl.tplinkdns.com` unless the user explicitly overrides it.
+- Open questions: Whether `rcdl.tplinkdns.com` is expected to present a publicly trusted TLS chain from all consultant environments.
+
 ### UI consultant visual evidence comes from GitHub Visual QA
 - Rule: The UI consultant should use the GitHub Actions workflow named `Visual UI Audit` and its `visual-ui-audit` artifacts for visual QA evidence instead of attempting local Vite, local browser, or local Playwright visual checks.
 - Applies to: Daily UI consultant automation, `docs/ui-optimization-backlog.md`, `docs/consultant-team-rules.md`, `.github/workflows/visual-ui-audit.yml`, and UI visual evidence collection.
@@ -119,9 +127,9 @@ When adding a rule, include:
 
 ### Release QA, E2E, and deep interaction QA run from GitHub
 - Rule: Release QA should run from GitHub Actions. E2E, visual QA, and deep QA evidence should come from GitHub workflow logs and artifacts, with local `pnpm` or Playwright runs treated as developer preflight or reproduction evidence only.
-- Applies to: `QA`, `E2E Smoke`, `Visual UI Audit`, `Deep QA Hotfix Audit`, Lead Developer release handoff, QA/Test Engineer automation, Code Review Agent post-main plans, and production deploy verification.
+- Applies to: `QA`, `E2E Smoke`, `Visual UI Audit`, `Deep QA Hotfix Audit`, QA/Test Engineer automation, QA Harness Reliability automation, Release Verification automation, Lead Developer release handoff, Code Review Agent post-main plans, and production deploy verification.
 - Why it matters: GitHub has the intended CI runner, deployed target, repository secrets, role accounts, and artifact retention path. Local runs have repeatedly been affected by environment-specific blockers that weaken release evidence.
-- Implementation notes: The `E2E Smoke` workflow should include public smoke, authenticated role smoke, portal interaction audit, and a non-optional deep workflow hotfix audit. Deep QA should verify every visible enabled button on every audited route is operable by actionability checks, click safe non-destructive controls, and route mutating/destructive controls through approved mutating deep-QA coverage when needed.
+- Implementation notes: The `E2E Smoke` workflow should include public smoke, authenticated role smoke, portal interaction audit, and a non-optional deep workflow hotfix audit. Deep QA should verify every visible enabled button on every audited route is operable by actionability checks, click safe non-destructive controls, and route mutating/destructive controls through approved mutating deep-QA coverage when needed. If a Deep QA pass becomes broad or brittle, QA Harness Reliability should split it by route, role, or workflow instead of retrying the same monolithic path.
 - QA proof: Release notes, QA backlogs, and post-main handoffs cite GitHub workflow run names, pass/fail status, artifact names, and skipped/missing-secret reasons. Local-only QA is explicitly labeled as preflight unless GitHub is unavailable.
 - Open questions: None.
 
@@ -135,7 +143,7 @@ When adding a rule, include:
 
 ### Main pushes require post-main QA and rollback guidance
 - Rule: After every successful push or merge to `main`, Lead Developer must run or trigger the broadest practical QA/release verification pass and recommend rollback, hotfix-forward, or hold-deploy if release-impacting checks fail.
-- Applies to: Lead Developer, Code Review Agent, QA, Security, Trust & Reputation, Supabase, public website, and deployment workflows.
+- Applies to: Lead Developer, Release Verification, Code Review Agent, QA, Security, Trust & Reputation, Supabase, public website, and deployment workflows.
 - Why it matters: The Code Review gate checks before merge, but production risk is only known after the merged/deployed system is verified.
 - Implementation notes: Code Review Agent GO decisions should include a post-main QA plan. Lead Developer owns the post-main result and recovery recommendation.
 - QA proof: Post-main validation results are recorded with pass/fail/skip reasons and rollback or hotfix triggers.

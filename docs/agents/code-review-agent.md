@@ -24,6 +24,21 @@ pnpm run install:hooks
 
 The Code Review Agent may create `.codex-review-decision.json` only after a GO decision. It must not create or update that file after a NO-GO decision.
 
+## On-Demand Invocation
+
+Run this role when Ryan asks to push to `main`, merge into `main`, prepare a branch for `main`, or asks whether a current commit is safe to release. Do not run it as a daily automation, because the decision must name the exact commit SHA that would land on `main`.
+
+Before starting the review, collect:
+
+- Current branch and target remote.
+- Exact HEAD commit SHA intended for `main`.
+- `git status --short` and staged/unstaged scope.
+- Relevant diff for the intended push.
+- Checks already run by the implementer.
+- Any Lead Developer, QA, Release Verification, Security, Trust, or Product Ops notes that affect the changed surface.
+
+If the review returns GO for `main`, create `.codex-review-decision.json` for that exact commit. If it returns NO-GO, do not create the marker; hand blockers to Lead Developer.
+
 Use this JSON shape for a GO marker:
 
 ```json

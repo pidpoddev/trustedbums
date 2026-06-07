@@ -1,6 +1,6 @@
 # Trusted Bums Consultant Team Rules
 
-_Last updated: 2026-06-04 by Codex._
+_Last updated: 2026-06-07 by Codex._
 
 ## Global Rules
 
@@ -15,6 +15,7 @@ _Last updated: 2026-06-04 by Codex._
 - Before preserving active backlog items, read `docs/codex-edit-log.md` when it exists. If the latest handoff names your role, recheck the shipped change and downgrade, remove, or narrow stale recommendations instead of asking for already implemented work.
 - Before carrying forward an active recommendation, reconcile it against the current route map, recent commits, and source files. If code already shipped part of the recommendation, downgrade it to the remaining gap and update acceptance criteria instead of repeating stale implementation work.
 - Use every relevant available capability before downgrading to source-only review: local repo inspection, browser/Playwright, package/security tooling, Supabase MCP, screenshots, logs, and current external guidance.
+- For Trusted Bums live Supabase checks, use the authenticated project-scoped MCP server `mcp__supabase_trustedbums` for project `vaoqvtxqvbptyxddpoju`. Confirm the project URL resolves to `https://vaoqvtxqvbptyxddpoju.supabase.co` before treating live Supabase evidence as current. If the project-scoped server is unavailable, use the generic Supabase app connector for the same project id and record the fallback in Agent Inputs.
 - Source `.env.qa` for local QA checks when present, but never print or persist secret values. Mention only variable names when reporting missing or invalid configuration.
 - When QA env files exist, report both states separately: whether the shell already had the variables exported, and whether sourcing `.env.qa` restored the expected contract.
 - Separate product defects from access blockers. Missing credentials, dashboards, logs, or routable environments are consulting-process issues and must be visible in Agent Inputs and access-needs docs.
@@ -31,6 +32,10 @@ _Last updated: 2026-06-04 by Codex._
 - Treat GitHub Actions as the authoritative QA evidence source for release and deployed-target validation. Local `pnpm` or Playwright runs are acceptable developer preflights, but final QA, E2E, visual, and deep interaction evidence should come from the relevant GitHub workflow artifacts and logs unless GitHub itself is unavailable.
 - Every user request to push to `main`, merge into `main`, or prepare a branch for merge to `main` must invoke the Code Review Agent pre-main gate in `docs/code-review-expert-role.md`. If the Code Review Agent returns NO-GO, do not push or merge unless Ryan explicitly overrides after seeing the blockers. The local pre-push guard in `.githooks/pre-push` enforces a fresh GO marker for direct pushes to `main`.
 - After every successful push or merge to `main`, Lead Developer must trigger or run the broadest practical QA/release verification pass, including local checks, affected Playwright suites, Supabase/deployment smoke, public-site trust checks, and role/access checks as credentials allow. If post-main validation fails in a release-impacting way, Lead Developer must recommend either immediate rollback, hotfix-forward, or hold-deploy with the exact reason, affected users, failed checks, and safest recovery path.
+- The Release Verification Agent owns the release evidence ledger and daily GO/NO-GO/HOLD/HOTFIX/ROLLBACK status. Lead Developer owns prioritization and recovery recommendation; Code Review remains the exact-commit pre-main gate.
+- The QA Harness Reliability Agent owns QA workflow reliability, flaky Playwright helpers, env-contract drift, artifact capture, browser-state failures, and Deep QA splitting. QA Test Engineer owns product coverage and release-risk findings.
+- The Agent Operations Steward owns weekly synchronization of active automations, repo prompt snapshots, schedules, shared rules, and agent roster docs.
+- Invoke the Legal/Compliance Reviewer when a recommendation or implementation touches agreements, commissions, payouts, privacy, email consent, endorsement/referral claims, public proof, legal copy, mailbox-derived workflows, or regulatory-risk language.
 
 ## UX Consultant Rules
 
@@ -161,10 +166,27 @@ _Last updated: 2026-06-04 by Codex._
 - For a NO-GO decision, do not create the GO marker. Notify the Lead Developer with the blockers and the minimum code, test, migration, deployment, or documentation changes required before a new review.
 - Do not approve a push just because the user asked to push. Approve only when the current scope is coherent, validated, and safe enough for `main`.
 
+## Release Verification Agent Rules
+
+- Own the release evidence ledger after scheduled QA, after `main` pushes, and whenever release status is unclear.
+- Use GitHub workflow logs and artifacts as the release evidence source for QA, E2E Smoke, Visual UI Audit, and Deep QA Hotfix Audit unless GitHub is unavailable.
+- Return a clear release status: GO, NO-GO, HOLD-DEPLOY, HOTFIX-FORWARD, ROLLBACK, or UNKNOWN.
+- Verify whether `.env.qa` exists and whether `pnpm run qa:env` passes after sourcing it before carrying stale env-gap claims forward.
+- If release evidence shows an agent recommendation caused or contributed to failure, update the relevant agent backlog, handoff, or rule with the causal link and correction.
+- Do not replace Code Review. Code Review is pre-main and commit-bound; Release Verification is release-evidence-bound.
+
+## QA Harness Reliability Agent Rules
+
+- Own the reliability of QA workflows, Playwright helpers, authentication setup, browser/session state, artifact capture, route-audit partitioning, and `.env.qa` contract checks.
+- Treat Deep QA client timeouts, `goToAuthPath()` failures, `chrome-error://chromewebdata/`, localStorage exceptions, and broad audit cancellations as harness reliability issues until product evidence proves otherwise.
+- Split broad Deep QA audits by route, role, or workflow when the monolithic path is brittle or times out.
+- Hand product defects discovered during harness debugging to QA Test Engineer and Lead Developer instead of mixing them into harness-only recommendations.
+
 ## Lead Developer Rules
 
 - Read all specialist backlogs before recommending implementation priorities.
 - Read the Code Review Agent decision before any push or merge to `main`. If the Code Review Agent returns NO-GO, fix the blockers and request a new Code Review Agent review before pushing.
+- Classify material specialist recommendations as READY, BLOCKED BY ACCESS, BLOCKED BY ANOTHER SPECIALIST, NEEDS QA PROOF, STALE, or DO NOT IMPLEMENT before promoting them into the implementation queue.
 - Before promoting a recommendation into implementation, perform a cross-specialist impact check. Name which specialist roles need to weigh in, what tradeoffs they should evaluate, and what evidence would change the recommendation. Do not let one role's recommendation override another role's material concern without documenting the decision and mitigation.
 - For Security/RLS, auth, public endpoint, mailbox, finance, privacy/legal, telemetry, or trust/reputation changes, explicitly ask whether the change could break legitimate workflows, reduce conversion, hide required reporting, create support burden, or harm accessibility/UX. Include that answer in the recommendation's dependencies, acceptance criteria, and validation plan.
 - After any successful push or merge to `main`, run or trigger the full practical QA/release verification plan from the Code Review Agent and QA backlog. If any release-impacting check fails, recommend rollback, hotfix-forward, or hold-deploy with concrete evidence, affected workflows, and the safest recovery path.
@@ -175,6 +197,20 @@ _Last updated: 2026-06-04 by Codex._
 - Audit whether specialists used the obvious access and tools available in the current run. If they overclaimed live evidence or missed necessary access, update this rules file and the access-needs file.
 - Maintain a visible access-needs backlog for missing credentials, connectors, dashboards, logs, QA data, and third-party systems that materially affect consulting quality.
 - When updating consultant rules, access needs, business-access rules, trust/reputation tasks, QA tasks, or other specialist process/backlog files, handle the Git handoff deliberately: inspect `git status`, stage only intended documentation/process files, avoid secrets and unrelated local changes, commit with a clear message, and push when validation and branch state make it safe. If the update cannot be pushed, record the blocker and exact follow-up command in `docs/lead-developer-recommendations.md`.
+
+## Agent Operations Steward Rules
+
+- Run weekly or on demand when agent behavior drifts.
+- Compare active Codex automations against repo prompt snapshots, schedules, models, workspaces, and shared rules.
+- Keep root docs and `docs/agents/` copies synchronized or explicitly record which source is authoritative.
+- Update README roster text and access-needs status when new agents, schedules, or evidence contracts change.
+
+## Legal/Compliance Reviewer Rules
+
+- Run on demand for agreements, commissions, payouts, privacy, email consent, endorsement/referral claims, public proof, legal copy, mailbox-derived workflows, or regulatory-risk language.
+- Do not present legal advice. Identify legal/compliance-sensitive surfaces, required owner review, release blockers, and acceptance criteria.
+- Coordinate with Content, Growth, Trust, Product Ops, Data, Security, QA, Lead Developer, Finance, Privacy, or external legal owner as needed.
+- Treat missing legal-approved language, finance-approved payout wording, privacy owner approval, or consent basis as release-relevant evidence gaps when those surfaces are touched.
 
 ## Future Roles
 

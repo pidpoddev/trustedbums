@@ -119,9 +119,9 @@ When adding a rule, include:
 
 ### Release QA, E2E, and deep interaction QA run from GitHub
 - Rule: Release QA should run from GitHub Actions. E2E, visual QA, and deep QA evidence should come from GitHub workflow logs and artifacts, with local `pnpm` or Playwright runs treated as developer preflight or reproduction evidence only.
-- Applies to: `QA`, `E2E Smoke`, `Visual UI Audit`, `Deep QA Hotfix Audit`, Lead Developer release handoff, QA/Test Engineer automation, Code Review Agent post-main plans, and production deploy verification.
+- Applies to: `QA`, `E2E Smoke`, `Visual UI Audit`, `Deep QA Hotfix Audit`, QA/Test Engineer automation, QA Harness Reliability automation, Release Verification automation, Lead Developer release handoff, Code Review Agent post-main plans, and production deploy verification.
 - Why it matters: GitHub has the intended CI runner, deployed target, repository secrets, role accounts, and artifact retention path. Local runs have repeatedly been affected by environment-specific blockers that weaken release evidence.
-- Implementation notes: The `E2E Smoke` workflow should include public smoke, authenticated role smoke, portal interaction audit, and a non-optional deep workflow hotfix audit. Deep QA should verify every visible enabled button on every audited route is operable by actionability checks, click safe non-destructive controls, and route mutating/destructive controls through approved mutating deep-QA coverage when needed.
+- Implementation notes: The `E2E Smoke` workflow should include public smoke, authenticated role smoke, portal interaction audit, and a non-optional deep workflow hotfix audit. Deep QA should verify every visible enabled button on every audited route is operable by actionability checks, click safe non-destructive controls, and route mutating/destructive controls through approved mutating deep-QA coverage when needed. If a Deep QA pass becomes broad or brittle, QA Harness Reliability should split it by route, role, or workflow instead of retrying the same monolithic path.
 - QA proof: Release notes, QA backlogs, and post-main handoffs cite GitHub workflow run names, pass/fail status, artifact names, and skipped/missing-secret reasons. Local-only QA is explicitly labeled as preflight unless GitHub is unavailable.
 - Open questions: None.
 
@@ -135,7 +135,7 @@ When adding a rule, include:
 
 ### Main pushes require post-main QA and rollback guidance
 - Rule: After every successful push or merge to `main`, Lead Developer must run or trigger the broadest practical QA/release verification pass and recommend rollback, hotfix-forward, or hold-deploy if release-impacting checks fail.
-- Applies to: Lead Developer, Code Review Agent, QA, Security, Trust & Reputation, Supabase, public website, and deployment workflows.
+- Applies to: Lead Developer, Release Verification, Code Review Agent, QA, Security, Trust & Reputation, Supabase, public website, and deployment workflows.
 - Why it matters: The Code Review gate checks before merge, but production risk is only known after the merged/deployed system is verified.
 - Implementation notes: Code Review Agent GO decisions should include a post-main QA plan. Lead Developer owns the post-main result and recovery recommendation.
 - QA proof: Post-main validation results are recorded with pass/fail/skip reasons and rollback or hotfix triggers.

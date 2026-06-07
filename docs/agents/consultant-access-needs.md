@@ -1,6 +1,6 @@
 # Trusted Bums Consultant Access Needs
 
-_Last updated: 2026-05-31 by Codex daily security engineer automation._
+_Last updated: 2026-06-07 by Codex._
 
 ## Executive Read
 
@@ -15,8 +15,8 @@ This file tracks access, credentials, dashboards, logs, fixtures, and third-part
 
 ### P0 - Stabilize Supabase consultant tooling for project `vaoqvtxqvbptyxddpoju`
 - Why it matters: Security, Data/Analytics, Performance, Product Ops, and Lead Developer need consistent live validation for RLS, policies, grants, views, functions, advisors, and safe aggregates.
-- Needed access: Supabase MCP or connector capability for read-only SQL, catalog inspection, security advisors, performance advisors, storage inspection, and safe aggregate queries in the actual consultant session.
-- Current status: Supabase MCP access improved in the 2026-05-30 security run: read-only SQL, security advisors, edge-function inventory/source, logs, and storage metadata were callable for project `vaoqvtxqvbptyxddpoju`. The remaining consultant risk is session inconsistency rather than total absence, because the 2026-05-29 product-ops run still lacked read-only SQL, advisors, and logs. Keep this request open until those capabilities are dependable across consultant sessions.
+- Needed access: Supabase MCP or connector capability for read-only SQL, catalog inspection, security advisors, performance advisors, storage inspection, safe aggregate queries, function inventory, and logs in the actual consultant session.
+- Current status: This narrowed again on 2026-06-07. Codex completed OAuth login for the project-scoped `supabase-trustedbums` MCP entry and a fresh nested agent verified `mcp__supabase_trustedbums` against project `vaoqvtxqvbptyxddpoju`: `get_project_url` returned `https://vaoqvtxqvbptyxddpoju.supabase.co`, and `list_edge_functions` returned the live edge-function inventory including `send-website-email`. The generic Supabase app connector also listed the same Trusted Bums project and edge functions. Keep this request open only for capability-depth gaps that may still vary by session, such as reliable query plans, `pg_stat_statements`, deployment history, secrets inventory by variable name, and a stable all-role function inventory path.
 
 ### P0 - Define authoritative profile bootstrap and self-editable identity fields
 - Why it matters: Security, Product Ops, QA/Test, and Lead Developer need an explicit business rule for who may assign portal role, client company, client access role, and Bum identity before RLS and auth bootstrap can be safely tightened.
