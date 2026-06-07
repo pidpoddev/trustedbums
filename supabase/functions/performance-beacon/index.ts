@@ -79,6 +79,18 @@ function cleanNavigationType(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, 40) : null;
 }
 
+function sanitizedRawPayload(payload: PerformanceMetricPayload) {
+  return {
+    name: cleanMetricName(payload.name),
+    value: typeof payload.value === "number" && Number.isFinite(payload.value) ? Number(payload.value.toFixed(3)) : null,
+    rating: cleanRating(payload.rating),
+    metricId: cleanMetricId(payload.metricId),
+    navigationType: cleanNavigationType(payload.navigationType),
+    path: cleanPath(payload.path),
+    connection: cleanConnection(payload.connection),
+  };
+}
+
 async function hashUserAgent(value: string | null) {
   if (!value) return null;
   const bytes = new TextEncoder().encode(value);
@@ -120,30 +132,36 @@ Deno.serve(async (request) => {
     const metricName = cleanMetricName(payload.name);
     const rating = cleanRating(payload.rating);
     const value = typeof payload.value === "number" && Number.isFinite(payload.value) ? payload.value : null;
+    const sanitizedPayload = sanitizedRawPayload(payload);
 
     if (!metricName || !rating || value === null || value < 0 || value >= 600000) {
       return json(400, { error: "Invalid performance metric." }, origin);
     }
 
-    const { error } = await supabaseAdmin.from("performance_metric_events").insert({
-      metric_name: metricName,
-      metric_value: Number(value.toFixed(3)),
-      metric_rating: rating,
-      metric_id: cleanMetricId(payload.metricId),
-      navigation_type: cleanNavigationType(payload.navigationType),
-      page_path: cleanPath(payload.path),
-      connection_type: cleanConnection(payload.connection),
-      deployment_origin: origin,
-      user_agent_hash: await hashUserAgent(request.headers.get("user-agent")),
-      raw_payload: payload,
-    });
+    try {
+      const { error } = await supabaseAdmin.from("performance_metric_events").insert({
+        metric_name: metricName,
+        metric_value: sanitizedPayload.value,
+        metric_rating: rating,
+        metric_id: sanitizedPayload.metricId,
+        navigation_type: sanitizedPayload.navigationType,
+        page_path: sanitizedPayload.path,
+        connection_type: sanitizedPayload.connection,
+        deployment_origin: origin,
+        user_agent_hash: await hashUserAgent(request.headers.get("user-agent")),
+        raw_payload: sanitizedPayload,
+      });
 
-    if (error) {
+      if (error) {
+        console.error("Unable to store performance metric", error);
+        return json(202, { ok: true, stored: false }, origin);
+      }
+    } catch (error) {
       console.error("Unable to store performance metric", error);
-      return json(500, { error: "Unable to store performance metric." }, origin);
+      return json(202, { ok: true, stored: false }, origin);
     }
 
-    return json(202, { ok: true }, origin);
+    return json(202, { ok: true, stored: true }, origin);
   } catch (error) {
     console.error("Invalid performance beacon request", error);
     return json(400, { error: "Invalid request." }, origin);
