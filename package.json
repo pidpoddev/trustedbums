@@ -16,6 +16,7 @@
     "code-review:gate": "node scripts/code-review-gate.mjs",
     "install:hooks": "git config core.hooksPath .githooks",
     "test": "vitest run",
+    "pretest:e2e": "pnpm run build:extension -- --allow-placeholders",
     "test:e2e": "playwright test",
     "test:watch": "vitest",
     "build:extension": "node scripts/build-chrome-extension.mjs",

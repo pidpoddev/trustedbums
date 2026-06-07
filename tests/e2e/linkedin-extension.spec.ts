@@ -7,7 +7,10 @@ const popupUrl = pathToFileURL(path.join(extensionRoot, "popup.html")).toString(
 const contentScriptPath = path.join(extensionRoot, "contentScript.js");
 
 test.describe("Trusted Bums extension", () => {
-
+  test.beforeEach(({ browserName }, testInfo) => {
+    void browserName;
+    test.skip(testInfo.project.name !== "chromium", "Run Chrome extension package checks once on desktop Chromium.");
+  });
 
   test("extracts profile details from the LinkedIn page", async ({ page }) => {
     await page.addInitScript(() => {

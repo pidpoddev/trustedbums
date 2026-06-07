@@ -18,21 +18,21 @@ test.describe("critical opportunity workflow", () => {
     const clientPage = await clientContext.newPage();
 
     await goToAuthedPath(clientPage, clientAdmin, "/client/opportunities/new");
-    await expect(clientPage.getByRole("heading", { name: "Register Opportunity" })).toBeVisible();
+    await expect(clientPage.getByRole("heading", { name: "Register a new opportunity" })).toBeVisible();
 
-    await clientPage.getByLabel("Target account name").fill(targetAccount);
+    await clientPage.getByLabel("Customer account name").fill(targetAccount);
     await clientPage.getByLabel("Business unit / department").fill("QA");
-    await clientPage.getByLabel("Client contact").fill("QA Client");
-    await clientPage.getByLabel("Trusted Bums contact").fill("QA Connector");
+    await clientPage.getByLabel("Your internal contact").fill("QA Client");
+    await clientPage.getByLabel("Trusted Bums owner").fill("QA Connector");
     await clientPage.getByLabel("Expected product/service").fill("QA smoke testing");
     await clientPage.getByLabel("Estimated deal value").fill("10000");
     await clientPage.getByLabel("Expected timeline").fill("QA validation");
 
     await clientPage.getByLabel("Opportunity description").fill("Automated QA smoke opportunity.");
     await clientPage.getByLabel("Notes", { exact: true }).fill("Created by Playwright QA smoke testing.");
-    await clientPage.getByRole("button", { name: /submit registration/i }).click();
+    await clientPage.getByRole("button", { name: /submit opportunity registration/i }).click();
 
-    await expect(clientPage.getByText("Registration submitted")).toBeVisible({ timeout: 20_000 });
+    await expect(clientPage.locator("#main-content").getByText("Opportunity published")).toBeVisible({ timeout: 20_000 });
     await clientContext.close();
 
     const adminContext = await browser.newContext();
