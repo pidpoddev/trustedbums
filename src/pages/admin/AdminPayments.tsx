@@ -86,8 +86,8 @@ export default function AdminPayments() {
   );
   const invoiceReadyClaims = useMemo(() => claims.filter(isInvoiceReadyClaim), [claims]);
   const blockedClaimCount = claims.length - invoiceReadyClaims.length;
-  const reports = reportsQuery.data ?? [];
-  const invoices = invoicesQuery.data ?? [];
+  const reports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
+  const invoices = useMemo(() => invoicesQuery.data ?? [], [invoicesQuery.data]);
   const filteredInvoices = useMemo(() => {
     return invoices.filter((invoice) => {
       const matchesType = invoiceTypeFilter === "ALL" || invoice.status === invoiceTypeFilter;

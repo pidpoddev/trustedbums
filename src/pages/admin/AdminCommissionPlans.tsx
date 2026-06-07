@@ -154,8 +154,11 @@ export default function AdminCommissionPlans() {
     },
   });
 
-  const companies = (companiesQuery.data ?? []).filter((company) => company.relationship_stage === "CLIENT");
-  const plans = plansQuery.data ?? [];
+  const companies = useMemo(
+    () => (companiesQuery.data ?? []).filter((company) => company.relationship_stage === "CLIENT"),
+    [companiesQuery.data],
+  );
+  const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data]);
   const filteredPlans = useMemo(() => {
     return plans.filter((plan) => {
       const matchesType = typeFilter === "ALL" || plan.approval_status === typeFilter;

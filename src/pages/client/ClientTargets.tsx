@@ -200,7 +200,7 @@ export default function ClientTargets() {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const targets = targetsQuery.data ?? [];
+  const targets = useMemo(() => targetsQuery.data ?? [], [targetsQuery.data]);
   const filteredTargets = useMemo(() => {
     return targets.filter((targetAccount) => {
       const matchesType =

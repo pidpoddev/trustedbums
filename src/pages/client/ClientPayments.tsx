@@ -170,8 +170,8 @@ export default function ClientPayments() {
         selectedCommissionableAmount,
       )
     : null;
-  const reports = reportsQuery.data ?? [];
-  const invoices = invoicesQuery.data ?? [];
+  const reports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
+  const invoices = useMemo(() => invoicesQuery.data ?? [], [invoicesQuery.data]);
   const filteredInvoices = useMemo(() => {
     return invoices.filter((invoice) => {
       const matchesType =

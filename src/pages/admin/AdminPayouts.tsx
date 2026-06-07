@@ -89,7 +89,7 @@ export default function AdminPayouts() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<PayoutTypeFilter>("ALL");
   const payoutsQuery = useQuery({ queryKey: ["admin-bum-payouts"], queryFn: listBumPayouts });
-  const payouts = payoutsQuery.data ?? [];
+  const payouts = useMemo(() => payoutsQuery.data ?? [], [payoutsQuery.data]);
   const filteredPayouts = useMemo(() => {
     return payouts.filter((payout) => {
       const matchesType = typeFilter === "ALL" || payout.status === typeFilter;
