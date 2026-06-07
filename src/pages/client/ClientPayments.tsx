@@ -681,7 +681,7 @@ export default function ClientPayments() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Customer Payment Reports</CardTitle>
+              <CardTitle className="font-display">Payment report history</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(220px,0.8fr)] md:items-end">

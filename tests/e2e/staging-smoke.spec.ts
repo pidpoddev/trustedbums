@@ -39,7 +39,7 @@ test.describe("staging smoke", () => {
 
     await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByText("Select Client or Bum.")).toBeVisible();
+    await expect(page.getByText("Select Client Prospect or Bum Prospect.")).toBeVisible();
     await expect(page.getByText("Enter a valid email address.")).toBeVisible();
 
     await page.locator('label[for="signup-client"]').click();

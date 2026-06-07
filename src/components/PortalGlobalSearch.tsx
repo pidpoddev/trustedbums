@@ -91,6 +91,29 @@ function contactResultHref(contact: BumRepresentedContactRecord) {
   return contact.id.includes(":") ? contact.detailUrl : "/bum/contacts/" + contact.id;
 }
 
+function normalizeSearchText(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function singularizeSearchToken(value: string) {
+  return value.length > 3 && value.endsWith("s") ? value.slice(0, -1) : value;
+}
+
+function scoreSearchResult(item: PortalSearchResult, normalizedQuery: string) {
+  const title = normalizeSearchText(item.title);
+  const category = normalizeSearchText(item.category);
+  const subtitle = normalizeSearchText(item.subtitle);
+  const href = normalizeSearchText(item.href);
+  const normalizedToken = singularizeSearchToken(normalizedQuery);
+
+  if (title === normalizedQuery || title === normalizedToken) return 0;
+  if (item.icon === "page" && (title.includes(normalizedQuery) || title.includes(normalizedToken))) return 1;
+  if (item.icon === "page" && (href.includes(normalizedQuery) || href.includes(normalizedToken))) return 2;
+  if (category.includes(normalizedQuery) || category.includes(normalizedToken)) return 3;
+  if (subtitle.includes(normalizedQuery) || subtitle.includes(normalizedToken)) return 4;
+  return 5;
+}
+
 function rolePages(user?: { role?: string; clientAccessRole?: string }) {
   const role = user?.role;
 
@@ -435,10 +458,14 @@ export function PortalGlobalSearch() {
   ]);
 
   const results = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = normalizeSearchText(query);
     if (normalizedQuery.length < 2) return [];
     return allResults
-      .filter((item) => item.searchable.includes(normalizedQuery))
+      .filter((item) => {
+        const normalizedToken = singularizeSearchToken(normalizedQuery);
+        return item.searchable.includes(normalizedQuery) || item.searchable.includes(normalizedToken);
+      })
+      .sort((first, second) => scoreSearchResult(first, normalizedQuery) - scoreSearchResult(second, normalizedQuery))
       .slice(0, MAX_RESULTS);
   }, [allResults, query]);
 

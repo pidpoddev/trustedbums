@@ -4,6 +4,12 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const trackingHashSalt = Deno.env.get("EMAIL_TRACKING_HASH_SALT") ?? "trusted-bums-email-tracking";
+const allowedClickHosts = new Set(
+  (Deno.env.get("EMAIL_TRACKING_ALLOWED_HOSTS") ?? "trustedbums.com,www.trustedbums.com")
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean),
+);
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -28,6 +34,29 @@ function getClientIp(request: Request) {
   return request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
 }
 
+function json(status: number, payload: Record<string, unknown>) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function getApprovedClickUrl(rawValue: string | null) {
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(rawValue);
+    if (parsed.protocol !== "https:" || !allowedClickHosts.has(parsed.hostname.toLowerCase())) {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 async function recordEvent(request: Request, eventType: "OPEN" | "CLICK", deliveryId: string, clickedUrl: string | null) {
   const { data: delivery, error: deliveryError } = await supabaseAdmin
     .from("admin_email_deliveries")
@@ -43,7 +72,7 @@ async function recordEvent(request: Request, eventType: "OPEN" | "CLICK", delive
     }>();
 
   if (deliveryError || !delivery) {
-    return;
+    return false;
   }
 
   const now = new Date().toISOString();
@@ -66,6 +95,7 @@ async function recordEvent(request: Request, eventType: "OPEN" | "CLICK", delive
   if (eventType === "CLICK" && !delivery.clicked_at) update.clicked_at = now;
 
   await supabaseAdmin.from("admin_email_deliveries").update(update).eq("id", delivery.id);
+  return true;
 }
 
 Deno.serve(async (request) => {
@@ -77,8 +107,20 @@ Deno.serve(async (request) => {
   }
 
   if (url.pathname.endsWith("/click")) {
-    const targetUrl = url.searchParams.get("u") ?? "https://trustedbums.com";
-    await recordEvent(request, "CLICK", deliveryId, targetUrl).catch((error) => console.error("Unable to record click", error));
+    const targetUrl = getApprovedClickUrl(url.searchParams.get("u"));
+    if (!targetUrl) {
+      return json(400, { error: "Invalid tracked link destination." });
+    }
+
+    const recorded = await recordEvent(request, "CLICK", deliveryId, targetUrl).catch((error) => {
+      console.error("Unable to record click", error);
+      return false;
+    });
+
+    if (!recorded) {
+      return json(404, { error: "Tracked link not found." });
+    }
+
     return Response.redirect(targetUrl, 302);
   }
 
