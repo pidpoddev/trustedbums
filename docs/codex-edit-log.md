@@ -33,6 +33,16 @@ This file is the running handoff log for implementation work Codex has made in t
 - Recheck agents: Security Engineer, Trust And Reputation Consultant, QA/Test Engineer, Product Ops Workflow Analyst, Lead Developer.
 - Next run should verify: valid invitations still land on an approved `/login` handoff, external redirect inputs do not reach Clerk unchanged, and any production-specific allowed origins are set through `INVITATION_REDIRECT_ALLOWED_ORIGINS` plus `INVITATION_REDIRECT_FALLBACK_URL` as needed.
 
+### 2026-06-07 - Recheck Bum saved-target RLS alignment
+
+- Trigger: Ryan asked to continue the next unresolved scrum items.
+- Implementation branch: `main`.
+- What changed: Added a successor RLS migration that removes `bum_saved_items` from the `customer_targets` Bum read policy, keeping read entitlement tied to accepted target responses or scheduled/completed meetings. Applied the migration live to Trusted Bums Supabase as `20260607234751 remove_saved_target_read_entitlement`. Added regression coverage so saved-only target reads cannot re-enter the policy unnoticed, and updated the security/lead handoffs to move this from implementation gap to seeded proof.
+- Main surfaces changed: `supabase/migrations/20260607194500_remove_saved_target_read_entitlement.sql`, `src/test/customerTargetRules.test.ts`, `docs/security-review-backlog.md`, `docs/lead-developer-recommendations.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/customerTargetRules.test.ts`; `corepack pnpm run qa`; `git diff --check`; Supabase MCP `_apply_migration`; Supabase MCP `_list_migrations`.
+- Recheck agents: Security Engineer, Product Ops Workflow Analyst, QA/Test Engineer, Lead Developer.
+- Next run should verify: a Bum with an accepted target response can still read the allowed target, a Bum with only a saved target cannot read it directly, and Product Ops still wants saved targets to remain bookmark-only rather than entitlement-preserving.
+
 ### 2026-06-04 - Recheck glossary copy implementation
 
 - Trigger: Ryan asked to implement Lead Developer recommendation 1.
