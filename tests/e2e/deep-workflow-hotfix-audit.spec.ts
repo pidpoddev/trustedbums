@@ -8,6 +8,7 @@ import {
   installDeepQaMonitors,
   isDeepMutationEnabled,
   type DeepQaIssue,
+  type DeepQaRouteResult,
   type QaCreatedRecord,
 } from "./helpers/deepQa";
 
@@ -181,6 +182,7 @@ test.describe("deep workflow hotfix audit", () => {
 
     const runId = createDeepQaRunId();
     const issues: DeepQaIssue[] = [];
+    const routeResults: DeepQaRouteResult[] = [];
 
     try {
       for (const route of routeInventory) {
@@ -188,27 +190,47 @@ test.describe("deep workflow hotfix audit", () => {
         const context = await browser.newContext();
         const page = await context.newPage();
         installDeepQaMonitors(page, issues, route.area);
+        const startedAt = Date.now();
 
         try {
           await goToAuthedPath(page, account, route.path);
           await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
           await reportVisibleFailure(page, issues, route.area, route.workflow);
           await exploreVisibleNonDestructiveButtons(page, issues, route.area, route.workflow);
+          routeResults.push({
+            area: route.area,
+            workflow: route.workflow,
+            path: route.path,
+            status: "passed",
+            durationMs: Date.now() - startedAt,
+            url: page.url(),
+          });
         } catch (error) {
+          const evidence = error instanceof Error ? error.message : String(error);
           issues.push({
             severity: "P1",
             area: route.area,
             workflow: route.workflow,
-            evidence: error instanceof Error ? error.message : String(error),
+            evidence,
             recommendation: "Reproduce this route/workflow directly, then fix either the product failure or the QA selector/session assumption.",
             url: page.url(),
           });
+          routeResults.push({
+            area: route.area,
+            workflow: route.workflow,
+            path: route.path,
+            status: "failed",
+            durationMs: Date.now() - startedAt,
+            url: page.url(),
+            evidence,
+          });
         } finally {
           await context.close();
+          await attachLeadDevHotfixReport(testInfo, runId, issues, [], routeResults);
         }
       }
     } finally {
-      await attachLeadDevHotfixReport(testInfo, runId, issues);
+      await attachLeadDevHotfixReport(testInfo, runId, issues, [], routeResults);
     }
 
     const blockerIssues = issues.filter((issue) => issue.severity === "P0" || issue.severity === "P1");

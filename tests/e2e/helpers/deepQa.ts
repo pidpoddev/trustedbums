@@ -17,6 +17,16 @@ export interface QaCreatedRecord {
   value: string;
 }
 
+export interface DeepQaRouteResult {
+  area: string;
+  workflow: string;
+  path: string;
+  status: "passed" | "failed";
+  durationMs: number;
+  url?: string;
+  evidence?: string;
+}
+
 const safeExploratoryActionPattern =
   /view|open|close|show|hide|expand|collapse|filter|search|clear|download|copy|cancel|details|help|faq|profile|settings|accessibility|feedback/i;
 
@@ -28,7 +38,13 @@ export function isDeepMutationEnabled() {
   return process.env.QA_DEEP_MUTATION === "1";
 }
 
-export async function attachLeadDevHotfixReport(testInfo: TestInfo, runId: string, issues: DeepQaIssue[], createdRecords: QaCreatedRecord[] = []) {
+export async function attachLeadDevHotfixReport(
+  testInfo: TestInfo,
+  runId: string,
+  issues: DeepQaIssue[],
+  createdRecords: QaCreatedRecord[] = [],
+  routeResults: DeepQaRouteResult[] = [],
+) {
   const markdown = [
     `# Deep QA Hotfix Report`,
     ``,
@@ -52,6 +68,17 @@ export async function attachLeadDevHotfixReport(testInfo: TestInfo, runId: strin
           ].filter(Boolean).join("\n"),
         )
       : [`None.`]),
+    ``,
+    `## Route Completion`,
+    ...(routeResults.length
+      ? routeResults.map((result) =>
+          [
+            `- ${result.status.toUpperCase()} ${result.area}: ${result.workflow} (${result.path}) in ${result.durationMs}ms`,
+            result.url ? `  - URL: ${result.url}` : undefined,
+            result.evidence ? `  - Evidence: ${result.evidence}` : undefined,
+          ].filter(Boolean).join("\n"),
+        )
+      : [`No route-level results recorded.`]),
     ``,
     `## Created QA Records`,
     ...(createdRecords.length

@@ -228,13 +228,37 @@ export async function expectTrustedBumsSession(page: Page) {
   }
 }
 
+async function getTermsPromptDebugState(page: Page) {
+  const acceptedStatus = page.getByText(/Current agreement accepted|Current terms accepted/i).first();
+  const acceptButton = page.getByRole("button", { name: /accept.*continue/i });
+  const skipButton = page.getByRole("button", { name: /skip this login/i });
+  const checkbox = page.getByRole("checkbox").first();
+  const visibleText = await page.locator("body").innerText().catch(() => "");
+  const visibleErrors = visibleText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => /unable to|failed|not authorized|please try again|current agreement accepted|current terms accepted/i.test(line))
+    .slice(0, 8);
+
+  return {
+    url: page.url(),
+    acceptedStatusVisible: await acceptedStatus.isVisible({ timeout: 500 }).catch(() => false),
+    acceptButtonVisible: await acceptButton.isVisible({ timeout: 500 }).catch(() => false),
+    acceptButtonEnabled: await acceptButton.isEnabled({ timeout: 500 }).catch(() => false),
+    skipButtonVisible: await skipButton.isVisible({ timeout: 500 }).catch(() => false),
+    checkboxVisible: await checkbox.isVisible({ timeout: 500 }).catch(() => false),
+    visibleErrors,
+    visibleText: visibleText.slice(0, 1_000),
+  };
+}
+
 export async function acceptTermsIfPrompted(page: Page, destinationPath: string) {
   if (!page.url().includes("/terms")) {
     return;
   }
 
   const isDestinationTermsPage = destinationPath.includes("/terms");
-  const acceptedStatus = page.getByText(/Current terms accepted/i).first();
+  const acceptedStatus = page.getByText(/Current agreement accepted|Current terms accepted/i).first();
 
   if (isDestinationTermsPage && await acceptedStatus.isVisible({ timeout: 2_000 }).catch(() => false)) {
     return;
@@ -263,11 +287,12 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
   }
 
   if (page.url().includes("/terms")) {
+    const termsState = await getTermsPromptDebugState(page);
     throw new Error(
       [
         "Unable to accept current terms during E2E sign-in.",
         `Current URL: ${page.url()}`,
-        `Visible text: ${(await page.locator("body").innerText().catch(() => "")).slice(0, 1_000)}`,
+        `Terms prompt state: ${JSON.stringify(termsState)}`,
       ].join(" "),
     );
   }
