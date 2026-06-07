@@ -73,10 +73,60 @@ jobs:
           QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
         run: pnpm run qa:env && pnpm exec playwright test tests/e2e/contact-intake.spec.ts tests/e2e/staging-smoke.spec.ts tests/e2e/authenticated-role-smoke.spec.ts tests/e2e/portal-interaction-audit.spec.ts
 
-      - name: Run deep workflow hotfix audit
+      - name: Upload Playwright report
         if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+
+  deep-qa:
+    name: Deep QA (${{ matrix.deep_suite }})
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') }}
+    needs: smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        deep_suite:
+          - admin
+          - client
+          - bum
+    env:
+      QA_TARGET_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.target_url || 'https://trustedbums.com' }}
+      QA_MUTATION_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mutation_mode && '1' || '0' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.1.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run deep workflow hotfix audit
         env:
           QA_BASE_URL: ${{ env.QA_TARGET_URL }}
+          QA_DEEP_SUITE: ${{ matrix.deep_suite }}
           QA_DEEP_MUTATION: ${{ env.QA_MUTATION_MODE }}
           QA_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
           QA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -89,11 +139,11 @@ jobs:
           QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
         run: pnpm run qa:deep
 
-      - name: Upload Playwright report
+      - name: Upload deep QA artifacts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: deep-qa-hotfix-audit-${{ matrix.deep_suite }}
           path: |
             playwright-report/
             test-results/

@@ -10,7 +10,7 @@ For pull requests and `main`, confirm the `QA` workflow passed. It runs lint, un
 
 Use the `E2E Smoke` workflow from GitHub Actions for deployed staging or production validation. It runs public smoke, authenticated role smoke, portal interaction audit, and the deep workflow hotfix audit against the selected target URL. After the DreamHost deploy workflow succeeds on `main`, `E2E Smoke` also runs automatically against `https://trustedbums.com`.
 
-Use the `Visual UI Audit` workflow from GitHub Actions for screenshot and responsive visual evidence. Use `Deep QA Hotfix Audit` directly only when you need a focused rerun of the deep page/control audit.
+Use the `Visual UI Audit` workflow from GitHub Actions for screenshot and responsive visual evidence. Use `Deep QA Hotfix Audit` directly only when you need a focused rerun of the deep page/control audit. A Deep QA pass is complete only when all three GitHub shards launch and finish: `admin`, `client`, and `bum`.
 
 Run the local gate only as a developer preflight:
 
@@ -26,11 +26,13 @@ QA_BASE_URL=https://your-staging-or-production-url.example pnpm run test:e2e
 
 The browser suite includes a local configuration smoke test, deployed public-route checks, authenticated role checks, portal interaction checks, and workflow checks when `QA_BASE_URL` and the matching account variables are provided.
 
-GitHub `E2E Smoke` always runs the non-mutating deep workflow hotfix audit. For local reproduction, run:
+GitHub `E2E Smoke` always launches all three non-mutating deep workflow hotfix audit shards. For local reproduction of the full unsplit audit, run:
 
 ```sh
 QA_BASE_URL=https://your-staging-or-production-url.example pnpm run qa:deep
 ```
+
+To reproduce a single GitHub shard locally, add `QA_DEEP_SUITE=admin`, `QA_DEEP_SUITE=client`, or `QA_DEEP_SUITE=bum`.
 
 The deep audit explores each role's routes, checks every visible enabled button for Playwright actionability, clicks safe non-destructive controls, captures runtime/network/user-visible failures, and attaches a Lead Dev hotfix report to the Playwright result. To run mutating workflow checks, use the GitHub workflow with `mutation_mode=true` or use a dedicated QA dataset locally and enable cleanup:
 
@@ -80,7 +82,7 @@ Required repository secrets:
 
 The workflow accepts a `target_url` input and runs the public, authenticated, and workflow smoke tests against that deployed app.
 
-The deep workflow hotfix audit is not optional in this workflow. It runs after smoke checks, uploads `playwright-report/` and `test-results/`, and should be reviewed for page-by-page button operability failures before a release is considered covered.
+The deep workflow hotfix audit is not optional in this workflow. It runs after smoke checks as three GitHub jobs named `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`, uploads shard-specific `playwright-report/` and `test-results/` artifacts, and should be reviewed for page-by-page button operability failures before a release is considered covered.
 
 ## Release Smoke Script
 

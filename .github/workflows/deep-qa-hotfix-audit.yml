@@ -15,8 +15,16 @@ on:
 
 jobs:
   deep-qa:
+    name: Deep QA (${{ matrix.deep_suite }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        deep_suite:
+          - admin
+          - client
+          - bum
 
     steps:
       - name: Checkout repository
@@ -42,6 +50,7 @@ jobs:
       - name: Run deep workflow hotfix audit
         env:
           QA_BASE_URL: ${{ inputs.target_url }}
+          QA_DEEP_SUITE: ${{ matrix.deep_suite }}
           QA_DEEP_MUTATION: ${{ inputs.mutation_mode && '1' || '0' }}
           QA_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
           QA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -58,7 +67,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: deep-qa-hotfix-audit
+          name: deep-qa-hotfix-audit-${{ matrix.deep_suite }}
           path: |
             playwright-report/
             test-results/

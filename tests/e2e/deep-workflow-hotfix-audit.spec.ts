@@ -13,6 +13,7 @@ import {
 } from "./helpers/deepQa";
 
 type RoleKey = "ADMIN" | "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_MEMBER" | "BUM";
+type DeepQaSuite = "admin" | "client" | "bum";
 
 interface WorkflowRoute {
   role: RoleKey;
@@ -85,6 +86,35 @@ const routeInventory: WorkflowRoute[] = [
   { role: "BUM", path: "/bum/reports", heading: "Bum Reports", area: "Bum", workflow: "Reports" },
   { role: "BUM", path: "/bum/profile", heading: "Profile", area: "Bum", workflow: "Profile" },
 ];
+
+function getActiveDeepQaSuite() {
+  const suite = process.env.QA_DEEP_SUITE?.trim().toLowerCase();
+  if (!suite) {
+    return undefined;
+  }
+
+  if (suite !== "admin" && suite !== "client" && suite !== "bum") {
+    throw new Error("QA_DEEP_SUITE must be one of: admin, client, bum.");
+  }
+
+  return suite as DeepQaSuite;
+}
+
+function getRoutesForSuite(suite: DeepQaSuite | undefined) {
+  if (!suite) {
+    return routeInventory;
+  }
+
+  if (suite === "admin") {
+    return routeInventory.filter((route) => route.role === "ADMIN");
+  }
+
+  if (suite === "client") {
+    return routeInventory.filter((route) => route.role.startsWith("CLIENT_"));
+  }
+
+  return routeInventory.filter((route) => route.role === "BUM");
+}
 
 function getRequiredAccount(role: RoleKey) {
   const account = getQaAccount(role);
@@ -177,7 +207,10 @@ test.describe("deep workflow hotfix audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run deep workflow hotfix audit against the deployed QA target.");
 
   test("explores role routes and non-destructive controls for Lead Dev hotfix candidates", async ({ browser }, testInfo) => {
-    test.setTimeout(1_800_000);
+    const activeSuite = getActiveDeepQaSuite();
+    const routes = getRoutesForSuite(activeSuite);
+
+    test.setTimeout(activeSuite ? 900_000 : 1_800_000);
     test.skip(testInfo.project.name !== "chromium", "Run the deep route audit once on desktop Chromium.");
 
     const runId = createDeepQaRunId();
@@ -185,7 +218,7 @@ test.describe("deep workflow hotfix audit", () => {
     const routeResults: DeepQaRouteResult[] = [];
 
     try {
-      for (const route of routeInventory) {
+      for (const route of routes) {
         const account = getRequiredAccount(route.role);
         const context = await browser.newContext();
         const page = await context.newPage();
@@ -238,8 +271,11 @@ test.describe("deep workflow hotfix audit", () => {
   });
 
   test("attempts legal acceptance and mutating client workflows with cleanup", async ({ browser }, testInfo) => {
+    const activeSuite = getActiveDeepQaSuite();
+
     test.setTimeout(240_000);
     test.skip(testInfo.project.name !== "chromium", "Run mutating workflow QA once on desktop Chromium.");
+    test.skip(Boolean(activeSuite && activeSuite !== "client"), "Run mutating deep QA once in the client deep suite.");
     test.skip(!isDeepMutationEnabled(), "Set QA_DEEP_MUTATION=1 to create and clean up QA workflow records.");
 
     if (!process.env.QA_SUPABASE_URL || !process.env.QA_SUPABASE_SERVICE_ROLE_KEY) {
