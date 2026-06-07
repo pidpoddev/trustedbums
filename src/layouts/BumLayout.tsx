@@ -101,7 +101,7 @@ export default function BumLayout() {
             <PortalGlobalSearch />
             <PortalHeaderActions />
           </header>
-          <div className="p-4 sm:p-6">
+          <div className="p-4 pb-24 sm:p-6 sm:pb-28">
             <Outlet />
           </div>
           <ConversationDock />
