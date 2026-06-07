@@ -107,7 +107,7 @@ export default function BumClients() {
   });
 
   const savedClientIds = useMemo(
-    () => new Set((savedItemsQuery.data ?? []).filter((item) => item.item_type === "CLIENT").map((item) => item.client_company_id).filter(Boolean)),
+    () => new Set((savedItemsQuery.data ?? []).filter((item) => item.item_type === "CLIENT" && item.is_saved).map((item) => item.client_company_id).filter(Boolean)),
     [savedItemsQuery.data],
   );
 

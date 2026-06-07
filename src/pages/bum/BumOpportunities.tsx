@@ -29,6 +29,7 @@ import {
   listMarketplaceOpportunities,
   listOpportunityClaimSummaries,
   setBumSavedItem,
+  setBumHiddenItem,
   updateBumRepresentedContact,
   type BumRepresentedContactRecord,
   type CustomerTargetRecord,
@@ -39,7 +40,7 @@ import {
 import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromTargetStatus } from "@/lib/opportunityModel";
 import type { RelationshipStrength } from "@/lib/claimConfig";
 import { cn } from "@/lib/utils";
-import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink, UserPlus } from "lucide-react";
+import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink, UserPlus, Eye, EyeOff } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 const MARKETPLACE_PAGE_SIZE = 6;
@@ -126,6 +127,7 @@ export default function BumOpportunities() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(() => searchParams.get("search") ?? "");
   const [heartedOnly, setHeartedOnly] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
   const [typeFilter, setTypeFilter] = useState<OpportunityTypeFilter>("ALL");
   const [industry, setIndustry] = useState("ALL");
   const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
@@ -175,12 +177,28 @@ export default function BumOpportunities() {
   const savedOpportunityIds = new Set(
     (savedItemsQuery.data ?? [])
       .filter((item) => item.item_type === "OPPORTUNITY")
+      .filter((item) => item.is_saved)
       .map((item) => item.opportunity_registration_id)
       .filter(Boolean),
   );
   const savedTargetIds = new Set(
     (savedItemsQuery.data ?? [])
       .filter((item) => item.item_type === "CUSTOMER_TARGET")
+      .filter((item) => item.is_saved)
+      .map((item) => item.customer_target_id)
+      .filter(Boolean),
+  );
+  const hiddenOpportunityIds = new Set(
+    (savedItemsQuery.data ?? [])
+      .filter((item) => item.item_type === "OPPORTUNITY")
+      .filter((item) => item.is_hidden)
+      .map((item) => item.opportunity_registration_id)
+      .filter(Boolean),
+  );
+  const hiddenTargetIds = new Set(
+    (savedItemsQuery.data ?? [])
+      .filter((item) => item.item_type === "CUSTOMER_TARGET")
+      .filter((item) => item.is_hidden)
       .map((item) => item.customer_target_id)
       .filter(Boolean),
   );
@@ -351,6 +369,24 @@ export default function BumOpportunities() {
       });
     },
   });
+  const hideMutation = useMutation({
+    mutationFn: ({ itemType, itemId, hidden }: { itemType: BumSavedItemType; itemId: string; hidden: boolean }) =>
+      setBumHiddenItem(user!, { itemType, itemId }, hidden, "skip"),
+    onSuccess: (_result, input) => {
+      queryClient.invalidateQueries({ queryKey: ["bum-saved-items", user?.id] });
+      toast({
+        title: input.hidden ? "Opportunity hidden" : "Opportunity restored",
+        description: input.hidden ? "Skipped items stay out of your default list." : "This item is visible in your default list again.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update hidden items",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const renderContactPicker = () => (
     <div className="space-y-3 rounded-md border bg-muted/20 p-3">
@@ -485,10 +521,11 @@ export default function BumOpportunities() {
       .toLowerCase()
       .includes(query.toLowerCase());
     const matchesHeart = !heartedOnly || savedOpportunityIds.has(opportunity.id);
+    const matchesHidden = showHidden || !hiddenOpportunityIds.has(opportunity.id);
     const matchesIndustry = industry === "ALL" || opportunity.expected_product_service === industry;
     const matchesValue = valueMatchesFilter(opportunity.estimated_deal_value ? Number(opportunity.estimated_deal_value) : null, valueFilter);
     const matchesTerm = termMatchesFilter(`${opportunity.expected_timeline ?? ""} ${opportunity.commission_duration ?? ""}`.trim(), termFilter);
-    return matchesType && matchesQuery && matchesHeart && matchesIndustry && matchesValue && matchesTerm;
+    return matchesType && matchesQuery && matchesHeart && matchesHidden && matchesIndustry && matchesValue && matchesTerm;
   });
   const filteredTargets = targets.filter((target) => {
     const matchesType = typeFilter === "ALL" || typeFilter === "TARGET_ACCOUNT";
@@ -496,10 +533,11 @@ export default function BumOpportunities() {
       .toLowerCase()
       .includes(query.toLowerCase());
     const matchesHeart = !heartedOnly || savedTargetIds.has(target.id);
+    const matchesHidden = showHidden || !hiddenTargetIds.has(target.id);
     const matchesIndustry = industry === "ALL" || target.expected_product_service === industry;
     const matchesValue = valueMatchesFilter(target.estimated_deal_value ? Number(target.estimated_deal_value) : null, valueFilter);
     const matchesTerm = termMatchesFilter(target.expected_timeline, termFilter);
-    return matchesType && matchesQuery && matchesHeart && matchesIndustry && matchesValue && matchesTerm;
+    return matchesType && matchesQuery && matchesHeart && matchesHidden && matchesIndustry && matchesValue && matchesTerm;
   });
 
   const marketplaceItems = useMemo(
@@ -514,7 +552,8 @@ export default function BumOpportunities() {
   const visibleOpportunities = visibleMarketplaceItems
     .filter((entry) => entry.type === "opportunity")
     .map((entry) => entry.item);
-  const filterSummary = [typeFilter !== "ALL" ? typeFilters.find((filter) => filter.value === typeFilter)?.label : null, industry !== "ALL" ? industry : null, valueFilter !== "ALL" ? valueFilters.find((filter) => filter.value === valueFilter)?.label : null, termFilter !== "ALL" ? termFilters.find((filter) => filter.value === termFilter)?.label : null, heartedOnly ? "Hearted" : null]
+  const hiddenCount = hiddenOpportunityIds.size + hiddenTargetIds.size;
+  const filterSummary = [typeFilter !== "ALL" ? typeFilters.find((filter) => filter.value === typeFilter)?.label : null, industry !== "ALL" ? industry : null, valueFilter !== "ALL" ? valueFilters.find((filter) => filter.value === valueFilter)?.label : null, termFilter !== "ALL" ? termFilters.find((filter) => filter.value === termFilter)?.label : null, heartedOnly ? "Hearted" : null, showHidden ? "Hidden shown" : null]
     .filter(Boolean)
     .join(" · ") || "All opportunities";
 
@@ -526,7 +565,7 @@ export default function BumOpportunities() {
       />
 
       <FilterPanel summary={filterSummary}>
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto] xl:items-end">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto_auto] xl:items-end">
         <div className="relative min-w-0 xl:col-span-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -620,6 +659,19 @@ export default function BumOpportunities() {
             Hearted
           </Button>
         </div>
+        <div className="flex items-end">
+          <Button
+            variant={showHidden ? "default" : "outline"}
+            className="w-full xl:w-auto"
+            onClick={() => {
+              setShowHidden((current) => !current);
+              setMarketplacePage(1);
+            }}
+          >
+            {showHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+            Hidden{hiddenCount ? ` (${hiddenCount})` : ""}
+          </Button>
+        </div>
         </div>
       </FilterPanel>
 
@@ -632,10 +684,11 @@ export default function BumOpportunities() {
       <div className="grid gap-4">
         {visibleTargets.map((targetAccount) => {
           const isHearted = savedTargetIds.has(targetAccount.id);
+          const isHidden = hiddenTargetIds.has(targetAccount.id);
           const isExpanded = expandedTargetIds.has(targetAccount.id);
 
           return (
-          <Card key={`target-${targetAccount.id}`} className="transition-shadow hover:shadow-md">
+          <Card key={`target-${targetAccount.id}`} className={cn("transition-shadow hover:shadow-md", isHidden && "border-muted bg-muted/30 opacity-80")}>
             <CardContent className="pt-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <div className="rounded-xl bg-primary/10 p-3">
@@ -650,6 +703,7 @@ export default function BumOpportunities() {
                     <StatusBadge label={opportunityStageLabel(stageFromTargetStatus(targetAccount.status))} variant="info" />
                     <StatusBadge label={targetAccount.status.replaceAll("_", " ")} variant="info" />
                     <StatusBadge label="Client target" variant="warning" />
+                    {isHidden ? <StatusBadge label="Skipped" variant="outline" /> : null}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {targetAccount.client_companies?.name ?? "Client pending"} • {targetAccount.priority} priority
@@ -716,6 +770,15 @@ export default function BumOpportunities() {
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={!user || hideMutation.isPending}
+                    onClick={() => hideMutation.mutate({ itemType: "CUSTOMER_TARGET", itemId: targetAccount.id, hidden: !isHidden })}
+                  >
+                    {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+                    {isHidden ? "Unhide" : "Skip"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
                     aria-expanded={isExpanded}
                     onClick={() =>
                       setExpandedTargetIds((current) => {
@@ -766,7 +829,7 @@ export default function BumOpportunities() {
                     }}
                   >
                     <Handshake className="mr-2 h-4 w-4" />
-                    I know someone
+                    Claim intro
                   </Button>
                 </div>
               </div>
@@ -777,11 +840,12 @@ export default function BumOpportunities() {
 
         {visibleOpportunities.map((opportunity) => {
           const isHearted = savedOpportunityIds.has(opportunity.id);
+          const isHidden = hiddenOpportunityIds.has(opportunity.id);
           const isExpanded = expandedOpportunityIds.has(opportunity.id);
           const claimedBy = activeClaimByOpportunityId.get(opportunity.id);
 
           return (
-          <Card key={opportunity.id} className="transition-shadow hover:shadow-md">
+          <Card key={opportunity.id} className={cn("transition-shadow hover:shadow-md", isHidden && "border-muted bg-muted/30 opacity-80")}>
             <CardContent className="pt-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <div className="rounded-xl bg-accent/10 p-3">
@@ -793,6 +857,7 @@ export default function BumOpportunities() {
                     <StatusBadge label={opportunityOriginLabel("CLIENT_ORIGINATED")} variant="secondary" />
                     <StatusBadge label={opportunityStageLabel(stageFromRegistrationStatus(opportunity.status))} variant="info" />
                     <StatusBadge label={claimedBy ? "Already claimed" : "Open"} variant={claimedBy ? "warning" : "success"} />
+                    {isHidden ? <StatusBadge label="Skipped" variant="outline" /> : null}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {opportunity.companies?.name ?? "Client pending"} • {opportunity.commission_rate}% commission
@@ -858,6 +923,15 @@ export default function BumOpportunities() {
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={!user || hideMutation.isPending}
+                    onClick={() => hideMutation.mutate({ itemType: "OPPORTUNITY", itemId: opportunity.id, hidden: !isHidden })}
+                  >
+                    {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+                    {isHidden ? "Unhide" : "Skip"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
                     aria-expanded={isExpanded}
                     onClick={() =>
                       setExpandedOpportunityIds((current) => {
@@ -887,7 +961,7 @@ export default function BumOpportunities() {
                   <Button size="sm" asChild>
                     <Link to={"/bum/opportunities/" + opportunity.id + "?ask=1"}>
                       <MessageSquare className="mr-2 h-4 w-4" />
-                      I have a question
+                      Maybe
                     </Link>
                   </Button>
                   <Button
@@ -895,7 +969,7 @@ export default function BumOpportunities() {
                     onClick={() => openOpportunityConnection(opportunity)}
                   >
                     <Handshake className="mr-2 h-4 w-4" />
-                    I know someone
+                    Claim intro
                   </Button>
                 </div>
               </div>

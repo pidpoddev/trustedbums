@@ -828,7 +828,11 @@ export interface BumSavedItemRecord {
   client_company_id: string | null;
   opportunity_registration_id: string | null;
   customer_target_id: string | null;
+  is_saved: boolean;
+  is_hidden: boolean;
+  hidden_reason: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface BumSavedItemInput {
@@ -2585,6 +2589,31 @@ export async function setBumSavedItem(user: AuthUser, input: BumSavedItemInput, 
   const itemColumn = columnByType[input.itemType];
 
   if (!saved) {
+    const { data: existing, error: existingError } = await supabase
+      .from("bum_saved_items")
+      .select("id, is_hidden")
+      .eq("bum_user_id", user.id)
+      .eq("item_type", input.itemType)
+      .eq(itemColumn, input.itemId)
+      .maybeSingle<Pick<BumSavedItemRecord, "id" | "is_hidden">>();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    if (existing?.is_hidden) {
+      const { error } = await supabase
+        .from("bum_saved_items")
+        .update({ is_saved: false })
+        .eq("id", existing.id);
+
+      if (error) {
+        throw error;
+      }
+
+      return null;
+    }
+
     const { error } = await supabase
       .from("bum_saved_items")
       .delete()
@@ -2605,6 +2634,7 @@ export async function setBumSavedItem(user: AuthUser, input: BumSavedItemInput, 
     client_company_id: null,
     opportunity_registration_id: null,
     customer_target_id: null,
+    is_saved: true,
     [itemColumn]: input.itemId,
   };
 
@@ -2616,7 +2646,115 @@ export async function setBumSavedItem(user: AuthUser, input: BumSavedItemInput, 
 
   if (error) {
     if (error.code === "23505") {
+      const { data: updated, error: updateError } = await supabase
+        .from("bum_saved_items")
+        .update({ is_saved: true, is_hidden: false, hidden_reason: null })
+        .eq("bum_user_id", user.id)
+        .eq("item_type", input.itemType)
+        .eq(itemColumn, input.itemId)
+        .select("*")
+        .single<BumSavedItemRecord>();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      return updated;
+    }
+    throw error;
+  }
+
+  return data;
+}
+
+export async function setBumHiddenItem(user: AuthUser, input: BumSavedItemInput, hidden: boolean, reason?: string) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can hide marketplace items.");
+  }
+
+  const columnByType: Record<BumSavedItemType, keyof Pick<BumSavedItemRecord, "client_company_id" | "opportunity_registration_id" | "customer_target_id">> = {
+    CLIENT: "client_company_id",
+    OPPORTUNITY: "opportunity_registration_id",
+    CUSTOMER_TARGET: "customer_target_id",
+  };
+  const itemColumn = columnByType[input.itemType];
+
+  if (!hidden) {
+    const { data: existing, error: existingError } = await supabase
+      .from("bum_saved_items")
+      .select("id, is_saved")
+      .eq("bum_user_id", user.id)
+      .eq("item_type", input.itemType)
+      .eq(itemColumn, input.itemId)
+      .maybeSingle<Pick<BumSavedItemRecord, "id" | "is_saved">>();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    if (!existing) {
       return null;
+    }
+
+    if (existing.is_saved) {
+      const { error } = await supabase
+        .from("bum_saved_items")
+        .update({ is_hidden: false, hidden_reason: null })
+        .eq("id", existing.id);
+
+      if (error) {
+        throw error;
+      }
+
+      return null;
+    }
+
+    const { error } = await supabase
+      .from("bum_saved_items")
+      .delete()
+      .eq("id", existing.id);
+
+    if (error) {
+      throw error;
+    }
+
+    return null;
+  }
+
+  const payload: Partial<BumSavedItemRecord> & Pick<BumSavedItemRecord, "bum_user_id" | "item_type"> = {
+    bum_user_id: user.id,
+    item_type: input.itemType,
+    client_company_id: null,
+    opportunity_registration_id: null,
+    customer_target_id: null,
+    is_saved: false,
+    is_hidden: true,
+    hidden_reason: reason ?? "skip",
+    [itemColumn]: input.itemId,
+  };
+
+  const { data, error } = await supabase
+    .from("bum_saved_items")
+    .insert(payload)
+    .select("*")
+    .single<BumSavedItemRecord>();
+
+  if (error) {
+    if (error.code === "23505") {
+      const { data: updated, error: updateError } = await supabase
+        .from("bum_saved_items")
+        .update({ is_saved: false, is_hidden: true, hidden_reason: reason ?? "skip" })
+        .eq("bum_user_id", user.id)
+        .eq("item_type", input.itemType)
+        .eq(itemColumn, input.itemId)
+        .select("*")
+        .single<BumSavedItemRecord>();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      return updated;
     }
     throw error;
   }
