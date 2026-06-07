@@ -23,6 +23,16 @@ This file is the running handoff log for implementation work Codex has made in t
 - Recheck agents: Security Engineer, Trust And Reputation Consultant, Lead Developer, Product Ops Workflow Analyst, QA/Test Engineer.
 - Next run should verify: the next safe seeded valid-delivery tracked click records and redirects to an approved Trusted Bums host; invitation redirect URLs are constrained; represented-contact and client-export access boundaries get seeded live allow/deny proof; and Supabase read-only SQL is available for RLS, grant, and helper-function review.
 
+### 2026-06-07 - Recheck invitation redirect hardening
+
+- Trigger: Ryan asked to work the next unresolved scrum items.
+- Implementation branch: `main`.
+- What changed: Added a shared Supabase edge-function redirect normalizer for invitation flows, changed `client-team` and `invite-bum` to allow only approved Trusted Bums/configured Clerk origins, normalize approved redirects to `/login`, and fall back server-side for missing, invalid, or disallowed redirect inputs. Added focused unit coverage for approved origins, omitted redirects, disallowed external redirects, configured Clerk/app origins, and unsafe fallback configuration. Deployed both Supabase functions through MCP as version `2` with `verify_jwt: false` preserved for their existing custom Clerk verification.
+- Main surfaces changed: `supabase/functions/_shared/invitationRedirect.ts`, `supabase/functions/client-team/index.ts`, `supabase/functions/invite-bum/index.ts`, `src/test/invitationRedirect.test.ts`, `docs/security-review-backlog.md`, `docs/lead-developer-recommendations.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/invitationRedirect.test.ts`; `corepack pnpm run qa`; `git diff --check`; Supabase MCP `_deploy_edge_function` for `invite-bum` and `client-team`; Supabase MCP `_get_edge_function` for both deployed functions; public no-auth `curl` smokes for both endpoints, each returning `400` with `Missing bearer token.`.
+- Recheck agents: Security Engineer, Trust And Reputation Consultant, QA/Test Engineer, Product Ops Workflow Analyst, Lead Developer.
+- Next run should verify: valid invitations still land on an approved `/login` handoff, external redirect inputs do not reach Clerk unchanged, and any production-specific allowed origins are set through `INVITATION_REDIRECT_ALLOWED_ORIGINS` plus `INVITATION_REDIRECT_FALLBACK_URL` as needed.
+
 ### 2026-06-04 - Recheck glossary copy implementation
 
 - Trigger: Ryan asked to implement Lead Developer recommendation 1.

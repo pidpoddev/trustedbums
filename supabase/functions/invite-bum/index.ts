@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import * as jose from "jsr:@panva/jose@6";
+import { normalizeInvitationRedirectUrl } from "../_shared/invitationRedirect.ts";
 
 interface ClaimsResponse {
   sub?: string;
@@ -30,6 +31,8 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const clerkSecretKey = Deno.env.get("CLERK_SECRET_KEY");
 const clerkFrontendApiUrl = Deno.env.get("CLERK_FRONTEND_API_URL");
+const invitationRedirectAllowedOrigins = Deno.env.get("INVITATION_REDIRECT_ALLOWED_ORIGINS");
+const invitationRedirectFallbackUrl = Deno.env.get("INVITATION_REDIRECT_FALLBACK_URL");
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -129,15 +132,6 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-function normalizeRedirectUrl(value: unknown, request: Request) {
-  if (typeof value === "string" && value.trim()) {
-    return value.trim();
-  }
-
-  const origin = request.headers.get("origin");
-  return origin ? new URL("/login", origin).toString() : undefined;
-}
-
 async function createClerkInvitation(input: {
   email: string;
   name?: string;
@@ -212,7 +206,11 @@ Deno.serve(async (request: Request) => {
     const email = body.email?.trim().toLowerCase() ?? "";
     const name = body.name?.trim() ?? "";
     const note = body.note?.trim() ?? "";
-    const redirectUrl = normalizeRedirectUrl(body.redirectUrl, request);
+    const redirectUrl = normalizeInvitationRedirectUrl(body.redirectUrl, request, {
+      allowedOrigins: invitationRedirectAllowedOrigins,
+      fallbackUrl: invitationRedirectFallbackUrl,
+      clerkFrontendApiUrl,
+    });
 
     if (!isValidEmail(email)) {
       return json(400, { error: "Enter a valid Bum email address." });

@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import * as jose from "jsr:@panva/jose@6";
+import { normalizeInvitationRedirectUrl } from "../_shared/invitationRedirect.ts";
 
 type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_MEMBER";
 type Action = "list" | "invite" | "update_role" | "disable_member" | "request_domain" | "approve_request" | "deny_request";
@@ -52,6 +53,8 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const clerkSecretKey = Deno.env.get("CLERK_SECRET_KEY");
 const clerkFrontendApiUrl = Deno.env.get("CLERK_FRONTEND_API_URL");
+const invitationRedirectAllowedOrigins = Deno.env.get("INVITATION_REDIRECT_ALLOWED_ORIGINS");
+const invitationRedirectFallbackUrl = Deno.env.get("INVITATION_REDIRECT_FALLBACK_URL");
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -127,12 +130,6 @@ function displayName(user: ClerkUser, email: string) {
 
 function timestampMsToIso(value?: number | null) {
   return typeof value === "number" && Number.isFinite(value) ? new Date(value).toISOString() : null;
-}
-
-function normalizeRedirectUrl(value: unknown, request: Request) {
-  if (typeof value === "string" && value.trim()) return value.trim();
-  const origin = request.headers.get("origin");
-  return origin ? new URL("/login", origin).toString() : undefined;
 }
 
 async function getCurrentProfile(token: string) {
@@ -376,7 +373,11 @@ async function inviteMember(currentProfile: ProfileRow, body: Record<string, unk
     name: fullName,
     company,
     clientAccessRole,
-    redirectUrl: normalizeRedirectUrl(body.redirectUrl, request),
+    redirectUrl: normalizeInvitationRedirectUrl(body.redirectUrl, request, {
+      allowedOrigins: invitationRedirectAllowedOrigins,
+      fallbackUrl: invitationRedirectFallbackUrl,
+      clerkFrontendApiUrl,
+    }),
     invitedBy: currentProfile.id,
   });
 

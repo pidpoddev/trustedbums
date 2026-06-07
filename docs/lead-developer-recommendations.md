@@ -6,20 +6,11 @@ _Last updated: 2026-06-07 by Codex daily lead developer automation._
 
 The implementation queue should stay led by live trust-boundary and business-access defects, not polish. A follow-up Supabase MCP check on 2026-06-07 confirmed project URL `https://vaoqvtxqvbptyxddpoju.supabase.co` and deployed `email-track` version `2` with the same hardened `https` allowlist behavior as local source. Public smokes returned `400` for an off-domain destination and `404` for an approved-host URL with an unknown delivery id, so the former deploy-drift P0 is closed; the remaining tracked-link work is release proof for a safe seeded valid-delivery click.
 
-The next highest-confidence shipped risks are now invitation redirect control, service-role allow/deny coverage, and live Supabase helper exposure. Represented contacts and client exports should no longer be treated as unfixed implementation P0s: current `portal-contacts` source has destination entitlement checks, `ClientExports` restricts operational exports to `CLIENT_ADMIN`, and `src/test/accessBoundaryRegression.test.ts` asserts those boundaries. They remain QA proof gaps until seeded cross-company fixtures exercise the same rules live.
+The next highest-confidence shipped risks are now service-role allow/deny coverage, live Supabase helper exposure, and Bum saved-target policy alignment. Invitation redirect control is implemented in source, covered by focused tests, deployed to `client-team` and `invite-bum` version `2`, and smoke-checked for function boot; it still needs one safe authenticated invite smoke. Represented contacts and client exports should no longer be treated as unfixed implementation P0s: current `portal-contacts` source has destination entitlement checks, `ClientExports` restricts operational exports to `CLIENT_ADMIN`, and `src/test/accessBoundaryRegression.test.ts` asserts those boundaries. They remain QA proof gaps until seeded cross-company fixtures exercise the same rules live.
 
 The practical blocker is release evidence depth. `.env.qa` has now been restored to this local workspace, and `qa:env` passed after sourcing it in the agent setup session. GitHub-hosted workflow evidence remains the intended final QA source, but several specialist runs today had intermittent access to it. That means the next implementation pass should pair every access or trust fix with deterministic allow/deny tests and a deliberate post-change QA plan instead of assuming the broader E2E path is immediately available.
 
 ## Recommended Implementation Queue
-
-### P1 - Constrain invitation redirect URLs for Client Team and Bum invitations
-- Source: `docs/security-review-backlog.md`, [supabase/functions/client-team/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/client-team/index.ts), [supabase/functions/invite-bum/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/invite-bum/index.ts), and `docs/business-access-rules.md`.
-- Why now: Invitation emails are trusted account-entry messages. Both functions still pass caller-supplied redirect URLs into Clerk after only local normalization, which keeps a brand-trust and phishing-adjacent surface open if an upstream caller or admin session is misused.
-- Recommended fix: Centralize redirect validation for invitation functions, allow only configured Trusted Bums and Clerk sign-in origins, and fall back server-side when a supplied origin is absent or disallowed.
-- Likely files/routes: [supabase/functions/client-team/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/client-team/index.ts), [supabase/functions/invite-bum/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/invite-bum/index.ts), Supabase function tests or fixtures, and security handoff docs.
-- Dependencies/risks: Coordinate with QA before changing invite links because valid invitations must still land users in the intended Clerk or app onboarding flow.
-- Acceptance criteria: Approved origins keep working; missing redirects fall back to the configured server-side destination; external origins are rejected or replaced; tests cover approved, missing, and disallowed redirect inputs.
-- Validation: Targeted function tests plus one safe invite smoke in QA once deterministic invite fixtures are available.
 
 ### P1 - Prove represented-contact and client-export access boundaries with seeded live QA
 - Source: [supabase/functions/portal-contacts/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/portal-contacts/index.ts:474), [src/pages/client/ClientExports.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientExports.tsx:77), [src/test/accessBoundaryRegression.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/accessBoundaryRegression.test.ts), and `docs/business-access-rules.md`.
@@ -64,6 +55,8 @@ Keep `email-track` in release smoke coverage, but do not keep it in the active i
 Treat represented-contact scoping and finance-export scope as a QA proof workstream unless seeded evidence proves otherwise. Current source already contains the entitlement checks and finance export narrowing, so the next step is fixture-backed validation, not another broad implementation pass.
 
 Run the Supabase helper cleanup as a narrow advisor-driven migration series. Start with `admin_dashboard_summary()` and the highest-signal helper functions, re-check live advisor results after each migration, and stop if a legitimate Admin path breaks.
+
+Keep invitation redirect hardening in release verification until one safe invite confirms an approved `/login` redirect. Live `client-team` and `invite-bum` source already shows the shared allowlist helper, so treat future redirect issues as release-proof or configuration items unless source regresses.
 
 ## Cross-Backlog Dependencies
 
