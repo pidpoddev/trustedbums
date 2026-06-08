@@ -163,6 +163,8 @@ export default function ClientTargets() {
   }, [createMutation]);
 
   const requestCreateTarget = useCallback((formElement?: HTMLFormElement | null) => {
+    const diagnosticsWindow = window as typeof window & { __trustedBumsClientTargetSaveRequests?: number };
+    diagnosticsWindow.__trustedBumsClientTargetSaveRequests = (diagnosticsWindow.__trustedBumsClientTargetSaveRequests ?? 0) + 1;
     const mutation = createMutationRef.current;
 
     if (formElement && !formElement.reportValidity()) {

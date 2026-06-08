@@ -96,6 +96,7 @@ async function collectTargetFormState(page: Page) {
     const diagnosticsWindow = window as typeof window & {
       __trustedBumsTargetButtonClicks?: number;
       __trustedBumsTargetFormSubmits?: number;
+      __trustedBumsClientTargetSaveRequests?: number;
     };
     const saveButton = Array.from(document.querySelectorAll("button")).find((button) =>
       button.textContent?.includes("Save target account"),
@@ -122,6 +123,7 @@ async function collectTargetFormState(page: Page) {
       invalidControls,
       diagnosticClicks: diagnosticsWindow.__trustedBumsTargetButtonClicks ?? null,
       diagnosticSubmits: diagnosticsWindow.__trustedBumsTargetFormSubmits ?? null,
+      appSaveRequests: diagnosticsWindow.__trustedBumsClientTargetSaveRequests ?? null,
     };
   });
 }
