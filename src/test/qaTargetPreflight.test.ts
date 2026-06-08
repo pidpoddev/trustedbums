@@ -39,4 +39,9 @@ describe("QA target preflight contract", () => {
     expect(preflightSource).toContain('"summary.json"');
     expect(preflightSource).toContain('"summary.txt"');
   });
+
+  it("keeps hosted fetch retries long enough for post-deploy recovery", () => {
+    expect(preflightSource).toContain("QA_TARGET_PREFLIGHT_FETCH_ATTEMPTS ?? 6");
+    expect(preflightSource).toContain("QA_TARGET_PREFLIGHT_FETCH_RETRY_DELAY_MS ?? 5_000");
+  });
 });

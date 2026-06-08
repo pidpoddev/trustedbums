@@ -5,8 +5,8 @@ import path from "node:path";
 
 const timeoutMs = Number(process.env.QA_TARGET_PREFLIGHT_TIMEOUT_MS ?? 15_000);
 const outputDir = process.env.QA_TARGET_PREFLIGHT_OUTPUT_DIR?.trim() || "test-results/qa-target-preflight";
-const fetchAttempts = Number(process.env.QA_TARGET_PREFLIGHT_FETCH_ATTEMPTS ?? 3);
-const fetchRetryDelayMs = Number(process.env.QA_TARGET_PREFLIGHT_FETCH_RETRY_DELAY_MS ?? 1_500);
+const fetchAttempts = Number(process.env.QA_TARGET_PREFLIGHT_FETCH_ATTEMPTS ?? 6);
+const fetchRetryDelayMs = Number(process.env.QA_TARGET_PREFLIGHT_FETCH_RETRY_DELAY_MS ?? 5_000);
 
 function getRequiredEnv(name) {
   const value = process.env[name]?.trim();
