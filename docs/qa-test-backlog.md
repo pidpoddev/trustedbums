@@ -53,6 +53,13 @@ These skips should stay documented until QA intentionally adds seeded fixtures o
 
 ## Active Recommendations
 
+### P1 - Run the Client/Bum go-live workflow gate before external launch
+
+- Evidence: The repo now has `tests/e2e/go-live-client-bum-workflow.spec.ts` and the `qa:go-live` script for the core Client Admin, Client Finance, Client Member, and Bum workflows. This gate is separate from the authorization fixture because it proves users can actually operate the product, not only that row-level access is scoped correctly.
+- Scope: Client dashboards, company/profile, target accounts, opportunity workflows, Bum directory, customer leads, team management, reports, exports, payments, Bum dashboard, Bum profile, opportunities, contacts, claims, prospects, represented clients, earnings, and Bum reports.
+- Why it matters: Go-live risk is not only overexposure. The launch can also fail if legitimate Client or Bum actions are locked down, hidden, broken, or blocked by auth/bootstrap/terms state.
+- Acceptance criteria: `corepack pnpm run qa:go-live` passes against the beta/prod target with the intended QA role accounts; mutation mode is run only when approved and cleanup is verified.
+
 ### P1 - Add seeded live allow/deny behavior coverage
 
 - Business Access Coverage remains the named proof lane until seeded live fixtures are applied and exercised. The repo now has an opt-in seed artifact in `supabase/qa_authorization_seed.sql`, documented in `docs/qa-authorization-fixtures.md`, plus a source-level fixture contract test in `src/test/qaAuthorizationFixtures.test.ts`.
@@ -84,9 +91,10 @@ These skips should stay documented until QA intentionally adds seeded fixtures o
 - Apply `supabase/qa_authorization_seed.sql` in a protected QA database and add direct role-scoped allow/deny assertions against it.
 - Provide a valid Turnstile/contact-smoke path only if mutating public contact submissions should be part of release smoke.
 - Provide stable opportunity/target-account fixture data for deeper Bum opportunity workflows beyond the now-passing non-mutating contact-picker smoke.
+- Run `corepack pnpm run qa:go-live` with the current beta/prod QA role accounts before external launch.
 - Keep current-head Visual UI Audit artifacts fresh for future product-code changes.
 
 ## Agent Inputs
 
 - Date of run: 2026-06-08.
-- Evidence reviewed: GitHub runs `27167307017`, `27167306961`, `27167339658`, and `27167324836`; local contact-intake and QA selector reproduction; `tests/e2e/contact-intake.spec.ts`; `tests/e2e/staging-smoke.spec.ts`; `tests/e2e/visual-ui-audit.spec.ts`; `scripts/qa-target-preflight.mjs`; `.env.qa` key presence without printing secret values; and current `git status`.
+- Evidence reviewed: GitHub runs `27167307017`, `27167306961`, `27167339658`, and `27167324836`; local contact-intake and QA selector reproduction; `tests/e2e/contact-intake.spec.ts`; `tests/e2e/staging-smoke.spec.ts`; `tests/e2e/visual-ui-audit.spec.ts`; `tests/e2e/go-live-client-bum-workflow.spec.ts`; `scripts/qa-target-preflight.mjs`; `.env.qa` key presence without printing secret values; and current `git status`.

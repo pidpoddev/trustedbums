@@ -72,6 +72,26 @@ Push to `main` to run the DreamHost deployment workflow:
 
 After a successful DreamHost deploy, GitHub automatically runs the `E2E Smoke` workflow against `https://trustedbums.com`. Treat that GitHub run as the release QA source of truth. It includes public smoke, authenticated role smoke, portal interaction audit, and deep workflow hotfix audit. Also run or inspect `Visual UI Audit` for screenshot evidence before calling a production release complete.
 
+## Client And Bum Go-Live Workflow Gate
+
+Run this before declaring the beta/prod app ready for external go-live:
+
+```sh
+corepack pnpm run qa:go-live
+```
+
+This is different from the authorization fixture. The go-live workflow gate proves Client Admin, Client Finance, Client Member, and Bum users can reach and operate their main product surfaces without being blocked too tightly.
+
+Default mode is non-mutating. It checks the dashboards, profile surfaces, target and opportunity workflows, Client finance/reporting/export surfaces, Bum profile, opportunities, contacts, claims, prospects, represented clients, earnings, and reports.
+
+For an intentional beta/prod mutation smoke, set:
+
+```sh
+QA_GO_LIVE_MUTATION=1 corepack pnpm run qa:go-live
+```
+
+Mutation mode creates a QA target account and opportunity, then cleans them up when `QA_SUPABASE_SERVICE_ROLE_KEY` is available. Use it only when synthetic beta/prod records are acceptable for the run.
+
 ## Important warning
 
 Do not ship development Clerk keys to production.
