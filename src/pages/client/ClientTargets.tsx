@@ -173,37 +173,6 @@ export default function ClientTargets() {
   }, []);
 
   useEffect(() => {
-    if (!isAddTargetOpen) {
-      return;
-    }
-
-    const formElement = document.getElementById("client-target-form") as HTMLFormElement | null;
-
-    const handleSubmit = (event: SubmitEvent) => {
-      event.preventDefault();
-      requestCreateTarget(formElement);
-    };
-    const handleFormClick = (event: MouseEvent) => {
-      const targetElement = event.target instanceof Element ? event.target : null;
-      const clickedButton = targetElement?.closest("button");
-      if (!clickedButton?.textContent?.includes("Save target account")) {
-        return;
-      }
-
-      event.preventDefault();
-      requestCreateTarget(formElement);
-    };
-
-    formElement?.addEventListener("submit", handleSubmit);
-    formElement?.addEventListener("click", handleFormClick);
-
-    return () => {
-      formElement?.removeEventListener("submit", handleSubmit);
-      formElement?.removeEventListener("click", handleFormClick);
-    };
-  }, [isAddTargetOpen, requestCreateTarget]);
-
-  useEffect(() => {
     const draft = readClientTargetDraft(user?.clientId);
     if (!draft) {
       return;
@@ -464,13 +433,15 @@ export default function ClientTargets() {
             </div>
 
             <div className="flex justify-end">
-              <Button
+              <button
                 type="button"
                 disabled={createMutation.isPending}
+                onClick={() => requestCreateTarget(document.getElementById("client-target-form") as HTMLFormElement | null)}
+                className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Save target account
-              </Button>
+              </button>
             </div>
           </form>
         </CardContent>
