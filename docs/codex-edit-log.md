@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Recheck hosted target preflight classification
+
+- Trigger: Ryan asked to complete recommended tasks one at a time with QA and release verification between tasks.
+- Implementation branch: `main`.
+- What changed: Added `pnpm run qa:target-preflight` to classify hosted target readiness before dependent E2E gates. The preflight checks DNS, HTTPS/app-shell load, Clerk env readiness, anonymous extension API v1 401 reachability, and whether the authenticated extension token is present when an extension API base URL is configured. Wired the preflight into the `E2E Smoke` workflow and the manual `Deep QA Hotfix Audit` workflow before their Playwright runs.
+- Main surfaces changed: `scripts/qa-target-preflight.mjs`, `package.json`, `src/test/qaTargetPreflight.test.ts`, `.github/workflows/e2e-smoke.yml`, `.github/workflows/deep-qa-hotfix-audit.yml`, `docs/qa-test-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/qaTargetPreflight.test.ts`; sourced `corepack pnpm run qa:target-preflight`; `corepack pnpm run qa`; `corepack pnpm run code-review:gate`.
+- Results: unit contract test passed. Live preflight passed DNS, HTTPS, app shell, and Clerk checks against `https://trustedbums.com`, then failed as expected on missing `QA_EXTENSION_API_TOKEN`. Full local QA passed lint, 70 tests across 22 files, and production build.
+- Recheck agents: QA/Test Engineer, QA Harness Reliability Agent, Release Verification Agent, Lead Developer.
+- Next run should verify: add `QA_EXTENSION_API_TOKEN` to local and GitHub secrets when ready, then rerun `qa:target-preflight` and the authenticated extension API smoke.
+
 ### 2026-06-08 - Recheck deep QA P0 closure
 
 - Trigger: Ryan asked to complete recommended tasks one at a time with QA and release verification between tasks.
