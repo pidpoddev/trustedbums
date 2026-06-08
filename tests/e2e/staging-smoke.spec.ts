@@ -118,10 +118,10 @@ test.describe("staging smoke", () => {
     await goToAuthedPath(page, bum, "/bum/opportunities");
     await expect(page.getByRole("heading", { name: "Opportunities" })).toBeVisible();
 
-    const knowSomeoneButtons = page.getByRole("button", { name: /I know someone/i });
-    test.skip((await knowSomeoneButtons.count()) === 0, "No live opportunity or target account is available for the contact picker smoke check.");
+    const claimIntroButtons = page.getByRole("button", { name: /Claim intro/i });
+    test.skip((await claimIntroButtons.count()) === 0, "No live opportunity or target account is available for the contact picker smoke check.");
 
-    await knowSomeoneButtons.first().click();
+    await claimIntroButtons.first().click();
     await expect(page.getByText("Choose from your contacts")).toBeVisible();
     await expect(page.getByPlaceholder("Search contacts, companies, emails, or context")).toBeVisible();
 

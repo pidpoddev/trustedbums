@@ -135,9 +135,9 @@ const interactionsByRole: Record<RoleKey, VisualInteraction[]> = {
       heading: "Opportunities",
       name: "bum-opportunity-contact-picker-open",
       prepare: async (page, testInfo) => {
-        const knowSomeoneButtons = page.getByRole("button", { name: /I know someone/i });
-        if ((await knowSomeoneButtons.count()) > 0) {
-          await knowSomeoneButtons.first().click();
+        const claimIntroButtons = page.getByRole("button", { name: /Claim intro/i });
+        if ((await claimIntroButtons.count()) > 0) {
+          await claimIntroButtons.first().click();
           await expect(page.getByText("Choose from your contacts")).toBeVisible();
           await page.getByRole("button", { name: "Quick add" }).click();
           await expect(page.getByLabel("LinkedIn URL")).toBeVisible();
