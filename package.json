@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@clerk/chrome-extension": "^3.1.30",
-    "@clerk/react": "^6.6.2",
+    "@clerk/react": "^6.7.1",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -78,7 +78,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@clerk/testing": "^2.0.29",
+    "@clerk/testing": "^2.0.35",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.60.0",
     "@rollup/wasm-node": "4.60.4",

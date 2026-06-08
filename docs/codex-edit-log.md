@@ -13,6 +13,16 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-07 - Recheck Clerk dependency advisory closure
+
+- Trigger: Ryan approved the next unresolved security item.
+- Implementation branch: `main`.
+- What changed: Upgraded the root web Clerk dependency floor from `@clerk/react` `^6.6.2` to `^6.7.1` and the Clerk testing package from `@clerk/testing` `^2.0.29` to `^2.0.35`. Regenerated `pnpm-lock.yaml` so the root web path resolves through `@clerk/shared` `4.15.0` and the dev testing path resolves through `@clerk/backend` `3.5.0`; the lockfile no longer contains affected `js-cookie` `3.0.5`, only patched `3.0.7`.
+- Main surfaces changed: `package.json`, `pnpm-lock.yaml`, `docs/security-review-backlog.md`, `docs/lead-developer-recommendations.md`.
+- Checks run: `rg -n "@clerk/react|@clerk/testing|@clerk/backend|@clerk/shared|js-cookie" package.json pnpm-lock.yaml`; `corepack pnpm run qa`.
+- Recheck agents: Security Engineer, QA/Test Engineer, Lead Developer.
+- Next run should verify: GitHub dependency scanning no longer reports the `js-cookie` advisory for the root web Clerk path, and authenticated Clerk route smoke still passes in hosted QA.
+
 ### 2026-06-07 - Recheck service-role authorization contract coverage
 
 - Trigger: Ryan asked to continue the next unresolved scrum items.
