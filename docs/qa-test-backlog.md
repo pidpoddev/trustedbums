@@ -12,12 +12,6 @@ The highest QA coverage risk remains business-access proof. Product Ops and Secu
 
 ## Active Recommendations
 
-### P1 - Replace source-string target-stage coverage with behavior-level proof
-- Evidence: `src/test/customerTargetRules.test.ts` verifies `createCustomerTarget()` by regex-reading `src/lib/portalApi.ts` for `relationshipStage: "PROSPECT"`. This test passes but does not exercise `ensureCompany()`, Supabase writes, target row scoping, or audit creation.
-- Why it matters: Client-created target companies affect search, extension destinations, marketplace visibility, and Product Ops handoff semantics. A source-string test can pass while runtime writes are wrong.
-- Recommendation: Add a behavior-level unit/integration test around `createCustomerTarget()` with mocked Supabase calls or a safe fixture proving `ensureCompany` receives `PROSPECT`, `customer_targets.client_company_id` uses `user.clientId`, and the audit event is company-scoped.
-- Acceptance criteria: The test fails on any non-`PROSPECT` relationship stage, foreign `client_company_id`, missing audit event, or regex-only source assertion.
-
 ### P1 - Add extension API authenticated allow/deny coverage
 - Evidence: `.env.qa` includes `QA_EXTENSION_API_BASE_URL`, but `QA_EXTENSION_API_TOKEN` is absent. `.env.qa.example` and `scripts/verify-qa-env.mjs` now document and enforce that token when the extension API base URL is configured. `tests/e2e/extension-api.spec.ts` can prove anonymous `/context` 401, but authenticated `/context` and `/page-captures` coverage still cannot run until the QA token exists.
 - Why it matters: `/context` and `/page-captures` sit on a cross-company boundary that can expose destination, capture, and represented-contact workflow data.
@@ -53,7 +47,7 @@ The highest QA coverage risk remains business-access proof. Product Ops and Secu
 
 - Customer targets, target-company stage, and finance search:
   Data each role needs: Client Admin needs own-company target creation and management; Client Member needs allowed workflow fields; Client Finance remains deny-by-default for target management; Bum needs relationship-bound target detail; Admin needs operational visibility.
-  Missing allow/deny coverage: `PROSPECT` target-company stage is source-tested but not behavior-tested; no stable direct proof that Client Finance cannot browse target-management data, unrelated Bums cannot read targets, or cross-company target reads fail. The current deployed finance search failure needs triage to prove finance search routes only to allowed finance/report pages.
+  Missing allow/deny coverage: `PROSPECT` target-company stage, own-company target row scoping, and company-scoped audit creation are now behavior-tested. No stable direct proof yet shows Client Finance cannot browse target-management data, unrelated Bums cannot read targets, or cross-company target reads fail. The current deployed finance search failure has been rechecked by portal interaction audit and no longer reproduces.
   Seeded records and credentials needed: two client companies, Client Admin, Client Member, Client Finance, two Bums, own-company target, foreign-company target, and deterministic finance records.
   RLS-sensitive hold: Do not broaden target, search, or extension destination visibility until own-company allow and foreign-company/role deny checks pass.
 

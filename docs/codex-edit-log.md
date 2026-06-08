@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Recheck customer-target behavior coverage
+
+- Trigger: Ryan asked to complete recommended tasks one at a time with QA and release verification between tasks.
+- Implementation branch: `main`.
+- What changed: Replaced the regex/source-string `createCustomerTarget()` test with behavior-level coverage. The test now calls `createCustomerTarget()` with a mocked Supabase client and verifies the target company insert uses `relationship_stage: "PROSPECT"`, the `customer_targets` upsert uses the caller's `client_company_id`, and the audit event is scoped to the client company and target row.
+- Main surfaces changed: `src/test/customerTargetRules.test.ts`, `docs/qa-test-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/customerTargetRules.test.ts`; `corepack pnpm run qa`; `corepack pnpm run code-review:gate`.
+- Results: targeted customer-target tests passed. Full local QA passed lint, 71 tests across 23 files, and production build.
+- Recheck agents: QA/Test Engineer, Product Ops Workflow Analyst, Data And Analytics Engineer, Lead Developer.
+- Next run should verify: seeded live target-creation proof can still be added with cleanup credentials, but the unit-level behavior no longer depends on regex source matching.
+
 ### 2026-06-08 - Recheck Client Finance export boundary coverage
 
 - Trigger: Ryan asked to complete recommended tasks one at a time with QA and release verification between tasks.

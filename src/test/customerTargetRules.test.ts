@@ -1,17 +1,189 @@
 import { readFileSync } from "node:fs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthUser } from "@/data/authData";
 
-const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 const customerTargetPolicySource = readFileSync(
   "supabase/migrations/20260607194500_remove_saved_target_read_entitlement.sql",
   "utf8",
 );
 
-describe("customer target company rules", () => {
-  it("creates client target companies as prospects", () => {
-    const createCustomerTargetBody = portalApiSource.match(/export async function createCustomerTarget[\s\S]*?return data;\n}/)?.[0] ?? "";
+const fromMock = vi.fn();
 
-    expect(createCustomerTargetBody).toContain('relationshipStage: "PROSPECT"');
-    expect(createCustomerTargetBody).not.toContain('relationshipStage: "INACTIVE"');
+vi.mock("@/lib/supabase", () => ({
+  getSupabaseAccessToken: vi.fn(),
+  supabase: {
+    from: fromMock,
+  },
+  supabasePublishableKey: "test-publishable-key",
+  supabaseUrl: "https://example.supabase.co",
+}));
+
+const { createCustomerTarget } = await import("@/lib/portalApi");
+
+function createQueryResult<T>(data: T, error: unknown = null) {
+  return { data, error };
+}
+
+function createCompaniesTableMock(calls: {
+  companyInsertPayloads: unknown[];
+}) {
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        limit: vi.fn(() => ({
+          maybeSingle: vi.fn(async () => createQueryResult(null)),
+        })),
+      })),
+      ilike: vi.fn(() => ({
+        returns: vi.fn(async () => createQueryResult([])),
+      })),
+    })),
+    insert: vi.fn((payload) => {
+      calls.companyInsertPayloads.push(payload);
+      return {
+        select: vi.fn(() => ({
+          single: vi.fn(async () =>
+            createQueryResult({
+              id: "target-company-1",
+              name: payload.name,
+              website: payload.website,
+              relationship_stage: payload.relationship_stage,
+              linkedin_company_url: payload.linkedin_company_url,
+              created_at: "2026-06-08T00:00:00.000Z",
+            }),
+          ),
+        })),
+      };
+    }),
+  };
+}
+
+function createCustomerTargetsTableMock(calls: {
+  targetUpsertPayloads: unknown[];
+}) {
+  return {
+    upsert: vi.fn((payload) => {
+      calls.targetUpsertPayloads.push(payload);
+      return {
+        select: vi.fn(() => ({
+          single: vi.fn(async () =>
+            createQueryResult({
+              id: "target-1",
+              ...payload,
+              created_at: "2026-06-08T00:00:00.000Z",
+              updated_at: "2026-06-08T00:00:00.000Z",
+            }),
+          ),
+        })),
+      };
+    }),
+  };
+}
+
+function createAuditEventsTableMock(calls: {
+  auditInsertPayloads: unknown[];
+}) {
+  return {
+    insert: vi.fn(async (payload) => {
+      calls.auditInsertPayloads.push(payload);
+      return { error: null };
+    }),
+  };
+}
+
+function createCompanyDomainsTableMock() {
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        limit: vi.fn(() => ({
+          maybeSingle: vi.fn(async () => createQueryResult(null)),
+        })),
+      })),
+    })),
+  };
+}
+
+describe("customer target company rules", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("creates client target companies as prospects with company-scoped target and audit rows", async () => {
+    const calls = {
+      auditInsertPayloads: [] as unknown[],
+      companyInsertPayloads: [] as unknown[],
+      targetUpsertPayloads: [] as unknown[],
+    };
+
+    fromMock.mockImplementation((table: string) => {
+      if (table === "companies") {
+        return createCompaniesTableMock(calls);
+      }
+      if (table === "customer_targets") {
+        return createCustomerTargetsTableMock(calls);
+      }
+      if (table === "audit_events") {
+        return createAuditEventsTableMock(calls);
+      }
+      if (table === "company_domains") {
+        return createCompanyDomainsTableMock();
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const user = {
+      id: "client-admin-1",
+      email: "client.admin@example.com",
+      name: "Client Admin",
+      role: "CLIENT",
+      clientAccessRole: "CLIENT_ADMIN",
+      clientId: "client-company-1",
+    } satisfies AuthUser;
+
+    await createCustomerTarget(user, {
+      target_account_name: " Acme ",
+      key_contact_name: "Pat Buyer",
+      key_contact_title: "CRO",
+      key_contact_email: "pat@example.com",
+      expected_product_service: "Platform",
+      estimated_deal_value: 50000,
+      expected_timeline: "Q3",
+      notes: "Warm account",
+      priority: "HIGH",
+    });
+
+    expect(calls.companyInsertPayloads).toEqual([
+      {
+        name: "Acme",
+        website: null,
+        linkedin_company_url: null,
+        relationship_stage: "PROSPECT",
+      },
+    ]);
+    expect(calls.targetUpsertPayloads).toEqual([
+      expect.objectContaining({
+        client_company_id: "client-company-1",
+        target_company_id: "target-company-1",
+        created_by: "client-admin-1",
+        priority: "HIGH",
+        status: "PROSPECT",
+        target_account_name: "Acme",
+      }),
+    ]);
+    expect(calls.auditInsertPayloads).toEqual([
+      expect.objectContaining({
+        company_id: "client-company-1",
+        user_id: "client-admin-1",
+        event_type: "customer_target_created",
+        entity_type: "customer_targets",
+        entity_id: "target-1",
+        event_data: expect.objectContaining({
+          target_company_id: "target-company-1",
+          target_account_name: "Acme",
+          status: "PROSPECT",
+        }),
+      }),
+    ]);
   });
 
   it("does not grant Bum customer target reads from saved items alone", () => {
