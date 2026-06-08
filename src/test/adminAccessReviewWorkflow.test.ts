@@ -15,6 +15,10 @@ describe("admin access-request proof-backed workflow", () => {
     expect(adminClientsSource).toContain("requestNeedsProof(request.request_type)");
     expect(adminClientsSource).toContain("openReviewDialog(request, \"approve\")");
     expect(adminClientsSource).toContain("openReviewDialog(request, \"deny\")");
+    expect(adminClientsSource).toContain("accessReviewPreview(selectedRequest)");
+    expect(adminClientsSource).toContain("selectedRequestNeedsProof && !reviewProofCategory");
+    expect(adminClientsSource).toContain("reviewNoteRequired && !reviewNote.trim()");
+    expect(adminClientsSource).toContain("Required for public-email company and related-domain reviews.");
   });
 
   it("sends proof metadata through the admin access request API", () => {
@@ -29,11 +33,15 @@ describe("admin access-request proof-backed workflow", () => {
     expect(adminAccessRequestsSource).toContain("proofRequiredRequestTypes");
     expect(adminAccessRequestsSource).toContain("\"PUBLIC_EMAIL_COMPANY\"");
     expect(adminAccessRequestsSource).toContain("\"RELATED_DOMAIN\"");
+    expect(adminAccessRequestsSource).toContain("requiresProofCategory(requestType) && !evidence.proofCategory");
+    expect(adminAccessRequestsSource).toContain("(requiresProofCategory(requestType) || action === \"deny\") && !evidence.reviewNote");
     expect(adminAccessRequestsSource).toContain("Choose a proof category before reviewing this access request.");
     expect(adminAccessRequestsSource).toContain("Add a reviewer note before reviewing this access request.");
     expect(adminAccessRequestsSource).toContain("assertReviewEvidence(\"approve\"");
     expect(adminAccessRequestsSource).toContain("assertReviewEvidence(\"deny\"");
+    expect(adminAccessRequestsSource).toContain("review_note: buildReviewNote(evidence)");
     expect(adminAccessRequestsSource).toContain("proofCategory: evidence.proofCategory");
+    expect(adminAccessRequestsSource).toContain("reviewNote: evidence.reviewNote");
     expect(adminAccessRequestsSource).toContain("resultingState");
   });
 });
