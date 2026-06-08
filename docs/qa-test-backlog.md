@@ -55,11 +55,11 @@ These skips should stay documented until QA intentionally adds seeded fixtures o
 
 ### P1 - Add seeded live allow/deny behavior coverage
 
-- Business Access Coverage remains the named proof lane until seeded live fixtures exist.
+- Business Access Coverage remains the named proof lane until seeded live fixtures are applied and exercised. The repo now has an opt-in seed artifact in `supabase/qa_authorization_seed.sql`, documented in `docs/qa-authorization-fixtures.md`, plus a source-level fixture contract test in `src/test/qaAuthorizationFixtures.test.ts`.
 - Scope: extension API, represented contacts, client-team/domain approval, profile bootstrap, finance exports, admin telemetry, and admin summary helpers.
 - Required areas: Extension API destinations and page captures; Bum represented contacts; Client team, domain approval, and access-role assignment.
 - Why it matters: Route smoke can pass while direct data paths still need live positive and negative proof.
-- Acceptance criteria: seeded fixtures prove owning-role success and unrelated-role denial for each high-risk boundary.
+- Acceptance criteria: QA applies the seed in a protected local or staging database, maps real Clerk QA ids when browser-authenticated coverage is required, and proves owning-role success plus unrelated-role denial for each high-risk boundary.
 
 ### P1 - Add current-head visual and accessibility gates
 
@@ -81,7 +81,7 @@ These skips should stay documented until QA intentionally adds seeded fixtures o
 
 ## Access And Fixture Requests
 
-- Provide or generate safe seeded multi-company QA fixtures for access-boundary proof.
+- Apply `supabase/qa_authorization_seed.sql` in a protected QA database and add direct role-scoped allow/deny assertions against it.
 - Provide a valid Turnstile/contact-smoke path only if mutating public contact submissions should be part of release smoke.
 - Provide stable opportunity/target-account fixture data for deeper Bum opportunity workflows beyond the now-passing non-mutating contact-picker smoke.
 - Keep current-head Visual UI Audit artifacts fresh for future product-code changes.
