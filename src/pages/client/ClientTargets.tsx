@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Plus, Search, Target } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -114,8 +114,6 @@ export default function ClientTargets() {
   const { toast } = useToast();
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
-  const addTargetFormRef = useRef<HTMLFormElement | null>(null);
-  const saveTargetButtonRef = useRef<HTMLButtonElement | null>(null);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<CustomerTargetTypeFilter>("ALL");
   const [targetPage, setTargetPage] = useState(1);
@@ -183,8 +181,10 @@ export default function ClientTargets() {
       return;
     }
 
-    const formElement = addTargetFormRef.current;
-    const saveButtonElement = saveTargetButtonRef.current;
+    const formElement = document.getElementById("client-target-form") as HTMLFormElement | null;
+    const saveButtonElement = formElement
+      ? Array.from(formElement.querySelectorAll("button")).find((button) => button.textContent?.includes("Save target account")) ?? null
+      : null;
 
     const handleSubmit = (event: SubmitEvent) => {
       event.preventDefault();
@@ -310,7 +310,7 @@ export default function ClientTargets() {
         {isAddTargetOpen ? (
           <CardContent>
           <form
-            ref={addTargetFormRef}
+            id="client-target-form"
             className="grid gap-5"
           >
             {restoredDraftAt ? (
@@ -466,7 +466,6 @@ export default function ClientTargets() {
 
             <div className="flex justify-end">
               <Button
-                ref={saveTargetButtonRef}
                 type="button"
                 disabled={createMutation.isPending}
               >
