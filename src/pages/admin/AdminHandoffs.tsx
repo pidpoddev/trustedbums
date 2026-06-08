@@ -73,7 +73,7 @@ function OperationalBadges({
     <div className="mt-2 flex max-w-xs flex-wrap gap-1.5">
       <Badge variant={priorityVariant(priority)}>{priority}</Badge>
       {isStale(createdAt) ? <Badge variant="outline"><AlertTriangle className="mr-1 h-3 w-3" />Stale</Badge> : null}
-      {notificationError ? <Badge variant="destructive"><BellOff className="mr-1 h-3 w-3" />Notify failed</Badge> : null}
+      {notificationError ? <Badge variant="destructive"><BellOff className="mr-1 h-3 w-3" />Delivery issue</Badge> : null}
       {nextAction ? <Badge variant="outline" className="whitespace-normal text-left">{nextAction}</Badge> : null}
     </div>
   );
@@ -402,7 +402,7 @@ export default function AdminHandoffs() {
           <CardContent><p className="text-3xl font-bold">{unownedCount}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Stale or notify failed</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Stale or delivery issue</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{staleCount + notificationFailedCount}</p></CardContent>
         </Card>
       </div>
@@ -417,7 +417,7 @@ export default function AdminHandoffs() {
             <SelectItem value="STALE">Stale</SelectItem>
             <SelectItem value="MINE">Assigned to me</SelectItem>
             <SelectItem value="UNOWNED">Unowned</SelectItem>
-            <SelectItem value="NOTIFICATION_FAILED">Notification failed</SelectItem>
+            <SelectItem value="NOTIFICATION_FAILED">Delivery issue</SelectItem>
             <SelectItem value="ALL">All items</SelectItem>
           </SelectContent>
         </Select>

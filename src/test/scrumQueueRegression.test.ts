@@ -43,7 +43,8 @@ describe("scrum implementation queue regression coverage", () => {
     expect(handoffsSource).toContain("notification_error");
     expect(handoffsSource).toContain("Urgent / high");
     expect(handoffsSource).toContain("Assigned to me");
-    expect(handoffsSource).toContain("Notification failed");
+    expect(handoffsSource).toContain("Delivery issue");
+    expect(handoffsSource).not.toContain("Stale or notify failed");
   });
 
   it("keeps raw extension page captures creator-or-admin scoped", () => {
