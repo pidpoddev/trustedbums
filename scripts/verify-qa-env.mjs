@@ -20,8 +20,18 @@ const baseRequired = [
 ];
 
 const conditionalRequired = [];
+const extensionApiExpectation = (process.env.QA_EXTENSION_API_EXPECTATION?.trim().toLowerCase() || "optional");
 
-if (process.env.QA_EXTENSION_API_BASE_URL?.trim()) {
+if (!["required", "optional", "skip"].includes(extensionApiExpectation)) {
+  console.error("Invalid QA_EXTENSION_API_EXPECTATION value. Allowed values: required, optional, skip.");
+  process.exit(1);
+}
+
+if (extensionApiExpectation === "required") {
+  conditionalRequired.push("QA_EXTENSION_API_BASE_URL");
+}
+
+if (extensionApiExpectation !== "skip" && (extensionApiExpectation === "required" || process.env.QA_EXTENSION_API_BASE_URL?.trim())) {
   conditionalRequired.push("QA_EXTENSION_API_TOKEN");
 }
 

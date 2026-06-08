@@ -24,8 +24,11 @@ function formatAddress(address) {
 
 async function classifyStep(name, run) {
   try {
-    const detail = await run();
-    return { name, status: "pass", detail };
+    const result = await run();
+    if (typeof result === "object" && result !== null && "status" in result && "detail" in result) {
+      return { name, status: result.status, detail: result.detail };
+    }
+    return { name, status: "pass", detail: result };
   } catch (error) {
     return { name, status: "fail", detail: error instanceof Error ? error.message : String(error) };
   }
@@ -85,9 +88,27 @@ async function checkClerkConfig() {
 }
 
 async function checkExtensionApi() {
+  const expectation = (process.env.QA_EXTENSION_API_EXPECTATION?.trim().toLowerCase() || "optional");
+  if (!["required", "optional", "skip"].includes(expectation)) {
+    throw new Error("QA_EXTENSION_API_EXPECTATION must be one of: required, optional, skip");
+  }
+
+  if (expectation === "skip") {
+    return {
+      status: "skip",
+      detail: "extension API coverage intentionally skipped by QA_EXTENSION_API_EXPECTATION=skip",
+    };
+  }
+
   const extensionApiBaseUrl = process.env.QA_EXTENSION_API_BASE_URL?.trim();
   if (!extensionApiBaseUrl) {
-    return "QA_EXTENSION_API_BASE_URL is not set; extension API suites should be skipped";
+    if (expectation === "required") {
+      throw new Error("Missing QA_EXTENSION_API_BASE_URL while QA_EXTENSION_API_EXPECTATION=required");
+    }
+    return {
+      status: "skip",
+      detail: "QA_EXTENSION_API_BASE_URL is not set; extension API coverage intentionally skipped by QA_EXTENSION_API_EXPECTATION=optional",
+    };
   }
 
   const contextUrl = new URL("context", extensionApiBaseUrl.endsWith("/") ? extensionApiBaseUrl : `${extensionApiBaseUrl}/`);
@@ -111,12 +132,14 @@ async function checkExtensionApi() {
 async function writePreflightArtifact({ targetUrl, results }) {
   const generatedAt = new Date().toISOString();
   const failed = results.filter((result) => result.status === "fail");
+  const skipped = results.filter((result) => result.status === "skip");
   const payload = {
     generatedAt,
     target: targetUrl.origin,
     timeoutMs,
     status: failed.length ? "fail" : "pass",
     failedChecks: failed.map((result) => result.name),
+    skippedChecks: skipped.map((result) => result.name),
     results,
   };
   const lines = [

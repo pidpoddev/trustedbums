@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Classify extension API preflight coverage
+
+- Trigger: Continue the QA Harness Reliability queue after aligning Deep QA env checks.
+- Implementation branch: `main`.
+- What changed: Added `QA_EXTENSION_API_EXPECTATION=required|optional|skip` handling to `scripts/qa-target-preflight.mjs` and `scripts/verify-qa-env.mjs`. Hosted E2E and Deep QA workflows now set the expectation to `required`, so missing extension API inputs fail explicitly instead of producing a generic PASS. Optional or explicit-skip runs now record `SKIP` and `skippedChecks` in the preflight artifact. Updated `.env.qa.example`, regression tests, and `docs/qa-harness-reliability-backlog.md`.
+- Main surfaces changed: `scripts/qa-target-preflight.mjs`, `scripts/verify-qa-env.mjs`, `.github/workflows/e2e-smoke.yml`, `.github/workflows/deep-qa-hotfix-audit.yml`, `.env.qa.example`, `src/test/qaTargetPreflight.test.ts`, `src/test/deepQaTriage.test.ts`, `docs/qa-harness-reliability-backlog.md`, `docs/codex-edit-log.md`.
+- Checks run: controlled required-mode preflight failure with `QA_EXTENSION_API_EXPECTATION=required`; controlled optional-mode preflight with `SKIP Extension API` and `skippedChecks` in `summary.json`; required-mode `qa:env` failure on missing extension base/token; skip-mode `qa:env` pass with base auth variables; `corepack pnpm exec vitest run src/test/deepQaTriage.test.ts src/test/qaTargetPreflight.test.ts`; `corepack pnpm run qa`; `git diff --check`; and `corepack pnpm run code-review:gate`.
+- Results: Local preflight and env-contract checks now distinguish verified, skipped, and misconfigured extension coverage. Hosted workflows will now fail clearly until extension API base URL and token are configured.
+- Recheck agents: QA Harness Reliability Agent, QA/Test Engineer, Release Verification Agent, Security Engineer.
+- Next run should verify: GitHub-hosted E2E/Deep QA behavior after this workflow change; expected result is either green with extension inputs configured or a clear missing-extension-input failure that Release Verification can cite.
+
 ### 2026-06-08 - Align Deep QA env contracts
 
 - Trigger: Continue the next QA Harness Reliability item after preflight artifacts were persisted.

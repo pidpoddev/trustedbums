@@ -19,7 +19,16 @@ describe("QA target preflight contract", () => {
 
   it("fails dependent suites when authenticated extension inputs are incomplete", () => {
     expect(preflightSource).toContain('getRequiredEnv("QA_EXTENSION_API_TOKEN")');
+    expect(preflightSource).toContain("QA_EXTENSION_API_EXPECTATION=required");
     expect(preflightSource).toContain("Dependent hosted E2E suites should be skipped until preflight failures are fixed");
+  });
+
+  it("classifies extension coverage as verified, skipped, or misconfigured", () => {
+    expect(preflightSource).toContain("QA_EXTENSION_API_EXPECTATION must be one of: required, optional, skip");
+    expect(preflightSource).toContain('status: "skip"');
+    expect(preflightSource).toContain("extension API coverage intentionally skipped by QA_EXTENSION_API_EXPECTATION=skip");
+    expect(preflightSource).toContain("Missing QA_EXTENSION_API_BASE_URL while QA_EXTENSION_API_EXPECTATION=required");
+    expect(preflightSource).toContain("skippedChecks");
   });
 
   it("writes downloadable preflight artifacts before dependent suites start", () => {

@@ -66,4 +66,9 @@ describe("deep QA triage coverage", () => {
     expect(deepQaWorkflowSource).toContain(expectedRunChain);
     expect(e2eSmokeWorkflowSource).toContain(expectedRunChain);
   });
+
+  it("requires extension API coverage in hosted Deep QA workflow preflight", () => {
+    expect(deepQaWorkflowSource).toContain("QA_EXTENSION_API_EXPECTATION: required");
+    expect(e2eSmokeWorkflowSource).toContain("QA_EXTENSION_API_EXPECTATION: required");
+  });
 });
