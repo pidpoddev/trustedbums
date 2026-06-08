@@ -43,6 +43,16 @@ This file is the running handoff log for implementation work Codex has made in t
 - Recheck agents: Security Engineer, Product Ops Workflow Analyst, QA/Test Engineer, Lead Developer.
 - Next run should verify: a Bum with an accepted target response can still read the allowed target, a Bum with only a saved target cannot read it directly, and Product Ops still wants saved targets to remain bookmark-only rather than entitlement-preserving.
 
+### 2026-06-07 - Recheck Supabase helper/RPC exposure cleanup
+
+- Trigger: Ryan asked to continue the next unresolved scrum items.
+- Implementation branch: `main`.
+- What changed: Added a successor migration that revokes direct `EXECUTE` from `public`, `anon`, and `authenticated` on internal security-definer RLS/trigger helpers, and sets an explicit `search_path` on `normalize_submitted_opportunity_status()`. Applied it live to Trusted Bums Supabase as `20260607235839 restrict_security_definer_helper_execute`. Refreshed live security advisors now show only leaked-password protection disabled.
+- Main surfaces changed: `supabase/migrations/20260607201000_restrict_security_definer_helper_execute.sql`, `src/test/supabaseHelperSecurity.test.ts`, `docs/security-review-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/trust-reputation-backlog.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/supabaseHelperSecurity.test.ts`; `corepack pnpm run qa`; `git diff --check`; Supabase MCP `_apply_migration`; Supabase MCP `_list_migrations`; Supabase MCP `_get_advisors(type: security)`.
+- Recheck agents: Security Engineer, Data And Analytics Engineer, Trust And Reputation Consultant, QA/Test Engineer, Lead Developer.
+- Next run should verify: Supabase Auth leaked-password protection is enabled or explicitly accepted, and any future helper/RPC migration is followed by a security advisor rerun.
+
 ### 2026-06-04 - Recheck glossary copy implementation
 
 - Trigger: Ryan asked to implement Lead Developer recommendation 1.

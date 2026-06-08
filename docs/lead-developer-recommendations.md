@@ -6,7 +6,7 @@ _Last updated: 2026-06-07 by Codex daily lead developer automation._
 
 The implementation queue should stay led by live trust-boundary and business-access defects, not polish. A follow-up Supabase MCP check on 2026-06-07 confirmed project URL `https://vaoqvtxqvbptyxddpoju.supabase.co` and deployed `email-track` version `2` with the same hardened `https` allowlist behavior as local source. Public smokes returned `400` for an off-domain destination and `404` for an approved-host URL with an unknown delivery id, so the former deploy-drift P0 is closed; the remaining tracked-link work is release proof for a safe seeded valid-delivery click.
 
-The next highest-confidence shipped risks are now service-role allow/deny coverage and live Supabase helper exposure. Bum saved-target policy alignment is implemented in source, covered by regression tests, and applied live as Supabase migration `20260607234751 remove_saved_target_read_entitlement`; it still needs seeded allow/deny proof. Invitation redirect control is implemented in source, covered by focused tests, deployed to `client-team` and `invite-bum` version `2`, and smoke-checked for function boot; it still needs one safe authenticated invite smoke. Represented contacts and client exports should no longer be treated as unfixed implementation P0s: current `portal-contacts` source has destination entitlement checks, `ClientExports` restricts operational exports to `CLIENT_ADMIN`, and `src/test/accessBoundaryRegression.test.ts` asserts those boundaries. They remain QA proof gaps until seeded cross-company fixtures exercise the same rules live.
+The next highest-confidence shipped risks are now service-role allow/deny coverage, Supabase Auth leaked-password protection, and seeded access proof. Bum saved-target policy alignment is implemented in source, covered by regression tests, and applied live as Supabase migration `20260607234751 remove_saved_target_read_entitlement`; it still needs seeded allow/deny proof. Invitation redirect control is implemented in source, covered by focused tests, deployed to `client-team` and `invite-bum` version `2`, and smoke-checked for function boot; it still needs one safe authenticated invite smoke. The internal helper/RPC cleanup is now applied live as migration `20260607235839`, and refreshed Supabase security advisors only report leaked-password protection disabled.
 
 The practical blocker is release evidence depth. `.env.qa` has now been restored to this local workspace, and `qa:env` passed after sourcing it in the agent setup session. GitHub-hosted workflow evidence remains the intended final QA source, but several specialist runs today had intermittent access to it. That means the next implementation pass should pair every access or trust fix with deterministic allow/deny tests and a deliberate post-change QA plan instead of assuming the broader E2E path is immediately available.
 
@@ -21,14 +21,14 @@ The practical blocker is release evidence depth. `.env.qa` has now been restored
 - Acceptance criteria: Bum can link represented contacts only to entitled accepted opportunities or own-company targets; unrelated ids are denied server-side; Client Finance receives finance-safe exports only; Client Admin retains operational exports.
 - Validation: Existing regression tests plus seeded live allow/deny QA once fixture access is available.
 
-### P1 - Restrict exposed admin and internal Supabase helper surfaces using the live advisor results
-- Source: live `mcp__supabase_trustedbums.get_advisors(type: "security")`, `docs/security-review-backlog.md`, `docs/data-analytics-backlog.md`, [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts:1), and `supabase/migrations/20260529001000_add_admin_dashboard_summary.sql`.
-- Why now: The live advisor output is current evidence, not historical carry-forward. `admin_dashboard_summary()` and several helper functions remain externally callable in ways that are broader than the documented business rule.
-- Recommended fix: Start with the admin dashboard summary RPC and the exposed helper set that the advisors name. Revoke broad `EXECUTE`, move internal helpers out of exposed schemas where practical, and replace exposed broad-role execution with explicit admin-only wrappers or server-side paths.
-- Likely files/routes: `supabase/migrations/20260529001000_add_admin_dashboard_summary.sql` successor, `src/lib/portalApi.ts`, admin dashboard data-loading code, and direct RPC access tests.
-- Dependencies/risks: This is release-gated by `docs/business-access-rules.md`. Before rollout, define before/after role access, direct data-path tests, route/API impacts, and rollback steps for legitimate Admin workflows. SQL catalog depth is still limited to advisors in this run, so keep the first pass narrow and re-check live results after each migration.
-- Acceptance criteria: `anon`, generic `authenticated`, Client, and Bum callers cannot execute admin-only or internal helper surfaces; Admin dashboard data still works through the intended path; live security advisor findings narrow materially after the migration.
-- Validation: Re-run Supabase security advisors after each migration; add negative tests for signed-out and non-admin callers; verify admin dashboard cards still render through the approved path.
+### P1 - Enable Supabase Auth leaked-password protection
+- Source: refreshed live Supabase security advisors, `docs/security-review-backlog.md`, and Supabase Auth password-security guidance.
+- Why now: This is the only remaining live Supabase security advisor after helper/RPC cleanup.
+- Recommended fix: Enable leaked-password protection in Supabase Auth settings or the approved project configuration path, then rerun security advisors.
+- Likely files/routes: Supabase dashboard/config only unless the setting is later managed through infrastructure code.
+- Dependencies/risks: Coordinate with auth owner because this may affect password-based Supabase Auth signups/sign-ins if any remain active.
+- Acceptance criteria: Refreshed Supabase security advisors no longer show `auth_leaked_password_protection`; expected auth flows still work.
+- Validation: Supabase security advisor rerun plus auth smoke for any password-based paths in scope.
 
 ### P1 - Revalidate authenticated QA evidence and route-coverage prerequisites for the access and trust queue
 - Source: `docs/ux-optimization-backlog.md`, `docs/ui-optimization-backlog.md`, `docs/consultant-team-rules.md`, the restored local `.env.qa`, and the older specialist `qa:env` failures recorded in `docs/codex-edit-log.md`.
@@ -54,7 +54,7 @@ Keep `email-track` in release smoke coverage, but do not keep it in the active i
 
 Treat represented-contact scoping and finance-export scope as a QA proof workstream unless seeded evidence proves otherwise. Current source already contains the entitlement checks and finance export narrowing, so the next step is fixture-backed validation, not another broad implementation pass.
 
-Run the Supabase helper cleanup as a narrow advisor-driven migration series. Start with `admin_dashboard_summary()` and the highest-signal helper functions, re-check live advisor results after each migration, and stop if a legitimate Admin path breaks.
+Keep Supabase helper cleanup on the watchlist rather than active implementation. `admin_dashboard_summary()` no longer appears in live advisors, and migration `20260607235839` cleared the remaining internal helper execution warnings. Re-check advisors after any new helper/RPC migration.
 
 Keep invitation redirect hardening in release verification until one safe invite confirms an approved `/login` redirect. Live `client-team` and `invite-bum` source already shows the shared allowlist helper, so treat future redirect issues as release-proof or configuration items unless source regresses.
 
