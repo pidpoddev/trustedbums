@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-const supabaseUrl = process.env.QA_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+const defaultSupabaseUrl = "https://vaoqvtxqvbptyxddpoju.supabase.co";
+const supabaseUrl = process.env.QA_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? defaultSupabaseUrl;
 const functionsBaseUrl =
   process.env.QA_SUPABASE_FUNCTIONS_URL ?? (supabaseUrl ? `${supabaseUrl.replace(/\/$/, "")}/functions/v1` : "");
 const contactOrigin = process.env.QA_CONTACT_ALLOWED_ORIGIN ?? process.env.QA_BASE_URL ?? "https://trustedbums.com";
@@ -25,8 +26,6 @@ function contactPayload(overrides: Record<string, unknown> = {}) {
 }
 
 test.describe("public contact intake boundary", () => {
-  test.skip(!functionsBaseUrl, "Set VITE_SUPABASE_URL or QA_SUPABASE_FUNCTIONS_URL to run contact intake smoke tests.");
-
   test("rejects direct anonymous calls to the internal website email sender before template handling", async ({
     request,
   }) => {
