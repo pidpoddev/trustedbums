@@ -143,9 +143,13 @@ const interactionsByRole: Record<RoleKey, VisualInteraction[]> = {
           await expect(page.getByLabel("LinkedIn URL")).toBeVisible();
         } else {
           testInfo.annotations.push({ type: "visual-note", description: "No live marketplace items were available; captured filtered empty state instead." });
-          await page.getByPlaceholder("Search opportunities...").fill("visual-audit-empty-state").catch(async () => {
-            await page.getByPlaceholder("Search opportunities…").fill("visual-audit-empty-state");
-          });
+          const opportunitySearch = page
+            .locator('input[placeholder="Search opportunities..."], input[placeholder="Search opportunities…"]')
+            .first();
+
+          if (await opportunitySearch.isVisible({ timeout: 5_000 }).catch(() => false)) {
+            await opportunitySearch.fill("visual-audit-empty-state");
+          }
           await expect(page.getByText(/No live opportunities match your search|No live opportunities are available yet/i)).toBeVisible();
         }
       },
