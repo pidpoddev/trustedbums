@@ -356,6 +356,15 @@ This file is the running handoff log for implementation work Codex has made in t
 - Recheck agents: UI Consultant, UX Consultant, Accessibility Specialist, QA/Test Engineer, Product Ops Workflow Analyst, Lead Developer.
 - Next run should verify: whether a coordinated mobile utility rail replaces the fixed chat/privacy collision pattern, whether the consent reopen control is enlarged and visually audited on `/privacy-policy`, whether `/admin/handoffs` is added to `Visual UI Audit`, and whether consultant sessions regain direct GitHub workflow/artifact access instead of relying on pre-downloaded copies.
 
+### 2026-06-08 - Record hosted extension preflight evidence
+
+- Trigger: Follow-up from the current-head hosted E2E failure after extension API required-mode classification landed.
+- Implementation branch: `main`.
+- What changed: Updated the QA harness reliability and release verification backlogs to cite GitHub `E2E Smoke` run `27111541454` on commit `fa1fdfb`. The docs now show that DNS, HTTPS, app shell, and Clerk passed, while hosted extension API preflight failed as intended because `QA_EXTENSION_API_BASE_URL` and `QA_EXTENSION_API_TOKEN` are absent under `QA_EXTENSION_API_EXPECTATION=required`.
+- Main surfaces changed: `docs/qa-harness-reliability-backlog.md`, `docs/release-verification-backlog.md`.
+- Checks run: GitHub run/job review for `27111541454`, downloaded preflight artifacts under `/private/tmp/trustedbums-e2e-27111541454`, and local documentation diff review.
+- Next run should verify: once extension API base URL and token are configured, hosted `qa:env`, `qa:target-preflight`, and extension API smoke should move from preflight failure to authenticated allow/deny coverage.
+
 ### 2026-06-07 - Recheck UX backlog after finance regression narrowing
 
 - Trigger: Daily UX consultant automation run.
