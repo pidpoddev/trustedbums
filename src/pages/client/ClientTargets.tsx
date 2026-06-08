@@ -421,7 +421,17 @@ export default function ClientTargets() {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={createMutation.isPending}>
+              <Button
+                type="button"
+                disabled={createMutation.isPending}
+                onClick={(event) => {
+                  const formElement = event.currentTarget.form;
+                  if (formElement && !formElement.reportValidity()) {
+                    return;
+                  }
+                  createMutation.mutate();
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Save target account
               </Button>
