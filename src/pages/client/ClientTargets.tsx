@@ -178,25 +178,28 @@ export default function ClientTargets() {
     }
 
     const formElement = document.getElementById("client-target-form") as HTMLFormElement | null;
-    const saveButtonElement = formElement
-      ? Array.from(formElement.querySelectorAll("button")).find((button) => button.textContent?.includes("Save target account")) ?? null
-      : null;
 
     const handleSubmit = (event: SubmitEvent) => {
       event.preventDefault();
       requestCreateTarget(formElement);
     };
-    const handleSaveClick = (event: MouseEvent) => {
+    const handleFormClick = (event: MouseEvent) => {
+      const targetElement = event.target instanceof Element ? event.target : null;
+      const clickedButton = targetElement?.closest("button");
+      if (!clickedButton?.textContent?.includes("Save target account")) {
+        return;
+      }
+
       event.preventDefault();
       requestCreateTarget(formElement);
     };
 
     formElement?.addEventListener("submit", handleSubmit);
-    saveButtonElement?.addEventListener("click", handleSaveClick);
+    formElement?.addEventListener("click", handleFormClick);
 
     return () => {
       formElement?.removeEventListener("submit", handleSubmit);
-      saveButtonElement?.removeEventListener("click", handleSaveClick);
+      formElement?.removeEventListener("click", handleFormClick);
     };
   }, [isAddTargetOpen, requestCreateTarget]);
 
