@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Refresh release verification for finance report rollout
+
+- Trigger: Post-push release verification after re-keying finance reports to business dates.
+- Implementation branch: `main`.
+- What changed: Updated `docs/release-verification-backlog.md` for application commit `518aa53`. Local QA passed, GitHub deploy run `27112675263` succeeded, and GitHub QA run `27112675241` succeeded. Current-head `E2E Smoke` run `27112692015` failed in smoke plus all three Deep QA jobs because hosted extension API configuration is missing.
+- Main surfaces changed: `docs/release-verification-backlog.md`, `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm run qa`; `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 8 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run view 27112692015 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run view 27112692015 --job 80013469092 --log-failed`.
+- Results: Release decision remains `NO-GO`. The failed smoke log passed DNS, HTTPS, app shell, and Clerk, then failed with missing `QA_EXTENSION_API_BASE_URL` while `QA_EXTENSION_API_EXPECTATION=required`; `QA_EXTENSION_API_TOKEN` was also empty.
+- Recheck agents: Release Verification Agent, QA/Test Engineer, QA Harness Reliability Agent, Lead Developer.
+- Next run should verify: GitHub Actions has `QA_EXTENSION_API_BASE_URL` and `QA_EXTENSION_API_TOKEN`, rerun current-head `E2E Smoke`, and update release status from that result.
+
 ### 2026-06-08 - Re-key finance reports to business dates
 
 - Trigger: Continue the recommended-task queue after aggregate admin-performance release verification showed extension API secrets are still the current release blocker.
