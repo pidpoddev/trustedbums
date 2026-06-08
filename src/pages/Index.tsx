@@ -81,6 +81,7 @@ const Index = () => {
   const { toast } = useToast();
   const [contactForm, setContactForm] = useState(defaultContactForm);
   const [contactFormErrors, setContactFormErrors] = useState<ContactFormErrors>({});
+  const [contactFormStatus, setContactFormStatus] = useState("");
   const [isContactSubmitting, setIsContactSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
@@ -96,6 +97,7 @@ const Index = () => {
       const value = field === "interest" ? (event.target.value as ContactInterest) : event.target.value;
       setContactForm((current) => ({ ...current, [field]: value }));
       setContactFormErrors((current) => ({ ...current, [field]: undefined, submit: undefined }));
+      setContactFormStatus("");
     };
 
   useEffect(() => {
@@ -185,6 +187,7 @@ const Index = () => {
       });
       setContactForm(defaultContactForm);
       setContactFormErrors({});
+      setContactFormStatus("Message sent. Trusted Bums will review it and follow up soon.");
       setTurnstileToken("");
       if (turnstileWidgetIdRef.current) {
         window.turnstile?.reset(turnstileWidgetIdRef.current);
@@ -196,8 +199,9 @@ const Index = () => {
     } catch (error) {
       console.error("Unable to submit contact form", error);
       setContactFormErrors({
-        submit: "We could not send that message. Your details are still here, so check the fields and try again.",
+        submit: "We could not send that message. Your details are still here. Please review the highlighted fields or try again in a moment.",
       });
+      setContactFormStatus("");
       setTurnstileToken("");
       if (turnstileWidgetIdRef.current) {
         window.turnstile?.reset(turnstileWidgetIdRef.current);
@@ -679,6 +683,12 @@ const Index = () => {
                   {contactFormErrors.submit ? (
                     <div className="rounded-md border border-orange-200/40 bg-orange-200/10 p-3 text-sm text-orange-50" role="alert">
                       {contactFormErrors.submit}
+                    </div>
+                  ) : null}
+
+                  {contactFormStatus ? (
+                    <div className="rounded-md border border-emerald-200/40 bg-emerald-200/10 p-3 text-sm text-emerald-50" role="status">
+                      {contactFormStatus}
                     </div>
                   ) : null}
 

@@ -30,6 +30,53 @@ interface DashboardLocationState {
   deniedFrom?: string;
 }
 
+type DeniedAccessRecovery = {
+  title: string;
+  description: string;
+  to: string;
+  cta: string;
+};
+
+function getDeniedAccessRecovery(deniedFrom: string | undefined, isFinanceUser: boolean): DeniedAccessRecovery {
+  if (deniedFrom?.includes("/agreements") || deniedFrom?.includes("/terms")) {
+    return {
+      title: "Client Agreement needs attention.",
+      description: "Open agreement records to review the current Client Agreement and continue the recovery path.",
+      to: "/client/agreements",
+      cta: "Open Client Agreement",
+    };
+  }
+
+  if (deniedFrom?.includes("/team")) {
+    return {
+      title: "Team management is for Client Admins.",
+      description: "Ask a Client Admin to update your role if you need to manage seats or invite teammates.",
+      to: "/client/agreements",
+      cta: "Review access records",
+    };
+  }
+
+  if (deniedFrom?.includes("/payments") || deniedFrom?.includes("/exports")) {
+    return {
+      title: isFinanceUser ? "That finance area is not available yet." : "Payment reports require finance access.",
+      description: isFinanceUser
+        ? "Ask a Client Admin to confirm your finance role before trying that workflow again."
+        : "Ask a Client Admin to add finance access if you need payment reports, invoices, or exports.",
+      to: "/client/agreements",
+      cta: "Review access and agreements",
+    };
+  }
+
+  return {
+    title: "That workspace area is not available for this account.",
+    description: isFinanceUser
+      ? "Ask a Client Admin to adjust access if your finance role needs that workflow."
+      : "Ask a Client Admin to adjust your role if you should have access.",
+    to: "/client/agreements",
+    cta: "Review access and agreements",
+  };
+}
+
 function NextActionsCard({ actions }: { actions: DashboardAction[] }) {
   return (
     <Card>
@@ -60,6 +107,7 @@ export default function ClientDashboard() {
   const timeZone = useUserTimeZone();
   const clientAccessRole = user?.role === "CLIENT" ? user.clientAccessRole ?? "CLIENT_ADMIN" : undefined;
   const isFinanceUser = clientAccessRole === "CLIENT_FINANCE";
+  const deniedAccessRecovery = getDeniedAccessRecovery(deniedFrom, isFinanceUser);
   const canManagePayments = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_FINANCE";
   const { hasAcceptedCurrentTerms } = useCurrentTermsState();
   const opportunitiesQuery = useQuery({
@@ -171,13 +219,11 @@ export default function ClientDashboard() {
           <Card className="mb-6 border-warning/50 bg-warning/10">
             <CardContent className="flex flex-col gap-3 pt-6 text-sm md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="font-medium text-foreground">That workspace area is not available for this account.</p>
-                <p className="mt-1 text-muted-foreground">
-                  You were returned from {deniedFrom}. Ask a Client Admin to adjust access if your finance role needs that workflow.
-                </p>
+                <p className="font-medium text-foreground">{deniedAccessRecovery.title}</p>
+                <p className="mt-1 text-muted-foreground">{deniedAccessRecovery.description}</p>
               </div>
               <Button asChild variant="outline">
-                <Link to="/client/agreements">Review access and agreements</Link>
+                <Link to={deniedAccessRecovery.to}>{deniedAccessRecovery.cta}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -275,13 +321,11 @@ export default function ClientDashboard() {
           <Card className="mb-6 border-warning/50 bg-warning/10">
             <CardContent className="flex flex-col gap-3 pt-6 text-sm md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="font-medium text-foreground">That workspace area is not available for this account.</p>
-                <p className="mt-1 text-muted-foreground">
-                  You were returned from {deniedFrom}. Ask a Client Admin to adjust your role if you should have access.
-                </p>
+                <p className="font-medium text-foreground">{deniedAccessRecovery.title}</p>
+                <p className="mt-1 text-muted-foreground">{deniedAccessRecovery.description}</p>
               </div>
               <Button asChild variant="outline">
-                <Link to="/client/agreements">Review access and agreements</Link>
+                <Link to={deniedAccessRecovery.to}>{deniedAccessRecovery.cta}</Link>
               </Button>
             </CardContent>
           </Card>

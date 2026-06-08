@@ -38,8 +38,13 @@ describe("E2E smoke regression coverage", () => {
     expect(publicIndexSource).toContain("noValidate");
     expect(publicIndexSource).toContain("contact-name-error");
     expect(publicIndexSource).toContain("Your details are still here");
+    expect(publicIndexSource).toContain("Message sent. Trusted Bums will review it and follow up soon.");
+    expect(publicIndexSource).toContain('role="status"');
     expect(clientDashboardSource).toContain("deniedFrom");
+    expect(clientDashboardSource).toContain("getDeniedAccessRecovery");
     expect(clientDashboardSource).toContain("That workspace area is not available for this account.");
+    expect(clientDashboardSource).toContain("Client Agreement needs attention.");
+    expect(clientDashboardSource).toContain("Open Client Agreement");
     expect(clientDashboardSource).toContain('to: "/client/agreements"');
     expect(clientDashboardSource).not.toContain('to: "/client/profile", primary: true');
     expect(clientTermsSource).toContain("Continue This Session");
