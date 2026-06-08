@@ -19,6 +19,12 @@ const baseRequired = [
   "CLERK_SECRET_KEY",
 ];
 
+const conditionalRequired = [];
+
+if (process.env.QA_EXTENSION_API_BASE_URL?.trim()) {
+  conditionalRequired.push("QA_EXTENSION_API_TOKEN");
+}
+
 function getSelectedRoles() {
   const rawRoles = process.env.QA_VISUAL_ROLES?.trim();
 
@@ -46,7 +52,11 @@ function getSelectedRoles() {
   return selectedRoles;
 }
 
-const required = [...baseRequired, ...getSelectedRoles().map((role) => roleEmailEnv[role])];
+const required = [
+  ...baseRequired,
+  ...conditionalRequired,
+  ...getSelectedRoles().map((role) => roleEmailEnv[role]),
+];
 const missing = [...new Set(required)].filter((name) => !process.env[name]);
 
 if (missing.length) {

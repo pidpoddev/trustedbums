@@ -1,6 +1,6 @@
 # Trusted Bums Codex Edit Log
 
-_Last updated: 2026-06-07 by Codex._
+_Last updated: 2026-06-08 by Codex._
 
 This file is the running handoff log for implementation work Codex has made in this repo. Specialist agents should read it before preserving backlog items so they can recheck shipped changes, downgrade stale recommendations, and add only the remaining gaps.
 
@@ -12,6 +12,17 @@ This file is the running handoff log for implementation work Codex has made in t
 - If a pushed commit included pre-existing dirty files outside the current implementation scope, call that out instead of implying Codex authored every line.
 
 ## Additional Agent Recheck Requests
+
+### 2026-06-08 - Recheck RLS helper grant restoration and hosted role smoke
+
+- Trigger: Ryan asked to move ahead on the next unresolved scrum item.
+- Implementation branch: `main`.
+- What changed: Added a successor Supabase migration that restores `anon` and `authenticated` execute grants only for security-definer helpers that are called by live RLS policies, while keeping the trigger-only profile authorization guard closed to direct callers. Applied the migration live to Trusted Bums Supabase as `20260608002426 restore_rls_helper_execute_grants`. Updated the helper security regression test to catch the difference between policy helpers and trigger-only guards. Updated QA env preflight so a configured extension API base URL requires `QA_EXTENSION_API_TOKEN`, and documented the extension API QA variables in `.env.qa.example`.
+- Main surfaces changed: `supabase/migrations/20260608010000_restore_rls_helper_execute_grants.sql`, `src/test/supabaseHelperSecurity.test.ts`, `scripts/verify-qa-env.mjs`, `.env.qa.example`, `docs/security-review-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/qa-test-backlog.md`.
+- Checks run: live Supabase SQL catalog checks for helper grants and policy usage; Supabase MCP `_apply_migration`; hosted `authenticated-role-smoke.spec.ts` against `https://trustedbums.com` using `.env.qa` credentials; `corepack pnpm exec vitest run src/test/supabaseHelperSecurity.test.ts`; sourced `corepack pnpm run qa:env`; `corepack pnpm run qa`.
+- Results: hosted authenticated role smoke passed all 5 roles; full local QA passed lint, 21 test files / 67 tests, and production build. Sourced `qa:env` now intentionally fails because `.env.qa` has `QA_EXTENSION_API_BASE_URL` but is missing `QA_EXTENSION_API_TOKEN`.
+- Recheck agents: Security Engineer, QA/Test Engineer, Lead Developer, Product Ops Workflow Analyst.
+- Next run should verify: add the missing dedicated QA extension token, rerun `qa:env`, and rerun authenticated extension API allow/deny coverage against two-company fixtures.
 
 ### 2026-06-07 - Recheck Clerk dependency advisory closure
 

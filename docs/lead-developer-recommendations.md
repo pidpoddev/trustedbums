@@ -1,6 +1,6 @@
 # Trusted Bums Lead Developer Recommendations
 
-_Last updated: 2026-06-07 by Codex daily lead developer automation._
+_Last updated: 2026-06-08 by Codex._
 
 ## Executive Read
 
@@ -8,7 +8,7 @@ The implementation queue should stay led by live trust-boundary and business-acc
 
 The next highest-confidence shipped risks are now Supabase Auth leaked-password protection and seeded access proof. The Clerk dependency hygiene item is closed: root web `@clerk/react` and dev `@clerk/testing` now resolve through patched Clerk shared packages, and the lockfile no longer contains `js-cookie` `3.0.5`. Service-role source contracts now have regression coverage for Clerk verification, client-team boundaries, profile-bootstrap metadata handling, admin access review, extension destinations, and admin email operations; they still need fixture-backed live allow/deny proof. Bum saved-target policy alignment is implemented in source, covered by regression tests, and applied live as Supabase migration `20260607234751 remove_saved_target_read_entitlement`; it still needs seeded allow/deny proof. Invitation redirect control is implemented in source, covered by focused tests, deployed to `client-team` and `invite-bum` version `2`, and smoke-checked for function boot; it still needs one safe authenticated invite smoke. The internal helper/RPC cleanup is now applied live as migration `20260607235839`, and refreshed Supabase security advisors only report leaked-password protection disabled.
 
-The practical blocker is release evidence depth. `.env.qa` has now been restored to this local workspace, and `qa:env` passed after sourcing it in the agent setup session. GitHub-hosted workflow evidence remains the intended final QA source, but several specialist runs today had intermittent access to it. That means the next implementation pass should pair every access or trust fix with deterministic allow/deny tests and a deliberate post-change QA plan instead of assuming the broader E2E path is immediately available.
+The practical blocker is release evidence depth. `.env.qa` is present in this local workspace, and the hosted authenticated role smoke now passes all five roles after the live RLS helper grant fix. The QA env contract is now stricter: because `.env.qa` configures `QA_EXTENSION_API_BASE_URL`, it must also provide `QA_EXTENSION_API_TOKEN` before extension API authenticated QA can run. GitHub-hosted workflow evidence remains the intended final QA source, but several specialist runs today had intermittent access to it. That means the next implementation pass should pair every access or trust fix with deterministic allow/deny tests and a deliberate post-change QA plan instead of assuming the broader E2E path is immediately available.
 
 ## Recommended Implementation Queue
 
@@ -30,14 +30,14 @@ The practical blocker is release evidence depth. `.env.qa` has now been restored
 - Acceptance criteria: Refreshed Supabase security advisors no longer show `auth_leaked_password_protection`; expected auth flows still work.
 - Validation: Supabase security advisor rerun plus auth smoke for any password-based paths in scope.
 
-### P1 - Revalidate authenticated QA evidence and route-coverage prerequisites for the access and trust queue
+### P1 - Complete extension API QA credentials and route-coverage prerequisites
 - Source: `docs/ux-optimization-backlog.md`, `docs/ui-optimization-backlog.md`, `docs/consultant-team-rules.md`, the restored local `.env.qa`, and the older specialist `qa:env` failures recorded in `docs/codex-edit-log.md`.
-- Why now: The top access and trust fixes should not ship behind source-only confidence. The local env file is present again and `qa:env` passes after sourcing it, but authenticated smoke and GitHub-hosted evidence still need to be rerun and `/admin/handoffs` still lacks the intended visual-coverage proof.
-- Recommended fix: Use the restored `.env.qa` for authenticated preflight without printing secrets, re-establish GitHub-hosted QA workflow visibility where possible, and extend audit coverage to `/admin/handoffs` so queue and access changes do not ship without route evidence.
+- Why now: The top access and trust fixes should not ship behind source-only confidence. The local env file is present and hosted authenticated role smoke passed after the RLS helper grant fix, but extension API authenticated coverage is still blocked by a missing dedicated QA token. GitHub-hosted evidence still needs to be rerun/reviewed, and `/admin/handoffs` still lacks the intended visual-coverage proof.
+- Recommended fix: Add a dedicated `QA_EXTENSION_API_TOKEN` to the local and CI QA secret path without printing it, rerun `qa:env`, run authenticated extension API allow/deny checks, re-establish GitHub-hosted QA workflow visibility where possible, and extend audit coverage to `/admin/handoffs` so queue and access changes do not ship without route evidence.
 - Likely files/routes: `.env.qa` or environment provisioning path, `.env.qa.example`, `scripts/verify-qa-env.mjs`, `tests/e2e/visual-ui-audit.spec.ts`, `tests/e2e/portal-interaction-audit.spec.ts`, `tests/e2e/extension-api.spec.ts`, and QA handoff docs.
 - Dependencies/risks: This is partly an access/process item, not purely a product-code item. Keep missing credentials and GitHub workflow access visible as access blockers, not product defects.
-- Acceptance criteria: `.env.qa` is present, `pnpm run qa:env` passes after sourcing it, authenticated role smoke is rerun, GitHub-hosted `Visual UI Audit` and `E2E Smoke` evidence is reachable again or explicitly replaced by an approved fallback, and `/admin/handoffs` is included in the route audit plan.
-- Validation: `corepack pnpm run qa:env`; targeted authenticated route smoke once env is restored; artifact review for `/admin/handoffs` after the next visual audit run.
+- Acceptance criteria: `.env.qa` is present, `pnpm run qa:env` passes after sourcing it, authenticated role smoke remains green, authenticated extension API checks run against seeded fixtures, GitHub-hosted `Visual UI Audit` and `E2E Smoke` evidence is reachable again or explicitly replaced by an approved fallback, and `/admin/handoffs` is included in the route audit plan.
+- Validation: sourced `corepack pnpm run qa:env`; hosted authenticated role smoke; authenticated extension API Playwright/API checks; artifact review for `/admin/handoffs` after the next visual audit run.
 
 ### P1 - Add seeded live service-role authorization proof
 - Source: [src/test/serviceRoleAuthorization.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/serviceRoleAuthorization.test.ts), [supabase/functions/client-team/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/client-team/index.ts), [supabase/functions/profile-bootstrap/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/profile-bootstrap/index.ts), [supabase/functions/admin-access-requests/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/admin-access-requests/index.ts), [supabase/functions/extension-api-v1/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/extension-api-v1/index.ts), and [supabase/functions/send-admin-email/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/send-admin-email/index.ts).
@@ -73,7 +73,7 @@ Do not carry the root Clerk `js-cookie` advisory as an active implementation ite
 
 - Trust, Security, and Product Ops should now treat `email-track` deploy drift as closed live evidence, with a release-smoke watch item for valid-delivery click recording.
 - Product Ops, Security, Data, and QA now converge on the same access-boundary proof work: represented-contact destination entitlement, finance-safe export scope, service-role live authorization, and deterministic allow/deny fixtures. Current source and regression coverage support the intended behavior; live seeded QA still needs to prove it.
-- Older `.env.qa` absence claims are stale because the file is now restored locally and `qa:env` passed after sourcing it in the setup session. Until authenticated smoke is rerun, treat authenticated validation as env-ready but still unverified.
+- Older `.env.qa` absence claims are stale because the file is now restored locally. Hosted authenticated role smoke passed after the Supabase helper grant fix, but sourced `qa:env` now correctly fails until `QA_EXTENSION_API_TOKEN` is added for the configured extension API base URL.
 - `/admin/handoffs` remains a real UX, UI, and Product Ops follow-up, but it should trail the trust and access fixes above. Its current missing route coverage is better handled as part of the QA evidence-restoration step than as the top implementation item.
 - Performance and Data both point to the same admin observability boundary: `/admin/performance` should move to aggregate-first server data, and any supporting helper must remain admin-only under the same access-rule discipline as the dashboard RPC cleanup.
 
