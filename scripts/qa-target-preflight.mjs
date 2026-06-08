@@ -5,6 +5,8 @@ import path from "node:path";
 
 const timeoutMs = Number(process.env.QA_TARGET_PREFLIGHT_TIMEOUT_MS ?? 15_000);
 const outputDir = process.env.QA_TARGET_PREFLIGHT_OUTPUT_DIR?.trim() || "test-results/qa-target-preflight";
+const fetchAttempts = Number(process.env.QA_TARGET_PREFLIGHT_FETCH_ATTEMPTS ?? 3);
+const fetchRetryDelayMs = Number(process.env.QA_TARGET_PREFLIGHT_FETCH_RETRY_DELAY_MS ?? 1_500);
 
 function getRequiredEnv(name) {
   const value = process.env[name]?.trim();
@@ -25,6 +27,12 @@ function createAbortSignal() {
   return AbortSignal.timeout(timeoutMs);
 }
 
+function delay(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function formatAddress(address) {
   return `${address.address}/${address.family}`;
 }
@@ -42,12 +50,25 @@ async function classifyStep(name, run) {
 }
 
 async function fetchText(url) {
-  const response = await fetch(url, {
-    redirect: "follow",
-    signal: createAbortSignal(),
-  });
-  const text = await response.text();
-  return { response, text };
+  let lastError;
+
+  for (let attempt = 1; attempt <= fetchAttempts; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        redirect: "follow",
+        signal: createAbortSignal(),
+      });
+      const text = await response.text();
+      return { response, text, attempt };
+    } catch (error) {
+      lastError = error;
+      if (attempt < fetchAttempts) {
+        await delay(fetchRetryDelayMs);
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 async function checkDns(targetUrl) {
@@ -65,7 +86,7 @@ async function checkDns(targetUrl) {
 }
 
 async function checkBaseHttp(targetUrl, state) {
-  const { response, text } = await fetchText(targetUrl.href);
+  const { response, text, attempt } = await fetchText(targetUrl.href);
   state.baseResponse = response;
   state.baseText = text;
 
@@ -73,7 +94,7 @@ async function checkBaseHttp(targetUrl, state) {
     throw new Error(`HTTP ${response.status} ${response.statusText} at ${response.url}`);
   }
 
-  return `HTTP ${response.status} at ${response.url}`;
+  return `HTTP ${response.status} at ${response.url}${attempt > 1 ? ` after ${attempt} attempts` : ""}`;
 }
 
 async function checkAppShell(state) {
