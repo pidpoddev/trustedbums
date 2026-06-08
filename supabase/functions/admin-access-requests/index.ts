@@ -5,6 +5,9 @@ import * as jose from "jsr:@panva/jose@6";
 interface ClaimsResponse { sub?: string }
 interface ProfileRow { id: string; role: string | null; is_admin: boolean }
 type Action = "list" | "approve" | "deny";
+type ReviewEvidence = { proofCategory: string | null; reviewNote: string | null };
+
+const proofRequiredRequestTypes = new Set(["PUBLIC_EMAIL_COMPANY", "RELATED_DOMAIN"]);
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
@@ -38,6 +41,33 @@ function normalizeDomain(value?: string | null) {
   const withoutProtocol = value.trim().toLowerCase().replace(/^https?:\/\//, "");
   const host = withoutProtocol.split("/")[0]?.replace(/^www\./, "").replace(/\.$/, "").split(":")[0];
   return host || null;
+}
+
+function readReviewEvidence(body: Record<string, unknown>): ReviewEvidence {
+  return {
+    proofCategory: cleanString(body.proofCategory),
+    reviewNote: cleanString(body.reviewNote),
+  };
+}
+
+function requiresProofCategory(requestType: string | null | undefined) {
+  return proofRequiredRequestTypes.has(requestType ?? "");
+}
+
+function assertReviewEvidence(action: "approve" | "deny", requestType: string | null | undefined, evidence: ReviewEvidence) {
+  if (requiresProofCategory(requestType) && !evidence.proofCategory) {
+    throw new Error("Choose a proof category before reviewing this access request.");
+  }
+
+  if ((requiresProofCategory(requestType) || action === "deny") && !evidence.reviewNote) {
+    throw new Error("Add a reviewer note before reviewing this access request.");
+  }
+}
+
+function buildReviewNote(evidence: ReviewEvidence) {
+  if (!evidence.proofCategory) return evidence.reviewNote;
+  const note = evidence.reviewNote ? `Review note: ${evidence.reviewNote}` : "Review note: not provided";
+  return `Proof category: ${evidence.proofCategory}\n${note}`;
 }
 
 function getBearerToken(request: Request) {
@@ -96,7 +126,7 @@ async function listRequests() {
   return data ?? [];
 }
 
-async function approveRequest(admin: ProfileRow, requestId: string) {
+async function approveRequest(admin: ProfileRow, requestId: string, evidence: ReviewEvidence) {
   const { data: accessRequest, error: readError } = await supabaseAdmin
     .from("client_company_access_requests")
     .select("*")
@@ -105,8 +135,10 @@ async function approveRequest(admin: ProfileRow, requestId: string) {
     .maybeSingle<Record<string, string | null>>();
   if (readError) throw readError;
   if (!accessRequest) throw new Error("Choose a pending access request.");
+  assertReviewEvidence("approve", accessRequest.request_type, evidence);
 
   let companyId = accessRequest.company_id;
+  let approvedDomain: string | null = null;
   if (accessRequest.request_type === "PUBLIC_EMAIL_COMPANY") {
     const companyName = accessRequest.requested_company_name;
     if (!companyName) throw new Error("Public-email company requests need a company name.");
@@ -127,6 +159,7 @@ async function approveRequest(admin: ProfileRow, requestId: string) {
       .from("company_domains")
       .insert({ company_id: companyId, domain, is_primary: false });
     if (domainError) throw domainError;
+    approvedDomain = domain;
   }
 
   if (accessRequest.requester_profile_id && (accessRequest.request_type === "PUBLIC_EMAIL_COMPANY" || accessRequest.request_type === "SAME_DOMAIN_ACCESS")) {
@@ -156,7 +189,13 @@ async function approveRequest(admin: ProfileRow, requestId: string) {
 
   const { error: reviewError } = await supabaseAdmin
     .from("client_company_access_requests")
-    .update({ status: "approved", company_id: companyId, reviewed_by: admin.id, reviewed_at: new Date().toISOString() })
+    .update({
+      status: "approved",
+      company_id: companyId,
+      reviewed_by: admin.id,
+      reviewed_at: new Date().toISOString(),
+      review_note: buildReviewNote(evidence),
+    })
     .eq("id", requestId);
   if (reviewError) throw reviewError;
 
@@ -166,11 +205,23 @@ async function approveRequest(admin: ProfileRow, requestId: string) {
     event_type: "admin_access_request_approved",
     entity_type: "client_company_access_requests",
     entity_id: requestId,
-    event_data: { requestId, requestType: accessRequest.request_type, requesterProfileId: accessRequest.requester_profile_id },
+    event_data: {
+      requestId,
+      requestType: accessRequest.request_type,
+      requesterProfileId: accessRequest.requester_profile_id,
+      proofCategory: evidence.proofCategory,
+      reviewNote: evidence.reviewNote,
+      resultingState: {
+        companyId,
+        approvedDomain,
+        role: accessRequest.request_type === "BUM_SIGNUP" ? "BUM" : "CLIENT",
+        clientAccessRole: accessRequest.requested_role ?? null,
+      },
+    },
   });
 }
 
-async function denyRequest(admin: ProfileRow, requestId: string, reviewNote?: string | null) {
+async function denyRequest(admin: ProfileRow, requestId: string, evidence: ReviewEvidence) {
   const { data: accessRequest, error: readError } = await supabaseAdmin
     .from("client_company_access_requests")
     .select("id, company_id, requester_profile_id, request_type")
@@ -179,6 +230,7 @@ async function denyRequest(admin: ProfileRow, requestId: string, reviewNote?: st
     .maybeSingle<{ id: string; company_id: string | null; requester_profile_id: string | null; request_type: string }>();
   if (readError) throw readError;
   if (!accessRequest) throw new Error("Choose a pending access request.");
+  assertReviewEvidence("deny", accessRequest.request_type, evidence);
 
   if (accessRequest.requester_profile_id) {
     await supabaseAdmin.from("profiles").update({ access_status: "DENIED" }).eq("id", accessRequest.requester_profile_id).is("role", null);
@@ -186,7 +238,12 @@ async function denyRequest(admin: ProfileRow, requestId: string, reviewNote?: st
 
   const { error } = await supabaseAdmin
     .from("client_company_access_requests")
-    .update({ status: "denied", reviewed_by: admin.id, reviewed_at: new Date().toISOString(), review_note: reviewNote ?? null })
+    .update({
+      status: "denied",
+      reviewed_by: admin.id,
+      reviewed_at: new Date().toISOString(),
+      review_note: buildReviewNote(evidence),
+    })
     .eq("id", requestId);
   if (error) throw error;
 
@@ -196,7 +253,14 @@ async function denyRequest(admin: ProfileRow, requestId: string, reviewNote?: st
     event_type: "admin_access_request_denied",
     entity_type: "client_company_access_requests",
     entity_id: requestId,
-    event_data: { requestId, requestType: accessRequest.request_type, requesterProfileId: accessRequest.requester_profile_id },
+    event_data: {
+      requestId,
+      requestType: accessRequest.request_type,
+      requesterProfileId: accessRequest.requester_profile_id,
+      proofCategory: evidence.proofCategory,
+      reviewNote: evidence.reviewNote,
+      resultingState: { status: "denied" },
+    },
   });
 }
 
@@ -214,11 +278,11 @@ Deno.serve(async (request: Request) => {
     const requestId = cleanString(body.requestId);
     if (!requestId) return json(400, { error: "Choose an access request." });
     if (action === "approve") {
-      await approveRequest(admin, requestId);
+      await approveRequest(admin, requestId, readReviewEvidence(body));
       return json(200, { approved: true, requests: await listRequests() });
     }
     if (action === "deny") {
-      await denyRequest(admin, requestId, cleanString(body.reviewNote));
+      await denyRequest(admin, requestId, readReviewEvidence(body));
       return json(200, { denied: true, requests: await listRequests() });
     }
 

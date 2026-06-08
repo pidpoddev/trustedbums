@@ -6921,7 +6921,29 @@ export async function approveAdminCompanyAccessRequest(user: AuthUser, requestId
   });
 }
 
-export async function denyAdminCompanyAccessRequest(user: AuthUser, requestId: string, reviewNote?: string) {
+export async function approveAdminCompanyAccessRequestWithProof(
+  user: AuthUser,
+  requestId: string,
+  review: { proofCategory?: string; reviewNote?: string },
+) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can approve company access requests.");
+  }
+
+  return invokeAdminAccessRequestsFunction<AdminAccessRequestsResponse & { approved?: boolean }>({
+    action: "approve",
+    requestId,
+    proofCategory: review.proofCategory,
+    reviewNote: review.reviewNote,
+  });
+}
+
+export async function denyAdminCompanyAccessRequest(
+  user: AuthUser,
+  requestId: string,
+  reviewNote?: string,
+  proofCategory?: string,
+) {
   if (user.role !== "ADMIN") {
     throw new Error("Only admins can deny company access requests.");
   }
@@ -6930,6 +6952,7 @@ export async function denyAdminCompanyAccessRequest(user: AuthUser, requestId: s
     action: "deny",
     requestId,
     reviewNote,
+    proofCategory,
   });
 }
 

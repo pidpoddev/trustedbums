@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   approveAdminCompanyAccessRequest,
+  approveAdminCompanyAccessRequestWithProof,
   createClientCompany,
   denyAdminCompanyAccessRequest,
   updateAdminClientCompany,
@@ -28,9 +29,11 @@ import {
   listTermsAcceptances,
   type CompanyRecord,
   type CompanyRelationshipStage,
+  type ClientCompanyAccessRequestRecord,
   type TermsAcceptance,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
+import { Textarea } from "@/components/ui/textarea";
 
 function formatList(values?: string[] | null) {
   return (values ?? []).filter(Boolean).join(", ");
@@ -57,6 +60,64 @@ const clientTypeFilters: { value: ClientTypeFilter; label: string }[] = [
   { value: "BUM_CONNECTED", label: "With Bum connections" },
   { value: "INACTIVE", label: "Inactive" },
 ];
+
+type AdminAccessReviewAction = "approve" | "deny";
+
+const adminProofCategories = [
+  { value: "company_identity", label: "Company identity verified" },
+  { value: "domain_control", label: "Domain control verified" },
+  { value: "authorized_requester", label: "Requester authority verified" },
+  { value: "contract_or_customer_record", label: "Contract or customer record verified" },
+  { value: "manual_admin_override", label: "Manual admin override" },
+];
+
+function requestTypeLabel(type: ClientCompanyAccessRequestRecord["request_type"]) {
+  return type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function requestNeedsProof(type: ClientCompanyAccessRequestRecord["request_type"]) {
+  return type === "PUBLIC_EMAIL_COMPANY" || type === "RELATED_DOMAIN";
+}
+
+function requestedRoleLabel(role: ClientCompanyAccessRequestRecord["requested_role"]) {
+  return role ? role.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Client Member";
+}
+
+function accessReviewPreview(request: ClientCompanyAccessRequestRecord) {
+  if (request.request_type === "PUBLIC_EMAIL_COMPANY") {
+    return [
+      `Create or approve client company: ${request.requested_company_name ?? "Missing company name"}`,
+      `Assign requester as ${requestedRoleLabel(request.requested_role)} for that company`,
+      "Mark requester access approved and clear disabled state",
+    ];
+  }
+
+  if (request.request_type === "RELATED_DOMAIN") {
+    return [
+      `Add related domain: ${request.requested_domain ?? "Missing requested domain"}`,
+      `Attach domain to: ${request.companies?.name ?? request.requested_company_name ?? "selected client company"}`,
+      "Leave company access authority unchanged unless a separate request updates it",
+    ];
+  }
+
+  if (request.request_type === "SAME_DOMAIN_ACCESS") {
+    return [
+      `Assign requester as ${requestedRoleLabel(request.requested_role)}`,
+      `Attach requester to: ${request.companies?.name ?? request.requested_company_name ?? "selected client company"}`,
+      "Mark requester access approved and clear disabled state",
+    ];
+  }
+
+  if (request.request_type === "BUM_SIGNUP") {
+    return [
+      "Approve requester as a Bum",
+      "Remove client-company assignment",
+      "Mark requester access approved and clear disabled state",
+    ];
+  }
+
+  return ["Record the admin review decision and audit event."];
+}
 
 function TermsAcceptanceDetailButton({ acceptance, acceptedBy }: { acceptance: TermsAcceptance; acceptedBy: string }) {
   const timeZone = useUserTimeZone();
@@ -195,6 +256,12 @@ export default function AdminClients() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientWebsite, setNewClientWebsite] = useState("");
+  const [reviewDialog, setReviewDialog] = useState<{
+    request: ClientCompanyAccessRequestRecord;
+    action: AdminAccessReviewAction;
+  } | null>(null);
+  const [reviewProofCategory, setReviewProofCategory] = useState("");
+  const [reviewNote, setReviewNote] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -240,13 +307,17 @@ export default function AdminClients() {
     },
   });
   const approveAccessRequestMutation = useMutation({
-    mutationFn: (requestId: string) => approveAdminCompanyAccessRequest(user!, requestId),
+    mutationFn: (review: { requestId: string; proofCategory?: string; reviewNote?: string }) =>
+      review.proofCategory || review.reviewNote
+        ? approveAdminCompanyAccessRequestWithProof(user!, review.requestId, review)
+        : approveAdminCompanyAccessRequest(user!, review.requestId),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin-company-access-requests"] }),
         queryClient.invalidateQueries({ queryKey: ["admin-companies"] }),
         queryClient.invalidateQueries({ queryKey: ["admin-profiles"] }),
       ]);
+      closeReviewDialog();
       toast({ title: "Access approved", description: "The request was approved and audited." });
     },
     onError: (error) => {
@@ -258,9 +329,11 @@ export default function AdminClients() {
     },
   });
   const denyAccessRequestMutation = useMutation({
-    mutationFn: (requestId: string) => denyAdminCompanyAccessRequest(user!, requestId),
+    mutationFn: (review: { requestId: string; proofCategory?: string; reviewNote?: string }) =>
+      denyAdminCompanyAccessRequest(user!, review.requestId, review.reviewNote, review.proofCategory),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-company-access-requests"] });
+      closeReviewDialog();
       toast({ title: "Access denied", description: "The request was denied and audited." });
     },
     onError: (error) => {
@@ -362,6 +435,45 @@ export default function AdminClients() {
     recommendationsQuery.isError ||
     acceptancesQuery.isError ||
     contactsQuery.isError;
+
+  function openReviewDialog(request: ClientCompanyAccessRequestRecord, action: AdminAccessReviewAction) {
+    setReviewDialog({ request, action });
+    setReviewProofCategory("");
+    setReviewNote("");
+  }
+
+  function closeReviewDialog() {
+    setReviewDialog(null);
+    setReviewProofCategory("");
+    setReviewNote("");
+  }
+
+  const selectedRequest = reviewDialog?.request ?? null;
+  const selectedAction = reviewDialog?.action ?? "approve";
+  const selectedRequestNeedsProof = selectedRequest ? requestNeedsProof(selectedRequest.request_type) : false;
+  const reviewNoteRequired = selectedAction === "deny" || selectedRequestNeedsProof;
+  const reviewSubmitDisabled =
+    approveAccessRequestMutation.isPending ||
+    denyAccessRequestMutation.isPending ||
+    !selectedRequest ||
+    (selectedRequestNeedsProof && !reviewProofCategory) ||
+    (reviewNoteRequired && !reviewNote.trim());
+
+  function submitAccessReview() {
+    if (!selectedRequest) return;
+    const review = {
+      requestId: selectedRequest.id,
+      proofCategory: reviewProofCategory || undefined,
+      reviewNote: reviewNote.trim() || undefined,
+    };
+
+    if (selectedAction === "approve") {
+      approveAccessRequestMutation.mutate(review);
+      return;
+    }
+
+    denyAccessRequestMutation.mutate(review);
+  }
   const filteredCompanies = useMemo(() => {
     return companySummaries.filter((company) => {
       const matchesType =
@@ -465,10 +577,14 @@ export default function AdminClients() {
               {accessRequestsQuery.data.map((request) => (
                 <div key={request.id} className="flex flex-col gap-3 rounded-md border p-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <p className="font-medium">{request.email}</p>
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{request.email}</p>
+                      {requestNeedsProof(request.request_type) ? <Badge variant="secondary">Proof required</Badge> : null}
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      {request.request_type.replaceAll("_", " ").toLowerCase()} · {request.requested_company_name ?? request.companies?.name ?? "No company"} · {request.requested_domain ?? request.email_domain ?? "No domain"}
+                      {requestTypeLabel(request.request_type)} · {request.requested_company_name ?? request.companies?.name ?? "No company"} · {request.requested_domain ?? request.email_domain ?? "No domain"}
                     </p>
+                    <p className="text-xs text-muted-foreground">Requested role: {requestedRoleLabel(request.requested_role)}</p>
                     <p className="text-xs text-muted-foreground">{formatDateTimeForTimeZone(request.created_at, timeZone)}</p>
                   </div>
                   <div className="flex gap-2">
@@ -476,7 +592,7 @@ export default function AdminClients() {
                       type="button"
                       size="sm"
                       disabled={approveAccessRequestMutation.isPending || denyAccessRequestMutation.isPending}
-                      onClick={() => approveAccessRequestMutation.mutate(request.id)}
+                      onClick={() => openReviewDialog(request, "approve")}
                     >
                       <Check className="mr-1 h-4 w-4" />
                       Approve
@@ -486,7 +602,7 @@ export default function AdminClients() {
                       size="sm"
                       variant="outline"
                       disabled={approveAccessRequestMutation.isPending || denyAccessRequestMutation.isPending}
-                      onClick={() => denyAccessRequestMutation.mutate(request.id)}
+                      onClick={() => openReviewDialog(request, "deny")}
                     >
                       <X className="mr-1 h-4 w-4" />
                       Deny
@@ -498,6 +614,100 @@ export default function AdminClients() {
           </CardContent>
         </Card>
       ) : null}
+
+      <Dialog open={Boolean(reviewDialog)} onOpenChange={(open) => { if (!open) closeReviewDialog(); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display">
+              {selectedAction === "approve" ? "Approve access request" : "Deny access request"}
+            </DialogTitle>
+            <DialogDescription>
+              Review the requested authority change before saving the admin decision.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRequest ? (
+            <div className="space-y-5">
+              <div className="grid gap-3 rounded-md border bg-muted/20 p-3 text-sm md:grid-cols-2">
+                <div>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Requester</p>
+                  <p className="break-words">{selectedRequest.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Request type</p>
+                  <p>{requestTypeLabel(selectedRequest.request_type)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Company</p>
+                  <p>{selectedRequest.requested_company_name ?? selectedRequest.companies?.name ?? "No company"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Domain</p>
+                  <p>{selectedRequest.requested_domain ?? selectedRequest.email_domain ?? "No domain"}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-md border p-3">
+                <p className="text-sm font-medium">Mutation preview</p>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  {accessReviewPreview(selectedRequest).map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {selectedRequestNeedsProof ? (
+                <div className="space-y-2">
+                  <Label htmlFor="access-review-proof">Proof category</Label>
+                  <Select value={reviewProofCategory} onValueChange={setReviewProofCategory}>
+                    <SelectTrigger id="access-review-proof">
+                      <SelectValue placeholder="Choose verified proof" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {adminProofCategories.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Required for public-email company and related-domain reviews.
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="space-y-2">
+                <Label htmlFor="access-review-note">
+                  Reviewer note{reviewNoteRequired ? "" : " (optional)"}
+                </Label>
+                <Textarea
+                  id="access-review-note"
+                  rows={4}
+                  value={reviewNote}
+                  onChange={(event) => setReviewNote(event.target.value)}
+                  placeholder={selectedAction === "approve" ? "Summarize the evidence checked before approval." : "Explain why this request is being denied."}
+                />
+                {reviewNoteRequired ? (
+                  <p className="text-xs text-muted-foreground">A note is required for denials and proof-backed reviews.</p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={closeReviewDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant={selectedAction === "deny" ? "outline" : "default"}
+              disabled={reviewSubmitDisabled}
+              onClick={submitAccessReview}
+            >
+              {selectedAction === "approve" ? "Approve and audit" : "Deny and audit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-4">
         {isLoading ? (

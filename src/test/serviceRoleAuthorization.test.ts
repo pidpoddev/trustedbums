@@ -77,6 +77,10 @@ describe("service-role edge function authorization contracts", () => {
     expect(adminAccessRequestsSource).toContain("admin_access_request_denied");
     expect(adminAccessRequestsSource).toContain("reviewed_by: admin.id");
     expect(adminAccessRequestsSource).toContain("reviewed_at: new Date().toISOString()");
+    expect(adminAccessRequestsSource).toContain("assertReviewEvidence(\"approve\"");
+    expect(adminAccessRequestsSource).toContain("assertReviewEvidence(\"deny\"");
+    expect(adminAccessRequestsSource).toContain("proofCategory: evidence.proofCategory");
+    expect(adminAccessRequestsSource).toContain("resultingState");
   });
 
   it("scopes extension context and captures by role and destination entitlement", () => {
