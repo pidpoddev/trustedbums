@@ -1,10 +1,10 @@
 # Trusted Bums Performance Engineering Backlog
 
-_Last updated: 2026-06-07 by Codex daily performance engineer automation._
+_Last updated: 2026-06-08 by Codex._
 
 ## Executive Read
 
-Startup JavaScript is still the clearest performance problem. `pnpm run build` on 2026-06-07 still emits one app-wide `dist/assets/index-V-_NI9wW.js` bundle at `1,975.92 kB` minified and `517.70 kB` gzip, and Vite still warns that the chunk exceeds `500 kB`. `src/App.tsx` still eagerly imports the full public, admin, client, and Bum route trees, so every session pays for code it may never execute.
+Startup JavaScript is improved from the earlier single app-wide bundle. `src/App.tsx` now lazy-loads public, admin, client, Bum, legal, report, finance, and troubleshooting pages, `vite.config.ts` has a deliberate vendor chunk strategy, and `corepack pnpm run qa` on 2026-06-08 emitted route-aligned page chunks instead of the prior `517.70 kB` gzip app bundle. The latest build no longer prints Vite's large-chunk warning. The remaining router-side cleanup was the React Router v7 future warnings in route guard tests, now addressed by enabling `v7_startTransition` and `v7_relativeSplatPath` in the app and test routers.
 
 The next bottleneck after startup remains whole-list client loading on shared portal routes. `PortalGlobalSearch`, `ClientDashboard`, `ClientReports`, `ClientExports`, `BumReports`, and `AdminPerformanceMetrics` still fetch broad datasets and then summarize, filter, or export in the browser. Live Supabase evidence confirms the telemetry table has grown further to `33,397` rows, while the admin telemetry page still caps itself at `500` raw rows and computes p75 client-side.
 
@@ -12,11 +12,11 @@ Live backend evidence is usable but narrower than the ideal path in this session
 
 ## Active Recommendations
 
-### P0 - Split the route tree and heavy leaves out of the startup bundle
-- Evidence: `pnpm run build` on 2026-06-07 emitted one JS asset at `1,975.92 kB` minified and `517.70 kB` gzip, and Vite warned about chunks over `500 kB`. [Vite build guide](https://vite.dev/guide/build) still documents chunking customization, and [Vite 7.0](https://vite.dev/blog/announcing-vite7) is current as of June 24, 2025, while this repo remains on `vite@^5.4.19` and built with Vite `5.4.21` in this run. `src/App.tsx` still statically imports every admin, client, Bum, legal, report, and troubleshooting page with no `React.lazy`, `Suspense`, or chunk strategy in `vite.config.ts`.
-- Why it matters: The app is still shipping too much JavaScript up front, which directly increases parse, compile, and evaluation cost on the main thread before any route-specific work begins.
-- Recommendation: Move route groups and heavy leaves such as reports, admin performance, troubleshooting, finance, and legal pages behind module-scope `React.lazy` boundaries with `Suspense` fallbacks. Add a deliberate chunking strategy in the Vite build config after the route tree is lazy-loaded. While touching the router bootstrap, enable the React Router `v7_startTransition` future flag that the test suite is already warning about.
-- Acceptance criteria: Production build emits multiple route-aligned JS chunks instead of one app-wide bundle; the initial gzip JS payload drops materially from `517.70 kB`; `src/test/routeGuards.test.tsx` no longer emits the `v7_startTransition` warning; and follow-up telemetry or browser traces show improved startup scripting time on dashboard routes.
+### P0 - Startup route splitting and router warning cleanup verified
+- Evidence: `corepack pnpm run qa` on 2026-06-08 emitted many route-aligned page chunks, including public, admin, client, Bum, legal, finance, report, and troubleshooting surfaces. The prior one-file startup bundle and Vite large-chunk warning no longer appear. `src/App.tsx` now enables React Router `v7_startTransition` and `v7_relativeSplatPath`, and `src/test/routeGuards.test.tsx` uses the same future flags.
+- Why it matters: Route-level code splitting keeps users from paying the full portal JavaScript cost before they enter a specific surface, and the router flags remove upgrade-warning noise from the QA signal.
+- Recommendation: Treat the route-splitting item as implementation-complete. Keep future startup work focused on measured browser traces, vendor-package analysis, and data-loading reduction instead of reopening the route import pattern.
+- Acceptance criteria: Met for route-aligned chunks, removed Vite warning, and removed React Router future warnings in the route-guard test. Still needs follow-up telemetry or browser traces to quantify real startup scripting improvement on authenticated dashboard routes.
 
 ### P1 - Replace whole-list dashboard, report, and export loading with server-scoped summaries and bounded reads
 - Evidence: `src/pages/client/ClientDashboard.tsx` still issues parallel list queries for opportunities, targets, payment reports, invoices, reverse opportunities, and target responses, then derives dashboard counts in React. `src/pages/client/ClientReports.tsx`, `src/pages/client/ClientExports.tsx`, `src/pages/bum/BumReports.tsx`, and `src/pages/admin/AdminReports.tsx` still read broad datasets and shape report/export output client-side. `src/lib/portalApi.ts` still exposes many `select("*")` list helpers, and `listCompanies()` still returns the full row set with `select("*")`.
@@ -55,9 +55,10 @@ Live backend evidence is usable but narrower than the ideal path in this session
 - `pnpm run test` passed on 2026-06-07:
   - `16` files
   - `46` tests
-- `pnpm run build` passed on 2026-06-07:
-  - `dist/assets/index-V-_NI9wW.js`: `1,975.92 kB` minified, `517.70 kB` gzip
-  - `dist/assets/index-vTHVyLhw.css`: `88.61 kB` minified, `15.42 kB` gzip
+- `corepack pnpm run qa` passed on 2026-06-08:
+  - Lint passed.
+  - Vitest passed `77` tests across `23` files.
+  - Production build passed and emitted route-aligned chunks without the prior Vite large-chunk warning.
 - Local preview could not start on the required port:
   - `pnpm exec vite preview --host 127.0.0.1 --port 8080` failed with `listen EPERM: operation not permitted 127.0.0.1:8080`
 - Live Supabase checks on 2026-06-07:
@@ -90,7 +91,7 @@ Material missing access, production/staging telemetry, traces, query plans, Supa
 - This session had live Supabase advisors, table inventory, logs, and project-URL verification, but not callable read-only SQL or query-plan access. Both the project-scoped `execute_sql` path and the generic SQL fallback were cancelled by the tool layer.
 - No fresh Lighthouse artifact set, bundle-analyzer report, or authenticated browser waterfall was available in this run.
 - No authenticated route walkthrough ran in the browser because the required local preview on port `8080` failed to bind and no alternate browser evidence source was used for performance timing.
-- The shell still lacked the expected QA env contract, so even preflighted authenticated route checks were blocked before navigation.
+- Extension API authenticated checks still lack the required token, so authenticated extension coverage remains blocked separately from the performance work.
 
 ## Agent Inputs
 

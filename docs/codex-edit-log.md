@@ -13,6 +13,24 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Enable router future flags after route splitting
+
+- Trigger: Next implementable item from the lead/performance Scrum after extension API credentials and Supabase Auth leaked-password protection were blocked by missing external access.
+- Implementation branch: `main`.
+- What changed: Enabled React Router `v7_startTransition` and `v7_relativeSplatPath` in the app `BrowserRouter` and mirrored those flags in route-guard tests. Updated performance and lead backlogs so startup route splitting is no longer described as unresolved implementation work.
+- Main surfaces changed: `src/App.tsx`, `src/test/routeGuards.test.tsx`, `docs/performance-engineering-backlog.md`, `docs/lead-developer-recommendations.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/routeGuards.test.tsx`; `corepack pnpm run qa`.
+- Next run should verify: authenticated browser traces or telemetry for dashboard startup, then continue with server-computed admin performance aggregates.
+
+### 2026-06-08 - Verify Supabase leaked-password protection blocker
+
+- Trigger: Next lead/security item after extension API credentials were confirmed blocked by missing inputs.
+- Implementation branch: `main`.
+- What changed: Verified generic Supabase MCP access against Trusted Bums project `vaoqvtxqvbptyxddpoju` with table inventory, then used the logged-in Chrome Supabase dashboard to inspect Email Auth settings. The `PASSWORD_HIBP_ENABLED` setting was off, and Supabase rejected enabling it because leaked-password protection requires Pro plan or higher. The unsaved dashboard change was cancelled.
+- Main surfaces changed: `docs/security-review-backlog.md`, `docs/lead-developer-recommendations.md`.
+- Checks run: generic Supabase MCP table inventory for project `vaoqvtxqvbptyxddpoju`; Chrome dashboard check of Auth -> Sign In / Providers -> Email.
+- Next run should verify: after the Supabase org/project is upgraded to Pro or higher, enable leaked-password protection and rerun security advisors.
+
 ### 2026-06-08 - Classify extension API preflight coverage
 
 - Trigger: Continue the QA Harness Reliability queue after aligning Deep QA env checks.

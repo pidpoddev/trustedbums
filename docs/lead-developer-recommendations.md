@@ -8,7 +8,7 @@ The implementation queue should stay led by live trust-boundary and business-acc
 
 The next highest-confidence shipped risk is no longer hosted auth/bootstrap. Later hosted June 8 runs reopened a broad authenticated bootstrap blocker after the earlier green evidence. `E2E Smoke` run `27110216996` on commit `a48a7da` passed smoke but failed completed `Deep QA (admin)` and `Deep QA (bum)` jobs because requested routes redirected to `/login` with `Authorization required` and `Unable to bootstrap this profile.` `E2E Smoke` run `27110329150` on commit `aad6840` then failed 13 smoke assertions across admin, client, client finance, and Bum flows with the same pattern, even though `aad6840` changed only docs and tests. The live helper private-schema and reference-qualification fix in `8fa0796` cleared the sourced local hosted authenticated role smoke for all five roles, and GitHub `E2E Smoke` run `27110757594` passed smoke plus `Deep QA (admin|client|bum)`.
 
-The practical blocker is now extension API credentials and seeded access evidence. `.env.qa` is present in this local workspace, and local preflight reaches `https://trustedbums.com`; hosted target preflight classification is still useful because it separated the earlier `27110095517` client-only preflight miss from the newer cross-role bootstrap failures. Client Finance export boundaries now have behavior-level coverage proving finance users only receive finance-safe payment export cards or headers while Client Admin retains operational exports. Customer target creation now has behavior-level coverage proving target companies are inserted as `PROSPECT`, target rows use the caller's company, and audit events are company-scoped. Continue with seeded access proof and aggregate-first admin observability.
+The practical blocker is now extension API credentials and seeded access evidence. `.env.qa` is present in this local workspace, and local preflight reaches `https://trustedbums.com`; hosted target preflight classification is still useful because it separated the earlier `27110095517` client-only preflight miss from the newer cross-role bootstrap failures. Client Finance export boundaries now have behavior-level coverage proving finance users only receive finance-safe payment export cards or headers while Client Admin retains operational exports. Customer target creation now has behavior-level coverage proving target companies are inserted as `PROSPECT`, target rows use the caller's company, and audit events are company-scoped. Startup route splitting is now implementation-complete and React Router warning cleanup is verified locally. Continue with seeded access proof and aggregate-first admin observability.
 
 ## Recommended Implementation Queue
 
@@ -30,12 +30,12 @@ The practical blocker is now extension API credentials and seeded access evidenc
 - Acceptance criteria: Bum can link represented contacts only to entitled accepted opportunities or own-company targets; unrelated ids are denied server-side; Client Finance receives finance-safe exports only; Client Admin retains operational exports.
 - Validation: Existing regression tests plus seeded live allow/deny QA once fixture access is available.
 
-### P1 - Enable Supabase Auth leaked-password protection
+### P1 - Enable Supabase Auth leaked-password protection after plan upgrade
 - Source: refreshed live Supabase security advisors, `docs/security-review-backlog.md`, and Supabase Auth password-security guidance.
 - Why now: This is the only remaining live Supabase security advisor after helper/RPC cleanup.
-- Recommended fix: Enable leaked-password protection in Supabase Auth settings or the approved project configuration path, then rerun security advisors.
+- Recommended fix: Upgrade the Supabase org/project to Pro or higher, enable leaked-password protection in Supabase Auth settings or the approved project configuration path, then rerun security advisors.
 - Likely files/routes: Supabase dashboard/config only unless the setting is later managed through infrastructure code.
-- Dependencies/risks: Coordinate with auth owner because this may affect password-based Supabase Auth signups/sign-ins if any remain active.
+- Dependencies/risks: Chrome dashboard verification on 2026-06-08 showed the setting is blocked on the current Free plan. Coordinate with the auth/billing owner before upgrade because enabling the setting may affect password-based Supabase Auth signups/sign-ins if any remain active.
 - Acceptance criteria: Refreshed Supabase security advisors no longer show `auth_leaked_password_protection`; expected auth flows still work.
 - Validation: Supabase security advisor rerun plus auth smoke for any password-based paths in scope.
 
@@ -57,14 +57,14 @@ The practical blocker is now extension API credentials and seeded access evidenc
 - Acceptance criteria: Each service-role path has one live allowed and one live denied case, and state-changing paths assert audit events or equivalent durable records.
 - Validation: Seeded E2E/API run plus `corepack pnpm run qa`.
 
-### P2 - Move admin observability and startup performance onto bounded, aggregate-first paths
+### P2 - Move admin observability onto bounded, aggregate-first paths
 - Source: `docs/data-analytics-backlog.md`, `docs/performance-engineering-backlog.md`, [src/pages/admin/AdminPerformanceMetrics.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminPerformanceMetrics.tsx:57), [src/App.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx:16), and current Vite/React Router guidance.
-- Why now: This is real and should stay in the queue, but it should trail live trust and access issues. The performance page still computes p75 from a `500`-row browser slice while the route tree still ships as one large eagerly imported app bundle.
-- Recommended fix: Replace raw-row browser math on `/admin/performance` with server-shaped aggregates, then lazy-load route groups and heavy leaves out of the startup bundle.
+- Why now: This is real and should stay in the queue, but it should trail live trust and access issues. The performance page still computes p75 from a `500`-row browser slice. Startup route splitting is already in place, and `corepack pnpm run qa` now builds route-aligned chunks without the earlier large-chunk warning.
+- Recommended fix: Replace raw-row browser math on `/admin/performance` with server-shaped aggregates, then use browser traces or telemetry to quantify the route-splitting benefit.
 - Likely files/routes: [src/pages/admin/AdminPerformanceMetrics.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminPerformanceMetrics.tsx:57), `src/lib/portalApi.ts`, [src/App.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx:16), `vite.config.ts`, and related report/dashboard routes.
 - Dependencies/risks: Data, Performance, Security, and QA should validate that any new aggregate helper stays admin-only and that route-splitting does not regress auth or navigation behavior.
-- Acceptance criteria: Admin performance summaries are server-computed over the full selected window; startup JS is split into route-aligned chunks; the main bundle warning is materially reduced; auth and route smoke still pass.
-- Validation: `pnpm run build`, targeted admin-performance checks, and follow-up route smoke after lazy-loading lands.
+- Acceptance criteria: Admin performance summaries are server-computed over the full selected window; route-aligned startup chunks remain in the build; auth and route smoke still pass.
+- Validation: `pnpm run build`, targeted admin-performance checks, and follow-up route smoke after aggregate loading lands.
 
 ## Fix Playbooks
 

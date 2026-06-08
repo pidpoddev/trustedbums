@@ -62,9 +62,11 @@ describe("route guards", () => {
     termsState.value.terms = { id: "terms-v1" };
   });
 
+  const routerFuture = { v7_relativeSplatPath: true, v7_startTransition: true } as const;
+
   it("sends anonymous protected-route visitors to login", async () => {
     render(
-      <MemoryRouter initialEntries={["/admin"]}>
+      <MemoryRouter initialEntries={["/admin"]} future={routerFuture}>
         <Routes>
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
             <Route path="/admin" element={<div>Admin portal</div>} />
@@ -82,7 +84,7 @@ describe("route guards", () => {
     authState.value.isSignedIn = true;
 
     render(
-      <MemoryRouter initialEntries={["/admin"]}>
+      <MemoryRouter initialEntries={["/admin"]} future={routerFuture}>
         <Routes>
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
             <Route path="/admin" element={<div>Admin portal</div>} />
@@ -99,7 +101,7 @@ describe("route guards", () => {
     authState.value.isSignedIn = true;
 
     render(
-      <MemoryRouter initialEntries={["/admin"]}>
+      <MemoryRouter initialEntries={["/admin"]} future={routerFuture}>
         <Routes>
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
             <Route path="/admin" element={<div>Admin portal</div>} />
@@ -117,7 +119,7 @@ describe("route guards", () => {
     authState.value.isSignedIn = true;
 
     render(
-      <MemoryRouter initialEntries={["/client/payments"]}>
+      <MemoryRouter initialEntries={["/client/payments"]} future={routerFuture}>
         <Routes>
           <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_FINANCE"]} />}>
             <Route path="/client/payments" element={<div>Payments</div>} />
@@ -135,7 +137,7 @@ describe("route guards", () => {
     authState.value.isSignedIn = true;
 
     render(
-      <MemoryRouter initialEntries={["/client/payments"]}>
+      <MemoryRouter initialEntries={["/client/payments"]} future={routerFuture}>
         <Routes>
           <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_FINANCE"]} />}>
             <Route path="/client/payments" element={<div>Payments</div>} />
@@ -154,7 +156,7 @@ describe("route guards", () => {
     termsState.value.canContinueWithCurrentTerms = false;
 
     render(
-      <MemoryRouter initialEntries={["/bum/dashboard"]}>
+      <MemoryRouter initialEntries={["/bum/dashboard"]} future={routerFuture}>
         <Routes>
           <Route element={<ClientTermsGate />}>
             <Route path="/bum/dashboard" element={<div>Bum dashboard</div>} />
@@ -174,7 +176,7 @@ describe("route guards", () => {
     termsState.value.canContinueWithCurrentTerms = false;
 
     render(
-      <MemoryRouter initialEntries={["/admin"]}>
+      <MemoryRouter initialEntries={["/admin"]} future={routerFuture}>
         <Routes>
           <Route element={<ClientTermsGate />}>
             <Route path="/admin" element={<div>Admin portal</div>} />
@@ -191,7 +193,7 @@ describe("route guards", () => {
     authState.value.isSignedIn = true;
 
     render(
-      <MemoryRouter initialEntries={["/dashboard"]}>
+      <MemoryRouter initialEntries={["/dashboard"]} future={routerFuture}>
         <Routes>
           <Route path="/dashboard" element={<RoleDashboardRedirect />} />
           <Route path="/bum/dashboard" element={<div>Bum dashboard</div>} />
