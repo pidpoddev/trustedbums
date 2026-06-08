@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 const defaultSupabaseUrl = "https://vaoqvtxqvbptyxddpoju.supabase.co";
-const supabaseUrl = process.env.QA_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? defaultSupabaseUrl;
+const envValue = (value: string | undefined) => value?.trim() || undefined;
+const supabaseUrl = envValue(process.env.QA_SUPABASE_URL) ?? envValue(process.env.VITE_SUPABASE_URL) ?? defaultSupabaseUrl;
 const functionsBaseUrl =
-  process.env.QA_SUPABASE_FUNCTIONS_URL ?? (supabaseUrl ? `${supabaseUrl.replace(/\/$/, "")}/functions/v1` : "");
-const contactOrigin = process.env.QA_CONTACT_ALLOWED_ORIGIN ?? process.env.QA_BASE_URL ?? "https://trustedbums.com";
+  envValue(process.env.QA_SUPABASE_FUNCTIONS_URL) ?? (supabaseUrl ? `${supabaseUrl.replace(/\/$/, "")}/functions/v1` : "");
+const contactOrigin =
+  envValue(process.env.QA_CONTACT_ALLOWED_ORIGIN) ?? envValue(process.env.QA_BASE_URL) ?? "https://trustedbums.com";
 const contactSmokeEnabled = process.env.QA_CONTACT_SMOKE_ENABLED === "true";
 const contactTurnstileToken = process.env.QA_CONTACT_TURNSTILE_TOKEN;
 
