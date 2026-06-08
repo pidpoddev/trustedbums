@@ -109,6 +109,34 @@ const customerTargetTypeFilters: { value: CustomerTargetTypeFilter; label: strin
   { value: "CLOSED", label: "Closed" },
 ];
 
+function describeTargetMutationError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const details = ["message", "code", "hint", "details", "status", "name"]
+      .map((key) => {
+        const value = record[key];
+        return value == null ? null : `${key}: ${String(value)}`;
+      })
+      .filter(Boolean);
+
+    if (details.length > 0) {
+      return details.join("; ");
+    }
+
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return Object.prototype.toString.call(error);
+    }
+  }
+
+  return String(error);
+}
+
 export default function ClientTargets() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -143,7 +171,7 @@ export default function ClientTargets() {
           estimated_deal_value: form.estimated_deal_value ? Number(form.estimated_deal_value) : null,
         });
       } catch (error) {
-        diagnosticsWindow.__trustedBumsClientTargetMutationError = error instanceof Error ? error.message : String(error);
+        diagnosticsWindow.__trustedBumsClientTargetMutationError = describeTargetMutationError(error);
         throw error;
       }
     },
