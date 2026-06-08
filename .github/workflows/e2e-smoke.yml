@@ -141,7 +141,7 @@ jobs:
           QA_CLIENT_FINANCE_EMAIL: ${{ secrets.QA_CLIENT_FINANCE_EMAIL }}
           QA_CLIENT_MEMBER_EMAIL: ${{ secrets.QA_CLIENT_MEMBER_EMAIL }}
           QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
-        run: pnpm run qa:target-preflight && pnpm run qa:deep
+        run: pnpm run qa:target-preflight && pnpm run qa:env && pnpm run qa:deep
 
       - name: Upload deep QA artifacts
         if: always()

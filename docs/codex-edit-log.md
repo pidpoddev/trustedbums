@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Align Deep QA env contracts
+
+- Trigger: Continue the next QA Harness Reliability item after preflight artifacts were persisted.
+- Implementation branch: `main`.
+- What changed: Updated `.github/workflows/e2e-smoke.yml` so the Deep QA matrix job runs `pnpm run qa:target-preflight && pnpm run qa:env && pnpm run qa:deep`, matching `.github/workflows/deep-qa-hotfix-audit.yml`. Added regression coverage in `src/test/deepQaTriage.test.ts` and refreshed `docs/qa-harness-reliability-backlog.md`.
+- Main surfaces changed: `.github/workflows/e2e-smoke.yml`, `src/test/deepQaTriage.test.ts`, `docs/qa-harness-reliability-backlog.md`, `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/deepQaTriage.test.ts src/test/qaTargetPreflight.test.ts`; `corepack pnpm run qa`; `git diff --check`; and `corepack pnpm run code-review:gate`.
+- Results: Local workflow contract coverage now proves both Deep QA workflow entrypoints enforce the same preflight/env/deep chain. Full local QA remained green.
+- Recheck agents: QA Harness Reliability Agent, QA/Test Engineer, Release Verification Agent.
+- Next run should verify: the next hosted `E2E Smoke` Deep QA matrix run shows the `qa:env` stage before `qa:deep`, then handle extension coverage classification.
+
 ### 2026-06-08 - Persist QA target preflight artifacts
 
 - Trigger: Continue the next implementable scrum item after hosted auth/bootstrap was verified green and the harness backlog was refocused.
