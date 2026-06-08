@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Plus, Search, Target } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -114,6 +114,8 @@ export default function ClientTargets() {
   const { toast } = useToast();
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
+  const addTargetFormRef = useRef<HTMLFormElement | null>(null);
+  const saveTargetButtonRef = useRef<HTMLButtonElement | null>(null);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<CustomerTargetTypeFilter>("ALL");
   const [targetPage, setTargetPage] = useState(1);
@@ -156,6 +158,44 @@ export default function ClientTargets() {
       });
     },
   });
+
+  const requestCreateTarget = useCallback((formElement?: HTMLFormElement | null) => {
+    if (createMutation.isPending) {
+      return;
+    }
+
+    if (formElement && !formElement.reportValidity()) {
+      return;
+    }
+
+    createMutation.mutate();
+  }, [createMutation]);
+
+  useEffect(() => {
+    if (!isAddTargetOpen) {
+      return;
+    }
+
+    const formElement = addTargetFormRef.current;
+    const saveButtonElement = saveTargetButtonRef.current;
+
+    const handleSubmit = (event: SubmitEvent) => {
+      event.preventDefault();
+      requestCreateTarget(formElement);
+    };
+    const handleSaveClick = (event: MouseEvent) => {
+      event.preventDefault();
+      requestCreateTarget(formElement);
+    };
+
+    formElement?.addEventListener("submit", handleSubmit);
+    saveButtonElement?.addEventListener("click", handleSaveClick);
+
+    return () => {
+      formElement?.removeEventListener("submit", handleSubmit);
+      saveButtonElement?.removeEventListener("click", handleSaveClick);
+    };
+  }, [isAddTargetOpen, requestCreateTarget]);
 
   useEffect(() => {
     const draft = readClientTargetDraft(user?.clientId);
@@ -263,11 +303,8 @@ export default function ClientTargets() {
         {isAddTargetOpen ? (
           <CardContent>
           <form
+            ref={addTargetFormRef}
             className="grid gap-5"
-            onSubmit={(event) => {
-              event.preventDefault();
-              createMutation.mutate();
-            }}
           >
             {restoredDraftAt ? (
               <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
@@ -422,15 +459,9 @@ export default function ClientTargets() {
 
             <div className="flex justify-end">
               <Button
+                ref={saveTargetButtonRef}
                 type="button"
                 disabled={createMutation.isPending}
-                onClick={(event) => {
-                  const formElement = event.currentTarget.form;
-                  if (formElement && !formElement.reportValidity()) {
-                    return;
-                  }
-                  createMutation.mutate();
-                }}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Save target account

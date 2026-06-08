@@ -92,6 +92,10 @@ function installGoLiveDiagnostics(page: Page, diagnostics: string[]) {
 
 async function collectTargetFormState(page: Page) {
   return page.evaluate(() => {
+    const diagnosticsWindow = window as typeof window & {
+      __trustedBumsTargetButtonClicks?: number;
+      __trustedBumsTargetFormSubmits?: number;
+    };
     const saveButton = Array.from(document.querySelectorAll("button")).find((button) =>
       button.textContent?.includes("Save target account"),
     );
@@ -115,7 +119,32 @@ async function collectTargetFormState(page: Page) {
       formFound: Boolean(form),
       formValid: form ? form.checkValidity() : null,
       invalidControls,
+      diagnosticClicks: diagnosticsWindow.__trustedBumsTargetButtonClicks ?? null,
+      diagnosticSubmits: diagnosticsWindow.__trustedBumsTargetFormSubmits ?? null,
     };
+  });
+}
+
+async function installTargetFormDomDiagnostics(page: Page) {
+  await page.evaluate(() => {
+    const diagnosticsWindow = window as typeof window & {
+      __trustedBumsTargetButtonClicks?: number;
+      __trustedBumsTargetFormSubmits?: number;
+    };
+    diagnosticsWindow.__trustedBumsTargetButtonClicks = 0;
+    diagnosticsWindow.__trustedBumsTargetFormSubmits = 0;
+
+    const saveButton = Array.from(document.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Save target account"),
+    );
+    const form = saveButton?.closest("form") ?? null;
+
+    saveButton?.addEventListener("click", () => {
+      diagnosticsWindow.__trustedBumsTargetButtonClicks = (diagnosticsWindow.__trustedBumsTargetButtonClicks ?? 0) + 1;
+    });
+    form?.addEventListener("submit", () => {
+      diagnosticsWindow.__trustedBumsTargetFormSubmits = (diagnosticsWindow.__trustedBumsTargetFormSubmits ?? 0) + 1;
+    });
   });
 }
 
@@ -237,6 +266,7 @@ test.describe("go-live Client and Bum workflow gate", () => {
       await page.getByLabel("Expected product/service", { exact: true }).fill("Go-live QA validation");
       await page.getByLabel("Notes", { exact: true }).fill(`Created by ${runId}; safe to delete.`);
       createdRecords.push({ table: "customer_targets", field: "target_account_name", value: targetName });
+      await installTargetFormDomDiagnostics(page);
       diagnostics.push(`target-form-before-save: ${JSON.stringify(await collectTargetFormState(page))}`);
       await page.getByRole("button", { name: "Save target account" }).click();
       await page.waitForTimeout(500);
