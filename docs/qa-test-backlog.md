@@ -4,169 +4,80 @@ _Last updated: 2026-06-08 by Codex._
 
 ## Executive Read
 
-Hosted evidence had a real June 8 regression, but the latest local release check now points at the Supabase helper qualification fix rather than a still-untriaged auth outage. GitHub `Visual UI Audit` run `27083467531` passed on 2026-06-07, and GitHub `E2E Smoke` run `27109958355` passed on 2026-06-08 with a green smoke job plus green `Deep QA (admin|client|bum)` shards for commit `ee36a83`. The next `E2E Smoke` run, `27110095517` on commit `aab430a`, still looked harness-first because only `Deep QA (client)` failed during hosted preflight with `FAIL HTTPS: fetch failed` and `FAIL App shell` while smoke, `Deep QA (admin)`, and `Deep QA (bum)` passed.
+Current head `3e9118c` is QA-green:
 
-Later June 8 hosted runs then exposed the live regression. In `E2E Smoke` run `27110216996` on commit `a48a7da`, the smoke job passed but the completed `Deep QA (admin)` and `Deep QA (bum)` jobs both failed because route audits across their surfaces were redirected back to `https://trustedbums.com/login` with `Authorization required` and `Unable to bootstrap this profile.` In `E2E Smoke` run `27110329150` on commit `aad6840`, the smoke job itself failed 13 authenticated checks across admin, client, client finance, and Bum flows with the same redirect-to-login/bootstrap pattern. After migrations `20260608013000` and `20260608013500` were applied and committed in `8fa0796`, the sourced local hosted authenticated role smoke passed all five roles against `https://trustedbums.com`; GitHub `E2E Smoke` run `27110757594` then passed smoke plus `Deep QA (admin|client|bum)` on the same commit.
+- GitHub `QA` run `27163785478`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27163785482`: passed.
+- GitHub `E2E Smoke` run `27163818009`: passed.
+- E2E smoke result: `32 passed, 8 skipped`.
+- Deep QA matrix in `27163818009`: `admin`, `bum`, and `client` all passed.
 
-Local preflight quality is stable but still not release-complete. `corepack pnpm run qa` passes lint, 73 tests across 23 files, and production build. Inherited shell state still lacks the QA contract entirely, so raw `corepack pnpm run qa:env` fails on the base variables until `.env.qa` is sourced. After sourcing `.env.qa`, `qa:env` now fails only on `QA_EXTENSION_API_TOKEN`, and `corepack pnpm run qa:target-preflight` passes DNS, HTTPS, app shell, and Clerk checks for `https://trustedbums.com`, then fails only the expected extension-token gate. Live Supabase helper migrations `20260608013000` and `20260608013500` moved RLS helpers out of the exposed `public` RPC schema and fixed lingering policy/function references after an intermediate hosted smoke caught `public.is_admin()` bootstrap failures; the final hosted authenticated role smoke passed all five roles. Mutating Deep QA remains intentionally unavailable locally until cleanup credentials are supplied.
+The prior `28 passed, 12 skipped` smoke result was explained and improved. Four contact-intake boundary tests had been skipped because Supabase URL values were missing from the smoke context. After adding local `.env.qa` Supabase URL keys and adding repo-side fallback/blank-env handling, the non-mutating contact-intake checks run and pass in hosted smoke.
 
-The highest remaining QA risk is back to business-access proof plus the missing extension API token. Product Ops and Security continue to point at represented-contact destination scoping, Client Finance operational exports, admin-only telemetry or RPC exposure, client-team or domain approval, profile bootstrap, and extension page captures. Current tests now include more behavior-level coverage than earlier runs, but they still do not prove object-level positive and negative access across companies and roles.
+## Expected Skips
+
+The current 8 skipped tests are expected for the default non-mutating hosted smoke profile:
+
+- 2 skipped contact-send tests: mutating public contact submission remains disabled unless `QA_CONTACT_SMOKE_ENABLED=true` and a valid Turnstile token are provided.
+- 4 skipped portal-interaction audit tests on `mobile-chrome`: those checks are desktop-only by design.
+- 2 skipped Bum opportunity contact-picker tests: no live opportunity or target-account fixture is available for the non-mutating picker smoke.
+
+These skips should stay documented until QA intentionally adds seeded fixtures or enables mutating smoke mode.
+
+## Recently Fixed
+
+### Contact-intake Supabase URL drift
+
+- Evidence: `.env.qa` now has the public Supabase URL keys required by contact smoke.
+- Repo fix: `tests/e2e/contact-intake.spec.ts` defaults to `https://vaoqvtxqvbptyxddpoju.supabase.co` when the Supabase URL env is absent.
+- Hosted result: current smoke now runs the contact-intake boundary checks and passed with `32 passed, 8 skipped`.
+
+### Blank GitHub env override
+
+- Evidence: GitHub Actions supplied `QA_SUPABASE_FUNCTIONS_URL:` as a blank string. The test treated that as a real override and called `https://trustedbums.com/send-website-email` / `submit-contact`, which returned the SPA shell with HTTP `200`.
+- Repo fix: `tests/e2e/contact-intake.spec.ts` now trims env values and treats blanks as unset.
+- Local proof: desktop and mobile contact-intake boundary checks passed with blank `QA_SUPABASE_FUNCTIONS_URL` and blank `VITE_SUPABASE_URL`.
+
+### Hosted app preflight transient fetch failure
+
+- Evidence: one hosted run failed `qa:target-preflight` on a transient `fetch failed` / missing app shell while local `https://trustedbums.com` returned `HTTP/2 200`.
+- Repo fix: `scripts/qa-target-preflight.mjs` now retries the hosted fetch before failing.
+- Hosted result: current E2E smoke passed after the retry hardening.
 
 ## Active Recommendations
 
-### P0 - Add extension API authenticated allow/deny coverage
-- Evidence: `.env.qa` includes `QA_EXTENSION_API_BASE_URL`, but `QA_EXTENSION_API_TOKEN` is absent. `.env.qa.example` and `scripts/verify-qa-env.mjs` now document and enforce that token when the extension API base URL is configured. `tests/e2e/extension-api.spec.ts` can prove anonymous `/context` 401, but authenticated `/context` and `/page-captures` coverage still cannot run until the QA token exists.
-- Why it matters: `/context` and `/page-captures` sit on a cross-company boundary that can expose destination, capture, and represented-contact workflow data.
-- Recommendation: Add a dedicated QA extension token to local/CI secrets, then extend extension smoke into seeded own-company allow, foreign-company deny, Bum accepted-opportunity allow, Bum customer-target deny, and `/page-captures` authorization checks.
-- Acceptance criteria: Sourced `qa:env` passes with the token present; authenticated tests prove positive and negative `/context` and `/page-captures` behavior against two-company fixtures.
+### P1 - Add seeded live allow/deny behavior coverage
 
-### P1 - Keep hosted authenticated bootstrap in release watch after fix
-- Evidence: GitHub `E2E Smoke` run `27109958355` passed on commit `ee36a83`, but later June 8 runs regressed on newer commits. Run `27110216996` on `a48a7da` failed completed `Deep QA (admin)` and `Deep QA (bum)` jobs because requested paths like `/admin`, `/admin/training-assets`, `/bum/dashboard`, and `/bum/reports` all landed on `https://trustedbums.com/login` showing `Authorization required` and `Unable to bootstrap this profile.` Run `27110329150` on `aad6840` failed the smoke job itself with 13 authenticated-role failures across admin, client, client finance, and Bum checks showing the same redirect-to-login/bootstrap behavior. Commit `8fa0796` then applied the live RLS helper private-schema and reference-qualification fix; after sourcing `.env.qa`, local hosted `authenticated-role-smoke.spec.ts` passed all five roles in 44.4s against `https://trustedbums.com`.
-- Why it matters: The failure was real release-blocking evidence, but the current fix is now verified by both local hosted role smoke and GitHub-hosted E2E.
-- Recommendation: Keep the prior failure in the watchlist and preserve failed-job logs, but move active implementation back to extension API credentials and seeded access-boundary proof.
-- Acceptance criteria: Any future current-head hosted run continues passing smoke plus `Deep QA (admin|client|bum)` on the latest deploy; authenticated helpers do not bounce approved QA roles back to `/login`.
+- Scope: extension API, represented contacts, client-team/domain approval, profile bootstrap, finance exports, admin telemetry, and admin summary helpers.
+- Why it matters: Route smoke can pass while direct data paths still need live positive and negative proof.
+- Acceptance criteria: seeded fixtures prove owning-role success and unrelated-role denial for each high-risk boundary.
 
-### P1 - Add direct allow/deny behavior coverage for represented contacts, telemetry, profile bootstrap, and admin RPCs
-- Evidence: `docs/business-access-rules.md` defines profile bootstrap, extension captures/represented contacts, and performance telemetry as authorization-sensitive. Source and regression coverage now show represented-contact destination entitlement checks, finance export narrowing, and helper/RPC cleanup. Refreshed live Supabase security advisors after migration `20260608013000` no longer flag public or signed-in execution for the RLS helper functions or `admin_dashboard_summary()`. Current tests still do not prove `/bum/contacts/:id`, `performance_metric_events`, `admin_dashboard_summary()`, or profile authorization-field mutation denials with seeded role data.
-- Why it matters: Route guards can pass while direct data paths leak cross-role or cross-company records. Represented contacts and profile bootstrap are high-risk because they create or change relationship and authorization state.
-- Recommendation: Add portal/API/direct-data tests for owning-role success and unrelated-role denial for Bum contacts, contact destination linking, admin telemetry, admin summary RPCs, and profile self-edits. Product Ops/Security should own final policy; QA should own the allow/deny matrix.
-- Acceptance criteria: Tests prove owning Bum contact load/save/unlink/re-sync success plus another-Bum/client denial; contact linking rejects destinations the Bum is not entitled to; Admin allow plus anon/client/Bum denial for `/admin/performance`, `performance_metric_events`, and `admin_dashboard_summary()`; profile edits cannot mutate `role`, `is_admin`, `company_id`, `client_access_role`, or Bum identity.
+### P1 - Add current-head visual and accessibility gates
 
-### P1 - Add client-team/domain approval allow-deny coverage
-- Evidence: `docs/business-access-rules.md` defines same-domain approval, related-domain approval, public-email company creation, profile bootstrap, and Client Admin team-management rules. `/client/team` is route-gated to `CLIENT_ADMIN`, and `supabase/functions/client-team/index.ts` is the server path, but no current test proves same-company approval, cross-company denial, related-domain pending behavior, public-email denial, disabled-user denial, or audit event creation.
-- Why it matters: Team approval grants `CLIENT_ADMIN`, `CLIENT_FINANCE`, or `CLIENT_MEMBER` authority. Route guards alone cannot prove the server blocks self-join, cross-company, related-domain, or public-email escalation paths.
-- Recommendation: Add seeded client-team tests for same-domain approval allow, Client Finance/Member denial on `/client/team`, cross-company denial, related-domain pending-until-admin-approval, public/free email manual review, disabled-user denial, and audit logging.
-- Acceptance criteria: A Client Admin can approve and disable only same-company eligible users; Client Finance and Client Member cannot access team management; public/free-email and related-domain users cannot become company members without the approved Admin path; every approval, denial, disablement, and role change creates an audit event.
+- Scope: hosted Visual UI Audit, screenshot assertions, and axe coverage for critical public and authenticated flows.
+- Why it matters: the latest current-head smoke/deep evidence is green, but visual evidence still needs a fresh `3e9118c` or newer artifact.
+- Acceptance criteria: current-head visual artifacts exist, at least one public and one authenticated screenshot assertion can fail CI, and axe checks cover critical flows.
 
-### P2 - Add enforceable visual, accessibility, and coverage gates
-- Evidence: Placeholder unit coverage has been removed: `src/test/example.test.ts` was replaced by `src/test/financeReportsModel.test.ts`, which proves finance report business-date behavior across Client, Admin, and Bum report models. `tests/e2e/visual-ui-audit.spec.ts` captures screenshots but does not use `toHaveScreenshot()`. Repo search still finds no `@axe-core/playwright`, and `vitest.config.ts` plus `package.json` still lack a coverage script. GitHub `Visual UI Audit` passed, but it is screenshot artifact evidence, not a visual-diff gate.
-- Why it matters: Screenshots do not fail CI on visual regressions, accessibility automation is absent, and source coverage remains inferred instead of measured.
-- Recommendation: Wire at least one public and one authenticated screenshot assertion, add axe scans for critical flows, and add a `pnpm run coverage` path backed by Vitest V8 coverage.
-- Acceptance criteria: CI can fail on agreed screenshot and axe regressions, and `pnpm run coverage` emits a tracked report with thresholds.
+### P1 - Expand contact and opportunity fixtures
 
-## Business Access Coverage
+- Scope: mutating contact-send smoke and Bum opportunity contact picker.
+- Why it matters: 4 of the remaining 8 skips require either intentional mutation mode or stable live fixtures.
+- Acceptance criteria: QA can choose between non-mutating release smoke and fixture-backed deep QA without confusing expected skips for defects.
 
-- Profile bootstrap and self-editable identity:
-  Data each role needs: signed-in users need safe preferences only; Admin needs audited control over role, company, client access role, Bum identity, and admin status.
-  Missing allow/deny coverage: No executable proof that users cannot self-mutate authorization fields through browser profile sync, Clerk metadata, direct Supabase calls, RPCs, edge functions, or extension APIs.
-  Seeded records and credentials needed: unassigned signup-intent user, client user, Bum, admin, second client company, and denied/pending users.
-  RLS-sensitive hold: Do not harden or expand bootstrap/profile policies until safe preference edits still pass and authorization-bearing self-edits fail.
-  Business-rule update needed: none today; existing rules are sufficient, but proof categories for public-email company approval remain an open Product Ops decision.
+### P2 - Add measured coverage reporting
 
-- Customer targets, target-company stage, and finance search:
-  Data each role needs: Client Admin needs own-company target creation and management; Client Member needs allowed workflow fields; Client Finance remains deny-by-default for target management; Bum needs relationship-bound target detail; Admin needs operational visibility.
-  Missing allow/deny coverage: `PROSPECT` target-company stage, own-company target row scoping, and company-scoped audit creation are now behavior-tested. No stable direct proof yet shows Client Finance cannot browse target-management data, unrelated Bums cannot read targets, or cross-company target reads fail. The current deployed finance search failure has been rechecked by portal interaction audit and no longer reproduces.
-  Seeded records and credentials needed: two client companies, Client Admin, Client Member, Client Finance, two Bums, own-company target, foreign-company target, and deterministic finance records.
-  RLS-sensitive hold: Do not broaden target, search, or extension destination visibility until own-company allow and foreign-company/role deny checks pass.
+- Scope: Vitest V8 coverage.
+- Why it matters: current tests are broader, but coverage is still inferred rather than measured.
+- Acceptance criteria: `pnpm run coverage` emits a tracked report with agreed thresholds.
 
-- Client Finance exports:
-  Data each role needs: Client Finance needs payment reports, invoices, commission-safe exports, and finance dashboards for its own company; Client Admin may need broader company exports where approved; Client Member should not receive finance exports by default.
-  Missing allow/deny coverage: Unit-level behavior now proves finance-safe field allowlists and operational export denial for Client Finance export cards. Seeded live download checks could still prove the same boundary through the browser and generated CSV blobs.
-  Seeded records and credentials needed: own-company payment report, invoice, target contact, Teams meeting/transcript metadata, Client Admin, Client Finance, Client Member, and second company data.
-  RLS-sensitive hold: Do not expand `/client/exports` or finance export APIs until finance-safe versus operational field rules are explicit and tested.
-  Business-rule update needed: Product Ops should add field-level finance-safe versus operational export rules to `docs/business-access-rules.md`.
+## Access And Fixture Requests
 
-- Extension API destinations and page captures:
-  Data each role needs: Admin needs troubleshooting context; Client Admin needs own-company destinations; Bum needs only accepted or explicitly assigned workflow destinations; Client Finance and Client Member remain deny-by-default unless Product Ops expands the rule.
-  Missing allow/deny coverage: Anonymous 401 is proven locally, but authenticated allow/deny coverage is still skipped. No proof yet for Client Admin own-company allow, finance/member deny, Bum accepted-opportunity allow, Bum customer-target deny, foreign-company deny, or `/page-captures` deny behavior.
-  Seeded records and credentials needed: `QA_EXTENSION_API_TOKEN`, own-company target, foreign-company target, allowed accepted opportunity, denied opportunity, and replay-safe capture payloads.
-  RLS-sensitive hold: Keep extension authorization risk high until portal, API, extension, and direct data-path allow/deny proof all exist.
-
-- Bum represented contacts:
-  Data each role needs: Bum should see and mutate only their own represented contacts plus approved linked workflow context; Admin needs troubleshooting access; client roles should be denied raw represented-contact details by default.
-  Missing allow/deny coverage: No automated proof that one Bum cannot read or mutate another Bum's contact, no client-role deny coverage, no unauthorized unlink/re-sync assertion, and no test for the Product Ops finding that contact linking should not accept destinations outside the Bum's entitlement.
-  Seeded records and credentials needed: two Bum accounts, one out-of-scope contact, represented-contact rows from claim/prospect/target-response/extension-capture paths, and one unrelated accepted opportunity.
-  RLS-sensitive hold: Do not expand admin/client represented-contact visibility without a business-rule update and matching allow/deny tests.
-
-- Performance telemetry and admin observability:
-  Data each role needs: Admin needs raw and summary telemetry for troubleshooting; non-admin roles must be denied `/admin/performance`, `performance_metric_events`, and `admin_dashboard_summary()`.
-  Missing allow/deny coverage: GitHub visual route coverage includes authenticated surfaces, but no current passing direct route/data proof for `/admin/performance`, no non-admin deny test, and no browser-authenticated direct-data proof.
-  Seeded records and credentials needed: telemetry rows for multiple routes plus one admin and one non-admin account.
-  RLS-sensitive hold: Treat the existing business rule as a release gate for telemetry or admin-summary changes until route and data-helper deny proof exists.
-
-- Client team, domain approval, and access-role assignment:
-  Data each role needs: Client Admin needs same-company access requests, related-domain request status, team member status, and allowed company-scoped role assignments; Client Finance and Client Member need no team-management authority by default; Admin needs public-email, unmatched-domain, related-domain, stale-admin, and override queues.
-  Missing allow/deny coverage: No executable proof that Client Admin can approve only eligible same-company users, cannot manage another company, cannot approve related domains before Admin review, and cannot use `client-team` to grant cross-company authority.
-  Seeded records and credentials needed: claimed client domain, related-domain request, public-email signup intent, same-company pending user, cross-company user, Client Admin, Client Finance, Client Member, and Admin override account.
-  RLS-sensitive hold: Do not expand client-team, signup, or profile-bootstrap authority until approval/denial/audit cases pass at route, edge-function, and direct-data levels.
-
-## Cross-Agent Follow-Ups
-
-- Lead Developer and Release Verification:
-  Evidence: Later hosted June 8 runs superseded the earlier green/authenticated evidence. `E2E Smoke` run `27110216996` failed completed `Deep QA (admin)` and `Deep QA (bum)` jobs with route findings that redirected to `/login` and showed `Authorization required` plus `Unable to bootstrap this profile.` `E2E Smoke` run `27110329150` then failed 13 smoke assertions across admin, client, client finance, and Bum flows with the same bootstrap pattern, even though commit `aad6840` only changed docs and tests. The live helper fix in `8fa0796` cleared the locally run hosted authenticated role smoke, and GitHub run `27110757594` passed smoke plus all three Deep QA shards.
-  Requested action: Close the active hosted auth/bootstrap blocker as verified, preserve it as a watch item, and move active work back to extension API credentials plus seeded access-boundary proof.
-
-- QA Harness Reliability Agent:
-  Evidence: GitHub `E2E Smoke` run `27110095517` still matters as a harness-first preflight miss because it failed only `Deep QA (client)` before route work began with `PASS DNS`, then `FAIL HTTPS: fetch failed` and `FAIL App shell`, while the same run's smoke, admin, and Bum jobs passed. Later runs `27110216996` and `27110329150` introduced separate authenticated product or environment failures after successful setup, so the client preflight miss is no longer the only story.
-  Requested action: Keep preserving per-shard preflight artifacts and classifying target-preflight misses separately, but make sure harness docs distinguish those misses from the newer cross-role bootstrap failures that happen after auth and navigation begin.
-
-- Consultant Access Needs:
-  Evidence: `.env.qa.example` and `scripts/verify-qa-env.mjs` already document the extension env contract, local sourced `qa:target-preflight` now reaches `https://trustedbums.com`, and the remaining local contract failure is still `QA_EXTENSION_API_TOKEN`. Hosted failures have moved back to Clerk or profile-bootstrap evidence rather than blanket DNS failure.
-  Requested action: Keep stale `.env.qa`-missing or local-DNS-outage claims out of active guidance, and elevate the need for Clerk or profile-bootstrap logs tied to the June 8 hosted bootstrap regressions.
-
-## Coverage Map
-
-- Verified this run:
-  Raw shell state contains none of the required `QA_*`, `VITE_CLERK_PUBLISHABLE_KEY`, or `CLERK_SECRET_KEY` variables, so unsourced `corepack pnpm run qa:env` fails on the base contract as expected.
-  `.env.qa` exists and exports `QA_BASE_URL`, `QA_EXTENSION_API_BASE_URL`, all five role emails, passwords, and Clerk variables; it does not export `QA_EXTENSION_API_TOKEN`, `QA_DEEP_MUTATION`, `QA_SUPABASE_URL`, or `QA_SUPABASE_SERVICE_ROLE_KEY`.
-  After sourcing `.env.qa`, `corepack pnpm run qa:env` fails only on missing `QA_EXTENSION_API_TOKEN`.
-  After sourcing `.env.qa`, `corepack pnpm run qa:target-preflight` passes DNS, HTTPS, app shell, and Clerk checks for `https://trustedbums.com`, then fails only the extension-token readiness check.
-  `corepack pnpm run qa` passed locally with 7 existing lint warnings, 73 passing tests across 23 files, and a successful production build.
-  `corepack pnpm exec vitest run src/test/customerTargetRules.test.ts src/test/accessBoundaryRegression.test.ts src/test/serviceRoleAuthorization.test.ts` passed 10 tests across 3 files, confirming the newer business-access regression surfaces still pass in isolation.
-  GitHub `Visual UI Audit` run `27083467531` succeeded on 2026-06-07 and uploaded the `visual-ui-audit` artifact.
-  GitHub `QA` runs `27110203072` and `27110314548` both succeeded on 2026-06-08.
-  GitHub `E2E Smoke` run `27109958355` succeeded on 2026-06-08: smoke plus `Deep QA (admin|client|bum)` all passed and uploaded artifacts.
-  GitHub `E2E Smoke` run `27110095517` failed on 2026-06-08, but the failure was limited to `Deep QA (client)` preflight. Smoke plus `Deep QA (admin)` and `Deep QA (bum)` still passed and uploaded artifacts.
-  GitHub `E2E Smoke` run `27110216996` on commit `a48a7da` completed with failure: smoke passed, but `Deep QA (admin)` and `Deep QA (bum)` failed with requested role routes redirecting to `/login` with `Authorization required` and `Unable to bootstrap this profile.`
-  GitHub `E2E Smoke` run `27110329150` on commit `aad6840` completed with failure: the smoke job failed 13 authenticated checks across admin, client, client finance, and Bum paths with the same redirect-to-login/bootstrap message.
-  After commit `8fa0796`, sourced local hosted `authenticated-role-smoke.spec.ts` passed all five roles in 44.4s against `https://trustedbums.com`.
-  GitHub `E2E Smoke` run `27110757594` on commit `8fa0796` passed smoke plus `Deep QA (admin|client|bum)`.
-
-- Failed or limited this run:
-  Authenticated extension API smoke is still blocked because `QA_EXTENSION_API_TOKEN` is missing locally and in current consultant access.
-  Local mutating Deep QA remains blocked because `QA_DEEP_MUTATION`, `QA_SUPABASE_URL`, and `QA_SUPABASE_SERVICE_ROLE_KEY` are not configured for the local shell.
-  QA did not rerun local deployed authenticated Playwright suites in this pass because the newest hosted smoke and deep evidence was available from GitHub Actions and gave better release-grade signal.
-  Direct Supabase SQL, policy-catalog, and advisor validation were not available in this QA run, so object-level allow/deny findings remain source-backed plus workflow-backed, not catalog-backed.
-
-- Current direct route gaps:
-  `/sign-in`, `/legal/:slug`, `/admin/performance`, `/bum/contacts/:id`, and the `*` Not Found route still lack direct passing assertions from this run.
-
-- Current behavior gaps:
-  Authenticated extension allow/deny, live represented-contact destination entitlement, live finance export field allow/deny, admin performance/admin-summary allow/deny, client-team/domain approval allow/deny, and direct Supabase/RLS object-level proof.
-
-## Watchlist
-
-- Hosted authenticated bootstrap is back on watch, not active blocker status: previous runs `27110216996` and `27110329150` remain failed evidence for the regression, but local hosted role smoke and GitHub run `27110757594` now clear it on commit `8fa0796`.
-- `QA_EXTENSION_API_TOKEN` is still unavailable, so authenticated extension authorization coverage remains skipped.
-- Local `.env.qa` lacks `QA_DEEP_MUTATION`, `QA_SUPABASE_URL`, and `QA_SUPABASE_SERVICE_ROLE_KEY`; GitHub has cleanup credentials for deep QA, but local direct cleanup-backed workflow checks cannot run.
-- GitHub `E2E Smoke` run `27110095517` failed only the client deep shard preflight one commit after a fully green deep pass. Keep that as a harness or target-health watch item separate from the newer cross-role bootstrap regression.
-- `pnpm run lint` still reports 7 `react-hooks/exhaustive-deps` warnings.
-- `pnpm run build` still emits a large shared JS chunk warning.
-- React Router v7 future-flag warnings still appear during `routeGuards.test.tsx`.
-
-## Current Standards And Time-Sensitive Notes
-
-- Checked 2026-06-07: current Playwright release notes continue to emphasize artifact-rich debugging and targeted rerun workflows, which supports keeping `qa:target-preflight` separate from role and route assertions and preserving per-shard artifacts when Deep QA aborts early. Source: [Playwright release notes](https://playwright.dev/docs/release-notes)
-- Checked 2026-06-07: current Vitest coverage guidance says V8 coverage plus built-in HTML and summary reporters are the standard path, which reinforces adding an explicit `pnpm run coverage` contract instead of relying on inferred test presence. Source: [Vitest coverage guide](https://main.vitest.dev/guide/coverage)
-- Checked 2026-06-07: current Supabase RLS guidance still frames access through role-scoped Postgres policies, which reinforces direct positive and negative data-path testing rather than route smoke alone. Source: [Supabase Row Level Security docs](https://supabase.com/docs/guides/database/postgres/row-level-security)
-- Checked 2026-06-07: GitHub Actions artifact guidance and rerun guidance confirm that artifacts are the expected mechanism for persisting test evidence and that reruns keep the same `GITHUB_SHA` and `GITHUB_REF`. That supports classifying repeated reruns on the same commit as harness or target evidence, not silent code changes. Sources: [Workflow artifacts](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts), [Re-running workflows and jobs](https://docs.github.com/actions/managing-workflow-runs/re-running-workflows-and-jobs?tool=cli)
-
-## Access Requests And Evidence Gaps
-
-- Provide `QA_EXTENSION_API_TOKEN` plus the approved seeded allow/deny fixtures for extension destinations and page captures.
-- Provide deterministic Clerk QA auth support: role-ready accounts, known-good sign-in path, and Clerk or edge logs if future current-head hosted sign-ins fail after target preflight passes.
-- Provide profile-bootstrap or auth-proxy logs if a newer current-head run repeats the June 8 redirect-to-login failures, so QA can distinguish account-data drift, function failure, and policy or grant drift.
-- Provide seeded multi-company authorization fixtures for extension destinations, accepted opportunities, customer targets, represented contacts, profile bootstrap denial checks, telemetry deny checks, and admin summary RPC deny checks.
-- Provide seeded Client Finance export fixtures covering payment reports, invoices, target contacts, Teams meetings, transcripts, Client Admin, Client Finance, Client Member, and cross-company rows.
-- Provide seeded client-team/domain-approval fixtures for same-domain approval, related-domain pending/approval, public-email manual review, cross-company denial, disabled-user denial, and audit-event checks.
-- Provide local-safe `QA_DEEP_MUTATION`, `QA_SUPABASE_URL`, and `QA_SUPABASE_SERVICE_ROLE_KEY` only for approved QA environments where cleanup-backed mutating checks are safe.
-- Provide hosting/CDN or uptime evidence for `trustedbums.com` only if the June 8 hosted preflight mismatch repeats; current local and adjacent hosted evidence no longer support carrying a blanket DNS-outage claim.
-- Provide CI flaky-test history, release/deploy history beyond the latest runs, and current Playwright artifact retention policy so QA prioritization can use observed failure rate instead of one-run evidence.
-- Provide live Supabase SQL, advisor, and catalog validation in-session if QA is expected to verify direct RLS allow/deny behavior rather than keep findings source-backed.
+- Provide or generate safe seeded multi-company QA fixtures for access-boundary proof.
+- Provide a valid Turnstile/contact-smoke path only if mutating public contact submissions should be part of release smoke.
+- Provide stable opportunity/target-account fixture data if the Bum contact-picker smoke should stop skipping.
+- Provide a current-head Visual UI Audit artifact for `3e9118c` or newer.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-08
-- Files, tests, docs, routes, CI sources, and commands reviewed: `docs/consultant-team-rules.md`, `docs/company-wide-rules.md`, `docs/consultant-access-needs.md`, `docs/business-access-rules.md`, `docs/codex-edit-log.md`, `docs/lead-developer-recommendations.md`, `docs/qa-test-backlog.md`, `docs/qa-harness-reliability-backlog.md`, `docs/release-verification-backlog.md`, `docs/security-review-backlog.md`, `docs/product-ops-workflow-backlog.md`, `package.json`, `playwright.config.ts`, `vitest.config.ts`, `.github/workflows/qa.yml`, `.github/workflows/e2e-smoke.yml`, `.github/workflows/visual-ui-audit.yml`, `.github/workflows/deep-qa-hotfix-audit.yml`, `.env.qa` variable-name inventory, `src/App.tsx`, `src/pages/Login.tsx`, `supabase/functions/profile-bootstrap/index.ts`, current `tests/e2e/*.spec.ts`, current `src/test/*.test.ts*`, `src/test/customerTargetRules.test.ts`, `git status --short`, `git log --oneline -n 12`, `git diff -- docs/qa-test-backlog.md docs/lead-developer-recommendations.md src/test/customerTargetRules.test.ts docs/codex-edit-log.md`, `rg` route and skip searches, `corepack pnpm run qa:env`, `corepack pnpm run qa:target-preflight`, `corepack pnpm run qa`, `corepack pnpm exec vitest run src/test/customerTargetRules.test.ts src/test/accessBoundaryRegression.test.ts src/test/serviceRoleAuthorization.test.ts`, sourced local hosted `authenticated-role-smoke.spec.ts`, `/Users/macdaddy/bin/gh-trustedbums run list` for `QA`, `E2E Smoke`, and `Visual UI Audit`, `/Users/macdaddy/bin/gh-trustedbums run view 27109958355`, `/Users/macdaddy/bin/gh-trustedbums run view 27110095517`, `/Users/macdaddy/bin/gh-trustedbums run view 27110095517 --job 80006521915 --log-failed`, `/Users/macdaddy/bin/gh-trustedbums run view 27110216996 --json jobs`, `/Users/macdaddy/bin/gh-trustedbums run view 27110329150 --json jobs`, `/Users/macdaddy/bin/gh-trustedbums run view 27110757594 --json status,conclusion,headSha,jobs`, and `/Users/macdaddy/bin/gh-trustedbums api repos/Pidpoddev/trustedbums/actions/jobs/.../logs` for jobs `80006872202`, `80006872204`, and `80006869183`.
-- Internet sources reviewed: official Playwright release notes, official Vitest coverage guide, official Supabase Row Level Security docs, official GitHub Actions artifact docs, and official GitHub rerun docs.
-- Checks that could not run and why: authenticated extension API allow/deny coverage could not run because `QA_EXTENSION_API_TOKEN` is missing after sourcing `.env.qa`; local mutating Deep QA could not run because `QA_DEEP_MUTATION`, `QA_SUPABASE_URL`, and `QA_SUPABASE_SERVICE_ROLE_KEY` are not configured locally; and direct Supabase SQL/advisor/catalog validation was unavailable in this QA run.
+- Date of run: 2026-06-08.
+- Evidence reviewed: GitHub runs `27163785478`, `27163785482`, and `27163818009`; local contact-intake reproduction; `tests/e2e/contact-intake.spec.ts`; `scripts/qa-target-preflight.mjs`; `.env.qa` key presence without printing secret values; and current `git status`.
