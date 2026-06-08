@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, Handshake, UserCheck } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, BellOff, Handshake, UserCheck } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
-type HandoffFilter = "OPEN" | "UNOWNED" | "ALL";
+type HandoffFilter = "OPEN" | "URGENT" | "STALE" | "MINE" | "UNOWNED" | "NOTIFICATION_FAILED" | "ALL";
 type TargetResponseStatus = CustomerTargetResponseRecord["status"];
+type HandoffPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
 const contactStatuses: ContactSubmissionStatus[] = ["NEW", "REVIEWED", "INVITED", "REPLIED", "ESCALATED", "ARCHIVED"];
 const targetResponseStatuses: TargetResponseStatus[] = ["PROPOSED", "CONTACTED", "MEETING_SET", "ACCEPTED", "DECLINED"];
@@ -44,6 +45,38 @@ function ageInDays(createdAt: string) {
 function ownerLabel(ownerId: string | null, currentUserId?: string) {
   if (!ownerId) return "Unowned";
   return ownerId === currentUserId ? "You" : "Assigned";
+}
+
+function priorityVariant(priority: HandoffPriority) {
+  if (priority === "URGENT") return "destructive" as const;
+  if (priority === "HIGH") return "warning" as const;
+  if (priority === "LOW") return "outline" as const;
+  return "secondary" as const;
+}
+
+function isStale(createdAt: string) {
+  return ageInDays(createdAt) >= 3;
+}
+
+function OperationalBadges({
+  priority,
+  nextAction,
+  createdAt,
+  notificationError,
+}: {
+  priority: HandoffPriority;
+  nextAction: string | null;
+  createdAt: string;
+  notificationError?: string | null;
+}) {
+  return (
+    <div className="mt-2 flex max-w-xs flex-wrap gap-1.5">
+      <Badge variant={priorityVariant(priority)}>{priority}</Badge>
+      {isStale(createdAt) ? <Badge variant="outline"><AlertTriangle className="mr-1 h-3 w-3" />Stale</Badge> : null}
+      {notificationError ? <Badge variant="destructive"><BellOff className="mr-1 h-3 w-3" />Notify failed</Badge> : null}
+      {nextAction ? <Badge variant="outline" className="whitespace-normal text-left">{nextAction}</Badge> : null}
+    </div>
+  );
 }
 
 function matchesSearch(value: string, search: string) {
@@ -67,10 +100,17 @@ function ContactRow({
       <TableCell>
         <p className="font-medium">{submission.name}</p>
         <p className="text-xs text-muted-foreground">{submission.email}</p>
+        <OperationalBadges
+          priority={submission.admin_priority}
+          nextAction={submission.admin_next_action}
+          createdAt={submission.created_at}
+          notificationError={submission.notification_error}
+        />
       </TableCell>
       <TableCell>
         <p>{submission.company_name ?? "No company"}</p>
         <p className="text-xs text-muted-foreground">{submission.interest}</p>
+        {submission.notification_error ? <p className="mt-1 text-xs text-destructive">{submission.notification_error}</p> : null}
       </TableCell>
       <TableCell>
         <StatusBadge label={submission.status} variant={openContactStatuses.has(submission.status) ? "warning" : "outline"} />
@@ -117,6 +157,7 @@ function TargetResponseRow({
       <TableCell>
         <p className="font-medium">{targetName}</p>
         <p className="text-xs text-muted-foreground">{response.customer_targets?.client_companies?.name ?? "Client pending"}</p>
+        <OperationalBadges priority={response.admin_priority} nextAction={response.admin_next_action} createdAt={response.created_at} />
       </TableCell>
       <TableCell>
         <p>{response.contact_name}</p>
@@ -174,6 +215,7 @@ function IntroRequestRow({
       <TableCell>
         <p className="font-medium">{request.target_company_name}</p>
         <p className="text-xs text-muted-foreground">{request.client_companies?.name ?? "Client pending"}</p>
+        <OperationalBadges priority={request.admin_priority} nextAction={request.admin_next_action} createdAt={request.created_at} />
       </TableCell>
       <TableCell>
         <p>{request.bum_profiles?.full_name ?? request.bum_profiles?.email ?? "Bum pending"}</p>
@@ -255,15 +297,23 @@ export default function AdminHandoffs() {
   const contacts = useMemo(() => {
     return (contactQuery.data ?? [])
       .filter((submission) => filter !== "OPEN" || openContactStatuses.has(submission.status))
+      .filter((submission) => filter !== "URGENT" || submission.admin_priority === "URGENT" || submission.admin_priority === "HIGH")
+      .filter((submission) => filter !== "STALE" || isStale(submission.created_at))
+      .filter((submission) => filter !== "MINE" || submission.admin_owner_id === user?.id)
       .filter((submission) => filter !== "UNOWNED" || !submission.admin_owner_id)
+      .filter((submission) => filter !== "NOTIFICATION_FAILED" || Boolean(submission.notification_error))
       .filter((submission) => matchesSearch([submission.name, submission.email, submission.company_name, submission.message].filter(Boolean).join(" "), search))
       .sort((left, right) => ageInDays(right.created_at) - ageInDays(left.created_at));
-  }, [contactQuery.data, filter, search]);
+  }, [contactQuery.data, filter, search, user?.id]);
 
   const targetResponses = useMemo(() => {
     return (targetResponseQuery.data ?? [])
       .filter((response) => filter !== "OPEN" || openTargetResponseStatuses.has(response.status))
+      .filter((response) => filter !== "URGENT" || response.admin_priority === "URGENT" || response.admin_priority === "HIGH")
+      .filter((response) => filter !== "STALE" || isStale(response.created_at))
+      .filter((response) => filter !== "MINE" || response.admin_owner_id === user?.id)
       .filter((response) => filter !== "UNOWNED" || !response.admin_owner_id)
+      .filter(() => filter !== "NOTIFICATION_FAILED")
       .filter((response) => matchesSearch([
         response.contact_name,
         response.profiles?.full_name,
@@ -272,12 +322,16 @@ export default function AdminHandoffs() {
         response.customer_targets?.client_companies?.name,
       ].filter(Boolean).join(" "), search))
       .sort((left, right) => ageInDays(right.created_at) - ageInDays(left.created_at));
-  }, [targetResponseQuery.data, filter, search]);
+  }, [targetResponseQuery.data, filter, search, user?.id]);
 
   const introRequests = useMemo(() => {
     return (introRequestQuery.data ?? [])
       .filter((request) => filter !== "OPEN" || openIntroRequestStatuses.has(request.status))
+      .filter((request) => filter !== "URGENT" || request.admin_priority === "URGENT" || request.admin_priority === "HIGH")
+      .filter((request) => filter !== "STALE" || isStale(request.created_at))
+      .filter((request) => filter !== "MINE" || request.admin_owner_id === user?.id)
       .filter((request) => filter !== "UNOWNED" || !request.admin_owner_id)
+      .filter(() => filter !== "NOTIFICATION_FAILED")
       .filter((request) => matchesSearch([
         request.target_company_name,
         request.target_contact_name,
@@ -285,7 +339,7 @@ export default function AdminHandoffs() {
         request.bum_profiles?.full_name,
       ].filter(Boolean).join(" "), search))
       .sort((left, right) => ageInDays(right.created_at) - ageInDays(left.created_at));
-  }, [introRequestQuery.data, filter, search]);
+  }, [introRequestQuery.data, filter, search, user?.id]);
 
   const openCount =
     (contactQuery.data ?? []).filter((submission) => openContactStatuses.has(submission.status)).length +
@@ -296,6 +350,18 @@ export default function AdminHandoffs() {
     (contactQuery.data ?? []).filter((submission) => !submission.admin_owner_id).length +
     (targetResponseQuery.data ?? []).filter((response) => !response.admin_owner_id).length +
     (introRequestQuery.data ?? []).filter((request) => !request.admin_owner_id).length;
+
+  const urgentCount =
+    (contactQuery.data ?? []).filter((submission) => submission.admin_priority === "URGENT" || submission.admin_priority === "HIGH").length +
+    (targetResponseQuery.data ?? []).filter((response) => response.admin_priority === "URGENT" || response.admin_priority === "HIGH").length +
+    (introRequestQuery.data ?? []).filter((request) => request.admin_priority === "URGENT" || request.admin_priority === "HIGH").length;
+
+  const staleCount =
+    (contactQuery.data ?? []).filter((submission) => isStale(submission.created_at)).length +
+    (targetResponseQuery.data ?? []).filter((response) => isStale(response.created_at)).length +
+    (introRequestQuery.data ?? []).filter((request) => isStale(request.created_at)).length;
+
+  const notificationFailedCount = (contactQuery.data ?? []).filter((submission) => submission.notification_error).length;
 
   const isLoading = contactQuery.isLoading || targetResponseQuery.isLoading || introRequestQuery.isLoading;
   const isError = contactQuery.isError || targetResponseQuery.isError || introRequestQuery.isError;
@@ -322,18 +388,22 @@ export default function AdminHandoffs() {
         </Button>
       </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Open handoffs</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{openCount}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Urgent or high</CardTitle></CardHeader>
+          <CardContent><p className="text-3xl font-bold">{urgentCount}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Unowned items</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{unownedCount}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Visible queues</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">3</p></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Stale or notify failed</CardTitle></CardHeader>
+          <CardContent><p className="text-3xl font-bold">{staleCount + notificationFailedCount}</p></CardContent>
         </Card>
       </div>
 
@@ -343,7 +413,11 @@ export default function AdminHandoffs() {
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="OPEN">Open only</SelectItem>
+            <SelectItem value="URGENT">Urgent / high</SelectItem>
+            <SelectItem value="STALE">Stale</SelectItem>
+            <SelectItem value="MINE">Assigned to me</SelectItem>
             <SelectItem value="UNOWNED">Unowned</SelectItem>
+            <SelectItem value="NOTIFICATION_FAILED">Notification failed</SelectItem>
             <SelectItem value="ALL">All items</SelectItem>
           </SelectContent>
         </Select>
