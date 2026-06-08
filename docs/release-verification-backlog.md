@@ -8,7 +8,7 @@ Decision: NO-GO.
 
 ## Evidence Summary
 
-The current pushed head is `ebbc4c5` (`Move admin performance to route aggregates`). GitHub `Deploy TrustedBums to DreamHost` run `27112275422` succeeded for `ebbc4c5`, GitHub `QA` run `27112275428` succeeded for `ebbc4c5`, and live `curl -I https://trustedbums.com` returned `HTTP/2 200` with `last-modified: Mon, 08 Jun 2026 02:15:42 GMT`, so the aggregate-performance commit has production deploy and hosted QA evidence. Release evidence is still not green because current-head `E2E Smoke` run `27112291558` failed.
+The current application commit under release verification is `ebbc4c5` (`Move admin performance to route aggregates`); later documentation-only handoff commits do not change the application bundle but still need normal workflow monitoring when pushed. GitHub `Deploy TrustedBums to DreamHost` run `27112275422` succeeded for `ebbc4c5`, GitHub `QA` run `27112275428` succeeded for `ebbc4c5`, and live `curl -I https://trustedbums.com` returned `HTTP/2 200` with `last-modified: Mon, 08 Jun 2026 02:15:42 GMT`, so the aggregate-performance commit has production deploy and hosted QA evidence. Release evidence is still not green because `E2E Smoke` run `27112291558` failed for `ebbc4c5`.
 
 The current-head E2E failure is still the required extension API configuration gate, not a new hosted app-shell or auth-bootstrap failure. `E2E Smoke` run `27112291558` failed the smoke job and all three Deep QA matrix jobs. The smoke job log shows `PASS DNS`, `PASS HTTPS`, `PASS App shell`, and `PASS Clerk`, then `FAIL Extension API: Missing QA_EXTENSION_API_BASE_URL while QA_EXTENSION_API_EXPECTATION=required`. Earlier `E2E Smoke` runs `27111541454` for `fa1fdfb`, `27111730997` for `30fc1fc`, and `27111955744` for `36a171c` failed the same release class after extension preflight hardening. The latest completed `Visual UI Audit` run `27083467531` succeeded on commit `30661c8`, and the latest completed standalone `Deep QA Hotfix Audit` run `27092527987` succeeded on commit `850e507`; both are source-backed but stale relative to `ebbc4c5`.
 
@@ -30,8 +30,8 @@ Supabase drift checks are stable enough to rule out a fresh live auth outage but
 - Recommendation: Provide `QA_EXTENSION_API_TOKEN` in the approved local `.env.qa` path and the GitHub Actions secret path, then rerun `qa:env`, `qa:target-preflight`, and hosted `E2E Smoke` against the current deployed commit.
 - Acceptance criteria: Sourced-local and hosted `qa:env` pass with the extension token present, preflight no longer stops on extension configuration, and current-head hosted extension smoke proves authenticated allow and deny behavior.
 
-### P1 - Exact current-head Code Review evidence is missing
-- Evidence: `.codex-review-decision.json` records `Decision: GO` for commit `c9b7b070f13bce5ae373885399f7a1e102ca37d8`; the current pushed head is `ebbc4c5566531d4baa1e79a24f62ec332fc3c39c`, so the marker does not match the deployed commit.
+### P1 - Exact application-commit Code Review evidence is missing
+- Evidence: `.codex-review-decision.json` records `Decision: GO` for commit `c9b7b070f13bce5ae373885399f7a1e102ca37d8`; the current application commit under release verification is `ebbc4c5566531d4baa1e79a24f62ec332fc3c39c`, so the marker does not match the deployed application commit.
 - Impact: Even if current-head QA later passes, the release audit still lacks the exact-commit Code Review evidence the repo rules expect before `main` pushes.
 - Recommendation: Rerun the Code Review Agent for `ebbc4c5`, or record an explicit Ryan override if the push was intentionally made without an exact-match GO review.
 - Acceptance criteria: `.codex-review-decision.json` is refreshed for `ebbc4c5` or the release handoff explicitly records the override decision and rationale.
