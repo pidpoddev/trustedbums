@@ -1,7 +1,10 @@
 import dns from "node:dns/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import net from "node:net";
+import path from "node:path";
 
 const timeoutMs = Number(process.env.QA_TARGET_PREFLIGHT_TIMEOUT_MS ?? 15_000);
+const outputDir = process.env.QA_TARGET_PREFLIGHT_OUTPUT_DIR?.trim() || "test-results/qa-target-preflight";
 
 function getRequiredEnv(name) {
   const value = process.env[name]?.trim();
@@ -105,6 +108,32 @@ async function checkExtensionApi() {
   return "anonymous extension API returns v1 401 and authenticated token is configured";
 }
 
+async function writePreflightArtifact({ targetUrl, results }) {
+  const generatedAt = new Date().toISOString();
+  const failed = results.filter((result) => result.status === "fail");
+  const payload = {
+    generatedAt,
+    target: targetUrl.origin,
+    timeoutMs,
+    status: failed.length ? "fail" : "pass",
+    failedChecks: failed.map((result) => result.name),
+    results,
+  };
+  const lines = [
+    `QA target preflight for ${targetUrl.origin}`,
+    `Generated: ${generatedAt}`,
+    `Status: ${payload.status.toUpperCase()}`,
+    "",
+    ...results.map((result) => `${result.status.toUpperCase()} ${result.name}: ${result.detail}`),
+  ];
+
+  await mkdir(outputDir, { recursive: true });
+  await Promise.all([
+    writeFile(path.join(outputDir, "summary.json"), `${JSON.stringify(payload, null, 2)}\n`),
+    writeFile(path.join(outputDir, "summary.txt"), `${lines.join("\n")}\n`),
+  ]);
+}
+
 async function main() {
   const targetUrl = new URL(getRequiredEnv("QA_BASE_URL"));
   const state = {};
@@ -120,6 +149,8 @@ async function main() {
   for (const [name, run] of checks) {
     results.push(await classifyStep(name, run));
   }
+
+  await writePreflightArtifact({ targetUrl, results });
 
   console.log(`QA target preflight for ${targetUrl.origin}`);
   for (const result of results) {

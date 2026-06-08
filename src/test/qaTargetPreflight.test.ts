@@ -21,4 +21,11 @@ describe("QA target preflight contract", () => {
     expect(preflightSource).toContain('getRequiredEnv("QA_EXTENSION_API_TOKEN")');
     expect(preflightSource).toContain("Dependent hosted E2E suites should be skipped until preflight failures are fixed");
   });
+
+  it("writes downloadable preflight artifacts before dependent suites start", () => {
+    expect(preflightSource).toContain('"test-results/qa-target-preflight"');
+    expect(preflightSource).toContain('writePreflightArtifact({ targetUrl, results })');
+    expect(preflightSource).toContain('"summary.json"');
+    expect(preflightSource).toContain('"summary.txt"');
+  });
 });

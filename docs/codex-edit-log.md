@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Persist QA target preflight artifacts
+
+- Trigger: Continue the next implementable scrum item after hosted auth/bootstrap was verified green and the harness backlog was refocused.
+- Implementation branch: `main`.
+- What changed: Updated `scripts/qa-target-preflight.mjs` so every preflight run writes `summary.json` and `summary.txt` under `test-results/qa-target-preflight/` before exiting. Added regression coverage in `src/test/qaTargetPreflight.test.ts` and refreshed `docs/qa-harness-reliability-backlog.md`.
+- Main surfaces changed: `scripts/qa-target-preflight.mjs`, `src/test/qaTargetPreflight.test.ts`, `docs/qa-harness-reliability-backlog.md`, `docs/codex-edit-log.md`.
+- Checks run: controlled failing preflight with `QA_BASE_URL=http://127.0.0.1:9` and `QA_TARGET_PREFLIGHT_OUTPUT_DIR=/private/tmp/trustedbums-preflight-artifact-test`; inspected generated `summary.json` and `summary.txt`; `corepack pnpm run qa`; `git diff --check`; and `corepack pnpm run code-review:gate`.
+- Results: The controlled failure exited non-zero as expected and still wrote both artifact files, so hosted workflows should now upload preflight evidence through their existing `test-results/` artifact path.
+- Recheck agents: QA Harness Reliability Agent, QA/Test Engineer, Release Verification Agent.
+- Next run should verify: a real hosted preflight failure uploads `qa-target-preflight/summary.json` and `summary.txt`; then align `qa:env` enforcement between `E2E Smoke` deep shards and standalone Deep QA.
+
 ### 2026-06-08 - Recheck QA harness backlog after current-head deep shard success
 
 - Trigger: Trusted Bums daily QA Harness Reliability automation revalidated the latest workflow state, harness helpers, env contract, and artifact behavior before refreshing the reliability backlog.
