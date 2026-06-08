@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Recheck QA harness backlog after current-head deep shard success
+
+- Trigger: Trusted Bums daily QA Harness Reliability automation revalidated the latest workflow state, harness helpers, env contract, and artifact behavior before refreshing the reliability backlog.
+- Implementation branch: `main`.
+- What changed: Rewrote `docs/qa-harness-reliability-backlog.md` so it no longer treats the Deep QA role split as unfinished work after GitHub `E2E Smoke` run `27110757594` passed smoke plus `Deep QA (admin|client|bum)` on commit `8fa0796`. The backlog now focuses on three harness defects: missing downloadable artifacts when `qa:target-preflight` fails before Playwright starts, inconsistent `qa:env` enforcement between `E2E Smoke` and standalone `Deep QA Hotfix Audit`, and hosted extension coverage being silently skipped when `QA_EXTENSION_API_BASE_URL` is unset.
+- Main surfaces changed: `docs/qa-harness-reliability-backlog.md`, `docs/codex-edit-log.md`.
+- Checks run: raw and sourced `corepack pnpm run qa:env`; sourced `corepack pnpm run qa:target-preflight`; `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 12 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run view 27110757594 --json databaseId,headSha,status,conclusion,displayTitle,createdAt,updatedAt,jobs`; `/Users/macdaddy/bin/gh-trustedbums run view 27110095517 --json jobs`; `/Users/macdaddy/bin/gh-trustedbums run view 27110095517 --job 80006521915 --log-failed`; and `/Users/macdaddy/bin/gh-trustedbums run download` for runs `27110095517` and `27110757594`.
+- Results: Current-head hosted E2E is green again, so the June 8 auth/bootstrap regression moved out of the active harness queue and remains only as a product-defect handoff history item. The remaining reliability gaps are workflow and evidence-contract issues, not a still-broken shard split.
+- Recheck agents: QA Harness Reliability Agent, Release Verification Agent, QA/Test Engineer, Lead Developer.
+- Next run should verify: a preflight-failed shard now uploads a downloadable summary artifact, `E2E Smoke` deep shards enforce the same env contract as standalone deep audit, and hosted extension coverage is reported as verified, intentionally skipped, or misconfigured instead of generic PASS.
+
 ### 2026-06-08 - Refresh hosted auth/bootstrap evidence after helper fix
 
 - Trigger: Trusted Bums daily QA Test Engineer automation rechecked the newest GitHub-hosted QA and E2E evidence before finalizing recommendations.
