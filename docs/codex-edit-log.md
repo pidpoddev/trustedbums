@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Refresh hosted auth/bootstrap evidence after helper fix
+
+- Trigger: Trusted Bums daily QA Test Engineer automation rechecked the newest GitHub-hosted QA and E2E evidence before finalizing recommendations.
+- Implementation branch: `main`.
+- What changed: Refreshed `docs/qa-test-backlog.md` to replace the earlier harness-first-only narrative with the newer cross-role hosted bootstrap regression and the later `8fa0796` helper-fix evidence, updated `docs/qa-harness-reliability-backlog.md` so the client-only preflight miss stays in the harness bucket while current-head verification is tracked by shard, rewrote `docs/release-verification-backlog.md` with a current `NO-GO` decision driven by the extension-token evidence gap, corrected `docs/lead-developer-recommendations.md` so the bootstrap work is a release watch item rather than active implementation, and updated `docs/consultant-access-needs.md` to request live Clerk or profile-bootstrap logs only if future current-head coverage repeats the failure.
+- Main surfaces changed: `docs/qa-test-backlog.md`, `docs/qa-harness-reliability-backlog.md`, `docs/release-verification-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/consultant-access-needs.md`, `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm run qa`; raw and sourced `corepack pnpm run qa:env`; sourced `corepack pnpm run qa:target-preflight`; `corepack pnpm exec vitest run src/test/customerTargetRules.test.ts src/test/accessBoundaryRegression.test.ts src/test/serviceRoleAuthorization.test.ts`; `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 8 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run view 27110216996 --json jobs`; `/Users/macdaddy/bin/gh-trustedbums run view 27110329150 --json jobs`; and `/Users/macdaddy/bin/gh-trustedbums api repos/Pidpoddev/trustedbums/actions/jobs/.../logs` for jobs `80006872202`, `80006872204`, and `80006869183`.
+- Results: Local QA remained green. Hosted `Visual UI Audit` and `QA` remained green. Earlier `E2E Smoke` run `27109958355` stayed green and `27110095517` still looked like a client-only preflight miss, but later June 8 runs showed broader authenticated failures: `27110216996` failed completed admin and Bum deep-role jobs, and `27110329150` failed the smoke job itself with 13 redirects back to `/login` showing `Unable to bootstrap this profile.` After the `8fa0796` Supabase helper fix, local hosted role smoke passed all five roles and current-head GitHub `E2E Smoke` run `27110757594` passed smoke plus `Deep QA (admin|client|bum)`.
+- Recheck agents: Lead Developer, Release Verification Agent, QA/Test Engineer, QA Harness Reliability Agent, Consultant Access Needs.
+- Next run should verify: whether `QA_EXTENSION_API_TOKEN` can finally unblock authenticated extension coverage, then continue seeded access-boundary proof.
+
 ### 2026-06-08 - Recheck QA evidence after hosted preflight flake classification
 
 - Trigger: Trusted Bums daily QA Test Engineer automation reviewed the latest scrum outputs, specialist backlogs, changed docs, local QA contract, and GitHub QA/E2E/visual/deep evidence.
@@ -22,7 +33,7 @@ This file is the running handoff log for implementation work Codex has made in t
 - Checks run: `corepack pnpm run qa`; raw and sourced `corepack pnpm run qa:env`; sourced `corepack pnpm run qa:target-preflight`; `corepack pnpm exec vitest run src/test/customerTargetRules.test.ts src/test/accessBoundaryRegression.test.ts src/test/serviceRoleAuthorization.test.ts`; `gh run list` for `QA`, `E2E Smoke`, `Visual UI Audit`, and `Deep QA Hotfix Audit`; `gh run view 27109958355`; `gh run view 27110095517`; `gh run view 27110095517 --job 80006521915 --log-failed`; and `gh run download` for runs `27110095517` and `27083467531`.
 - Results: Local QA passed. Latest completed GitHub QA runs passed. Latest completed GitHub visual run passed. Latest completed GitHub E2E evidence is mixed: run `27109958355` passed smoke plus all three deep shards, while run `27110095517` failed only the client deep shard during hosted preflight.
 - Recheck agents: QA/Test Engineer, QA Harness Reliability Agent, Release Verification Agent, Product Ops Workflow Analyst, Security Engineer, Lead Developer.
-- Next run should verify: whether GitHub `E2E Smoke` reruns `27110216996` and `27110329150` clear the hosted client-shard preflight miss; whether `QA_EXTENSION_API_TOKEN` is finally available; and whether extension, client-team, telemetry, and represented-contact allow/deny proof can move from source-backed to fixture-backed evidence.
+- Next run should verify: whether `QA_EXTENSION_API_TOKEN` is finally available and whether extension, client-team, telemetry, and represented-contact allow/deny proof can move from source-backed to fixture-backed evidence. The later `27110757594` E2E run superseded the hosted auth/bootstrap rerun question by passing smoke plus all three Deep QA shards.
 
 ### 2026-06-08 - Recheck private-schema RLS helper cleanup
 

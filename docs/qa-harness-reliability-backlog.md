@@ -4,7 +4,7 @@ _Last updated: 2026-06-08 by Codex._
 
 ## Executive Read
 
-Hosted evidence now proves the Deep QA shards can pass, but the harness still blurs transient target-preflight failures with product failures. GitHub `E2E Smoke` run `27109958355` passed smoke plus `Deep QA (admin|client|bum)` on 2026-06-08, then the next run `27110095517` failed only `Deep QA (client)` before route work started, logging `FAIL HTTPS: fetch failed` and `FAIL App shell` while smoke, admin, and Bum still passed. The highest-value harness work is now to preserve and classify that kind of preflight failure as its own category instead of letting it masquerade as a product regression.
+Hosted evidence proves the Deep QA shards can pass, but the harness still needs to separate true target-preflight misses from later authenticated product or environment failures. GitHub `E2E Smoke` run `27109958355` passed smoke plus `Deep QA (admin|client|bum)` on 2026-06-08. The next run `27110095517` failed only `Deep QA (client)` before route work started, logging `FAIL HTTPS: fetch failed` and `FAIL App shell` while smoke, admin, and Bum still passed. Later June 8 runs then failed after successful setup and auth navigation across multiple roles. The Supabase helper qualification fix in `8fa0796` now has local hosted role-smoke proof plus current-head GitHub smoke, admin deep QA, client deep QA, and Bum deep QA success.
 
 ## Active Harness Fixes
 
@@ -34,11 +34,13 @@ Hosted evidence now proves the Deep QA shards can pass, but the harness still bl
 
 ## Product Defect Handoffs
 
-- None from this run. The June 8 `Deep QA (client)` miss is a harness or target-health handoff unless it repeats on rerun.
+- Lead Developer:
+  Evidence: GitHub `E2E Smoke` run `27110216996` failed completed `Deep QA (admin)` and `Deep QA (bum)` jobs after setup because requested routes redirected to `/login` with `Authorization required` and `Unable to bootstrap this profile.` GitHub `E2E Smoke` run `27110329150` then failed the smoke job itself with 13 authenticated failures across admin, client, client finance, and Bum flows showing the same redirect-to-login/bootstrap pattern. After the `8fa0796` helper fix, sourced local hosted role smoke passed all five roles; GitHub `27110757594` passed smoke plus `Deep QA (admin|client|bum)`.
+  Requested action: Treat any future repeat bootstrap failure in current-head GitHub logs as product or environment evidence rather than a harness issue, but keep the older bootstrap failure closed as verified by the local and hosted pass.
 
 ## Agent Inputs
 
 - Date of run: 2026-06-08.
 - Files reviewed: `docs/qa-harness-reliability-backlog.md`, `docs/qa-test-backlog.md`, `docs/release-verification-backlog.md`, `docs/lead-developer-recommendations.md`, `package.json`, `playwright.config.ts`, `.github/workflows/e2e-smoke.yml`, `.github/workflows/deep-qa-hotfix-audit.yml`, `tests/e2e/deep-workflow-hotfix-audit.spec.ts`, `tests/e2e/helpers/auth.ts`, `tests/e2e/helpers/deepQa.ts`, and `scripts/qa-target-preflight.mjs`.
 - Commands reviewed: `corepack pnpm run qa:env`, `corepack pnpm run qa:target-preflight`, `gh run list --repo pidpoddev/trustedbums --workflow e2e-smoke.yml --limit 8`, `gh run view 27109958355 --json jobs`, `gh run view 27110095517 --json jobs`, `gh run view 27110095517 --job 80006521915 --log-failed`, and `gh run download 27110095517 --repo pidpoddev/trustedbums`.
-- Checks that could not run and why: no local Playwright harness reproduction was run in this update because the adjacent GitHub pass plus the next-run preflight-only failure was already enough to classify the issue as harness-first evidence.
+- Checks that could not run and why: no local Playwright harness reproduction was run in this update because GitHub-hosted evidence already showed both the older harness-first preflight miss and the newer cross-role bootstrap failures, and current-head `27110757594` provided the final hosted pass.
