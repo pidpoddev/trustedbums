@@ -21,8 +21,10 @@ describe("access boundary regressions", () => {
 
   it("uses server-shaped admin performance summaries instead of browser p75 math", () => {
     expect(portalApiSource).toContain("admin_performance_metric_summary");
+    expect(portalApiSource).toContain("admin_performance_route_summary");
     expect(performancePageSource).toContain("listPerformanceMetricSummaries");
-    expect(performancePageSource).toContain("limit: 100");
+    expect(performancePageSource).toContain("listPerformanceMetricRouteSummaries");
+    expect(performancePageSource).not.toContain("listPerformanceMetricEvents");
     expect(performancePageSource).not.toContain("function percentile");
   });
 });

@@ -1,10 +1,10 @@
 # Trusted Bums Data Analytics Backlog
 
-_Last updated: 2026-06-07 by Codex daily data analytics engineer automation._
+_Last updated: 2026-06-08 by Codex._
 
 ## Executive Read
 
-Trusted Bums still has three active analytics and reporting gaps with current evidence: finance workspaces still present date filters on audit timestamps instead of business-effective dates, `CLIENT_FINANCE` still reaches mixed operational CSV exports, and the admin performance dashboard still needs seeded proof around aggregate-first reporting and non-admin denial. The earlier admin dashboard summary RPC exposure is no longer active: refreshed live Supabase security advisors after migration `20260607235839 restrict_security_definer_helper_execute` show only leaked-password protection disabled.
+Trusted Bums still has two active analytics and reporting gaps with current evidence: finance workspaces still present date filters on audit timestamps instead of business-effective dates, and `CLIENT_FINANCE` still reaches mixed operational CSV exports. The admin performance dashboard now uses aggregate-first reporting for its primary view: metric cards use `admin_performance_metric_summary`, route rows use live migration `20260608020645 add_admin_performance_route_summary`, and the page no longer imports raw `performance_metric_events` for the table. The earlier admin dashboard summary RPC exposure is no longer active: refreshed live Supabase security advisors show only leaked-password protection disabled.
 
 ## Active Recommendations
 
@@ -20,11 +20,11 @@ Trusted Bums still has three active analytics and reporting gaps with current ev
 - Recommendation: Split `/client/exports` into finance-safe and operational export types, or gate target and meeting exports to `CLIENT_ADMIN` until a narrower business rule explicitly grants extra Client Finance scope. Because this may require route, RLS, RPC, or edge-function changes, Security and Lead Developer should validate the final design against `docs/business-access-rules.md` before rollout.
 - Acceptance criteria: `CLIENT_FINANCE` can export company payment and invoice data without target contact emails, attendee lists, join URLs, transcript-adjacent metadata, or other operational detail unless a documented rule explicitly allows it; route allow/deny tests cover each export type by client role.
 
-### P1 - Replace raw-row admin performance reporting with aggregate-first summaries
-- Evidence: `src/pages/admin/AdminPerformanceMetrics.tsx` still requests `listPerformanceMetricEvents({ ..., limit: 500 })` and computes p75 in the browser, while `src/lib/portalApi.ts` still reads raw `performance_metric_events` rows directly. Live Supabase table inventory on 2026-06-07 shows `public.performance_metric_events` at `33,397` rows, and recent edge-function logs show continuing `performance-beacon` `POST 202` traffic. `docs/business-access-rules.md` already says raw telemetry is admin-only and any broader reporting should use aggregate-only summaries.
-- Why it matters: The current admin dashboard cannot be a trustworthy telemetry prioritization surface when it samples only the most recent `500` rows from a table that is already two orders of magnitude larger. It also keeps raw telemetry on the browser path where the business rule already points toward aggregate-only sharing.
-- Recommendation: Move `/admin/performance` to server-shaped aggregate summaries by metric, route, time window, and rating buckets, and keep raw row access as a narrower drill-down path only when needed for admin troubleshooting. Data/Analytics, Security, and Lead Developer should validate the summary path against the existing telemetry access rule before rollout.
-- Acceptance criteria: Admin performance cards and p75 values come from server-side aggregates rather than browser math over capped raw rows; the page can represent the full selected time window without a `500`-row ceiling; and non-admin roles remain denied on both the route and any supporting summary helper.
+### P1 - Admin performance aggregate reporting verified
+- Evidence: `src/pages/admin/AdminPerformanceMetrics.tsx` now requests server-shaped metric and route summaries, and `src/test/accessBoundaryRegression.test.ts` prevents the page from importing `listPerformanceMetricEvents`. Live Supabase migration inventory includes `20260608020645 add_admin_performance_route_summary`; generic non-admin SQL context is denied by the helper, while a simulated admin JWT claim returns route aggregate rows with p75 and count fields.
+- Why it matters: The admin dashboard can now prioritize telemetry across the selected time window without browser math over capped raw rows.
+- Recommendation: Keep this item on watch for current-head authenticated route proof, not active implementation. Any future raw telemetry drill-down should be explicitly admin-only, bounded, and separate from the aggregate landing view.
+- Acceptance criteria: Met for source, live helper deployment, admin-only helper enforcement, and local QA. Remaining proof: current-head hosted `/admin/performance` route smoke or browser walkthrough after deployment.
 
 ## Business Access And Reporting Rules
 

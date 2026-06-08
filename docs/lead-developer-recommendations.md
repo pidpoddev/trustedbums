@@ -57,14 +57,14 @@ The practical blocker is now extension API credentials and seeded access evidenc
 - Acceptance criteria: Each service-role path has one live allowed and one live denied case, and state-changing paths assert audit events or equivalent durable records.
 - Validation: Seeded E2E/API run plus `corepack pnpm run qa`.
 
-### P2 - Move admin observability onto bounded, aggregate-first paths
+### P2 - Keep admin observability aggregate-first and verify hosted route proof
 - Source: `docs/data-analytics-backlog.md`, `docs/performance-engineering-backlog.md`, [src/pages/admin/AdminPerformanceMetrics.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminPerformanceMetrics.tsx:57), [src/App.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx:16), and current Vite/React Router guidance.
-- Why now: This is real and should stay in the queue, but it should trail live trust and access issues. The performance page still computes p75 from a `500`-row browser slice. Startup route splitting is already in place, and `corepack pnpm run qa` now builds route-aligned chunks without the earlier large-chunk warning.
-- Recommended fix: Replace raw-row browser math on `/admin/performance` with server-shaped aggregates, then use browser traces or telemetry to quantify the route-splitting benefit.
+- Why now: Startup route splitting is in place, and `/admin/performance` now uses server-shaped metric and route aggregates instead of raw-row browser math. Live migration `20260608020645 add_admin_performance_route_summary` is applied and admin-gated.
+- Recommended fix: Keep the aggregate path as the default, then capture current-head hosted route proof and use browser traces or telemetry to quantify the route-splitting benefit.
 - Likely files/routes: [src/pages/admin/AdminPerformanceMetrics.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminPerformanceMetrics.tsx:57), `src/lib/portalApi.ts`, [src/App.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx:16), `vite.config.ts`, and related report/dashboard routes.
 - Dependencies/risks: Data, Performance, Security, and QA should validate that any new aggregate helper stays admin-only and that route-splitting does not regress auth or navigation behavior.
-- Acceptance criteria: Admin performance summaries are server-computed over the full selected window; route-aligned startup chunks remain in the build; auth and route smoke still pass.
-- Validation: `pnpm run build`, targeted admin-performance checks, and follow-up route smoke after aggregate loading lands.
+- Acceptance criteria: Admin performance summaries remain server-computed over the full selected window; route-aligned startup chunks remain in the build; auth and route smoke still pass.
+- Validation: `pnpm run build`, targeted admin-performance checks, live Supabase helper checks, and follow-up current-head route smoke.
 
 ## Fix Playbooks
 

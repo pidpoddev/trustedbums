@@ -6,9 +6,9 @@ _Last updated: 2026-06-08 by Codex._
 
 Startup JavaScript is improved from the earlier single app-wide bundle. `src/App.tsx` now lazy-loads public, admin, client, Bum, legal, report, finance, and troubleshooting pages, `vite.config.ts` has a deliberate vendor chunk strategy, and `corepack pnpm run qa` on 2026-06-08 emitted route-aligned page chunks instead of the prior `517.70 kB` gzip app bundle. The latest build no longer prints Vite's large-chunk warning. The remaining router-side cleanup was the React Router v7 future warnings in route guard tests, now addressed by enabling `v7_startTransition` and `v7_relativeSplatPath` in the app and test routers.
 
-The next bottleneck after startup remains whole-list client loading on shared portal routes. `PortalGlobalSearch`, `ClientDashboard`, `ClientReports`, `ClientExports`, `BumReports`, and `AdminPerformanceMetrics` still fetch broad datasets and then summarize, filter, or export in the browser. Live Supabase evidence confirms the telemetry table has grown further to `33,397` rows, while the admin telemetry page still caps itself at `500` raw rows and computes p75 client-side.
+The next bottleneck after startup remains whole-list client loading on shared portal routes. `PortalGlobalSearch`, `ClientDashboard`, `ClientReports`, `ClientExports`, and `BumReports` still fetch broad datasets and then summarize, filter, or export in the browser. `/admin/performance` has moved to aggregate-first data: metric cards use `admin_performance_metric_summary`, route rows use the new `admin_performance_route_summary`, and the page no longer imports the raw `performance_metric_events` list path for its primary table.
 
-Live backend evidence is usable but narrower than the ideal path in this session. I verified the Trusted Bums Supabase project URL as `https://vaoqvtxqvbptyxddpoju.supabase.co`, current performance advisors are callable, `performance_metric_events` row growth is visible through live table inventory, and recent edge-function logs show accepted `performance-beacon` traffic. Read-only SQL and query-plan style checks were not callable in this run because both `mcp__supabase_trustedbums.execute_sql` and the generic Supabase SQL fallback were cancelled by the tool layer.
+Live backend evidence is usable for the admin telemetry path. Generic Supabase MCP against project `vaoqvtxqvbptyxddpoju` applied live migration `20260608020645 add_admin_performance_route_summary`, confirmed the new function is security invoker, verified non-admin SQL context receives `Only admins can read performance route summaries.`, and verified a simulated admin JWT claim returns route-level aggregate rows with p75 and count fields. Security advisors still show only the Supabase Auth leaked-password plan blocker; performance advisors still show the older broad unindexed-FK and multiple-permissive-policy backlog, not a new helper exposure finding.
 
 ## Active Recommendations
 
@@ -30,11 +30,11 @@ Live backend evidence is usable but narrower than the ideal path in this session
 - Recommendation: Replace the current fan-out model with a scoped search endpoint or per-role capped search queries that require a real query term and return only top matches for each category.
 - Acceptance criteria: Focusing the search field or opening the mobile sheet no longer triggers broad background loads; category searches are term-scoped and capped server-side; and shared portal routes show materially less network and scripting work when opening search.
 
-### P1 - Make admin performance monitoring aggregate-first before the telemetry table grows further
-- Evidence: `src/pages/admin/AdminPerformanceMetrics.tsx` still calls `listPerformanceMetricEvents({ days, metricName, rating, limit: 500 })` and computes p75 in the browser over raw rows. `src/lib/portalApi.ts` still reads individual `performance_metric_events` rows instead of route/metric aggregates. Live Supabase table inventory on 2026-06-07 shows `public.performance_metric_events` at `33,397` rows, and recent edge-function logs still show accepted `POST 202` traffic to `performance-beacon`.
-- Why it matters: Raw-row client math will become noisier and less representative as telemetry volume grows, and the current `500`-row cap prevents the admin view from serving as a trustworthy prioritization surface.
-- Recommendation: Add an admin-only aggregate query surface that returns route, metric, time window, sample count, poor count, and p75 directly from the database, then use that aggregate as the source for `/admin/performance`.
-- Acceptance criteria: `/admin/performance` renders server-computed route or metric aggregates instead of raw-row browser math; the page exposes at least 7-day and 28-day summaries with sample counts; and future performance backlog items can cite aggregate outputs rather than client-side approximations.
+### P1 - Admin performance monitoring aggregate path verified
+- Evidence: `src/pages/admin/AdminPerformanceMetrics.tsx` now calls `listPerformanceMetricSummaries()` and `listPerformanceMetricRouteSummaries()` instead of `listPerformanceMetricEvents()`. Migration `20260608020645_add_admin_performance_route_summary.sql` adds an admin-only route aggregate helper returning route, metric, sample count, poor count, needs-improvement count, p75, and latest sample time. The source regression in `src/test/accessBoundaryRegression.test.ts` now requires the route-summary RPC and forbids the page from importing the raw event list.
+- Why it matters: The page can now represent the full selected time window through server-side aggregates instead of sampling capped raw rows in the browser.
+- Recommendation: Treat the primary aggregate path as implementation-complete. Keep raw `performance_metric_events` access reserved for narrower admin troubleshooting or future drill-down flows, and add browser/authenticated route proof once current-head release evidence is available.
+- Acceptance criteria: Met for server-computed metric and route summaries, no raw list import in `/admin/performance`, live admin-only RPC deployment, and local QA. Remaining proof: current-head hosted route smoke or authenticated browser walkthrough of `/admin/performance`.
 
 ### P2 - Clean up avoidable recalculation noise in the known memo-warning routes
 - Evidence: `pnpm run lint` passed on 2026-06-07 with warnings only, but it still flagged unstable `useMemo` dependency inputs in `src/pages/admin/AdminCommissionPlans.tsx`, `src/pages/admin/AdminPayments.tsx`, `src/pages/admin/AdminPayouts.tsx`, `src/pages/client/ClientPayments.tsx`, and `src/pages/client/ClientTargets.tsx`.
@@ -69,10 +69,15 @@ Live backend evidence is usable but narrower than the ideal path in this session
 - Current performance advisors still flag:
   - Many `unindexed_foreign_keys` findings across the schema
   - `multiple_permissive_policies` on route-relevant tables including `opportunity_registrations`, `profiles`, `reverse_opportunities`, `teams_meetings`, `opportunity_questions`, and `training_materials`
+- Live Supabase checks on 2026-06-08:
+  - Generic Supabase MCP table inventory showed `public.performance_metric_events` at `62,359` rows.
+  - Migration inventory includes `20260608020645 add_admin_performance_route_summary`.
+  - Direct generic SQL without an admin JWT was denied by `admin_performance_route_summary`.
+  - Simulated admin JWT claim inside a transaction returned route aggregate rows with p75 and count fields.
 
 ## Watchlist
 
-- `public.performance_metric_events` has roughly doubled since the earlier backlog snapshot and should not remain a raw-row admin workload.
+- `public.performance_metric_events` has grown to `62,359` rows; `/admin/performance` no longer uses it as a raw-row browser workload, but any future drill-down should remain admin-only and bounded.
 - The current live performance-advisor output is still broad, but without query plans or successful live SQL in this session there is not yet enough evidence to justify a schema-wide index sprint.
 - The required local preview path on `127.0.0.1:8080` is still blocked by runner permissions, so local browser timing evidence remains unavailable from this machine.
 
@@ -88,7 +93,7 @@ Live backend evidence is usable but narrower than the ideal path in this session
 
 Material missing access, production/staging telemetry, traces, query plans, Supabase advisors, authenticated routes, or other evidence needed for a stronger performance review. Mirror durable requests in `docs/consultant-access-needs.md`.
 
-- This session had live Supabase advisors, table inventory, logs, and project-URL verification, but not callable read-only SQL or query-plan access. Both the project-scoped `execute_sql` path and the generic SQL fallback were cancelled by the tool layer.
+- This session had live generic Supabase MCP table inventory, migration application, advisor checks, and SQL verification for the admin route-summary helper. Query-plan style checks were not run.
 - No fresh Lighthouse artifact set, bundle-analyzer report, or authenticated browser waterfall was available in this run.
 - No authenticated route walkthrough ran in the browser because the required local preview on port `8080` failed to bind and no alternate browser evidence source was used for performance timing.
 - Extension API authenticated checks still lack the required token, so authenticated extension coverage remains blocked separately from the performance work.

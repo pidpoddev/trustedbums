@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
-  listPerformanceMetricEvents,
+  listPerformanceMetricRouteSummaries,
   listPerformanceMetricSummaries,
-  type PerformanceMetricEventRecord,
   type PerformanceMetricName,
   type PerformanceMetricRating,
+  type PerformanceMetricRouteSummaryRecord,
   type PerformanceMetricSummaryRecord,
 } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
@@ -22,18 +22,15 @@ const metricOptions: Array<PerformanceMetricName | "ALL"> = ["ALL", "LCP", "FCP"
 const ratingOptions: Array<PerformanceMetricRating | "ALL"> = ["ALL", "good", "needs-improvement", "poor"];
 const dayOptions = [1, 7, 30, 90];
 
-function metricValue(metric: Pick<PerformanceMetricEventRecord, "metric_name" | "metric_value">) {
+function metricValue(metric: { metric_name: PerformanceMetricName; metric_value: number | null }) {
+  if (metric.metric_value === null) {
+    return "No data";
+  }
   const value = Number(metric.metric_value);
   if (metric.metric_name === "CLS") {
     return value.toFixed(3);
   }
   return `${Math.round(value)} ms`;
-}
-
-function ratingBadge(rating: PerformanceMetricRating) {
-  if (rating === "poor") return <Badge variant="destructive">Poor</Badge>;
-  if (rating === "needs-improvement") return <Badge variant="secondary">Needs improvement</Badge>;
-  return <Badge>Good</Badge>;
 }
 
 export default function AdminPerformanceMetrics() {
@@ -42,16 +39,16 @@ export default function AdminPerformanceMetrics() {
   const [metricName, setMetricName] = useState<PerformanceMetricName | "ALL">("ALL");
   const [rating, setRating] = useState<PerformanceMetricRating | "ALL">("ALL");
 
-  const metricsQuery = useQuery({
-    queryKey: ["admin-performance-metrics-recent", days, metricName, rating],
-    queryFn: () => listPerformanceMetricEvents({ days, metricName, rating, limit: 100 }),
+  const routeSummaryQuery = useQuery({
+    queryKey: ["admin-performance-metrics-routes", days, metricName, rating],
+    queryFn: () => listPerformanceMetricRouteSummaries({ days, metricName, rating, limit: 50 }),
   });
   const summaryQuery = useQuery({
     queryKey: ["admin-performance-metrics-summary", days, metricName, rating],
     queryFn: () => listPerformanceMetricSummaries({ days, metricName, rating }),
   });
 
-  const rows = useMemo(() => metricsQuery.data ?? [], [metricsQuery.data]);
+  const rows = useMemo<PerformanceMetricRouteSummaryRecord[]>(() => routeSummaryQuery.data ?? [], [routeSummaryQuery.data]);
   const summary = useMemo(() => {
     const summaries = summaryQuery.data ?? [];
     const summaryByMetric = new Map<PerformanceMetricName, PerformanceMetricSummaryRecord>(
@@ -80,10 +77,10 @@ export default function AdminPerformanceMetrics() {
         <Button
           variant="outline"
           onClick={() => {
-            metricsQuery.refetch();
+            routeSummaryQuery.refetch();
             summaryQuery.refetch();
           }}
-          disabled={metricsQuery.isFetching || summaryQuery.isFetching}
+          disabled={routeSummaryQuery.isFetching || summaryQuery.isFetching}
         >
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
@@ -177,7 +174,7 @@ export default function AdminPerformanceMetrics() {
                   <Badge variant="outline">{metric.count}</Badge>
                 </div>
                 <p className="mt-3 text-2xl font-bold">
-                  {metric.p75 === null ? "No data" : metricValue({ metric_name: metric.name, metric_value: metric.p75 })}
+                  {metricValue({ metric_name: metric.name, metric_value: metric.p75 })}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">{metric.poor} poor samples</p>
               </div>
@@ -188,42 +185,42 @@ export default function AdminPerformanceMetrics() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-lg">Recent samples</CardTitle>
+          <CardTitle className="text-lg">Route summaries</CardTitle>
         </CardHeader>
         <CardContent>
-          {metricsQuery.isLoading || summaryQuery.isLoading ? (
+          {routeSummaryQuery.isLoading || summaryQuery.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading performance metrics...</p>
           ) : rows.length ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Time</TableHead>
+                    <TableHead>Last seen</TableHead>
                     <TableHead>Metric</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Rating</TableHead>
+                    <TableHead>P75</TableHead>
+                    <TableHead>Samples</TableHead>
+                    <TableHead>Needs improvement</TableHead>
+                    <TableHead>Poor</TableHead>
                     <TableHead>Route</TableHead>
-                    <TableHead>Origin</TableHead>
-                    <TableHead>Connection</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="min-w-[180px]">{formatDateTimeForTimeZone(row.created_at, timeZone)}</TableCell>
+                    <TableRow key={`${row.page_path}:${row.metric_name}`}>
+                      <TableCell className="min-w-[180px]">{formatDateTimeForTimeZone(row.last_seen_at, timeZone)}</TableCell>
                       <TableCell className="font-medium">{row.metric_name}</TableCell>
-                      <TableCell>{metricValue(row)}</TableCell>
-                      <TableCell>{ratingBadge(row.metric_rating)}</TableCell>
+                      <TableCell>{metricValue({ metric_name: row.metric_name, metric_value: row.p75_value })}</TableCell>
+                      <TableCell>{row.sample_count}</TableCell>
+                      <TableCell>{row.needs_improvement_count}</TableCell>
+                      <TableCell>{row.poor_count ? <Badge variant="destructive">{row.poor_count}</Badge> : 0}</TableCell>
                       <TableCell className="max-w-[260px] truncate">{row.page_path}</TableCell>
-                      <TableCell className="max-w-[260px] truncate">{row.deployment_origin ?? "Unknown"}</TableCell>
-                      <TableCell>{row.connection_type ?? "Unknown"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No performance samples match the current filters.</p>
+            <p className="text-sm text-muted-foreground">No performance route summaries match the current filters.</p>
           )}
         </CardContent>
       </Card>
