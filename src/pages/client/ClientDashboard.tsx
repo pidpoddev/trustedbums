@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
@@ -26,6 +26,10 @@ type DashboardAction = {
   primary?: boolean;
 };
 
+interface DashboardLocationState {
+  deniedFrom?: string;
+}
+
 function NextActionsCard({ actions }: { actions: DashboardAction[] }) {
   return (
     <Card>
@@ -51,6 +55,8 @@ function NextActionsCard({ actions }: { actions: DashboardAction[] }) {
 
 export default function ClientDashboard() {
   const { user } = useAuth();
+  const location = useLocation();
+  const deniedFrom = (location.state as DashboardLocationState | null)?.deniedFrom;
   const timeZone = useUserTimeZone();
   const clientAccessRole = user?.role === "CLIENT" ? user.clientAccessRole ?? "CLIENT_ADMIN" : undefined;
   const isFinanceUser = clientAccessRole === "CLIENT_FINANCE";
@@ -112,7 +118,7 @@ export default function ClientDashboard() {
   const unpaidInvoices = invoices.filter((invoice) => !["PAID", "VOID"].includes(invoice.status)).length;
   const financeNextActions: DashboardAction[] = [
     !hasAcceptedCurrentTerms
-      ? { title: "Review Client Agreement", description: "The current agreement needs acceptance before the workspace is current.", to: "/client/profile", primary: true }
+      ? { title: "Review Client Agreement", description: "The current agreement needs acceptance before the workspace is current.", to: "/client/agreements", primary: true }
       : null,
     paymentReports.length
       ? { title: "Import next Customer Payment Report", description: "Add the latest Customer revenue CSV after Customers pay you directly.", to: "/client/payments", primary: !pendingPaymentReports && !unpaidInvoices }
@@ -127,7 +133,7 @@ export default function ClientDashboard() {
   ].filter(Boolean) as DashboardAction[];
   const clientNextActions: DashboardAction[] = [
     !hasAcceptedCurrentTerms
-      ? { title: "Review Client Agreement", description: "Accept the current agreement from Company Profile before working new activity.", to: "/client/profile", primary: true }
+      ? { title: "Review Client Agreement", description: "Open the Client Agreement center to review and accept the current version.", to: "/client/agreements", primary: true }
       : null,
     targets.length
       ? { title: "Register an opportunity", description: "Submit a deal for review and commission tracking.", to: "/client/opportunities/new", primary: !activeCount }
@@ -160,6 +166,22 @@ export default function ClientDashboard() {
             </Link>
           </Button>
         </PageHeader>
+
+        {deniedFrom ? (
+          <Card className="mb-6 border-warning/50 bg-warning/10">
+            <CardContent className="flex flex-col gap-3 pt-6 text-sm md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-medium text-foreground">That workspace area is not available for this account.</p>
+                <p className="mt-1 text-muted-foreground">
+                  You were returned from {deniedFrom}. Ask a Client Admin to adjust access if your finance role needs that workflow.
+                </p>
+              </div>
+              <Button asChild variant="outline">
+                <Link to="/client/agreements">Review access and agreements</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <StatCard title="Customer Payment Reports" value={paymentReports.length} icon={CreditCard} to="/client/payments" />
@@ -236,20 +258,36 @@ export default function ClientDashboard() {
   }
 
   return (
-    <div>
-      <PageHeader
+      <div>
+        <PageHeader
         title={`Welcome back, ${user?.name ?? "Client"}`}
         description={`Manage terms and account registrations for ${user?.companyName ?? "your client workspace"}.`}
-      >
+        >
         <Button asChild>
           <Link to="/client/targets">
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Target Account
           </Link>
         </Button>
-      </PageHeader>
+        </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        {deniedFrom ? (
+          <Card className="mb-6 border-warning/50 bg-warning/10">
+            <CardContent className="flex flex-col gap-3 pt-6 text-sm md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-medium text-foreground">That workspace area is not available for this account.</p>
+                <p className="mt-1 text-muted-foreground">
+                  You were returned from {deniedFrom}. Ask a Client Admin to adjust your role if you should have access.
+                </p>
+              </div>
+              <Button asChild variant="outline">
+                <Link to="/client/agreements">Review access and agreements</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Target Accounts" value={targets.length} icon={Target} to="/client/targets" />
         <StatCard title="Bum Responses" value={pendingTargetResponses.length} icon={Handshake} to="/client/opportunities?tab=responses" />
         <StatCard title="Customer Leads" value={reverseOpportunities.length} icon={Clock} to="/client/requests" />

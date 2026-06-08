@@ -104,8 +104,8 @@ export default function ClientTerms() {
       await refetch();
       setShouldAutoContinue(true);
       toast({
-        title: "Updated terms skipped for now",
-        description: "Please review and accept the updated terms soon.",
+        title: "Updated terms deferred for this session",
+        description: "This login session can continue. Please review and accept the updated terms soon.",
       });
     } catch (error) {
       toast({
@@ -204,12 +204,12 @@ export default function ClientTerms() {
                   </Button>
                   {canSkipThisLogin ? (
                     <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
-                      <p className="font-medium text-foreground">Review later</p>
+                      <p className="font-medium text-foreground">Continue this session</p>
                       <p className="mt-1 text-muted-foreground">
-                        You can skip this updated agreement {deferral?.remaining ?? 0} more time{deferral?.remaining === 1 ? "" : "s"} because a previous agreement is already on file.
+                        You can defer this updated agreement for this login session {deferral?.remaining ?? 0} more time{deferral?.remaining === 1 ? "" : "s"} because a previous agreement is already on file.
                       </p>
                       <Button className="mt-3 w-full" variant="outline" disabled={isDeferring || isAccepting} onClick={deferTerms}>
-                        Skip This Login
+                        Continue This Session
                       </Button>
                     </div>
                   ) : null}

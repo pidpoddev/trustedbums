@@ -32,28 +32,21 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState<SignupRole | "">(initialRole ?? "");
   const [email, setEmail] = useState("");
-  const [companyName, setCompanyName] = useState("");
+  const [manualCompanyName, setManualCompanyName] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const knownClient = useMemo(() => getKnownClientForEmail(email), [email]);
+  const companyName = role === "CLIENT" ? knownClient?.company ?? manualCompanyName : "";
   const emailIsValid = isValidEmail(email);
   const companyIsRequired = role === "CLIENT";
   const companyIsValid = !companyIsRequired || Boolean(companyName.trim());
   const canContinue = Boolean(role && emailIsValid && companyIsValid);
 
   useEffect(() => {
-    if (role === "CLIENT" && knownClient) {
-      setCompanyName(knownClient.company);
-    }
-
-    if (role === "CLIENT" && !knownClient) {
-      setCompanyName("");
-    }
-
     if (role === "BUM") {
-      setCompanyName("");
+      setManualCompanyName("");
     }
-  }, [knownClient, role]);
+  }, [role]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
@@ -61,7 +54,7 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
     if (nextOpen) {
       setRole(initialRole ?? "");
       setEmail("");
-      setCompanyName("");
+      setManualCompanyName("");
       setSubmitted(false);
     }
   };
@@ -155,7 +148,7 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
               <Input
                 id="signup-company"
                 value={companyName}
-                onChange={(event) => setCompanyName(event.target.value)}
+                onChange={(event) => setManualCompanyName(event.target.value)}
                 readOnly={Boolean(knownClient)}
                 placeholder="Company name"
               />

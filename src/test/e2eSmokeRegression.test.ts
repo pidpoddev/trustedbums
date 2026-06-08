@@ -4,6 +4,10 @@ import { describe, expect, it } from "vitest";
 const stagingSmokeSource = readFileSync("tests/e2e/staging-smoke.spec.ts", "utf8");
 const clientPaymentsSource = readFileSync("src/pages/client/ClientPayments.tsx", "utf8");
 const portalSearchSource = readFileSync("src/components/PortalGlobalSearch.tsx", "utf8");
+const signupIntentSource = readFileSync("src/components/SignupIntentDialog.tsx", "utf8");
+const publicIndexSource = readFileSync("src/pages/Index.tsx", "utf8");
+const clientDashboardSource = readFileSync("src/pages/client/ClientDashboard.tsx", "utf8");
+const clientTermsSource = readFileSync("src/pages/client/ClientTerms.tsx", "utf8");
 
 describe("E2E smoke regression coverage", () => {
   it("asserts the current signup validation copy", () => {
@@ -26,5 +30,19 @@ describe("E2E smoke regression coverage", () => {
     expect(portalSearchSource).toContain("singularizeSearchToken");
     expect(portalSearchSource).toContain('item.icon === "page"');
     expect(portalSearchSource).toContain(".sort((first, second) => scoreSearchResult(first, normalizedQuery) - scoreSearchResult(second, normalizedQuery))");
+  });
+
+  it("keeps public and client recovery paths explicit", () => {
+    expect(signupIntentSource).toContain("manualCompanyName");
+    expect(signupIntentSource).not.toContain('setCompanyName("")');
+    expect(publicIndexSource).toContain("noValidate");
+    expect(publicIndexSource).toContain("contact-name-error");
+    expect(publicIndexSource).toContain("Your details are still here");
+    expect(clientDashboardSource).toContain("deniedFrom");
+    expect(clientDashboardSource).toContain("That workspace area is not available for this account.");
+    expect(clientDashboardSource).toContain('to: "/client/agreements"');
+    expect(clientDashboardSource).not.toContain('to: "/client/profile", primary: true');
+    expect(clientTermsSource).toContain("Continue This Session");
+    expect(clientTermsSource).not.toContain("Skip This Login");
   });
 });

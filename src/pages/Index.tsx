@@ -62,6 +62,8 @@ const defaultContactForm = {
   website: "",
 };
 
+type ContactFormErrors = Partial<Record<keyof typeof defaultContactForm | "verification" | "submit", string>>;
+
 declare global {
   interface Window {
     turnstile?: {
@@ -78,6 +80,7 @@ const Index = () => {
   const { user, isLoaded, isSignedIn } = useAuth();
   const { toast } = useToast();
   const [contactForm, setContactForm] = useState(defaultContactForm);
+  const [contactFormErrors, setContactFormErrors] = useState<ContactFormErrors>({});
   const [isContactSubmitting, setIsContactSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
@@ -92,6 +95,7 @@ const Index = () => {
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       const value = field === "interest" ? (event.target.value as ContactInterest) : event.target.value;
       setContactForm((current) => ({ ...current, [field]: value }));
+      setContactFormErrors((current) => ({ ...current, [field]: undefined, submit: undefined }));
     };
 
   useEffect(() => {
@@ -147,25 +151,31 @@ const Index = () => {
     const name = contactForm.name.trim();
     const email = contactForm.email.trim();
     const message = contactForm.message.trim();
+    const nextErrors: ContactFormErrors = {};
 
-    if (name.length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || message.length < 10) {
-      toast({
-        title: "A little more detail helps",
-        description: "Please add your name, a valid email, and a short message before sending.",
-        variant: "destructive",
-      });
+    if (name.length < 2) {
+      nextErrors.name = "Enter your name so we know who to follow up with.";
+    }
+
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      nextErrors.email = "Enter a valid email address.";
+    }
+
+    if (message.length < 10) {
+      nextErrors.message = "Add a short note about the buyer, account, or question.";
+    }
+
+    if (Object.keys(nextErrors).length) {
+      setContactFormErrors(nextErrors);
       return;
     }
 
     if (turnstileSiteKey && !turnstileToken) {
-      toast({
-        title: "Verification needed",
-        description: "Please complete the verification before sending.",
-        variant: "destructive",
-      });
+      setContactFormErrors({ verification: "Complete the verification before sending." });
       return;
     }
 
+    setContactFormErrors({});
     setIsContactSubmitting(true);
     try {
       await submitContactSubmission({
@@ -174,6 +184,7 @@ const Index = () => {
         idempotencyKey: crypto.randomUUID(),
       });
       setContactForm(defaultContactForm);
+      setContactFormErrors({});
       setTurnstileToken("");
       if (turnstileWidgetIdRef.current) {
         window.turnstile?.reset(turnstileWidgetIdRef.current);
@@ -184,10 +195,8 @@ const Index = () => {
       });
     } catch (error) {
       console.error("Unable to submit contact form", error);
-      toast({
-        title: "Unable to send message",
-        description: "Please try again in a moment.",
-        variant: "destructive",
+      setContactFormErrors({
+        submit: "We could not send that message. Your details are still here, so check the fields and try again.",
       });
       setTurnstileToken("");
       if (turnstileWidgetIdRef.current) {
@@ -543,6 +552,7 @@ const Index = () => {
               <form
                 id="contact-form"
                 onSubmit={submitContactForm}
+                noValidate
                 className="rounded-[2rem] border border-white/10 bg-white/[0.07] p-5 shadow-2xl backdrop-blur md:p-6"
               >
                 <div className="grid gap-4">
@@ -554,10 +564,15 @@ const Index = () => {
                       id="contact-name"
                       value={contactForm.name}
                       onChange={updateContactField("name")}
+                      aria-invalid={Boolean(contactFormErrors.name)}
+                      aria-describedby={contactFormErrors.name ? "contact-name-error" : undefined}
                       autoComplete="name"
                       className="h-12 border-white/15 bg-white text-[#08111f]"
                       placeholder="Your name"
                     />
+                    {contactFormErrors.name ? (
+                      <p id="contact-name-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.name}</p>
+                    ) : null}
                   </div>
 
                   <div className="grid gap-2">
@@ -569,10 +584,15 @@ const Index = () => {
                       type="email"
                       value={contactForm.email}
                       onChange={updateContactField("email")}
+                      aria-invalid={Boolean(contactFormErrors.email)}
+                      aria-describedby={contactFormErrors.email ? "contact-email-error" : undefined}
                       autoComplete="email"
                       className="h-12 border-white/15 bg-white text-[#08111f]"
                       placeholder="you@company.com"
                     />
+                    {contactFormErrors.email ? (
+                      <p id="contact-email-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.email}</p>
+                    ) : null}
                   </div>
 
                   <div className="grid gap-2">
@@ -626,9 +646,14 @@ const Index = () => {
                       id="contact-message"
                       value={contactForm.message}
                       onChange={updateContactField("message")}
+                      aria-invalid={Boolean(contactFormErrors.message)}
+                      aria-describedby={contactFormErrors.message ? "contact-message-error" : undefined}
                       className="min-h-32 border-white/15 bg-white text-[#08111f]"
                       placeholder="Tell us what kind of door you are trying to open."
                     />
+                    {contactFormErrors.message ? (
+                      <p id="contact-message-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.message}</p>
+                    ) : null}
                   </div>
 
                   <div className="hidden" aria-hidden="true">
@@ -645,6 +670,15 @@ const Index = () => {
                   {turnstileSiteKey ? (
                     <div className="min-h-[65px]">
                       <div ref={turnstileContainerRef} />
+                      {contactFormErrors.verification ? (
+                        <p className="mt-2 text-sm text-orange-100" role="alert">{contactFormErrors.verification}</p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {contactFormErrors.submit ? (
+                    <div className="rounded-md border border-orange-200/40 bg-orange-200/10 p-3 text-sm text-orange-50" role="alert">
+                      {contactFormErrors.submit}
                     </div>
                   ) : null}
 

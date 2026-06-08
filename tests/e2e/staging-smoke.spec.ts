@@ -48,7 +48,26 @@ test.describe("staging smoke", () => {
     await expect(page.getByText("Enter the company name.")).toBeVisible();
 
     await page.locator("#signup-company").fill("QA Smoke Co");
+    await page.locator("#signup-email").fill("qa-smoke-updated@example.com");
+    await expect(page.locator("#signup-company")).toHaveValue("QA Smoke Co");
     await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled();
+  });
+
+  test("shows inline contact form recovery without clearing entered details", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: /Request an intro strategy/i }).click();
+
+    await page.locator("#contact-name").fill("Q");
+    await page.locator("#contact-email").fill("not-an-email");
+    await page.locator("#contact-message").fill("short");
+    await page.getByRole("button", { name: /Send message/i }).click();
+
+    await expect(page.locator("#contact-name-error")).toBeVisible();
+    await expect(page.locator("#contact-email-error")).toBeVisible();
+    await expect(page.locator("#contact-message-error")).toBeVisible();
+    await expect(page.locator("#contact-name")).toHaveValue("Q");
+    await expect(page.locator("#contact-email")).toHaveValue("not-an-email");
+    await expect(page.locator("#contact-message")).toHaveValue("short");
   });
 
   test("redirects protected routes away from anonymous users", async ({ page }) => {
