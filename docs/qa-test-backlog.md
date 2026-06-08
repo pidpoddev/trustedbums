@@ -38,11 +38,11 @@ The highest remaining QA risk is back to business-access proof plus the missing 
 - Recommendation: Add seeded client-team tests for same-domain approval allow, Client Finance/Member denial on `/client/team`, cross-company denial, related-domain pending-until-admin-approval, public/free email manual review, disabled-user denial, and audit logging.
 - Acceptance criteria: A Client Admin can approve and disable only same-company eligible users; Client Finance and Client Member cannot access team management; public/free-email and related-domain users cannot become company members without the approved Admin path; every approval, denial, disablement, and role change creates an audit event.
 
-### P2 - Replace placeholder unit coverage and add enforceable visual, accessibility, and coverage gates
-- Evidence: `src/test/example.test.ts` still contains `expect(true).toBe(true)`. `tests/e2e/visual-ui-audit.spec.ts` captures screenshots but does not use `toHaveScreenshot()`. Repo search still finds no `@axe-core/playwright`, and `vitest.config.ts` plus `package.json` still lack a coverage script. GitHub `Visual UI Audit` passed, but it is screenshot artifact evidence, not a visual-diff gate.
-- Why it matters: Placeholder assertions inflate confidence, screenshots do not fail CI on visual regressions, accessibility automation is absent, and source coverage remains inferred instead of measured.
-- Recommendation: Remove the placeholder test, add behavior assertions around active dashboard/search logic, wire at least one public and one authenticated screenshot assertion, add axe scans for critical flows, and add a `pnpm run coverage` path backed by Vitest V8 coverage.
-- Acceptance criteria: Placeholder coverage is removed, CI can fail on agreed screenshot and axe regressions, and `pnpm run coverage` emits a tracked report with thresholds.
+### P2 - Add enforceable visual, accessibility, and coverage gates
+- Evidence: Placeholder unit coverage has been removed: `src/test/example.test.ts` was replaced by `src/test/financeReportsModel.test.ts`, which proves finance report business-date behavior across Client, Admin, and Bum report models. `tests/e2e/visual-ui-audit.spec.ts` captures screenshots but does not use `toHaveScreenshot()`. Repo search still finds no `@axe-core/playwright`, and `vitest.config.ts` plus `package.json` still lack a coverage script. GitHub `Visual UI Audit` passed, but it is screenshot artifact evidence, not a visual-diff gate.
+- Why it matters: Screenshots do not fail CI on visual regressions, accessibility automation is absent, and source coverage remains inferred instead of measured.
+- Recommendation: Wire at least one public and one authenticated screenshot assertion, add axe scans for critical flows, and add a `pnpm run coverage` path backed by Vitest V8 coverage.
+- Acceptance criteria: CI can fail on agreed screenshot and axe regressions, and `pnpm run coverage` emits a tracked report with thresholds.
 
 ## Business Access Coverage
 

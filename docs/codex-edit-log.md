@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Re-key finance reports to business dates
+
+- Trigger: Continue the recommended-task queue after aggregate admin-performance release verification showed extension API secrets are still the current release blocker.
+- Implementation branch: `main`.
+- What changed: Replaced the placeholder unit test with finance report behavior coverage. Client Finance reports, Client Admin combined finance reports, Admin finance operations, and Bum earnings now use `businessDate` fields derived from payment, invoice, and payout business-date helpers instead of filtering finance rows by audit `createdAt`. `createdAt` remains available as a hidden-by-default audit column.
+- Main surfaces changed: `src/pages/client/ClientReports.tsx`, `src/pages/client/clientReportsModel.ts`, `src/pages/admin/AdminReports.tsx`, `src/pages/admin/adminReportsModel.ts`, `src/pages/bum/BumReports.tsx`, `src/pages/bum/bumReportsModel.ts`, `src/test/financeReportsModel.test.ts`, `docs/data-analytics-backlog.md`, `docs/qa-test-backlog.md`, `docs/lead-developer-recommendations.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/financeReportsModel.test.ts`; `corepack pnpm run lint`.
+- Results: Focused finance report model coverage passed and lint passed. The remaining finance-date proof is hosted/browser or live seeded late-entry validation; extension API E2E remains separately blocked by missing QA extension configuration.
+- Recheck agents: Data And Analytics Engineer, QA/Test Engineer, Lead Developer, Release Verification Agent.
+- Next run should verify: full local QA, current-head GitHub QA/E2E after push, and whether browser/export walkthroughs can prove the report date filters with seeded late-entry rows.
+
 ### 2026-06-08 - Refresh release verification for aggregate rollout
 
 - Trigger: Post-push release handoff after moving `/admin/performance` to aggregate route summaries.

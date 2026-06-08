@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ReportsWorkspace, type RecommendedReport } from "@/components/reports/ReportsWorkspace";
+import { adminFinanceColumns, buildAdminFinanceRows } from "@/pages/admin/adminReportsModel";
 import {
   listAdminBumProfiles,
   listAdminEmailDeliveries,
@@ -220,41 +221,9 @@ export default function AdminReports() {
         description: "Payment reports, claim invoices, and Bum payouts in one finance queue.",
         category: "Finance",
         dataLabel: "finance rows",
-        rows: [
-          ...payments.map((payment) => ({
-            record: payment.customer_name,
-            type: "Payment",
-            company: payment.companies?.name,
-            status: statusLabel(payment.status),
-            amount: money(payment.commissionable_amount),
-            createdAt: payment.created_at,
-          })),
-          ...invoices.map((invoice) => ({
-            record: invoice.invoice_number,
-            type: "Invoice",
-            company: invoice.companies?.name,
-            status: invoice.status,
-            amount: money(invoice.invoice_amount),
-            createdAt: invoice.created_at,
-          })),
-          ...payouts.map((payout) => ({
-            record: payout.claim_invoices?.invoice_number,
-            type: "Payout",
-            company: payout.profiles?.full_name ?? payout.profiles?.email,
-            status: statusLabel(payout.status),
-            amount: money(payout.payout_amount),
-            createdAt: payout.created_at,
-          })),
-        ],
-        columns: [
-          { key: "record", label: "Record" },
-          { key: "type", label: "Type" },
-          { key: "company", label: "Company / Bum" },
-          { key: "status", label: "Status" },
-          { key: "amount", label: "Amount", align: "right" },
-          { key: "createdAt", label: "Created" },
-        ],
-        dateKey: "createdAt",
+        rows: buildAdminFinanceRows({ payments, invoices, payouts }),
+        columns: adminFinanceColumns,
+        dateKey: "businessDate",
         groupByKey: "type",
         groupByLabel: "finance record type",
         valueKey: "amount",

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ReportsWorkspace, type RecommendedReport } from "@/components/reports/ReportsWorkspace";
 import { useAuth } from "@/contexts/AuthContext";
+import { buildBumEarningsRows, bumEarningsColumns } from "@/pages/bum/bumReportsModel";
 import {
   calculateTopLineSharePercent,
   listBumPayouts,
@@ -93,26 +94,9 @@ export default function BumReports() {
         description: "Payouts connected to your approved Claims and paid Trusted Bums commission invoices.",
         category: "Earnings",
         dataLabel: "payout rows",
-        rows: payouts.map((payout) => ({
-          invoice: payout.claim_invoices?.invoice_number,
-          claim: `${payout.opportunity_claims?.contact_name ?? "Contact"} @ ${payout.opportunity_claims?.contact_company ?? "Company"}`,
-          status: statusLabel(payout.status),
-          payoutAmount: money(payout.payout_amount),
-          invoiceAmount: money(payout.claim_invoices?.invoice_amount),
-          sharePercent: Number(payout.share_percent ?? 0),
-          createdAt: payout.created_at,
-          paidAt: payout.paid_at ?? "",
-        })),
-        columns: [
-          { key: "invoice", label: "Invoice" },
-          { key: "claim", label: "Claim" },
-          { key: "status", label: "Status" },
-          { key: "payoutAmount", label: "Payout", align: "right" },
-          { key: "invoiceAmount", label: "Invoice amount", align: "right" },
-          { key: "sharePercent", label: "Share %", align: "right" },
-          { key: "paidAt", label: "Paid" },
-        ],
-        dateKey: "createdAt",
+        rows: buildBumEarningsRows(payouts),
+        columns: bumEarningsColumns,
+        dateKey: "businessDate",
         groupByKey: "status",
         groupByLabel: "payout status",
         valueKey: "payoutAmount",
