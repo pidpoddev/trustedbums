@@ -9,7 +9,7 @@ _Last updated: 2026-06-08 by Codex._
 - legitimate same-role and same-company access still works;
 - foreign-company, wrong-role, disabled-user, pending-user, and non-owner access is denied.
 
-Do not run this seed against production customer data.
+Do not run this seed against production customer data unless the owner has explicitly approved a beta/prod smoke. If it is run against beta/prod, run `supabase/qa_authorization_cleanup.sql` immediately afterward and verify every fixture count is zero.
 
 ## Fixture Shape
 
@@ -35,3 +35,13 @@ It also creates paired opportunities, customer targets, claims, target responses
 ## Validation
 
 The source-level fixture contract is covered by `src/test/qaAuthorizationFixtures.test.ts`. The next QA step is to add direct Supabase allow/deny checks that issue role-scoped JWTs using these deterministic profile ids, then run browser smoke against real Clerk QA users once their Clerk ids are mapped into the fixture.
+
+## Beta/Prod Smoke Sequence
+
+Use this sequence only with explicit approval:
+
+1. Run `supabase/qa_authorization_seed.sql`.
+2. Run the direct allow/deny checks for the role matrix above.
+3. Run `supabase/qa_authorization_cleanup.sql`.
+4. Confirm the verification query from the cleanup script returns zero rows for every fixture surface.
+5. Record the run outcome and any non-zero cleanup count before doing more QA.

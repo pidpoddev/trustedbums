@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const qaAuthorizationSeed = readFileSync("supabase/qa_authorization_seed.sql", "utf8");
+const qaAuthorizationCleanup = readFileSync("supabase/qa_authorization_cleanup.sql", "utf8");
 
 describe("QA authorization fixtures", () => {
   it("uses valid deterministic UUID literals", () => {
@@ -62,6 +63,32 @@ describe("QA authorization fixtures", () => {
     expect(qaAuthorizationSeed).toContain("'MANUAL'");
     expect(qaAuthorizationSeed).toContain("qa-authz-admin-performance");
     expect(qaAuthorizationSeed).toContain("qa_authorization_fixture_seeded");
+  });
+
+  it("keeps a cleanup path for every synthetic fixture surface", () => {
+    for (const tableName of [
+      "audit_events",
+      "performance_metric_events",
+      "bum_contacts",
+      "extension_page_captures",
+      "customer_target_responses",
+      "opportunity_claim_public_summaries",
+      "opportunity_claims",
+      "client_company_access_requests",
+      "customer_targets",
+      "opportunity_registrations",
+      "bum_profiles",
+      "company_domains",
+      "profiles",
+      "companies",
+    ]) {
+      expect(qaAuthorizationCleanup).toContain(`public.${tableName}`);
+    }
+
+    expect(qaAuthorizationCleanup).toContain("All counts should be zero after cleanup.");
+    expect(qaAuthorizationCleanup).toContain("qa_authorization_fixture_seeded");
+    expect(qaAuthorizationCleanup).toContain("event_data->>'fixture' = 'qa_authorization'");
+    expect(qaAuthorizationCleanup).toContain("notification_preferences->>'fixture' = 'qa_authorization'");
   });
 
   it("documents both overexposure and over-tightening expectations", () => {
