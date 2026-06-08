@@ -13,6 +13,16 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-07 - Recheck service-role authorization contract coverage
+
+- Trigger: Ryan asked to continue the next unresolved scrum items.
+- Implementation branch: `main`.
+- What changed: Added deterministic source-level regression coverage for service-role edge-function trust boundaries. The new test verifies the `verify_jwt = false` functions still perform explicit Clerk verification, then locks down the important authorization contracts in `client-team`, `profile-bootstrap`, `admin-access-requests`, `extension-api-v1`, and `send-admin-email`. Updated lead and security handoffs so the remaining service-role item is fixture-backed live allow/deny proof, not missing source-level regression coverage.
+- Main surfaces changed: `src/test/serviceRoleAuthorization.test.ts`, `docs/security-review-backlog.md`, `docs/lead-developer-recommendations.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/serviceRoleAuthorization.test.ts`.
+- Recheck agents: Security Engineer, QA/Test Engineer, Product Ops Workflow Analyst, Lead Developer.
+- Next run should verify: seeded live service-role allow/deny cases for first-domain claim, public-email review, same-domain approval, related-domain pending review, cross-company client-team denial, extension own-company/foreign-company destinations, admin email non-admin denial, and audit-event writes.
+
 ### 2026-06-07 - Recheck email-track deploy drift closure
 
 - Trigger: Ryan asked to work the next unresolved scrum items.
