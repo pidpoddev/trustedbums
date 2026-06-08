@@ -165,10 +165,6 @@ export default function ClientTargets() {
   const requestCreateTarget = useCallback((formElement?: HTMLFormElement | null) => {
     const mutation = createMutationRef.current;
 
-    if (mutation.isPending) {
-      return;
-    }
-
     if (formElement && !formElement.reportValidity()) {
       return;
     }
