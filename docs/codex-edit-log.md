@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Recheck deep QA P0 closure
+
+- Trigger: Ryan asked to complete recommended tasks one at a time with QA and release verification between tasks.
+- Implementation branch: `main`.
+- What changed: No product code change was needed. Reran hosted Deep QA after the Supabase terms-gate fix. The non-destructive audit now reports no hotfix-level issues and complete route success across Admin, Client, Client Finance, Client Member, and Bum routes, including the previously suspect Client Terms, Client Member Customer Leads, Client Member Opportunity Registration, and `/admin/handoffs` surfaces. Updated QA and Lead handoffs so the stale deep-QA P0 is closed.
+- Main surfaces changed: `docs/qa-test-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/codex-edit-log.md`.
+- Checks run: hosted `deep-workflow-hotfix-audit.spec.ts` against `https://trustedbums.com`.
+- Results: non-destructive deep workflow audit passed in 7.4 minutes; generated report `qa-deep-2026-06-08T00-37-59-358Z` says no hotfix-level issues were collected and every listed route passed. Mutating deep QA remained intentionally skipped because `QA_DEEP_MUTATION=1`, `QA_SUPABASE_URL`, and `QA_SUPABASE_SERVICE_ROLE_KEY` are not configured locally.
+- Recheck agents: QA/Test Engineer, Lead Developer, Release Verification Agent.
+- Next run should verify: run the mutating deep QA lane only when cleanup credentials are present, and keep object-level allow/deny tests separate from this non-destructive route audit.
+
 ### 2026-06-08 - Recheck hosted E2E smoke P0 closure
 
 - Trigger: Ryan asked to complete the recommended tasks one at a time with QA and release verification between tasks.
