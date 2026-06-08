@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const portalContactsSource = readFileSync("supabase/functions/portal-contacts/index.ts", "utf8");
-const clientExportsSource = readFileSync("src/pages/client/ClientExports.tsx", "utf8");
 const performancePageSource = readFileSync("src/pages/admin/AdminPerformanceMetrics.tsx", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 
@@ -18,13 +17,6 @@ describe("access boundary regressions", () => {
     const payloadBuilderBody = portalContactsSource.match(/async function contactPayloadFromPatch[\s\S]*?return payload;\n}/)?.[0] ?? "";
     expect(payloadBuilderBody).toContain("await assertOpportunityEntitlement(userId, opportunityRegistrationId)");
     expect(payloadBuilderBody).toContain("await assertCustomerTargetEntitlement(userId, customerTargetId)");
-  });
-
-  it("keeps operational client exports behind client admin role", () => {
-    expect(clientExportsSource).toContain('const canExportOperationalData = user?.clientAccessRole === "CLIENT_ADMIN"');
-    expect(clientExportsSource).toContain("enabled: Boolean(user && canExportOperationalData)");
-    expect(clientExportsSource).toContain("...(canExportOperationalData");
-    expect(clientExportsSource).toContain("Customer payments");
   });
 
   it("uses server-shaped admin performance summaries instead of browser p75 math", () => {

@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Recheck Client Finance export boundary coverage
+
+- Trigger: Ryan asked to complete recommended tasks one at a time with QA and release verification between tasks.
+- Implementation branch: `main`.
+- What changed: Replaced the remaining source-string export-boundary assertion with behavior-level coverage for Client export definitions. `ClientExports` now exposes pure row/card builders used by the UI and tests. New coverage proves Client Finance receives only the finance-safe `Customer payments` export with exact payment headers, while Client Admin retains operational target-account and meeting/transcript exports.
+- Main surfaces changed: `src/pages/client/ClientExports.tsx`, `src/test/clientExportsAccess.test.ts`, `src/test/accessBoundaryRegression.test.ts`, `docs/qa-test-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/clientExportsAccess.test.ts src/test/accessBoundaryRegression.test.ts`; `corepack pnpm run qa`; `corepack pnpm run code-review:gate`.
+- Results: targeted export/access tests passed. Full local QA passed lint, 71 tests across 23 files, and production build.
+- Recheck agents: QA/Test Engineer, Data And Analytics Engineer, Security Engineer, Lead Developer.
+- Next run should verify: seeded live export download checks can still be added later, but the current role-by-export card and header boundary is now covered at behavior level.
+
 ### 2026-06-08 - Recheck hosted target preflight classification
 
 - Trigger: Ryan asked to complete recommended tasks one at a time with QA and release verification between tasks.
