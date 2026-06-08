@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Recheck hosted E2E smoke P0 closure
+
+- Trigger: Ryan asked to complete the recommended tasks one at a time with QA and release verification between tasks.
+- Implementation branch: `main`.
+- What changed: No product code change was needed. The current deployed site already contains the fixes for the older 2026-06-04 E2E smoke failures: current signup validation copy, a single exact `Customer Payment Reports` page heading, and global-search prioritization that routes Client Finance `payments` searches to `/client/payments`. Updated QA/Lead handoffs so this old E2E smoke P0 is no longer treated as active.
+- Main surfaces changed: `docs/qa-test-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/codex-edit-log.md`.
+- Checks run: hosted `authenticated-role-smoke.spec.ts` plus `staging-smoke.spec.ts` against `https://trustedbums.com`; hosted `portal-interaction-audit.spec.ts` against `https://trustedbums.com`.
+- Results: targeted hosted E2E smoke passed 11 tests with 1 intentional skip; hosted portal interaction audit passed all 4 role audits, including Client Finance global search.
+- Recheck agents: QA/Test Engineer, Lead Developer, Release Verification Agent.
+- Next run should verify: GitHub Actions should rerun `E2E Smoke` from current `main` and replace the stale 2026-06-04 failed workflow signal with a fresh green hosted run.
+
 ### 2026-06-08 - Recheck RLS helper grant restoration and hosted role smoke
 
 - Trigger: Ryan asked to move ahead on the next unresolved scrum item.
