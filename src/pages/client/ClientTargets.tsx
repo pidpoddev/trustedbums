@@ -130,11 +130,14 @@ export default function ClientTargets() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      createCustomerTarget(user!, {
+    mutationFn: () => {
+      const diagnosticsWindow = window as typeof window & { __trustedBumsClientTargetMutationFnCalls?: number };
+      diagnosticsWindow.__trustedBumsClientTargetMutationFnCalls = (diagnosticsWindow.__trustedBumsClientTargetMutationFnCalls ?? 0) + 1;
+      return createCustomerTarget(user!, {
         ...form,
         estimated_deal_value: form.estimated_deal_value ? Number(form.estimated_deal_value) : null,
-      }),
+      });
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["client-targets", user?.clientId] });
       toast({
