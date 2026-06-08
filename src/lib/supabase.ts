@@ -10,13 +10,13 @@ export type SupabaseAccessTokenMode = "session" | "legacy";
 type AccessTokenProvider = (mode: SupabaseAccessTokenMode) => Promise<string | null>;
 
 let accessTokenProvider: AccessTokenProvider | null = null;
-let preferredDataAccessTokenMode: SupabaseAccessTokenMode = "session";
+let preferredDataAccessTokenMode: SupabaseAccessTokenMode = "legacy";
 
 export const isSupabaseConfigured = Boolean(supabasePublishableKey);
 
 export function setSupabaseAccessTokenProvider(provider: AccessTokenProvider | null) {
   accessTokenProvider = provider;
-  preferredDataAccessTokenMode = "session";
+  preferredDataAccessTokenMode = "legacy";
 }
 
 export async function getSupabaseAccessToken(mode: SupabaseAccessTokenMode = "session") {

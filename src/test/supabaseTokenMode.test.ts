@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 const supabaseSource = readFileSync("src/lib/supabase.ts", "utf8");
 
 describe("Supabase token mode", () => {
-  it("prefers the current Clerk session token for Data API RLS checks", () => {
-    expect(supabaseSource).toContain('let preferredDataAccessTokenMode: SupabaseAccessTokenMode = "session";');
-    expect(supabaseSource).toContain('preferredDataAccessTokenMode = "session";');
+  it("prefers the Clerk Supabase JWT template for Data API RLS checks", () => {
+    expect(supabaseSource).toContain('let preferredDataAccessTokenMode: SupabaseAccessTokenMode = "legacy";');
+    expect(supabaseSource).toContain('preferredDataAccessTokenMode = "legacy";');
     expect(supabaseSource).toContain("getAlternateAccessTokenMode");
   });
 });
