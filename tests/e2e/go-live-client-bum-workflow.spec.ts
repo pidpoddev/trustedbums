@@ -41,9 +41,10 @@ async function expectTargetSaved(page: Page, targetName: string) {
     const saveButtonEnabled = formStillOpen ? await saveButton.isEnabled().catch(() => false) : false;
     const targetVisible = await page.getByText(targetName).first().isVisible().catch(() => false);
     const visibleErrors = await collectVisibleErrorText(page);
+    const bodyExcerpt = await page.locator("body").innerText().then((text) => text.slice(-1_500)).catch(() => "");
     const saved = (!formStillOpen || targetVisible) && visibleErrors.length === 0;
     const formState = formStillOpen ? await collectTargetFormState(page).catch((error) => ({ error: String(error) })) : null;
-    lastState = { saved, formStillOpen, saveButtonEnabled, targetVisible, visibleErrors, formState };
+    lastState = { saved, formStillOpen, saveButtonEnabled, targetVisible, visibleErrors, formState, bodyExcerpt };
 
     if (saved) {
       return;

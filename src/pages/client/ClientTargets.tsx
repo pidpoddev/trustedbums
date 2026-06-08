@@ -158,9 +158,16 @@ export default function ClientTargets() {
       });
     },
   });
+  const createMutationRef = useRef(createMutation);
+
+  useEffect(() => {
+    createMutationRef.current = createMutation;
+  }, [createMutation]);
 
   const requestCreateTarget = useCallback((formElement?: HTMLFormElement | null) => {
-    if (createMutation.isPending) {
+    const mutation = createMutationRef.current;
+
+    if (mutation.isPending) {
       return;
     }
 
@@ -168,8 +175,8 @@ export default function ClientTargets() {
       return;
     }
 
-    createMutation.mutate();
-  }, [createMutation]);
+    mutation.mutate();
+  }, []);
 
   useEffect(() => {
     if (!isAddTargetOpen) {
