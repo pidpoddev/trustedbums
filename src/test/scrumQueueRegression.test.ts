@@ -31,6 +31,8 @@ describe("scrum implementation queue regression coverage", () => {
     expect(htaccess).toContain("frame-ancestors 'none'");
     expect(htaccess).toContain("https://vaoqvtxqvbptyxddpoju.supabase.co");
     expect(htaccess).toContain("https://challenges.cloudflare.com");
+    expect(htaccess).toContain("script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://clerk.trustedbums.com");
+    expect(htaccess).toContain("frame-src https://challenges.cloudflare.com https://clerk.trustedbums.com");
   });
 
   it("surfaces operational handoff triage signals and filters", () => {
