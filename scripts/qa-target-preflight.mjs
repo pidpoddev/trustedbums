@@ -14,6 +14,13 @@ function getRequiredEnv(name) {
   return value;
 }
 
+function hasDynamicExtensionAuth() {
+  return Boolean(
+    process.env.QA_BUM_EMAIL?.trim() &&
+      (process.env.CLERK_SECRET_KEY?.trim() || process.env.QA_BUM_PASSWORD?.trim()),
+  );
+}
+
 function createAbortSignal() {
   return AbortSignal.timeout(timeoutMs);
 }
@@ -125,8 +132,32 @@ async function checkExtensionApi() {
     throw new Error("anonymous extension context did not return the stable v1 error envelope");
   }
 
-  getRequiredEnv("QA_EXTENSION_API_TOKEN");
-  return "anonymous extension API returns v1 401 and authenticated token is configured";
+  if (hasDynamicExtensionAuth()) {
+    return "anonymous extension API returns v1 401 and fresh Bum session auth is configured for Playwright smoke";
+  }
+
+  const extensionApiToken = getRequiredEnv("QA_EXTENSION_API_TOKEN");
+  const authenticatedResponse = await fetch(contextUrl.href, {
+    headers: { Authorization: `Bearer ${extensionApiToken}` },
+    redirect: "manual",
+    signal: createAbortSignal(),
+  });
+  const authenticatedPayload = await authenticatedResponse.json().catch(() => ({}));
+
+  if (!authenticatedResponse.ok) {
+    const detail = authenticatedPayload?.error
+      ? `: ${authenticatedPayload.error}`
+      : "";
+    throw new Error(`authenticated extension context returned HTTP ${authenticatedResponse.status}${detail}`);
+  }
+  if (authenticatedPayload?.apiVersion !== "v1") {
+    throw new Error("authenticated extension context did not return the stable v1 envelope");
+  }
+  if (!authenticatedPayload?.profile?.id || !authenticatedPayload?.profile?.role) {
+    throw new Error("authenticated extension context did not include a profile id and role");
+  }
+
+  return "anonymous extension API returns v1 401 and authenticated context is verified";
 }
 
 async function writePreflightArtifact({ targetUrl, results }) {

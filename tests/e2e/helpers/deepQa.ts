@@ -31,7 +31,7 @@ const safeExploratoryActionPattern =
   /view|open|close|show|hide|expand|collapse|filter|search|clear|download|copy|cancel|details|help|faq|profile|settings|accessibility|feedback/i;
 
 function getQaBaseOrigin() {
-  return new URL(process.env.QA_BASE_URL ?? "http://127.0.0.1:4173").origin;
+  return new URL(process.env.QA_BASE_URL ?? "http://127.0.0.1:8080").origin;
 }
 
 function isAppPageUrl(url: string) {

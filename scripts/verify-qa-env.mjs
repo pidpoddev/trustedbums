@@ -21,6 +21,10 @@ const baseRequired = [
 
 const conditionalRequired = [];
 const extensionApiExpectation = (process.env.QA_EXTENSION_API_EXPECTATION?.trim().toLowerCase() || "optional");
+const hasDynamicExtensionAuth = Boolean(
+  process.env.QA_BUM_EMAIL?.trim() &&
+    (process.env.CLERK_SECRET_KEY?.trim() || process.env.QA_BUM_PASSWORD?.trim()),
+);
 
 if (!["required", "optional", "skip"].includes(extensionApiExpectation)) {
   console.error("Invalid QA_EXTENSION_API_EXPECTATION value. Allowed values: required, optional, skip.");
@@ -32,7 +36,11 @@ if (extensionApiExpectation === "required") {
 }
 
 if (extensionApiExpectation !== "skip" && (extensionApiExpectation === "required" || process.env.QA_EXTENSION_API_BASE_URL?.trim())) {
-  conditionalRequired.push("QA_EXTENSION_API_TOKEN");
+  conditionalRequired.push("QA_BUM_EMAIL");
+
+  if (!hasDynamicExtensionAuth) {
+    conditionalRequired.push("QA_EXTENSION_API_TOKEN");
+  }
 }
 
 function getSelectedRoles() {

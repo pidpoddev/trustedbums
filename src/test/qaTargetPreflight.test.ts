@@ -18,7 +18,9 @@ describe("QA target preflight contract", () => {
   });
 
   it("fails dependent suites when authenticated extension inputs are incomplete", () => {
+    expect(preflightSource).toContain("hasDynamicExtensionAuth");
     expect(preflightSource).toContain('getRequiredEnv("QA_EXTENSION_API_TOKEN")');
+    expect(preflightSource).toContain("authenticated extension context returned HTTP");
     expect(preflightSource).toContain("QA_EXTENSION_API_EXPECTATION=required");
     expect(preflightSource).toContain("Dependent hosted E2E suites should be skipped until preflight failures are fixed");
   });

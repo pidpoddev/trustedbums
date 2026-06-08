@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.QA_BASE_URL ?? "http://127.0.0.1:4173";
+const baseURL = process.env.QA_BASE_URL ?? "http://127.0.0.1:8080";
 const isExternalTarget = Boolean(process.env.QA_BASE_URL);
 
 export default defineConfig({
@@ -17,7 +17,7 @@ export default defineConfig({
   webServer: isExternalTarget
     ? undefined
     : {
-        command: "pnpm exec vite build --base=/ && pnpm exec vite preview --host 127.0.0.1 --port 4173",
+        command: "pnpm exec vite build --base=/ && pnpm exec vite preview --host 127.0.0.1 --port 8080 --strictPort",
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,

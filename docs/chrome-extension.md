@@ -97,7 +97,7 @@ Build a test bundle and run the extension popup flow test with:
 CLERK_FRONTEND_API=https://example.clerk.accounts.dev \
 npm run build:extension -- --allow-placeholders
 
-QA_BASE_URL=http://127.0.0.1:4173 npx playwright test tests/e2e/linkedin-extension.spec.ts
+QA_BASE_URL=http://127.0.0.1:8080 npx playwright test tests/e2e/linkedin-extension.spec.ts
 ```
 
 The test simulates a LinkedIn page, loads the built popup, mocks Clerk and the Extension API, and verifies the draft capture payload sent to `/page-captures`.

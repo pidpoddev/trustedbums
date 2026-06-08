@@ -25,7 +25,7 @@ export function hasExternalQaTarget() {
 }
 
 export function getQaBaseOrigin() {
-  const baseUrl = process.env.QA_BASE_URL ?? "http://127.0.0.1:4173";
+  const baseUrl = process.env.QA_BASE_URL ?? "http://127.0.0.1:8080";
   return new URL(baseUrl).origin;
 }
 

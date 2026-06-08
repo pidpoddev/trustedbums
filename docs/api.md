@@ -164,7 +164,7 @@ Run the deployed API smoke test with:
 QA_EXTENSION_API_BASE_URL=https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/extension-api-v1 pnpm run test:e2e -- tests/e2e/extension-api.spec.ts
 ```
 
-That verifies anonymous requests are rejected with the stable v1 error envelope. Add `QA_EXTENSION_API_TOKEN` with a Clerk session JWT to also verify the authenticated `/context` response.
+That verifies anonymous requests are rejected with the stable v1 error envelope. Add `QA_EXTENSION_API_TOKEN` with a current Clerk session JWT to also verify the authenticated `/context` response. Clerk session JWTs expire, so refresh this value immediately before a release run or use an automation flow that creates a fresh QA session.
 
 ## Change checklist
 
