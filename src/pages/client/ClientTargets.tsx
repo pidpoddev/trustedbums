@@ -421,7 +421,7 @@ export default function ClientTargets() {
             </div>
 
             <div className="flex justify-end">
-              <Button disabled={createMutation.isPending}>
+              <Button type="submit" disabled={createMutation.isPending}>
                 <Plus className="mr-2 h-4 w-4" />
                 Save target account
               </Button>

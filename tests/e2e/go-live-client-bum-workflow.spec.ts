@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { getQaAccount, goToAuthedPath, goToAuthedPathAllowingRedirect, hasExternalQaTarget, type QaAccount } from "./helpers/auth";
-import { cleanupCreatedRecords, createDeepQaRunId, type QaCreatedRecord } from "./helpers/deepQa";
+import { cleanupCreatedRecords, collectVisibleErrorText, createDeepQaRunId, type QaCreatedRecord } from "./helpers/deepQa";
 
 function isGoLiveMutationEnabled() {
   return process.env.QA_GO_LIVE_MUTATION === "1";
@@ -29,6 +29,94 @@ async function openClientPage(page: Page, account: QaAccount, path: string, head
 async function openBumPage(page: Page, account: QaAccount, path: string, heading: string | RegExp) {
   await goToAuthedPath(page, account, path);
   await expectHealthyWorkflowPage(page, heading);
+}
+
+async function expectTargetSaved(page: Page, targetName: string) {
+  const deadline = Date.now() + 30_000;
+  let lastState: unknown = null;
+
+  while (Date.now() < deadline) {
+    const saveButton = page.getByRole("button", { name: "Save target account" });
+    const formStillOpen = await saveButton.isVisible().catch(() => false);
+    const saveButtonEnabled = formStillOpen ? await saveButton.isEnabled().catch(() => false) : false;
+    const targetVisible = await page.getByText(targetName).first().isVisible().catch(() => false);
+    const visibleErrors = await collectVisibleErrorText(page);
+    const saved = (!formStillOpen || targetVisible) && visibleErrors.length === 0;
+    const formState = formStillOpen ? await collectTargetFormState(page).catch((error) => ({ error: String(error) })) : null;
+    lastState = { saved, formStillOpen, saveButtonEnabled, targetVisible, visibleErrors, formState };
+
+    if (saved) {
+      return;
+    }
+
+    await page.waitForTimeout(1_000);
+  }
+
+  throw new Error(`Target save did not complete: ${JSON.stringify(lastState)}`);
+}
+
+function installGoLiveDiagnostics(page: Page, diagnostics: string[]) {
+  page.on("pageerror", (error) => {
+    diagnostics.push(`pageerror: ${error.message}`);
+  });
+
+  page.on("console", (message) => {
+    if (message.type() === "error" || message.type() === "warning") {
+      diagnostics.push(`console:${message.type()}: ${message.text().slice(0, 500)}`);
+    }
+  });
+
+  page.on("requestfailed", (request) => {
+    const url = request.url();
+    if (/trustedbums|supabase|clerk/i.test(url)) {
+      diagnostics.push(`requestfailed: ${request.method()} ${url} ${request.failure()?.errorText ?? "unknown failure"}`);
+    }
+  });
+
+  page.on("response", async (response) => {
+    const status = response.status();
+    const url = response.url();
+    if (!/trustedbums|supabase/i.test(url)) {
+      return;
+    }
+
+    if (status >= 400) {
+      const body = await response.text().catch(() => "");
+      diagnostics.push(`response:${status}: ${response.request().method()} ${url} ${body.slice(0, 500)}`);
+      return;
+    }
+
+    diagnostics.push(`response:${status}: ${response.request().method()} ${url}`);
+  });
+}
+
+async function collectTargetFormState(page: Page) {
+  return page.evaluate(() => {
+    const saveButton = Array.from(document.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Save target account"),
+    );
+    const form = saveButton?.closest("form") ?? null;
+    const invalidControls = form
+      ? Array.from(form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("input, textarea, select"))
+          .filter((control) => !control.checkValidity())
+          .map((control) => ({
+            id: control.id,
+            name: control.name,
+            type: control.getAttribute("type") ?? control.tagName.toLowerCase(),
+            value: control.value,
+            validationMessage: control.validationMessage,
+          }))
+      : [];
+
+    return {
+      buttonFound: Boolean(saveButton),
+      buttonType: saveButton?.getAttribute("type") ?? null,
+      buttonDisabled: saveButton instanceof HTMLButtonElement ? saveButton.disabled : null,
+      formFound: Boolean(form),
+      formValid: form ? form.checkValidity() : null,
+      invalidControls,
+    };
+  });
 }
 
 test.describe("go-live Client and Bum workflow gate", () => {
@@ -120,6 +208,10 @@ test.describe("go-live Client and Bum workflow gate", () => {
   test("optional mutating Client/Bum workflow smoke", async ({ browser }, testInfo) => {
     test.setTimeout(180_000);
     test.skip(!isGoLiveMutationEnabled(), "Set QA_GO_LIVE_MUTATION=1 to run mutating go-live workflow smoke.");
+    test.skip(
+      !process.env.QA_SUPABASE_SERVICE_ROLE_KEY,
+      "Set QA_SUPABASE_SERVICE_ROLE_KEY before mutating go-live workflow smoke so created records can be cleaned up.",
+    );
     test.skip(testInfo.project.name !== "chromium", "Run mutating go-live workflow smoke once on desktop Chromium.");
 
     const clientAdmin = requiredAccount("CLIENT_ADMIN");
@@ -129,6 +221,8 @@ test.describe("go-live Client and Bum workflow gate", () => {
 
     const context = await browser.newContext();
     const page = await context.newPage();
+    const diagnostics: string[] = [];
+    installGoLiveDiagnostics(page, diagnostics);
 
     try {
       const targetName = `${runId} target`;
@@ -143,8 +237,11 @@ test.describe("go-live Client and Bum workflow gate", () => {
       await page.getByLabel("Expected product/service", { exact: true }).fill("Go-live QA validation");
       await page.getByLabel("Notes", { exact: true }).fill(`Created by ${runId}; safe to delete.`);
       createdRecords.push({ table: "customer_targets", field: "target_account_name", value: targetName });
+      diagnostics.push(`target-form-before-save: ${JSON.stringify(await collectTargetFormState(page))}`);
       await page.getByRole("button", { name: "Save target account" }).click();
-      await expect(page.getByText("Target account saved")).toBeVisible({ timeout: 20_000 });
+      await page.waitForTimeout(500);
+      diagnostics.push(`target-form-after-save-click: ${JSON.stringify(await collectTargetFormState(page))}`);
+      await expectTargetSaved(page, targetName);
 
       const opportunityName = `${runId} opportunity`;
       await openClientPage(page, clientAdmin, "/client/opportunities/new", "Opportunities");
@@ -161,6 +258,10 @@ test.describe("go-live Client and Bum workflow gate", () => {
       await page.getByRole("button", { name: /submit opportunity registration/i }).click();
       await expect(page.getByText(/Registration submitted|Opportunity published/i)).toBeVisible({ timeout: 20_000 });
     } finally {
+      await testInfo.attach("go-live-diagnostics", {
+        body: diagnostics.length ? diagnostics.join("\n") : "No browser diagnostics collected.",
+        contentType: "text/plain",
+      });
       await cleanupCreatedRecords(createdRecords, cleanupIssues);
       await context.close();
     }
