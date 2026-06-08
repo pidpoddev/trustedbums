@@ -13,6 +13,28 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Recheck QA evidence after hosted preflight flake classification
+
+- Trigger: Trusted Bums daily QA Test Engineer automation reviewed the latest scrum outputs, specialist backlogs, changed docs, local QA contract, and GitHub QA/E2E/visual/deep evidence.
+- Implementation branch: `main`.
+- What changed: Refreshed `docs/qa-test-backlog.md` with current June 8 local and GitHub evidence, added explicit Cross-Agent Follow-Ups, downgraded the latest hosted `Deep QA (client)` miss to a harness-first preflight issue instead of a fresh product defect, refreshed `docs/qa-harness-reliability-backlog.md` with the new run-id evidence and requested action, and corrected stale access-state claims in `docs/consultant-access-needs.md` around `.env.qa`, `trustedbums.com` reachability, and the extension env contract.
+- Main surfaces changed: `docs/qa-test-backlog.md`, `docs/qa-harness-reliability-backlog.md`, `docs/consultant-access-needs.md`, `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm run qa`; raw and sourced `corepack pnpm run qa:env`; sourced `corepack pnpm run qa:target-preflight`; `corepack pnpm exec vitest run src/test/customerTargetRules.test.ts src/test/accessBoundaryRegression.test.ts src/test/serviceRoleAuthorization.test.ts`; `gh run list` for `QA`, `E2E Smoke`, `Visual UI Audit`, and `Deep QA Hotfix Audit`; `gh run view 27109958355`; `gh run view 27110095517`; `gh run view 27110095517 --job 80006521915 --log-failed`; and `gh run download` for runs `27110095517` and `27083467531`.
+- Results: Local QA passed. Latest completed GitHub QA runs passed. Latest completed GitHub visual run passed. Latest completed GitHub E2E evidence is mixed: run `27109958355` passed smoke plus all three deep shards, while run `27110095517` failed only the client deep shard during hosted preflight.
+- Recheck agents: QA/Test Engineer, QA Harness Reliability Agent, Release Verification Agent, Product Ops Workflow Analyst, Security Engineer, Lead Developer.
+- Next run should verify: whether GitHub `E2E Smoke` reruns `27110216996` and `27110329150` clear the hosted client-shard preflight miss; whether `QA_EXTENSION_API_TOKEN` is finally available; and whether extension, client-team, telemetry, and represented-contact allow/deny proof can move from source-backed to fixture-backed evidence.
+
+### 2026-06-08 - Recheck private-schema RLS helper cleanup
+
+- Trigger: Ryan asked to continue completing recommended scrum items with QA and release verification between tasks.
+- Implementation branch: `main`.
+- What changed: Added migration `20260608013000_move_rls_helpers_to_private_schema.sql` after live Supabase advisors showed the RLS helper functions were again exposed as public and signed-in security-definer RPCs. The migration moves `can_add_conversation_participant`, `company_has_customer_targets`, `conversation_company_id`, `current_company_id`, `is_admin`, `is_bum`, and `is_conversation_participant` into the `private` schema while preserving `anon`/`authenticated` execute grants needed for policy evaluation. Hosted role smoke then exposed lingering `public.is_admin()` references in policy/function text, so migration `20260608013500_qualify_private_rls_helper_references.sql` qualifies policies and dependent functions to `private.*`. Updated helper-security regression coverage and handoff docs.
+- Main surfaces changed: `supabase/migrations/20260608013000_move_rls_helpers_to_private_schema.sql`, `supabase/migrations/20260608013500_qualify_private_rls_helper_references.sql`, `src/test/supabaseHelperSecurity.test.ts`, `docs/security-review-backlog.md`, `docs/qa-test-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/codex-edit-log.md`.
+- Checks run: Supabase MCP live migration apply for both migrations; Supabase MCP security advisor rerun; Supabase MCP function-schema query; `corepack pnpm exec vitest run src/test/supabaseHelperSecurity.test.ts`; `corepack pnpm run qa`; hosted `corepack pnpm exec playwright test tests/e2e/authenticated-role-smoke.spec.ts --project=chromium` after sourcing `.env.qa`.
+- Results: initial hosted role smoke failed with `Unable to bootstrap this profile` and Postgres logs showed `function public.is_admin() does not exist`; the qualifying migration fixed that regression. Final hosted authenticated role smoke passed all five roles. Refreshed live security advisors now report only `auth_leaked_password_protection`; the seven helper functions now exist in `private` and no matching `public` helper functions remain. Full local QA passed lint, 73 tests across 23 files, and production build.
+- Recheck agents: Security Engineer, QA/Test Engineer, Lead Developer.
+- Next run should verify: hosted authenticated role smoke still passes after the private-schema move, and leaked-password protection is enabled through the approved Supabase Auth setting path.
+
 ### 2026-06-08 - Recheck customer-target behavior coverage
 
 - Trigger: Ryan asked to complete recommended tasks one at a time with QA and release verification between tasks.

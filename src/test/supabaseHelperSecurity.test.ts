@@ -9,6 +9,14 @@ const rlsHelperGrantMigration = readFileSync(
   "supabase/migrations/20260608010000_restore_rls_helper_execute_grants.sql",
   "utf8",
 );
+const privateRlsHelperMigration = readFileSync(
+  "supabase/migrations/20260608013000_move_rls_helpers_to_private_schema.sql",
+  "utf8",
+);
+const privateRlsPolicyMigration = readFileSync(
+  "supabase/migrations/20260608013500_qualify_private_rls_helper_references.sql",
+  "utf8",
+);
 
 const rlsHelperFunctions = [
   "public.can_add_conversation_participant(uuid)",
@@ -19,6 +27,9 @@ const rlsHelperFunctions = [
   "public.is_bum()",
   "public.is_conversation_participant(uuid)",
 ];
+const privateRlsHelperFunctions = rlsHelperFunctions.map((helperFunction) =>
+  helperFunction.replace("public.", "private."),
+);
 
 describe("Supabase helper function security", () => {
   it("keeps the original broad public execute revokes for exposed security-definer helper functions", () => {
@@ -33,6 +44,30 @@ describe("Supabase helper function security", () => {
     for (const helperFunction of rlsHelperFunctions) {
       expect(rlsHelperGrantMigration).toContain(`grant execute on function ${helperFunction} to anon, authenticated;`);
     }
+  });
+
+  it("moves RLS helper functions out of the exposed public RPC schema", () => {
+    expect(privateRlsHelperMigration).toContain("create schema if not exists private;");
+    expect(privateRlsHelperMigration).toContain("grant usage on schema private to anon, authenticated;");
+
+    for (const helperFunction of rlsHelperFunctions) {
+      expect(privateRlsHelperMigration).toContain(`alter function ${helperFunction} set schema private;`);
+    }
+    for (const helperFunction of privateRlsHelperFunctions) {
+      expect(privateRlsHelperMigration).toContain(`grant execute on function ${helperFunction} to anon, authenticated;`);
+    }
+  });
+
+  it("qualifies policy and helper references after moving helpers private", () => {
+    expect(privateRlsPolicyMigration).toContain("or thread.company_id = private.current_company_id()");
+    expect(privateRlsPolicyMigration).toContain("if not private.is_admin() then");
+    expect(privateRlsPolicyMigration).toContain("current_is_admin boolean := private.is_admin();");
+    expect(privateRlsPolicyMigration).toContain(
+      "regexp_replace(updated_using, '(^|[^.[:alnum:]_])is_admin\\(\\)'",
+    );
+    expect(privateRlsPolicyMigration).toContain(
+      "regexp_replace(updated_check, '(^|[^.[:alnum:]_])current_company_id\\(\\)'",
+    );
   });
 
   it("does not restore direct caller execute access for trigger-only authorization guards", () => {
