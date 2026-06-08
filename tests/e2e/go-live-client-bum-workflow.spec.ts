@@ -97,6 +97,7 @@ async function collectTargetFormState(page: Page) {
       __trustedBumsTargetButtonClicks?: number;
       __trustedBumsTargetFormSubmits?: number;
       __trustedBumsClientTargetSaveRequests?: number;
+      __trustedBumsClientTargetMutationCalls?: number;
     };
     const saveButton = Array.from(document.querySelectorAll("button")).find((button) =>
       button.textContent?.includes("Save target account"),
@@ -124,6 +125,7 @@ async function collectTargetFormState(page: Page) {
       diagnosticClicks: diagnosticsWindow.__trustedBumsTargetButtonClicks ?? null,
       diagnosticSubmits: diagnosticsWindow.__trustedBumsTargetFormSubmits ?? null,
       appSaveRequests: diagnosticsWindow.__trustedBumsClientTargetSaveRequests ?? null,
+      appMutationCalls: diagnosticsWindow.__trustedBumsClientTargetMutationCalls ?? null,
     };
   });
 }

@@ -163,7 +163,10 @@ export default function ClientTargets() {
   }, [createMutation]);
 
   const requestCreateTarget = useCallback((formElement?: HTMLFormElement | null) => {
-    const diagnosticsWindow = window as typeof window & { __trustedBumsClientTargetSaveRequests?: number };
+    const diagnosticsWindow = window as typeof window & {
+      __trustedBumsClientTargetSaveRequests?: number;
+      __trustedBumsClientTargetMutationCalls?: number;
+    };
     diagnosticsWindow.__trustedBumsClientTargetSaveRequests = (diagnosticsWindow.__trustedBumsClientTargetSaveRequests ?? 0) + 1;
     const mutation = createMutationRef.current;
 
@@ -171,6 +174,7 @@ export default function ClientTargets() {
       return;
     }
 
+    diagnosticsWindow.__trustedBumsClientTargetMutationCalls = (diagnosticsWindow.__trustedBumsClientTargetMutationCalls ?? 0) + 1;
     mutation.mutate();
   }, []);
 
