@@ -13,6 +13,39 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Refresh release verification for aggregate rollout
+
+- Trigger: Post-push release handoff after moving `/admin/performance` to aggregate route summaries.
+- Implementation branch: `main`.
+- What changed: Updated `docs/release-verification-backlog.md` from the prior `36a171c` live-head state to the new `ebbc4c5` aggregate-performance head. The release decision remains `NO-GO`: DreamHost deploy run `27112275422` and GitHub `QA` run `27112275428` succeeded, `https://trustedbums.com` returned `HTTP/2 200`, but current-head `E2E Smoke` run `27112291558` failed because the hosted workflow is missing required extension API configuration, and the on-disk Code Review marker is stale for this commit.
+- Main surfaces changed: `docs/release-verification-backlog.md`, `docs/codex-edit-log.md`.
+- Checks run: `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 12 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run view 27111955744 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run view 27112291558 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run view 27112291558 --job 80012364376 --log-failed`; `curl -I -L --max-time 20 https://trustedbums.com`.
+- Results: `ebbc4c5` has deploy and hosted QA evidence, but not green release evidence. Current-head E2E passed DNS, HTTPS, app shell, and Clerk, then failed because `QA_EXTENSION_API_BASE_URL` is missing while `QA_EXTENSION_API_EXPECTATION=required`; all three Deep QA matrix jobs failed in the same hosted run.
+- Recheck agents: Release Verification Agent, QA/Test Engineer, QA Harness Reliability Agent, Code Review Agent, Lead Developer.
+- Next run should verify: extension API base URL and token are configured in GitHub Actions and `.env.qa`, rerun current-head `E2E Smoke`, and update the decision from that result.
+
+### 2026-06-08 - Move admin performance to route aggregates
+
+- Trigger: Continue the lead/performance queue after router future flags and Supabase Auth leaked-password protection verification.
+- Implementation branch: `main`.
+- What changed: Added live-backed `admin_performance_route_summary` migration and changed `/admin/performance` to render aggregate route rows instead of recent raw `performance_metric_events`. Updated the source regression so the page must use metric and route summary RPCs and must not import the raw event list. Refreshed performance, data, and lead backlogs with live migration and QA evidence.
+- Main surfaces changed: `supabase/migrations/20260608020645_add_admin_performance_route_summary.sql`, `src/lib/portalApi.ts`, `src/pages/admin/AdminPerformanceMetrics.tsx`, `src/test/accessBoundaryRegression.test.ts`, `docs/performance-engineering-backlog.md`, `docs/data-analytics-backlog.md`, `docs/lead-developer-recommendations.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/accessBoundaryRegression.test.ts`; `corepack pnpm run qa`; `git diff --check`; `corepack pnpm run code-review:gate`; generic Supabase MCP `_apply_migration` for project `vaoqvtxqvbptyxddpoju`; `_list_migrations`; `_execute_sql` confirming the helper is security invoker; `_execute_sql` confirming non-admin context is denied; `_execute_sql` with a simulated admin JWT claim confirming route aggregates return p75/count fields; `_get_advisors` for security and performance.
+- Results: Local QA passed, live migration `20260608020645 add_admin_performance_route_summary` is applied, non-admin SQL context is denied, simulated admin context returns aggregate rows, security advisors still show only the Supabase Auth leaked-password plan blocker, and performance advisors still show the older broad FK/policy backlog.
+- Recheck agents: Performance Engineer, Data And Analytics Engineer, Security Engineer, QA/Test Engineer, Release Verification Agent, Lead Developer.
+- Next run should verify: current-head hosted `/admin/performance` route smoke after deployment and whether the next release verification run can cite this commit instead of local-only evidence.
+
+### 2026-06-08 - Refresh release verification for live commit 36a171c
+
+- Trigger: Trusted Bums daily release verification automation rechecked current release evidence after the router future-flag commit reached `main`.
+- Implementation branch: `main`.
+- What changed: Rewrote `docs/release-verification-backlog.md` with current-head release evidence. The update records that `36a171c` is live through DreamHost deploy run `27111939535`, that GitHub `QA` run `27111939536` is still in progress, that the latest completed `E2E Smoke` runs for `fa1fdfb` and `30fc1fc` still fail on the required extension preflight gate, that the latest completed `Visual UI Audit` and standalone `Deep QA Hotfix Audit` are older than the live head, that sourced-local `qa:env` and `qa:target-preflight` still fail only on missing `QA_EXTENSION_API_TOKEN`, that local `qa` passes on a clean `36a171c`, that generic Supabase drift checks show only the leaked-password advisor plus healthy recent `profile-bootstrap`/`performance-beacon` traffic, and that the on-disk Code Review GO marker does not match the live head.
+- Main surfaces changed: `docs/release-verification-backlog.md`, `docs/codex-edit-log.md`.
+- Checks run: `git fetch origin`; `git status --short`; sourced `corepack pnpm run qa:env`; sourced `corepack pnpm run qa:target-preflight`; `corepack pnpm run qa`; `curl -I -L --max-time 20 https://trustedbums.com`; `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`; public GitHub Actions summary-page review for runs `27111939536`, `27111939535`, `27111730997`, `27111715090`, `27111541454`, `27083467531`, and `27092527987`; generic Supabase MCP `_get_project_url`, `_get_advisors`, `_list_edge_functions`, `_get_logs(edge-function)`, and `_get_logs(auth)`.
+- Results: Current decision remains `NO-GO`. The live site is serving `36a171c`, but release trust is blocked by incomplete current-head GitHub evidence, the missing extension QA token, a stale exact-commit Code Review marker, and the unusable TLS state of the `rcdl.tplinkdns.com` fallback.
+- Recheck agents: Lead Developer, Release Verification Agent, QA Harness Reliability Agent, Code Review Agent, Consultant Access Needs.
+- Next run should verify: `QA` for `36a171c` has completed, the post-deploy `E2E Smoke` run for `36a171c` exists and reports whether extension coverage is still blocked, and `QA_EXTENSION_API_TOKEN` has been supplied locally and in GitHub secrets.
+
 ### 2026-06-08 - Enable router future flags after route splitting
 
 - Trigger: Next implementable item from the lead/performance Scrum after extension API credentials and Supabase Auth leaked-password protection were blocked by missing external access.
