@@ -48,7 +48,9 @@ These skips should stay documented until QA intentionally adds seeded fixtures o
 
 ### P1 - Add seeded live allow/deny behavior coverage
 
+- Business Access Coverage remains the named proof lane until seeded live fixtures exist.
 - Scope: extension API, represented contacts, client-team/domain approval, profile bootstrap, finance exports, admin telemetry, and admin summary helpers.
+- Required areas: Extension API destinations and page captures; Bum represented contacts; Client team, domain approval, and access-role assignment.
 - Why it matters: Route smoke can pass while direct data paths still need live positive and negative proof.
 - Acceptance criteria: seeded fixtures prove owning-role success and unrelated-role denial for each high-risk boundary.
 
