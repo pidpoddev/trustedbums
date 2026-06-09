@@ -619,6 +619,46 @@ export interface CustomerTargetRecord {
   profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
 
+export type PotentialDecisionMakerRating = "Priority A" | "Priority B" | "Watchlist" | "Low confidence" | "Do not pursue";
+export type LinkedInManualCheck = "not_checked" | "user_verified_current" | "user_verified_not_current" | "user_unsure";
+export type CurrentCompanyVerified = "yes" | "no" | "uncertain";
+export type PotentialDecisionMakerOutreachRisk = "low" | "medium" | "high";
+export type PotentialDecisionMakerResearchStatus = "RESEARCHED" | "NEEDS_VERIFICATION" | "APPROVED" | "ARCHIVED";
+
+export interface PotentialDecisionMakerMatchRecord {
+  id: string;
+  client_company_id: string;
+  opportunity_registration_id: string | null;
+  customer_target_id: string | null;
+  target_account_name: string;
+  person_name: string;
+  title: string | null;
+  company: string | null;
+  decision_maker_type: string;
+  primary_function: string;
+  score: number;
+  rating: PotentialDecisionMakerRating;
+  role_fit_score: number;
+  current_company_confidence_score: number;
+  opportunity_relevance_score: number;
+  seniority_access_score: number;
+  source_quality_score: number;
+  warm_path_potential_score: number;
+  evidence_summary: string | null;
+  source_urls: string[];
+  linkedin_url_candidate: string | null;
+  linkedin_manual_check: LinkedInManualCheck;
+  current_company_verified: CurrentCompanyVerified;
+  recommended_bum_ask: string | null;
+  outreach_risk: PotentialDecisionMakerOutreachRisk;
+  research_status: PotentialDecisionMakerResearchStatus;
+  source_label: string;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TeamsMeetingAttendeeStatus {
   response?: string | null;
   time?: string | null;
@@ -2897,6 +2937,23 @@ export async function getMarketplaceOpportunity(id: string) {
   }
 
   return data;
+}
+
+export async function listPotentialDecisionMakerMatchesForOpportunity(opportunityId: string) {
+  const { data, error } = await supabase
+    .from("potential_decision_maker_matches")
+    .select("*")
+    .eq("opportunity_registration_id", opportunityId)
+    .neq("research_status", "ARCHIVED")
+    .order("score", { ascending: false })
+    .order("person_name", { ascending: true })
+    .returns<PotentialDecisionMakerMatchRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
 }
 
 export async function listCompanyAgreements(companyId: string) {

@@ -1,6 +1,6 @@
 # Trusted Bums QA And Test Backlog
 
-_Last updated: 2026-06-08 by Codex daily QA/test engineer automation._
+_Last updated: 2026-06-09 by Codex._
 
 ## Executive Read
 
@@ -48,6 +48,12 @@ The active QA issue is now documentation/test-contract drift, not a reproduced h
 - Recommendation: Run `corepack pnpm run qa:go-live` against the hosted QA target before any external launch call.
 - Acceptance criteria: the go-live suite passes on hosted QA, with cleanup counts documented if mutation mode is enabled.
 
+### P1 - [TB-0072] Verify Potential DM matches and LinkedIn candidate buttons
+- Evidence: `TB-0072` is FIXED in `/admin/scrum`: the live Trusted Bums Supabase project has 11 BlackCurrant Potential DM matches across 4 target accounts, all labeled `Research Bot`, and [BumOpportunityDetail.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumOpportunityDetail.tsx) renders Source and LinkedIn candidate buttons for each match when URLs exist.
+- Why it matters: This is a new outbound-link workflow on the Bum opportunity detail page. QA needs to confirm the card is visible only where the accepted-opportunity/RLS path allows it, that the `Where this came from: Research Bot` badge is visible, and that LinkedIn stays framed as a manual candidate link rather than verified scraped truth.
+- Recommendation: On a deployed authenticated Bum session, open an accepted BlackCurrant opportunity that has seeded Potential DM matches. Confirm the card renders candidates, the Source buttons open their public source URLs in a new tab/window, and each LinkedIn candidate button opens the LinkedIn profile candidate URL in a new tab/window with no in-app scraping or login automation.
+- Acceptance criteria: QA records the opportunity tested, confirms at least one Source and one LinkedIn candidate button opened in a new tab/window, confirms the `LinkedIn check: not checked` text remains visible, and either closes `TB-0072` or updates it with the blocker and screenshot/evidence.
+
 ## Business Access Coverage
 
 ### Customer target creation and reads
@@ -83,6 +89,10 @@ The active QA issue is now documentation/test-contract drift, not a reproduced h
 ### QA/Test Engineer - preserve seeded-proof sections until the regression test is intentionally changed
 - Causal link: the previous backlog rewrite removed headings that [src/test/scrumQueueRegression.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumQueueRegression.test.ts) still treats as required release scaffolding, which directly caused GitHub `QA` run `27178512695` to fail.
 - Requested action: keep seeded-proof headings explicit in this file until the regression test and release policy are intentionally revised together.
+
+### QA/Test Engineer - add deployed proof for Potential DM outbound buttons
+- Causal link: `TB-0072` added Source and LinkedIn candidate buttons to the Bum opportunity detail page for Research Bot Potential DM matches.
+- Requested action: exercise the deployed Bum flow, confirm the new outbound buttons open in a new tab/window, and keep LinkedIn verification status as manual `not checked` unless a human verifies the profile.
 
 ## Coverage Map
 

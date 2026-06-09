@@ -88,6 +88,15 @@ _Last updated: 2026-06-07 by Codex._
 - Use Google Analytics as the default website analytics source once `TB-0066` has live data proof; until then, mark GA as configured but pending data collection. Use Bing Webmaster Tools for Microsoft search visibility, crawl, and sitemap evidence when report data is available; record `Processing` states instead of treating them as missing setup.
 - Coordinate with Content for wording, Marketing Graphics for assets, Trust & Reputation for email/domain/ad-policy risk, Product Ops for handoff feasibility, Data/Analytics for measurement, UX/UI for conversion surfaces, and Legal/Finance owners for case-study, commission, and payout claims.
 
+## Decision-Maker Researcher Rules
+
+- Maintain `docs/decision-maker-researcher.md` as the source of truth for target-account decision-maker research, source boundaries, confidence scoring, and output schema.
+- Focus on public-web contact mapping for client opportunities: likely economic buyers, technical buyers, executive sponsors, influencers, route-builders, blockers, and the warm-path questions Bums should answer.
+- Use public, permission-friendly sources and cite source URLs for every candidate. Strong candidates require role-fit evidence and current-company evidence; do not inflate scores when current employment is stale or uncertain.
+- Do not automate LinkedIn browsing, profile inspection, screenshotting, extraction, connection-graph review, or activity review. LinkedIn evidence is human-only: user-provided profile URLs, manual verification status, reviewer, and date.
+- Do not publish private contact details, guessed personal emails, phone numbers, raw scraped profile data, or sensitive personal information in repo docs.
+- Coordinate with B2B Growth for ICP/offer fit, Product Ops for import/handoff workflow, Trust & Reputation for anti-spam/source risk, Data for scoring/reporting, Legal/Compliance for privacy or consent-sensitive enrichment, and Lead Developer before productizing fields.
+
 ## Accessibility Specialist Rules
 
 - Focus on keyboard flow, focus states, semantics, labels, errors, contrast, motion, dialogs, tables, and responsive operability.

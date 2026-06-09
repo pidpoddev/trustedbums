@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-09 - Add Research Bot provenance for potential decision-maker matches
+
+- Trigger: Ryan asked to create a Potential DM matches place for BlackCurrant research and add a "where this came from" field using `Research Bot`.
+- Implementation branch: Current local workspace with pre-existing unrelated documentation, email-preview, marketing-graphics, and BlackCurrant email-template changes.
+- Tracker: `TB-0072` created in `/admin/scrum` as FIXED and assigned to QA/Test Engineer for deployed button verification.
+- What changed: Added `public.potential_decision_maker_matches` with scored decision-maker candidates, public source URLs, LinkedIn URL candidates marked for manual verification, `source_label` provenance defaulting to `Research Bot`, RLS for admins/clients/Bums, and a BlackCurrant pilot seed. Added portal API typing/query support and surfaced matches on the Bum opportunity detail page with a "Where this came from: Research Bot" badge plus Source and LinkedIn candidate buttons that open in a new tab/window.
+- Main surfaces changed: `supabase/migrations/20260609153000_add_potential_decision_maker_matches.sql`, `src/lib/portalApi.ts`, `src/pages/bum/BumOpportunityDetail.tsx`, `src/test/potentialDecisionMakerMatches.test.ts`, `docs/decision-maker-research/blackcurrant-2026-06-09-pilot.md`, `docs/qa-test-backlog.md`, and `docs/codex-edit-log.md`.
+- Checks run: `git diff --check`; `corepack pnpm run lint`; targeted migration regression tests; production build; live Supabase migration apply and row-count verification.
+- Recheck agents: Decision-Maker Researcher, Product Ops Workflow Analyst, Security Engineer, QA/Test Engineer, Lead Developer.
+- Next run should verify: whether Bums can see the seeded matches only on accepted opportunities, whether the new Source and LinkedIn candidate buttons open in a new tab/window on the deployed Bum flow, whether admins need an edit/review screen for LinkedIn manual-check status, and whether future researcher batches should import via a CSV/admin flow instead of migration seeds.
+
 ### 2026-06-09 - Gate TB-0059 extension package behind Bum access
 
 - Trigger: Ryan asked whether `TB-0059` can put the pre-store extension zip behind the Bum login.
@@ -907,6 +918,16 @@ This file is the running handoff log for implementation work Codex has made in t
 - Results: Live tracker now has 64 rows with every active backlog heading mapped to a `TB-` ID; local QA contract is green; Admin Scrum hardening migration is applied live; non-mutating hosted go-live passed 4 role/workflow checks; mutating go-live workflow creation worked but correctly fails cleanup verification because the current `.env.qa` REST cleanup key cannot delete the generated company row, so leftover `qa-go-live` rows were cleaned with Supabase MCP and verified at zero.
 - Recheck agents: Lead Developer, QA/Test Engineer, QA Harness Reliability, Security Engineer, Product Ops, Accessibility Specialist, Performance Engineer, Release Verification.
 - Next run should verify: GitHub `QA` on the exact pushed candidate, `Visual UI Audit` dispatched against `https://trustedbums.com`, exact-head Code Review, and whether the protected QA cleanup key should be replaced or a server-side QA cleanup endpoint added for mutating go-live checks.
+
+### 2026-06-09 - Add decision-maker researcher operating pack
+
+- Trigger: Ryan asked to create a best-in-class researcher that finds decision-makers from internet research and scores whether each person is the right contact to pursue.
+- Implementation branch: Current local workspace with pre-existing unrelated changes.
+- What changed: Added `docs/decision-maker-researcher.md` with public-source boundaries, BlackCurrant buying-committee guidance, a 100-point confidence model, rating labels, and import-ready JSON schema. Added the on-demand prompt snapshot `docs/agents/automation-prompts/trusted-bums-on-demand-decision-maker-researcher.toml`. Updated agent roster/rules and company-wide rules to preserve the human-only LinkedIn verification boundary.
+- Main surfaces changed: `docs/decision-maker-researcher.md`, `docs/agents/automation-prompts/trusted-bums-on-demand-decision-maker-researcher.toml`, `docs/agents/README.md`, `docs/company-wide-rules.md`, `docs/agents/company-wide-rules.md`, `docs/consultant-team-rules.md`, `docs/agents/consultant-team-rules.md`, `docs/codex-edit-log.md`.
+- Checks run: `git diff --check`; `git status --short`; targeted `rg` review across the new researcher doc, prompt snapshot, agent roster, and shared rules.
+- Recheck agents: Decision-Maker Researcher, B2B Growth Marketer, Product Ops Workflow Analyst, Trust & Reputation Consultant, Data And Analytics Engineer, Legal/Compliance Reviewer, Lead Developer.
+- Next run should verify: whether the first BlackCurrant account research batch produces source-backed Priority A/B candidates without automated LinkedIn collection, and whether the product needs dedicated fields for manual LinkedIn verification metadata.
 
 ### 2026-06-08 - Refresh accessibility backlog with current local and hosted evidence
 

@@ -29,6 +29,7 @@ import {
   DEFAULT_BUM_COMMISSION_POOL_PERCENT,
   deriveDefaultBumSharePercent,
   getMarketplaceOpportunity,
+  listPotentialDecisionMakerMatchesForOpportunity,
   listOpportunityClaims,
   listOpportunityQuestionsForBum,
   updateOpportunityClaimStatus,
@@ -67,9 +68,15 @@ export default function BumOpportunityDetail() {
     queryFn: () => listOpportunityQuestionsForBum(id!),
     enabled: Boolean(id),
   });
+  const decisionMakerMatchesQuery = useQuery({
+    queryKey: ["potential-decision-maker-matches", id],
+    queryFn: () => listPotentialDecisionMakerMatchesForOpportunity(id!),
+    enabled: Boolean(id),
+  });
   const opp = opportunityQuery.data;
   const claims = claimsQuery.data ?? [];
   const questions = questionsQuery.data ?? [];
+  const decisionMakerMatches = decisionMakerMatchesQuery.data ?? [];
   const myClaims = claims.filter((claim) => claim.bum_user_id === user?.id);
   const defaultSoloSchedule = buildTopLineShareSchedule(
     opp?.client_pay_programs,
@@ -276,6 +283,59 @@ export default function BumOpportunityDetail() {
           </div>
         </CardContent>
       </Card>
+
+      {decisionMakerMatches.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Potential decision-maker matches</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {decisionMakerMatches.map((match) => (
+              <div key={match.id} className="rounded-xl border p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium">{match.person_name}</p>
+                  <StatusBadge label={match.rating} variant={match.rating === "Priority A" ? "success" : "info"} />
+                  <StatusBadge label={`${match.score}/100`} variant="secondary" />
+                  <StatusBadge label={`Where this came from: ${match.source_label}`} variant="outline" />
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {[match.title, match.company, match.primary_function].filter(Boolean).join(" · ")}
+                </p>
+                {match.evidence_summary ? (
+                  <p className="mt-3 text-sm">{match.evidence_summary}</p>
+                ) : null}
+                {match.recommended_bum_ask ? (
+                  <div className="mt-3 rounded-md bg-muted/30 p-3 text-sm">
+                    <p className="font-medium">Best warm-path ask</p>
+                    <p className="mt-1 text-muted-foreground">{match.recommended_bum_ask}</p>
+                  </div>
+                ) : null}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {match.source_urls.map((sourceUrl) => (
+                    <Button key={sourceUrl} size="sm" variant="outline" asChild>
+                      <a href={sourceUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Source
+                      </a>
+                    </Button>
+                  ))}
+                  {match.linkedin_url_candidate ? (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={match.linkedin_url_candidate} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        LinkedIn candidate
+                      </a>
+                    </Button>
+                  ) : null}
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  LinkedIn check: {match.linkedin_manual_check.replace(/_/g, " ")} · Current company: {match.current_company_verified}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

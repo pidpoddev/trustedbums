@@ -1,6 +1,6 @@
 # Trusted Bums Company-Wide Rules
 
-_Last updated: 2026-06-04 by Codex._
+_Last updated: 2026-06-09 by Codex._
 
 ## Purpose
 
@@ -38,6 +38,14 @@ When adding a rule, include:
 - Implementation notes: Trust-sensitive changes should be reviewed by Trust & Reputation, Security, UX, Content, and Lead Developer when relevant.
 - QA proof: Public-site checks, DNS/email checks, scanner/dashboard checks when available, contact-flow abuse checks, and review of visible trust signals.
 - Open questions: Which public proof points, testimonials, legal links, or trust badges should be prioritized as the business matures?
+
+### Decision-maker research must use public sources and human-only LinkedIn verification
+- Rule: Trusted Bums may research decision-makers from public, permission-friendly sources and may store user-provided LinkedIn profile URLs or manual LinkedIn verification statuses, but agents and product automations must not browse, scrape, screenshot, extract, or automate LinkedIn profile review.
+- Applies to: Decision-maker research, target-account opportunity research, prospect contacts, extension workflows, LinkedIn URL storage, GTM research agents, and any import workflow that enriches contacts.
+- Why it matters: Trusted Bums depends on high-trust relationship routing. Automated LinkedIn collection creates platform, legal, privacy, and reputation risk, and makes the product look like scraped-list lead generation rather than warm-introduction operations.
+- Implementation notes: Automate public-web research only. Add fields such as `linkedin_manual_check`, `linkedin_profile_url`, `verified_by`, and `verified_at` only for human-provided or human-reviewed LinkedIn evidence. Keep source URLs and confidence scoring visible.
+- QA proof: Research outputs cite non-LinkedIn public sources; LinkedIn fields remain blank or explicitly marked as user-provided/manual; no automation code accesses LinkedIn pages for extraction.
+- Open questions: Which CRM/contact object should store manual verification metadata if the workflow moves from docs into product UI?
 
 ## Client Company And User Onboarding
 
