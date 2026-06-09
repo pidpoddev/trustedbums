@@ -33,6 +33,7 @@ import {
   FileSignature,
   Gauge,
   Handshake,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 
@@ -74,6 +75,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Admin Tools",
     items: [
+      { title: "Scrum", url: "/admin/scrum", icon: ClipboardList },
       { title: "Performance", url: "/admin/performance", icon: Gauge },
       { title: "Tools", url: "/admin/troubleshooting", icon: Wrench },
       { title: "Legal", url: "/admin/legal", icon: FileSignature },

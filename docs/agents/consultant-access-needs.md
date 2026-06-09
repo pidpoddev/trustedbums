@@ -6,6 +6,8 @@ _Last updated: 2026-06-07 by Codex._
 
 This file tracks access, credentials, dashboards, logs, fixtures, and third-party systems that would materially improve consultant output. Missing access belongs here, not buried inside product recommendations.
 
+All agents need write/read access to the Admin Tools Scrum Tracker through `/admin/scrum`, Supabase MCP, or an approved equivalent path. If an agent cannot create or update `public.admin_scrum_items`, cannot set `added_by_agent`, or cannot get the generated `TB-` number back for its handoff, the agent must record that as an access blocker here and keep the affected recommendation explicitly untracked until access is restored.
+
 ## Active Access Requests
 
 ### P0 - Provide domain reputation, DNS, and webmaster access
@@ -71,7 +73,7 @@ This file tracks access, credentials, dashboards, logs, fixtures, and third-part
 ### P1 - Provide product, design, and operations source-of-truth artifacts
 - Why it matters: UX, UI, Content, Product Ops, and Data/Analytics need stronger non-code evidence to validate terminology, queue design, workflow ownership, access handoffs, visual intent, funnel friction, and customer trust objections.
 - Needed access: Brand and design sources, approved screenshot baselines, funnel or product analytics, session recordings, support tickets or macros, support queue exports with current statuses and SLAs, customer-feedback exports, sales-objection notes, CRM or sales-pipeline exports for reverse-opportunity and target-response follow-through, onboarding materials, finance reconciliation and exception samples, admin audit/log examples, operations SOPs, and narrated role walkthroughs for Admin, Client Admin, Client Finance, Client Member, and Bum accounts.
-- Current status: This gap remains open on 2026-06-04. UI evidence improved because GitHub Visual QA run `26931897223` passed with fresh public, Admin, Client Admin, Client Finance, and Bum screenshots in the `visual-ui-audit` artifact, so UI is no longer blocked by local screenshot capture. Product Ops still lacks support queue export with SLA buckets, CRM stage history, finance exception samples, admin rescue logs, operations SOPs, approved access-proof categories, and narrated role walkthroughs for Admin, Client Admin, Client Finance, Client Member, and Bum roles. UI/UX/Content still lack brand guidance, component-library references, approved screenshot baselines, analytics, support evidence, and design source files. Current recommendations are implementation-ready and evidence-backed, but not yet validated against approved design intent or day-to-day operating proof.
+- Current status: This gap remains open on 2026-06-09. GitHub Visual QA access is no longer blocked by basic workflow control, but current-head run `27181180658` on `9f42bf4` failed before auth bootstrap because it targeted `https://rcdl.tplinkdns.com` instead of the healthy primary host `https://trustedbums.com`. Product Ops still lacks support queue export with SLA buckets, CRM stage history, finance exception samples, admin rescue logs, operations SOPs, approved access-proof categories, and narrated role walkthroughs for Admin, Client Admin, Client Finance, Client Member, and Bum roles. UI/UX/Content still lack brand guidance, component-library references, approved screenshot baselines, analytics, support evidence, and design source files. Current recommendations are implementation-ready and evidence-backed, but not yet validated against approved design intent or day-to-day operating proof.
 
 ## Role Access Matrix
 

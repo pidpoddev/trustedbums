@@ -238,6 +238,32 @@ async function deleteByField(table: string, field: string, value: string) {
     return { skipped: true, reason: "Set QA_SUPABASE_URL/VITE_SUPABASE_URL and QA_SUPABASE_SERVICE_ROLE_KEY to enable cleanup." };
   }
 
+  if (table === "companies" && field === "name") {
+    const lookupUrl = new URL("/rest/v1/companies", supabaseUrl);
+    lookupUrl.searchParams.set("select", "id");
+    lookupUrl.searchParams.set("name", `eq.${value}`);
+
+    const lookupResponse = await fetch(lookupUrl, {
+      headers: {
+        apikey: serviceRoleKey,
+        authorization: `Bearer ${serviceRoleKey}`,
+      },
+    });
+
+    if (!lookupResponse.ok) {
+      return { skipped: false, reason: `company lookup failed: ${lookupResponse.status} ${await lookupResponse.text()}` };
+    }
+
+    const companies = (await lookupResponse.json().catch(() => [])) as Array<{ id?: string }>;
+    for (const company of companies) {
+      if (!company.id) continue;
+      const domainCleanup = await deleteByField("company_domains", "company_id", company.id);
+      if (domainCleanup.skipped || domainCleanup.reason !== "deleted") return domainCleanup;
+      const targetCleanup = await deleteByField("customer_targets", "target_company_id", company.id);
+      if (targetCleanup.skipped || targetCleanup.reason !== "deleted") return targetCleanup;
+    }
+  }
+
   const url = new URL(`/rest/v1/${table}`, supabaseUrl);
   url.searchParams.set(field, `eq.${value}`);
 
@@ -254,11 +280,39 @@ async function deleteByField(table: string, field: string, value: string) {
     return { skipped: false, reason: `${response.status} ${await response.text()}` };
   }
 
+  const verifyUrl = new URL(`/rest/v1/${table}`, supabaseUrl);
+  verifyUrl.searchParams.set("select", field);
+  verifyUrl.searchParams.set(field, `eq.${value}`);
+
+  const verifyResponse = await fetch(verifyUrl, {
+    headers: {
+      apikey: serviceRoleKey,
+      authorization: `Bearer ${serviceRoleKey}`,
+      prefer: "count=exact",
+    },
+  });
+
+  if (!verifyResponse.ok) {
+    return { skipped: false, reason: `cleanup verification failed: ${verifyResponse.status} ${await verifyResponse.text()}` };
+  }
+
+  const remainingRows = (await verifyResponse.json().catch(() => [])) as unknown[];
+  if (remainingRows.length > 0) {
+    return { skipped: false, reason: `cleanup verification found ${remainingRows.length} remaining ${table} row(s)` };
+  }
+
   return { skipped: false, reason: "deleted" };
 }
 
 export async function cleanupCreatedRecords(records: QaCreatedRecord[], issues: DeepQaIssue[]) {
-  for (const record of records) {
+  const cleanupOrder: Record<string, number> = {
+    opportunity_registrations: 0,
+    customer_targets: 1,
+    companies: 2,
+  };
+  const orderedRecords = [...records].sort((a, b) => (cleanupOrder[a.table] ?? 1) - (cleanupOrder[b.table] ?? 1));
+
+  for (const record of orderedRecords) {
     const result = await deleteByField(record.table, record.field, record.value);
     if (result.skipped) {
       issues.push({

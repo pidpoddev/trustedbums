@@ -8,7 +8,7 @@ Agent Operations Steward has been added as a weekly role to keep active Codex au
 
 ## Active Agent Operations Fixes
 
-### P1 - First automation and prompt synchronization audit pending
+### P1 - [TB-0033] First automation and prompt synchronization audit pending
 - Evidence: New recurring and on-demand roles were added after the latest specialist prompt refresh.
 - Why it matters: Drift between active app automations and repo snapshots can cause future agents to run the wrong schedule, model, workspace, or coordination rules.
 - Recommendation: First weekly run should compare active automation definitions against `docs/agents/automation-prompts/*.toml`, README roster text, shared rules, and access-needs status.

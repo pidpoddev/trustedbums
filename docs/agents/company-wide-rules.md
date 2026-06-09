@@ -109,11 +109,19 @@ When adding a rule, include:
 
 ## Specialist And Release Coordination
 
+### Agent findings must be tracked with TB IDs
+- Rule: Any agent-created or agent-preserved recommendation, bug, release blocker, QA gap, security finding, access blocker, or implementation follow-up must have an Admin Tools Scrum Tracker item and a `TB-` tracking ID before the agent publishes its handoff.
+- Applies to: All specialist agents, Lead Developer, Code Review, Release Verification, QA, Security, Product Ops, Trust & Reputation, Data, Performance, Accessibility, UX, UI, Content, Marketing Graphics, B2B Growth, Legal/Compliance, `docs/*-backlog.md`, `docs/lead-developer-recommendations.md`, and `/admin/scrum`.
+- Why it matters: Scrum decisions need durable numbering so the team can discuss open work, bugs, blocked items, and closed evidence without relying on stale prose or chat history.
+- Implementation notes: Agents should create or update `public.admin_scrum_items`, set `added_by_agent`, classify true defects as `item_type = BUG`, and keep `source_key` stable for git commits, GitHub runs, or backlog-section imports so repeated runs update instead of duplicating. Before opening a new item, agents should search existing open, blocked, fixed, and recently closed tracker rows by `source_key`, title, affected route/table/workflow, GitHub commit/run ID, backlog heading, and related `TB-` references. If one agent's best action is to add context to another agent's existing ticket, update that existing `TB-` item with the new evidence, affected agent, recommendation, or blocker instead of opening a duplicate. Handoffs should cite the returned or updated `TB-` number next to each open or closed item. Closed items need closure evidence or a waiver note; blocked items need the blocker named.
+- QA proof: A scrum/backlog run can query the tracker and show every open agent item has a `TB-` number, status, priority, item type, owner, adding agent, and evidence/source reference.
+- Open questions: Should future agent automation call a dedicated server-side tracker API instead of writing through Supabase MCP or the Admin UI?
+
 ### UI consultant visual evidence comes from GitHub Visual QA
 - Rule: The UI consultant should use the GitHub Actions workflow named `Visual UI Audit` and its `visual-ui-audit` artifacts for visual QA evidence instead of attempting local Vite, local browser, or local Playwright visual checks.
 - Applies to: Daily UI consultant automation, `docs/ui-optimization-backlog.md`, `docs/consultant-team-rules.md`, `.github/workflows/visual-ui-audit.yml`, and UI visual evidence collection.
 - Why it matters: The GitHub workflow has the intended deployed target, role secrets, and artifact capture path, while local runs have repeatedly produced environment-specific blockers that weaken UI evidence.
-- Implementation notes: UI recommendations may still use source inspection, current rules, internet guidance, and narrow non-visual local checks such as lint or unit tests when useful. Fresh screenshot or route-render evidence should come from GitHub Visual QA runs or be recorded as an access/evidence gap.
+- Implementation notes: UI recommendations may still use source inspection, current rules, internet guidance, and narrow non-visual local checks such as lint or unit tests when useful. Fresh screenshot or route-render evidence should come from GitHub Visual QA runs or be recorded as an access or evidence gap. When dispatching hosted visual QA, default the target URL to `https://trustedbums.com`; use `https://rcdl.tplinkdns.com` only when the run is explicitly validating fallback DNS or TLS behavior.
 - QA proof: Agent Inputs should cite the relevant GitHub Visual QA run/artifact or explicitly state why GitHub Visual QA evidence was unavailable.
 - Open questions: None.
 

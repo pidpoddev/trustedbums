@@ -47,6 +47,34 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
 
 ## Candidate Rules To Validate First
 
+### Admin Scrum Tracker
+- Roles: Admin, specialist agents acting through approved Admin tooling or Supabase MCP, Lead Developer, Code Review, Release Verification.
+- Data needed: Tracker ID, title, description, status, priority, item type, source, adding agent, owner, source key, evidence links, GitHub commit or run ID, closeout note, created/updated/closed timestamps, and actor fields.
+- Allowed actions: Admins and approved agent workflows may create, update, triage, close, waive, or reopen tracker items for Trusted Bums operational work.
+- Allowed when:
+  - The item represents a real recommendation, bug, release blocker, QA gap, security finding, access blocker, closed git contribution, or implementation follow-up.
+  - The item records `added_by_agent`, uses `item_type = BUG` for true defects, and returns a `TB-` tracking ID that is cited in the agent handoff.
+  - Imported items use a stable `source_key` tied to git commits, GitHub runs, or backlog sections so repeat agent runs update the same row.
+  - Before creating a new item, the agent searches existing open, blocked, fixed, and recently closed tracker rows by `source_key`, title, affected route/table/workflow, GitHub commit/run ID, backlog heading, and related `TB-` references.
+  - Another agent has relevant context for an existing ticket and updates that existing `TB-` item instead of creating a duplicate.
+- Denied when:
+  - Public, Client, Bum, or unauthenticated users try to read or mutate tracker records.
+  - An agent publishes a handoff that preserves active work without a `TB-` tracker number unless the tracker is unavailable and the access blocker is explicitly documented.
+  - An agent opens a duplicate tracker item without first searching the matching `source_key`, title, affected route/table/workflow, GitHub commit/run ID, backlog heading, and related `TB-` references.
+  - An agent opens a duplicate tracker item instead of adding evidence, affected-agent context, a blocker, or a recommendation to the existing matching `TB-` item.
+  - A close or waiver lacks decision evidence, a closeout note, or an explicit accepted-risk reason.
+- Sensitive fields: Internal issue descriptions, security findings, access blockers, release status, implementation notes, and any links to private workflow evidence.
+- Source of truth: `/admin/scrum`, `public.admin_scrum_items`, `docs/*-backlog.md`, `docs/lead-developer-recommendations.md`, GitHub workflow runs, and git commit history.
+- RLS/authorization owner: Security Engineer plus Product Ops and Lead Developer.
+- QA proof:
+  - Admin can create, update, close, and filter tracker items.
+  - Non-admin roles cannot read or mutate tracker rows through route access or direct Supabase access.
+  - Every active agent recommendation has a returned `TB-` ID, item type, status, priority, owner, adding agent, and evidence/source reference.
+  - Cross-agent additions update the original `TB-` item and preserve the same tracking number in the handoff.
+  - Repeat imports update existing `source_key` rows rather than creating duplicates.
+- Open questions:
+  - Should tracker writes move to a dedicated server-owned API so `created_by` and `updated_by` cannot be browser-supplied?
+
 ### Public Contact And Signup Intake
 - Roles: Public Visitor, Admin, internal notification mailbox or workflow automation.
 - Data needed: Visitor contact details, declared interest, message, anti-abuse proof, submission timestamp, review status, and any escalation or conversion outcome.

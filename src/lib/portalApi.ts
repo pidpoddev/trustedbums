@@ -138,6 +138,58 @@ export interface PerformanceMetricRouteSummaryRecord {
   last_seen_at: string;
 }
 
+export type AdminScrumItemStatus = "OPEN" | "IN_PROGRESS" | "BLOCKED" | "FIXED" | "CLOSED" | "WONT_FIX";
+export type AdminScrumItemPriority = "P0" | "P1" | "P2" | "P3";
+export type AdminScrumItemSource = "Scrum" | "QA" | "Security" | "Lead Dev" | "Release" | "User" | "Product Ops" | "Other";
+export type AdminScrumItemType = "BUG" | "TASK" | "QA" | "SECURITY" | "RELEASE" | "DOCS" | "INFRA";
+
+export const ADMIN_SCRUM_ITEM_STATUSES: AdminScrumItemStatus[] = ["OPEN", "IN_PROGRESS", "BLOCKED", "FIXED", "CLOSED", "WONT_FIX"];
+export const ADMIN_SCRUM_ITEM_PRIORITIES: AdminScrumItemPriority[] = ["P0", "P1", "P2", "P3"];
+export const ADMIN_SCRUM_ITEM_SOURCES: AdminScrumItemSource[] = ["Scrum", "QA", "Security", "Lead Dev", "Release", "User", "Product Ops", "Other"];
+export const ADMIN_SCRUM_ITEM_TYPES: AdminScrumItemType[] = ["BUG", "TASK", "QA", "SECURITY", "RELEASE", "DOCS", "INFRA"];
+
+export interface AdminScrumItemRecord {
+  id: string;
+  tracking_number: number;
+  tracking_id: string;
+  title: string;
+  description: string;
+  status: AdminScrumItemStatus;
+  priority: AdminScrumItemPriority;
+  item_type: AdminScrumItemType;
+  source: AdminScrumItemSource;
+  related_area: string | null;
+  owner_label: string | null;
+  added_by_agent: string;
+  source_key: string | null;
+  github_commit: string | null;
+  github_run_id: string | null;
+  evidence_links: string[];
+  closure_note: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminScrumItemInput {
+  title: string;
+  description?: string | null;
+  status?: AdminScrumItemStatus;
+  priority: AdminScrumItemPriority;
+  itemType?: AdminScrumItemType;
+  source: AdminScrumItemSource;
+  relatedArea?: string | null;
+  ownerLabel?: string | null;
+  addedByAgent?: string | null;
+  sourceKey?: string | null;
+  githubCommit?: string | null;
+  githubRunId?: string | null;
+  evidenceLinks?: string[];
+  closureNote?: string | null;
+}
+
 
 export interface ClerkAdminUserRecord {
   id: string | null;
@@ -6537,6 +6589,128 @@ export async function listPerformanceMetricRouteSummaries(filters: PerformanceMe
   }
 
   return data ?? [];
+}
+
+function cleanScrumText(value?: string | null) {
+  const trimmed = value?.trim() ?? "";
+  return trimmed || null;
+}
+
+function cleanScrumLinks(value?: string[]) {
+  return Array.from(
+    new Set(
+      (value ?? [])
+        .map((link) => link.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+export async function listAdminScrumItems() {
+  const { data, error } = await supabase
+    .from("admin_scrum_items")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(250)
+    .returns<AdminScrumItemRecord[]>();
+
+  if (error) {
+    throw new Error(error.message || "Unable to load scrum tracker items.");
+  }
+
+  return data ?? [];
+}
+
+function assertScrumCloseoutProof(status: AdminScrumItemStatus | undefined, closureNote: string | null | undefined, evidenceLinks: string[] | undefined) {
+  if (status !== "CLOSED" && status !== "WONT_FIX") return;
+  if (!closureNote?.trim()) {
+    throw new Error("Add a closeout note before closing or waiving this scrum item.");
+  }
+  if (!cleanScrumLinks(evidenceLinks).length) {
+    throw new Error("Add at least one evidence link before closing or waiving this scrum item.");
+  }
+}
+
+export async function createAdminScrumItem(input: AdminScrumItemInput) {
+  const title = input.title.trim();
+  if (!title) {
+    throw new Error("Add a title before creating the scrum item.");
+  }
+  const evidenceLinks = cleanScrumLinks(input.evidenceLinks);
+  const closureNote = cleanScrumText(input.closureNote);
+  assertScrumCloseoutProof(input.status, closureNote, evidenceLinks);
+
+  const { data, error } = await supabase
+    .from("admin_scrum_items")
+    .insert({
+      title,
+      description: input.description?.trim() ?? "",
+      status: input.status ?? "OPEN",
+      priority: input.priority,
+      item_type: input.itemType ?? "TASK",
+      source: input.source,
+      related_area: cleanScrumText(input.relatedArea),
+      owner_label: cleanScrumText(input.ownerLabel),
+      added_by_agent: cleanScrumText(input.addedByAgent) ?? "Lead Developer",
+      source_key: cleanScrumText(input.sourceKey),
+      github_commit: cleanScrumText(input.githubCommit),
+      github_run_id: cleanScrumText(input.githubRunId),
+      evidence_links: evidenceLinks,
+      closure_note: closureNote,
+      closed_at: input.status === "CLOSED" || input.status === "WONT_FIX" ? new Date().toISOString() : null,
+    })
+    .select("*")
+    .single<AdminScrumItemRecord>();
+
+  if (error) {
+    throw new Error(error.message || "Unable to create scrum tracker item.");
+  }
+
+  return data;
+}
+
+export async function updateAdminScrumItem(id: string, input: Partial<AdminScrumItemInput>) {
+  const patch: Record<string, unknown> = {};
+
+  if (input.title !== undefined) {
+    const title = input.title.trim();
+    if (!title) {
+      throw new Error("Scrum item title cannot be blank.");
+    }
+    patch.title = title;
+  }
+  if (input.description !== undefined) patch.description = input.description?.trim() ?? "";
+  if (input.priority !== undefined) patch.priority = input.priority;
+  if (input.itemType !== undefined) patch.item_type = input.itemType;
+  if (input.source !== undefined) patch.source = input.source;
+  if (input.relatedArea !== undefined) patch.related_area = cleanScrumText(input.relatedArea);
+  if (input.ownerLabel !== undefined) patch.owner_label = cleanScrumText(input.ownerLabel);
+  if (input.addedByAgent !== undefined) patch.added_by_agent = cleanScrumText(input.addedByAgent) ?? "Lead Developer";
+  if (input.sourceKey !== undefined) patch.source_key = cleanScrumText(input.sourceKey);
+  if (input.githubCommit !== undefined) patch.github_commit = cleanScrumText(input.githubCommit);
+  if (input.githubRunId !== undefined) patch.github_run_id = cleanScrumText(input.githubRunId);
+  const evidenceLinks = input.evidenceLinks === undefined ? undefined : cleanScrumLinks(input.evidenceLinks);
+  const closureNote = input.closureNote === undefined ? undefined : cleanScrumText(input.closureNote);
+  if (evidenceLinks !== undefined) patch.evidence_links = evidenceLinks;
+  if (input.closureNote !== undefined) patch.closure_note = closureNote;
+  if (input.status !== undefined) {
+    assertScrumCloseoutProof(input.status, closureNote, evidenceLinks);
+    patch.status = input.status;
+    patch.closed_at = input.status === "CLOSED" || input.status === "WONT_FIX" ? new Date().toISOString() : null;
+  }
+
+  const { data, error } = await supabase
+    .from("admin_scrum_items")
+    .update(patch)
+    .eq("id", id)
+    .select("*")
+    .single<AdminScrumItemRecord>();
+
+  if (error) {
+    throw new Error(error.message || "Unable to update scrum tracker item.");
+  }
+
+  return data;
 }
 
 const TRAINING_MATERIAL_ATTACHMENTS_BUCKET = "training-material-attachments";

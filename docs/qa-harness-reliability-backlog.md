@@ -12,19 +12,19 @@ The remaining harness issue is artifact durability, not route execution. `qa-tar
 
 ## Active Harness Fixes
 
-### P1 - Move `qa-target-preflight` artifacts out of Playwright's `test-results/` root
+### P1 - [TB-0054] Move `qa-target-preflight` artifacts out of Playwright's `test-results/` root
 - Evidence: Local reproduction in this run showed `test-results/qa-target-preflight/summary.json` and `summary.txt` immediately after `corepack pnpm run qa:target-preflight`, then only `test-results/.last-run.json` after `corepack pnpm exec playwright test tests/e2e/configuration-smoke.spec.ts --project=chromium`. Downloaded success artifacts for GitHub `E2E Smoke` run `27177006002` contain Playwright reports and deep hotfix markdown, but no preflight summaries. By contrast, failed preflight run `27112837432` preserved the summaries because Playwright never started.
 - Why it matters: QA and Release Verification lose the exact DNS/HTTPS/app-shell/Clerk/extension preflight evidence on successful smoke runs and on later route failures, which makes env drift and target-health triage slower and less trustworthy.
 - Recommendation: Change `scripts/qa-target-preflight.mjs` to write into a dedicated artifact directory outside Playwright's managed `test-results/` tree, then upload that directory explicitly from both `.github/workflows/e2e-smoke.yml` and `.github/workflows/deep-qa-hotfix-audit.yml`.
 - Acceptance criteria: A current-head passing smoke run and a deliberately later-failing smoke or deep run both publish downloadable `summary.json` and `summary.txt` for the smoke job and each deep shard.
 
-### P2 - Keep raw-shell, sourced `.env.qa`, and hosted workflow env states separate in every handoff
+### P2 - [TB-0055] Keep raw-shell, sourced `.env.qa`, and hosted workflow env states separate in every handoff
 - Evidence: Raw `corepack pnpm run qa:env` still fails in this shell because no QA variables are exported by default. After sourcing `.env.qa`, `corepack pnpm run qa:env` passes. Hosted `E2E Smoke` run `27177006002` also passed the same contract, while historical run `27112837432` failed because GitHub lacked the extension inputs.
 - Why it matters: Collapsing those three states into one “QA env passed” or “QA env failed” claim hides whether the issue is shell setup, `.env.qa` drift, or GitHub Actions configuration drift.
 - Recommendation: Keep every QA harness, QA test, and release handoff split into raw shell, sourced `.env.qa`, and hosted workflow states, and mention only the variable names that are missing in each state.
 - Acceptance criteria: Future handoffs make it obvious which contract passed or failed in each environment without re-reading raw logs.
 
-### P2 - Pair current release heads with current visual evidence or an explicit reuse rule
+### P2 - [TB-0018] Pair current release heads with current visual evidence or an explicit reuse rule
 - Evidence: Current head `41187e0` has fresh hosted QA and deep-route evidence, but the newest `Visual UI Audit` run is still `27167324836` on older commit `441fd92`. There is no newer visual artifact for `41187e0` in the latest workflow list.
 - Why it matters: Release reviewers can over-trust a green smoke/deep run when the latest downloadable visual artifact is from an older head and no explicit no-visual-delta rule was recorded.
 - Recommendation: Either auto-dispatch `Visual UI Audit` after a successful deploy, or codify a commit-scoped reuse rule that lets Release Verification cite an older visual artifact only when the intervening commits are explicitly non-visual.

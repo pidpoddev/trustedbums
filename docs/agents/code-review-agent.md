@@ -36,6 +36,7 @@ Before starting the review, collect:
 - Relevant diff for the intended push.
 - Checks already run by the implementer.
 - Any Lead Developer, QA, Release Verification, Security, Trust, or Product Ops notes that affect the changed surface.
+- Matching `TB-` Scrum Tracker IDs for active or closed agent findings touched by the push. If the work creates, fixes, waives, or reopens a bug, release blocker, QA gap, security finding, access blocker, or implementation follow-up, confirm the tracker item exists, `added_by_agent` is set, true defects use `item_type = BUG`, and the handoff cites the returned `TB-` number. Before accepting a new tracker item, confirm the agent searched existing open, blocked, fixed, and recently closed rows by `source_key`, title, affected route/table/workflow, GitHub commit/run ID, backlog heading, and related `TB-` references. If another agent added context to an existing ticket, confirm the context was added to that existing `TB-` item instead of creating a duplicate.
 
 If the review returns GO for `main`, create `.codex-review-decision.json` for that exact commit. If it returns NO-GO, do not create the marker; hand blockers to Lead Developer.
 
@@ -118,6 +119,7 @@ The reviewer should be conservative about security, authorization, data isolatio
 - If a change came from one specialist role but materially affects another role, confirm Lead Developer has documented the cross-specialist impact check. Examples: Security hardening can break UX/onboarding; Product Ops queues can affect UI density and Accessibility; Data/export changes can affect Privacy and Client Finance workflows; Trust controls can affect conversion and content.
 - If public endpoints, email senders, webhooks, telemetry, mailbox access, or reputation-sensitive code changed, include Trust and Security impact.
 - If generated artifacts are staged, confirm whether they are intended to be versioned.
+- Confirm agent-created or agent-closed findings in scope have matching Scrum Tracker `TB-` IDs, that handoffs/backlogs cite those IDs, and that cross-agent context was added to existing matching tickets rather than duplicated.
 - Confirm the branch and remote before push.
 
 ## GO Criteria
@@ -129,6 +131,7 @@ The reviewer may give GO when:
 - Cross-specialist tradeoffs have been considered for material changes, or the missing specialist input is explicitly listed as residual risk with a safe post-main validation plan.
 - Required checks pass, or skipped checks have a concrete, acceptable reason.
 - Secrets/private data are not being committed.
+- Agent findings in the push scope are represented in the Scrum Tracker with `TB-` IDs, or the review clearly explains why no tracker item is needed.
 - The commit scope matches the user's requested work.
 - The GO marker, if needed for `main`, names the exact reviewed commit and is less than 24 hours old.
 

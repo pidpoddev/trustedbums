@@ -19,6 +19,12 @@ This folder is the repo-shared source for Trusted Bums consultant agents, operat
 - `../qa-harness-reliability-backlog.md`: QA workflow, Playwright, env-contract, artifact, and Deep QA reliability backlog.
 - `../agent-operations-backlog.md`: weekly automation, prompt, schedule, and source-of-truth synchronization audit.
 
+## Scrum Tracker Contract
+
+Every agent must create or update an Admin Tools Scrum Tracker item for any recommendation, bug, release blocker, QA gap, security finding, access blocker, or implementation follow-up it keeps active or closes. Agents must get the generated `TB-` tracking ID back and cite it in their handoff or backlog entry.
+
+Tracker entries live in `/admin/scrum` and `public.admin_scrum_items`. Set `added_by_agent` to the agent name, classify true defects with `item_type = BUG`, and use a stable `source_key` for imported git commits, GitHub runs, or backlog sections so repeated runs update the same item instead of creating duplicates. Before opening a new item, search existing open, blocked, fixed, and recently closed tracker rows by `source_key`, title, affected route/table/workflow, GitHub commit/run ID, backlog heading, and related `TB-` references. When the best action is to add context to another agent's existing ticket, update that existing `TB-` item with the additional evidence, affected agent, recommendation, or blocker and cite the same `TB-` number in the handoff.
+
 ## Code Review Gate
 
 Pushes or merges to `main` require a Code Review Agent GO decision for the exact commit being pushed. The local hook lives in `.githooks/pre-push` and runs `scripts/code-review-gate.mjs`.
