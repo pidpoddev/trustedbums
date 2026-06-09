@@ -57,7 +57,12 @@ const defaultContactForm = {
   email: "",
   companyName: "",
   interest: "CLIENT" as ContactInterest,
+  buyerRole: "",
+  targetAccountCount: "",
   targetAccounts: "",
+  currentBlocker: "",
+  urgency: "",
+  referralSource: "",
   message: "",
   website: "",
 };
@@ -152,6 +157,10 @@ const Index = () => {
 
     const name = contactForm.name.trim();
     const email = contactForm.email.trim();
+    const companyName = contactForm.companyName.trim();
+    const buyerRole = contactForm.buyerRole.trim();
+    const targetAccounts = contactForm.targetAccounts.trim();
+    const currentBlocker = contactForm.currentBlocker.trim();
     const message = contactForm.message.trim();
     const nextErrors: ContactFormErrors = {};
 
@@ -163,8 +172,32 @@ const Index = () => {
       nextErrors.email = "Enter a valid email address.";
     }
 
+    if (!companyName) {
+      nextErrors.companyName = "Enter the company that needs help reaching target accounts.";
+    }
+
+    if (!buyerRole) {
+      nextErrors.buyerRole = "Enter your role so we can qualify the request.";
+    }
+
+    if (!contactForm.targetAccountCount) {
+      nextErrors.targetAccountCount = "Choose the rough number of target accounts.";
+    }
+
+    if (!targetAccounts) {
+      nextErrors.targetAccounts = "Add the accounts or buyer types you want help reaching.";
+    }
+
+    if (!currentBlocker) {
+      nextErrors.currentBlocker = "Choose or describe the access blocker.";
+    }
+
+    if (!contactForm.urgency) {
+      nextErrors.urgency = "Choose the timing for this request.";
+    }
+
     if (message.length < 10) {
-      nextErrors.message = "Add a short note about the buyer, account, or question.";
+      nextErrors.message = "Add a short note about why this would matter commercially.";
     }
 
     if (Object.keys(nextErrors).length) {
@@ -527,7 +560,7 @@ const Index = () => {
           <div className="mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] border bg-gradient-to-br from-primary via-orange-500 to-[#ffb15f] p-1 shadow-2xl">
             <div className="grid gap-8 rounded-[2.35rem] bg-[#08111f] p-8 text-white md:p-12 lg:grid-cols-[1fr_0.8fr] lg:items-center">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">Contact us</p>
+                <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">Client strategy request</p>
                 <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
                   If a buyer matters, trust gets there faster.
                 </h2>
@@ -538,12 +571,8 @@ const Index = () => {
                 <div className="mt-8 flex flex-wrap gap-4">
                   {showSignedOutActions ? (
                     <>
-                      <Button
-                        asChild
-                        size="lg"
-                        className="h-14 rounded-full px-8 text-base font-bold"
-                      >
-                        <a href="#contact-form">Talk to Trusted Bums</a>
+                      <Button asChild size="lg" className="h-14 rounded-full px-8 text-base font-bold">
+                        <a href="#contact-form">Request intro strategy</a>
                       </Button>
                       <Button
                         asChild
@@ -624,43 +653,141 @@ const Index = () => {
                       id="contact-company"
                       value={contactForm.companyName}
                       onChange={updateContactField("companyName")}
+                      aria-invalid={Boolean(contactFormErrors.companyName)}
+                      aria-describedby={contactFormErrors.companyName ? "contact-company-error" : undefined}
                       autoComplete="organization"
                       className="h-12 border-white/15 bg-white text-[#08111f]"
                       placeholder="Company name"
                     />
+                    {contactFormErrors.companyName ? (
+                      <p id="contact-company-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.companyName}</p>
+                    ) : null}
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="contact-interest" className="text-white">
-                      What brings you here?
+                    <Label htmlFor="contact-buyer-role" className="text-white">
+                      Your role
                     </Label>
-                    <select
-                      id="contact-interest"
-                      value={contactForm.interest}
-                      onChange={updateContactField("interest")}
-                      className="h-12 w-full rounded-md border border-white/15 bg-white px-3 text-base text-[#08111f] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                    >
-                      <option value="CLIENT">I need introductions for my company</option>
-                      <option value="GENERAL">I have a general question</option>
-                    </select>
+                    <Input
+                      id="contact-buyer-role"
+                      value={contactForm.buyerRole}
+                      onChange={updateContactField("buyerRole")}
+                      aria-invalid={Boolean(contactFormErrors.buyerRole)}
+                      aria-describedby={contactFormErrors.buyerRole ? "contact-buyer-role-error" : undefined}
+                      autoComplete="organization-title"
+                      className="h-12 border-white/15 bg-white text-[#08111f]"
+                      placeholder="Founder, CRO, VP Sales, advisor..."
+                    />
+                    {contactFormErrors.buyerRole ? (
+                      <p id="contact-buyer-role-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.buyerRole}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor="contact-target-count" className="text-white">
+                        Target account count
+                      </Label>
+                      <select
+                        id="contact-target-count"
+                        value={contactForm.targetAccountCount}
+                        onChange={updateContactField("targetAccountCount")}
+                        aria-invalid={Boolean(contactFormErrors.targetAccountCount)}
+                        aria-describedby={contactFormErrors.targetAccountCount ? "contact-target-count-error" : undefined}
+                        className="h-12 w-full rounded-md border border-white/15 bg-white px-3 text-base text-[#08111f] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                      >
+                        <option value="">Choose one</option>
+                        <option value="ONE">1</option>
+                        <option value="TWO_TO_FIVE">2-5</option>
+                        <option value="SIX_TO_TEN">6-10</option>
+                        <option value="MORE_THAN_TEN">10+</option>
+                      </select>
+                      {contactFormErrors.targetAccountCount ? (
+                        <p id="contact-target-count-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.targetAccountCount}</p>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="contact-urgency" className="text-white">
+                        Timing
+                      </Label>
+                      <select
+                        id="contact-urgency"
+                        value={contactForm.urgency}
+                        onChange={updateContactField("urgency")}
+                        aria-invalid={Boolean(contactFormErrors.urgency)}
+                        aria-describedby={contactFormErrors.urgency ? "contact-urgency-error" : undefined}
+                        className="h-12 w-full rounded-md border border-white/15 bg-white px-3 text-base text-[#08111f] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                      >
+                        <option value="">Choose one</option>
+                        <option value="THIS_MONTH">This month</option>
+                        <option value="THIS_QUARTER">This quarter</option>
+                        <option value="EXPLORING">Exploring</option>
+                      </select>
+                      {contactFormErrors.urgency ? (
+                        <p id="contact-urgency-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.urgency}</p>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="grid gap-2">
                     <Label htmlFor="contact-targets" className="text-white">
                       Target accounts or buyers
                     </Label>
-                    <Input
+                    <Textarea
                       id="contact-targets"
                       value={contactForm.targetAccounts}
                       onChange={updateContactField("targetAccounts")}
+                      aria-invalid={Boolean(contactFormErrors.targetAccounts)}
+                      aria-describedby={contactFormErrors.targetAccounts ? "contact-targets-error" : undefined}
+                      className="min-h-24 border-white/15 bg-white text-[#08111f]"
+                      placeholder="Names are optional. Redacted accounts or buyer categories are fine."
+                    />
+                    {contactFormErrors.targetAccounts ? (
+                      <p id="contact-targets-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.targetAccounts}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="contact-blocker" className="text-white">
+                      Current blocker
+                    </Label>
+                    <select
+                      id="contact-blocker"
+                      value={contactForm.currentBlocker}
+                      onChange={updateContactField("currentBlocker")}
+                      aria-invalid={Boolean(contactFormErrors.currentBlocker)}
+                      aria-describedby={contactFormErrors.currentBlocker ? "contact-blocker-error" : undefined}
+                      className="h-12 w-full rounded-md border border-white/15 bg-white px-3 text-base text-[#08111f] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                    >
+                      <option value="">Choose one</option>
+                      <option value="No warm route">No warm route</option>
+                      <option value="Cold outreach ignored">Cold outreach ignored</option>
+                      <option value="Procurement or executive access blocked">Procurement or executive access blocked</option>
+                      <option value="Need credibility with a specific buyer">Need credibility with a specific buyer</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {contactFormErrors.currentBlocker ? (
+                      <p id="contact-blocker-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.currentBlocker}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="contact-referral-source" className="text-white">
+                      Referral source
+                    </Label>
+                    <Input
+                      id="contact-referral-source"
+                      value={contactForm.referralSource}
+                      onChange={updateContactField("referralSource")}
                       className="h-12 border-white/15 bg-white text-[#08111f]"
-                      placeholder="Optional: accounts you want help reaching"
+                      placeholder="Optional: who sent you or where you heard about us"
                     />
                   </div>
 
                   <div className="grid gap-2">
                     <Label htmlFor="contact-message" className="text-white">
-                      Message
+                      Commercial reason
                     </Label>
                     <Textarea
                       id="contact-message"
@@ -669,7 +796,7 @@ const Index = () => {
                       aria-invalid={Boolean(contactFormErrors.message)}
                       aria-describedby={contactFormErrors.message ? "contact-message-error" : undefined}
                       className="min-h-32 border-white/15 bg-white text-[#08111f]"
-                      placeholder="Tell us what kind of door you are trying to open."
+                      placeholder="What have you tried, and what would make this meaningful if it worked?"
                     />
                     {contactFormErrors.message ? (
                       <p id="contact-message-error" className="text-sm text-orange-100" role="alert">{contactFormErrors.message}</p>
@@ -709,7 +836,7 @@ const Index = () => {
                   ) : null}
 
                   <Button type="submit" size="lg" className="h-14 rounded-full text-base font-bold" disabled={isContactSubmitting}>
-                    {isContactSubmitting ? "Sending..." : "Send message"}
+                    {isContactSubmitting ? "Sending..." : "Request strategy review"}
                     <Send className="ml-2 h-5 w-5" />
                   </Button>
                 </div>

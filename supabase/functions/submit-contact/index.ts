@@ -2,13 +2,20 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 type ContactInterest = "CLIENT" | "BUM" | "GENERAL";
+type ContactTargetAccountCount = "ONE" | "TWO_TO_FIVE" | "SIX_TO_TEN" | "MORE_THAN_TEN";
+type ContactUrgency = "THIS_MONTH" | "THIS_QUARTER" | "EXPLORING";
 
 interface ContactSubmissionInput {
   name?: unknown;
   email?: unknown;
   companyName?: unknown;
   interest?: unknown;
+  buyerRole?: unknown;
+  targetAccountCount?: unknown;
   targetAccounts?: unknown;
+  currentBlocker?: unknown;
+  urgency?: unknown;
+  referralSource?: unknown;
   message?: unknown;
   website?: unknown;
   turnstileToken?: unknown;
@@ -90,6 +97,29 @@ function cleanNullableString(value: unknown, maxLength: number) {
 
 function cleanInterest(value: unknown): ContactInterest {
   return value === "BUM" || value === "GENERAL" ? value : "CLIENT";
+}
+
+function cleanTargetAccountCount(value: unknown): ContactTargetAccountCount | null {
+  return value === "ONE" || value === "TWO_TO_FIVE" || value === "SIX_TO_TEN" || value === "MORE_THAN_TEN"
+    ? value
+    : null;
+}
+
+function cleanUrgency(value: unknown): ContactUrgency | null {
+  return value === "THIS_MONTH" || value === "THIS_QUARTER" || value === "EXPLORING" ? value : null;
+}
+
+function defaultPriority(interest: ContactInterest, urgency: ContactUrgency | null) {
+  if (interest !== "CLIENT") return "NORMAL";
+  if (urgency === "THIS_MONTH") return "URGENT";
+  if (urgency === "THIS_QUARTER") return "HIGH";
+  return "NORMAL";
+}
+
+function defaultNextAction(interest: ContactInterest) {
+  if (interest === "CLIENT") return "Founder review";
+  if (interest === "BUM") return "Refer to Bum recruiting path";
+  return "Admin review";
 }
 
 function isEmail(value: string) {
@@ -184,6 +214,14 @@ Deno.serve(async (request) => {
 
     const name = cleanString(input.name, 160);
     const email = cleanString(input.email, 180).toLowerCase();
+    const interest = cleanInterest(input.interest);
+    const companyName = cleanNullableString(input.companyName, 180);
+    const buyerRole = cleanNullableString(input.buyerRole, 180);
+    const targetAccountCount = cleanTargetAccountCount(input.targetAccountCount);
+    const targetAccounts = cleanNullableString(input.targetAccounts, 1000);
+    const currentBlocker = cleanNullableString(input.currentBlocker, 500);
+    const urgency = cleanUrgency(input.urgency);
+    const referralSource = cleanNullableString(input.referralSource, 500);
     const message = cleanString(input.message, 4000);
     const token = cleanString(input.turnstileToken, 2048);
     const idempotencyKey = cleanNullableString(input.idempotencyKey, 80);
@@ -193,6 +231,10 @@ Deno.serve(async (request) => {
 
     if (name.length < 2 || !isEmail(email) || message.length < 10) {
       return json(400, { error: "The contact submission is missing required fields." }, origin);
+    }
+
+    if (interest === "CLIENT" && (!companyName || !buyerRole || !targetAccountCount || !targetAccounts || !currentBlocker || !urgency)) {
+      return json(400, { error: "The Client strategy request is missing qualification fields." }, origin);
     }
 
     const turnstile = await validateTurnstile(token, remoteIp, idempotencyKey);
@@ -213,9 +255,17 @@ Deno.serve(async (request) => {
       .insert({
         name,
         email,
-        company_name: cleanNullableString(input.companyName, 180),
-        interest: cleanInterest(input.interest),
-        target_accounts: cleanNullableString(input.targetAccounts, 1000),
+        company_name: companyName,
+        interest,
+        buyer_role: buyerRole,
+        target_account_count: targetAccountCount,
+        target_accounts: targetAccounts,
+        current_blocker: currentBlocker,
+        urgency,
+        referral_source: referralSource,
+        qualification_status: interest === "BUM" ? "WRONG_PATH" : "NEEDS_REVIEW",
+        admin_next_action: defaultNextAction(interest),
+        admin_priority: defaultPriority(interest, urgency),
         message,
         source: "homepage",
         user_agent: userAgent,
@@ -236,9 +286,9 @@ Deno.serve(async (request) => {
         template: "contact-submission",
         name,
         email,
-        companyName: cleanNullableString(input.companyName, 180) ?? undefined,
-        interest: cleanInterest(input.interest),
-        targetAccounts: cleanNullableString(input.targetAccounts, 1000) ?? undefined,
+        companyName: companyName ?? undefined,
+        interest,
+        targetAccounts: targetAccounts ?? undefined,
         message,
       },
     });

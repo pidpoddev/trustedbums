@@ -4,13 +4,22 @@ import type { AuthUser } from "@/data/authData";
 export type ContactInterest = "CLIENT" | "BUM" | "GENERAL";
 export type ContactSubmissionStatus = "NEW" | "REVIEWED" | "INVITED" | "REPLIED" | "ESCALATED" | "ARCHIVED";
 export type ContactEscalationType = "CLIENT_TARGET" | "BUM_PROFILE" | "BUM_INVITE";
+export type ContactTargetAccountCount = "ONE" | "TWO_TO_FIVE" | "SIX_TO_TEN" | "MORE_THAN_TEN";
+export type ContactUrgency = "THIS_MONTH" | "THIS_QUARTER" | "EXPLORING";
+export type ContactQualificationStatus = "QUALIFIED" | "NEEDS_REVIEW" | "LOW_FIT" | "WRONG_PATH";
+export type ContactAdminPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
 export interface ContactSubmissionInput {
   name: string;
   email: string;
   companyName?: string;
   interest: ContactInterest;
+  buyerRole?: string;
+  targetAccountCount?: ContactTargetAccountCount | "";
   targetAccounts?: string;
+  currentBlocker?: string;
+  urgency?: ContactUrgency | "";
+  referralSource?: string;
   message: string;
   website?: string;
   turnstileToken?: string;
@@ -23,7 +32,13 @@ export interface ContactSubmissionRecord {
   email: string;
   company_name: string | null;
   interest: ContactInterest;
+  buyer_role: string | null;
+  target_account_count: ContactTargetAccountCount | null;
   target_accounts: string | null;
+  current_blocker: string | null;
+  urgency: ContactUrgency | null;
+  referral_source: string | null;
+  qualification_status: ContactQualificationStatus;
   message: string;
   source: string;
   user_agent: string | null;
@@ -31,7 +46,9 @@ export interface ContactSubmissionRecord {
   admin_notes: string | null;
   admin_owner_id: string | null;
   admin_next_action: string | null;
-  admin_priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+  admin_priority: ContactAdminPriority;
+  follow_up_deadline: string | null;
+  disqualification_reason: string | null;
   notification_sent_at: string | null;
   notification_error: string | null;
   escalated_to: ContactEscalationType | null;
@@ -171,6 +188,11 @@ export async function updateContactSubmission(
   updates: {
     status?: ContactSubmissionStatus;
     adminNotes?: string;
+    adminNextAction?: string;
+    adminPriority?: ContactAdminPriority;
+    qualificationStatus?: ContactQualificationStatus;
+    followUpDeadline?: string | null;
+    disqualificationReason?: string;
     escalatedTo?: ContactEscalationType | null;
     escalatedEntityId?: string | null;
   },
@@ -185,6 +207,26 @@ export async function updateContactSubmission(
 
   if (updates.adminNotes !== undefined) {
     payload.admin_notes = toNullableString(updates.adminNotes);
+  }
+
+  if (updates.adminNextAction !== undefined) {
+    payload.admin_next_action = toNullableString(updates.adminNextAction);
+  }
+
+  if (updates.adminPriority !== undefined) {
+    payload.admin_priority = updates.adminPriority;
+  }
+
+  if (updates.qualificationStatus !== undefined) {
+    payload.qualification_status = updates.qualificationStatus;
+  }
+
+  if (updates.followUpDeadline !== undefined) {
+    payload.follow_up_deadline = updates.followUpDeadline;
+  }
+
+  if (updates.disqualificationReason !== undefined) {
+    payload.disqualification_reason = toNullableString(updates.disqualificationReason);
   }
 
   if (updates.escalatedTo !== undefined) {
@@ -250,6 +292,10 @@ export async function escalateContactToClientTarget(
   input: ContactClientTargetInput,
 ) {
   assertAdmin(user);
+
+  if (submission.qualification_status !== "QUALIFIED") {
+    throw new Error("Mark this Client request qualified before creating a target.");
+  }
 
   const targetCompany = await ensureContactCompany(input.targetAccountName, input.targetCompanyWebsite);
   const notes = [

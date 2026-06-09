@@ -23,6 +23,7 @@ The safest near-term growth path is not broader top-of-funnel volume. It is a sh
 ## Active Growth Plays
 
 ### P0 - [TB-0034] Enrich the Client intake path and operationalize qualification
+- Current implementation note: v1 is now being shipped as a Client strategy-request workflow instead of a generic contact form. The public form captures buyer role, target-account count, target context, blocker, urgency, referral source, and commercial reason. Admin review exposes qualification status, owner claim, priority, next action, follow-up deadline, disqualification reason, and blocks Client Target creation until the request is marked qualified.
 - Growth goal: qualified Client acquisition.
 - Audience: founder, CRO, VP Sales, or GTM lead with one or two high-value target accounts blocked in cold channels.
 - Channel: website, founder-led follow-up, referral traffic, LinkedIn organic.

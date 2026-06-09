@@ -77,10 +77,16 @@ test.describe("staging smoke", () => {
     await page.locator("#contact-name").fill("Q");
     await page.locator("#contact-email").fill("not-an-email");
     await page.locator("#contact-message").fill("short");
-    await page.getByRole("button", { name: /Send message/i }).click();
+    await page.getByRole("button", { name: /Request strategy review/i }).click();
 
     await expect(page.locator("#contact-name-error")).toBeVisible();
     await expect(page.locator("#contact-email-error")).toBeVisible();
+    await expect(page.locator("#contact-company-error")).toBeVisible();
+    await expect(page.locator("#contact-buyer-role-error")).toBeVisible();
+    await expect(page.locator("#contact-target-count-error")).toBeVisible();
+    await expect(page.locator("#contact-urgency-error")).toBeVisible();
+    await expect(page.locator("#contact-targets-error")).toBeVisible();
+    await expect(page.locator("#contact-blocker-error")).toBeVisible();
     await expect(page.locator("#contact-message-error")).toBeVisible();
     await expect(page.locator("#contact-name")).toHaveValue("Q");
     await expect(page.locator("#contact-email")).toHaveValue("not-an-email");
