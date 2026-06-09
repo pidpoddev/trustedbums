@@ -5596,7 +5596,7 @@ export async function createCustomerTarget(user: AuthUser, input: CustomerTarget
       },
       { onConflict: "client_company_id,target_company_id" },
     )
-    .select("*, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url), profiles(id, full_name, email)")
+    .select("*")
     .single<CustomerTargetRecord>();
 
   if (error) {

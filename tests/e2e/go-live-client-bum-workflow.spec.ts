@@ -275,6 +275,7 @@ test.describe("go-live Client and Bum workflow gate", () => {
       await page.getByLabel("Expected product/service", { exact: true }).fill("Go-live QA validation");
       await page.getByLabel("Notes", { exact: true }).fill(`Created by ${runId}; safe to delete.`);
       createdRecords.push({ table: "customer_targets", field: "target_account_name", value: targetName });
+      createdRecords.push({ table: "companies", field: "name", value: targetName });
       await installTargetFormDomDiagnostics(page);
       diagnostics.push(`target-form-before-save: ${JSON.stringify(await collectTargetFormState(page))}`);
       await page.getByRole("button", { name: "Save target account" }).click();
@@ -295,7 +296,7 @@ test.describe("go-live Client and Bum workflow gate", () => {
       await page.getByLabel("Notes", { exact: true }).fill(`Created by ${runId}; safe to delete.`);
       createdRecords.push({ table: "opportunity_registrations", field: "target_account_name", value: opportunityName });
       await page.getByRole("button", { name: /submit opportunity registration/i }).click();
-      await expect(page.getByText(/Registration submitted|Opportunity published/i)).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByText(/Registration submitted|Opportunity published/i).first()).toBeVisible({ timeout: 20_000 });
     } finally {
       await testInfo.attach("go-live-diagnostics", {
         body: diagnostics.length ? diagnostics.join("\n") : "No browser diagnostics collected.",
