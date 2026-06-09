@@ -5,6 +5,8 @@ const packageJson = readFileSync("package.json", "utf8");
 const lockfile = readFileSync("pnpm-lock.yaml", "utf8");
 const appSource = readFileSync("src/App.tsx", "utf8");
 const metadataSource = readFileSync("src/components/RouteMetadata.tsx", "utf8");
+const publicRouteMetadata = readFileSync("src/data/publicRouteMetadata.json", "utf8");
+const metadataRenderer = readFileSync("scripts/render-route-metadata.mjs", "utf8");
 const htmlShell = readFileSync("index.html", "utf8");
 const htaccess = readFileSync("public/.htaccess", "utf8");
 const handoffsSource = readFileSync("src/pages/admin/AdminHandoffs.tsx", "utf8");
@@ -20,10 +22,17 @@ describe("scrum implementation queue regression coverage", () => {
 
   it("emits route-aware metadata and baseline production headers", () => {
     expect(appSource).toContain("RouteMetadata");
-    expect(metadataSource).toContain("https://trustedbums.com");
-    expect(metadataSource).toContain("document.title = title");
+    expect(publicRouteMetadata).toContain('"siteOrigin": "https://trustedbums.com"');
+    expect(metadataSource).toContain("document.title = resolvedTitle");
     expect(metadataSource).toContain('meta[property="og:url"]');
     expect(metadataSource).toContain("window.location.pathname");
+    expect(metadataSource).toContain("getPublicRouteMetadata");
+    expect(publicRouteMetadata).toContain('"maxTitleLength": 32');
+    expect(publicRouteMetadata).toContain('"path": "/privacy-policy"');
+    expect(publicRouteMetadata).toContain('"title": "Privacy"');
+    expect(publicRouteMetadata).toContain('"path": "/legal/terms-of-service"');
+    expect(metadataRenderer).toContain("distDir");
+    expect(metadataRenderer).toContain("renderRouteHtml");
     expect(htmlShell).toContain('href="https://trustedbums.com/"');
     expect(htmlShell).toContain('content="https://trustedbums.com/og-image.svg"');
     expect(htaccess).toContain("Strict-Transport-Security");
@@ -31,6 +40,9 @@ describe("scrum implementation queue regression coverage", () => {
     expect(htaccess).toContain("frame-ancestors 'none'");
     expect(htaccess).toContain("https://vaoqvtxqvbptyxddpoju.supabase.co");
     expect(htaccess).toContain("https://challenges.cloudflare.com");
+    expect(htaccess).toContain("Serve generated public-route metadata snapshots");
+    expect(htaccess).toContain("privacy-policy");
+    expect(htaccess).toContain("terms-of-service");
     expect(htaccess).toContain("script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://clerk.trustedbums.com");
     expect(htaccess).toContain("frame-src https://challenges.cloudflare.com https://clerk.trustedbums.com");
   });

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { BrandLogo } from "@/components/BrandLogo";
+import { RouteMetadata } from "@/components/RouteMetadata";
 import { footerLegalLinks, getLegalDocument, type LegalDocument } from "@/data/legalDocuments";
 import { getPublishedLegalDocument } from "@/lib/portalApi";
 
@@ -40,6 +41,7 @@ export default function LegalDocumentPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <RouteMetadata routePath={`/legal/${document.slug}`} />
       <header className="border-b bg-card/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-6">
           <BrandLogo to="/" imageClassName="h-12" />

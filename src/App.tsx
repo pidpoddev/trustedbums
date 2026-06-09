@@ -100,12 +100,12 @@ const App = () => (
               <GoogleAnalytics />
               <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading...</div>}>
               <Routes>
-                <Route path="/" element={<><RouteMetadata title="Trusted Bums | Client Warm Introduction Strategy" description="Trusted Bums helps companies reach hard-to-access target accounts through credible warm-introduction strategy." path="/" /><Index /></>} />
-                <Route path="/bums" element={<><RouteMetadata title="Become a Bum | Trusted Bums" description="Apply to become a Trusted Bum and turn credible buyer relationships into approved warm-introduction work." path="/bums" /><BumLanding /></>} />
-                <Route path="/login" element={<><RouteMetadata title="Login | Trusted Bums" description="Sign in to the Trusted Bums client, Bum, or admin portal." path="/login" /><Login /></>} />
+                <Route path="/" element={<><RouteMetadata routePath="/" /><Index /></>} />
+                <Route path="/bums" element={<><RouteMetadata routePath="/bums" /><BumLanding /></>} />
+                <Route path="/login" element={<><RouteMetadata routePath="/login" /><Login /></>} />
                 <Route path="/sign-in" element={<ClerkTicketHandler />} />
-                <Route path="/privacy-policy" element={<><RouteMetadata title="Privacy Policy | Trusted Bums" description="Review how Trusted Bums handles privacy, data protection, cookies, and trusted marketplace account information." path="/privacy-policy" /><PrivacyPolicy /></>} />
-                <Route path="/legal/:slug" element={<><RouteMetadata title="Legal Documents | Trusted Bums" description="Review Trusted Bums legal documents, marketplace terms, and client agreement information." /><LegalDocumentPage /></>} />
+                <Route path="/privacy-policy" element={<><RouteMetadata routePath="/privacy-policy" /><PrivacyPolicy /></>} />
+                <Route path="/legal/:slug" element={<LegalDocumentPage />} />
                 <Route element={<ProtectedRoute allowedRoles={["ADMIN", "CLIENT", "BUM"]} />}>
                   <Route path="/dashboard" element={<RoleDashboardRedirect />} />
                 </Route>

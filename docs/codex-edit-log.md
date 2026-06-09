@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-09 - Complete TB-0058 initial HTML route metadata
+
+- Trigger: Ryan asked to process `TB-0058`, make it a standard, and keep browser tab titles short.
+- Implementation branch: Current local workspace with pre-existing unrelated BlackCurrant, email-preview, marketing-graphics, and email-template migration changes still present.
+- What changed: Added a compact public-route metadata manifest, wired runtime `RouteMetadata` to that manifest, generated route-specific static HTML during every production build, added DreamHost rewrites for no-slash public routes before the SPA fallback, updated QA/deploy workflows to run the metadata renderer, and made server-delivered compact metadata a company-wide and agent-wide standard.
+- Main surfaces changed: `src/data/publicRouteMetadata.json`, `src/data/publicRouteMetadata.ts`, `scripts/render-route-metadata.mjs`, `src/components/RouteMetadata.tsx`, `src/App.tsx`, `src/pages/LegalDocumentPage.tsx`, `public/.htaccess`, `package.json`, `.github/workflows/qa.yml`, `.github/workflows/deploy-pages.yml`, `.github/workflows/deploy_dreamhost.yaml`, `src/test/scrumQueueRegression.test.ts`, `docs/company-wide-rules.md`, `docs/agents/company-wide-rules.md`, `docs/trust-reputation-backlog.md`, and `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/scrumQueueRegression.test.ts`; `corepack pnpm run lint`; `corepack pnpm run build`; `corepack pnpm exec vite preview --host 127.0.0.1 --port 8080`; local preview `curl -sL` metadata checks for `/`, `/privacy-policy/`, `/legal/terms-of-service/`, `/legal/security/`, `/bums/`, and `/login/`.
+- Results: Production build rendered 14 route-specific metadata files. Local preview returned distinct initial titles, descriptions, canonical URLs, and `og:url` values for the checked public routes before React. Manifest titles are capped at 32 characters; examples include `Privacy`, `Terms`, `Security`, `Become a Bum`, and `Login`.
+- Recheck agents: Trust & Reputation, Content, UX, UI, B2B Growth, Data/Analytics, Release Verification, Lead Developer.
+- Next run should verify: after deploy, `curl -sL https://trustedbums.com/privacy-policy` and `curl -sL https://trustedbums.com/legal/terms-of-service` return route-specific initial metadata without relying on React.
+
 ### 2026-06-09 - Finish TB-0057 DMARC enforcement
 
 - Trigger: Ryan confirmed the needed access was available and asked Codex to continue `TB-0057`.

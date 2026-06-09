@@ -1,7 +1,5 @@
 import { useEffect } from "react";
-
-const siteOrigin = "https://trustedbums.com";
-const defaultImage = `${siteOrigin}/og-image.svg`;
+import { defaultImage, getPublicRouteMetadata, siteOrigin } from "@/data/publicRouteMetadata";
 
 function upsertMeta(selector: string, attributes: Record<string, string>) {
   let element = document.head.querySelector<HTMLMetaElement>(selector);
@@ -26,28 +24,36 @@ function upsertCanonical(href: string) {
 }
 
 export function RouteMetadata({
+  routePath,
   title,
   description,
   path,
 }: {
-  title: string;
-  description: string;
+  routePath?: string;
+  title?: string;
+  description?: string;
   path?: string;
 }) {
   useEffect(() => {
-    const canonicalPath = path ?? window.location.pathname;
+    const routeMetadata = getPublicRouteMetadata(routePath ?? path ?? window.location.pathname);
+    const resolvedTitle = title ?? routeMetadata?.title ?? "Trusted Bums";
+    const resolvedDescription =
+      description ??
+      routeMetadata?.description ??
+      "Warm introduction strategy for hard-to-reach target accounts.";
+    const canonicalPath = path ?? routeMetadata?.path ?? window.location.pathname;
     const canonicalUrl = `${siteOrigin}${canonicalPath}`;
-    document.title = title;
+    document.title = resolvedTitle;
     upsertCanonical(canonicalUrl);
-    upsertMeta('meta[name="description"]', { name: "description", content: description });
-    upsertMeta('meta[property="og:title"]', { property: "og:title", content: title });
-    upsertMeta('meta[property="og:description"]', { property: "og:description", content: description });
+    upsertMeta('meta[name="description"]', { name: "description", content: resolvedDescription });
+    upsertMeta('meta[property="og:title"]', { property: "og:title", content: resolvedTitle });
+    upsertMeta('meta[property="og:description"]', { property: "og:description", content: resolvedDescription });
     upsertMeta('meta[property="og:url"]', { property: "og:url", content: canonicalUrl });
     upsertMeta('meta[property="og:image"]', { property: "og:image", content: defaultImage });
-    upsertMeta('meta[name="twitter:title"]', { name: "twitter:title", content: title });
-    upsertMeta('meta[name="twitter:description"]', { name: "twitter:description", content: description });
+    upsertMeta('meta[name="twitter:title"]', { name: "twitter:title", content: resolvedTitle });
+    upsertMeta('meta[name="twitter:description"]', { name: "twitter:description", content: resolvedDescription });
     upsertMeta('meta[name="twitter:image"]', { name: "twitter:image", content: defaultImage });
-  }, [description, path, title]);
+  }, [description, path, routePath, title]);
 
   return null;
 }

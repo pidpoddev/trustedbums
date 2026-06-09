@@ -45,6 +45,8 @@ jobs:
           test -s dist/robots.txt
           grep -q 'Sitemap: https://trustedbums.com/sitemap.xml' dist/robots.txt
           grep -Fq 'sitemap\.xml|robots\.txt' dist/.htaccess
+          grep -q '<title>Privacy</title>' dist/privacy-policy/index.html
+          grep -q 'href="https://trustedbums.com/legal/terms-of-service"' dist/legal/terms-of-service/index.html
 
       - name: Deploy to DreamHost via SSH
         uses: easingthemes/ssh-deploy@main

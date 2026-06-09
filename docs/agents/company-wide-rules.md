@@ -109,6 +109,14 @@ When adding a rule, include:
 
 ## Specialist And Release Coordination
 
+### Public routes need server-delivered compact metadata
+- Rule: Public acquisition, trust, privacy, and legal routes must have route-specific `<title>`, description, canonical URL, `og:url`, and social metadata in the initial HTML response before React runs.
+- Applies to: Trust & Reputation, Content, UX, UI, B2B Growth, Data/Analytics, Release Verification, Lead Developer, public website routes, legal pages, and crawler-facing deploy checks.
+- Why it matters: Crawlers, link-preview systems, reputation reviewers, buyers, and browser tabs often read initial HTML rather than client-side head mutations.
+- Implementation notes: Keep public-route metadata in `src/data/publicRouteMetadata.json`, keep tab titles at or below the manifest `maxTitleLength`, generate static route HTML with `scripts/render-route-metadata.mjs` during every production build, and keep runtime `RouteMetadata` synced to the same manifest.
+- QA proof: `curl -sL` for `/`, `/privacy-policy`, and at least one `/legal/:slug` route should return different initial titles, descriptions, canonical URLs, and `og:url` values before JavaScript execution. Hosted DreamHost deploy checks should verify at least one generated trust route and one generated legal route.
+- Open questions: None.
+
 ### Google Analytics is an approved source for specialist evidence
 - Rule: Trusted Bums agents may use the Google Analytics property for `https://trustedbums.com` when their work requires website traffic, funnel, source, campaign, or engagement evidence.
 - Applies to: Data/Analytics, B2B Growth, UX, UI, Product Ops, Trust & Reputation, Performance, QA, Release Verification, Lead Developer, `docs/*-backlog.md`, and `docs/agents/*`.

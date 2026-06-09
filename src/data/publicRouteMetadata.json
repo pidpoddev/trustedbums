@@ -1,0 +1,77 @@
+{
+  "siteOrigin": "https://trustedbums.com",
+  "imagePath": "/og-image.svg",
+  "maxTitleLength": 32,
+  "routes": [
+    {
+      "path": "/",
+      "title": "Trusted Bums",
+      "description": "Warm introduction strategy for hard-to-reach target accounts."
+    },
+    {
+      "path": "/bums",
+      "title": "Become a Bum",
+      "description": "Apply to turn credible buyer relationships into approved intro work."
+    },
+    {
+      "path": "/login",
+      "title": "Login",
+      "description": "Sign in to the Trusted Bums client, Bum, or admin portal."
+    },
+    {
+      "path": "/privacy-policy",
+      "title": "Privacy",
+      "description": "How Trusted Bums handles privacy, data protection, cookies, and account information."
+    },
+    {
+      "path": "/legal/terms-of-service",
+      "title": "Terms",
+      "description": "General website and platform terms for visitors and account users."
+    },
+    {
+      "path": "/legal/cookie-policy",
+      "title": "Cookies",
+      "description": "How Trusted Bums uses cookies, local storage, and similar technologies."
+    },
+    {
+      "path": "/legal/dpa",
+      "title": "DPA",
+      "description": "Processor terms for business customers that provide personal data to Trusted Bums."
+    },
+    {
+      "path": "/legal/subprocessors",
+      "title": "Subprocessors",
+      "description": "Service providers used to operate Trusted Bums."
+    },
+    {
+      "path": "/legal/security",
+      "title": "Security",
+      "description": "A public summary of Trusted Bums security practices."
+    },
+    {
+      "path": "/legal/acceptable-use",
+      "title": "Acceptable Use",
+      "description": "Rules for using Trusted Bums responsibly."
+    },
+    {
+      "path": "/legal/recording-transcription-notice",
+      "title": "Recording Notice",
+      "description": "Notice about meeting recording, transcription, and read-ahead assets."
+    },
+    {
+      "path": "/legal/data-retention",
+      "title": "Data Retention",
+      "description": "How long Trusted Bums keeps platform records."
+    },
+    {
+      "path": "/legal/client-agreement",
+      "title": "Client Agreement",
+      "description": "Client terms for introductions, opportunity registration, commissions, and platform use."
+    },
+    {
+      "path": "/legal/bum-agreement",
+      "title": "Bum Agreement",
+      "description": "Bum terms for participation, confidentiality, conduct, and earnings eligibility."
+    }
+  ]
+}

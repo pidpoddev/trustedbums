@@ -44,7 +44,7 @@ jobs:
         run: pnpm run test
 
       - name: Build
-        run: pnpm exec vite build --base=/
+        run: pnpm run build
         env:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}

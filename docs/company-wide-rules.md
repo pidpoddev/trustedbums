@@ -109,6 +109,14 @@ When adding a rule, include:
 
 ## Specialist And Release Coordination
 
+### Public routes need server-delivered compact metadata
+- Rule: Public acquisition, trust, privacy, and legal routes must have route-specific `<title>`, description, canonical URL, `og:url`, and social metadata in the initial HTML response before React runs.
+- Applies to: Trust & Reputation, Content, UX, UI, B2B Growth, Data/Analytics, Release Verification, Lead Developer, public website routes, legal pages, and crawler-facing deploy checks.
+- Why it matters: Crawlers, link-preview systems, reputation reviewers, buyers, and browser tabs often read initial HTML rather than client-side head mutations.
+- Implementation notes: Keep public-route metadata in `src/data/publicRouteMetadata.json`, keep tab titles at or below the manifest `maxTitleLength`, generate static route HTML with `scripts/render-route-metadata.mjs` during every production build, and keep runtime `RouteMetadata` synced to the same manifest.
+- QA proof: `curl -sL` for `/`, `/privacy-policy`, and at least one `/legal/:slug` route should return different initial titles, descriptions, canonical URLs, and `og:url` values before JavaScript execution. Hosted DreamHost deploy checks should verify at least one generated trust route and one generated legal route.
+- Open questions: None.
+
 ### Consultant local preview and external DNS checks use fixed targets
 - Rule: When consultant work needs a local preview or local route check from the Codex runner, use port `8080` only. When external DNS context is needed from the same runner, use `https://rcdl.tplinkdns.com` as the external target unless Ryan specifies a different host for that run.
 - Applies to: UX, UI, Content, QA, Trust & Reputation, Lead Developer, and any Codex-run local preview or external reachability check.
