@@ -125,6 +125,14 @@ When adding a rule, include:
 - QA proof: Release notes, QA backlogs, and post-main handoffs cite GitHub workflow run names, pass/fail status, artifact names, and skipped/missing-secret reasons. Local-only QA is explicitly labeled as preflight unless GitHub is unavailable.
 - Open questions: None.
 
+### RLS and authorization coverage are mandatory for new data workflows
+- Rule: Any new or changed Supabase table, RLS policy, grant, RPC, edge-function data path, route guard, extension API, or role-scoped portal workflow must include explicit RLS/authorization coverage before it is treated as release-ready.
+- Applies to: Lead Developer, Security Engineer, QA Test Engineer, QA Harness Reliability, Release Verification, Code Review Agent, Supabase migrations, portal APIs, edge functions, extension APIs, and mutating QA.
+- Why it matters: Trusted Bums uses role and company boundaries as product trust boundaries. A change is unsafe if it either exposes data too broadly or blocks legitimate Client/Bum/Admin workflows through overly strict RLS.
+- Implementation notes: Every access-sensitive change must document the expected allow/deny matrix for Admin, Client Admin, Client Finance, Client Member, Bum, and Public Visitor where relevant. Validate both sides: users can perform every approved workflow and cannot perform disallowed cross-role/cross-company actions. Test with the production auth token shape, because Clerk session tokens may evaluate under the `anon` database role while still carrying a signed-in `sub`. Avoid write patterns that require unnecessary `RETURNING` reads unless matching `USING` policies are proven. Prefer `return=minimal` for writes that do not need returned rows.
+- QA proof: Include direct data-path checks, portal/API/extension checks where relevant, mutating workflow proof for critical Client/Bum/Admin paths, cleanup verification, and Supabase advisor/policy inspection after DDL changes.
+- Open questions: Which role matrix should become the minimum reusable fixture set for every new table category?
+
 ### Specialist recommendations require cross-specialist impact review
 - Rule: A recommendation from one specialist should be checked with other affected specialists before implementation when tradeoffs are likely.
 - Applies to: Lead Developer, Security, UX, UI, QA, Data, Product Ops, Trust & Reputation, Content, Accessibility, and Performance.

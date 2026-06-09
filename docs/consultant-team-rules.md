@@ -97,6 +97,8 @@ _Last updated: 2026-06-07 by Codex._
 - Maintain a post-main verification checklist that Lead Developer can run after every `main` push. It should include the broadest practical combination of lint, unit tests, build, authenticated role smoke, visual/interaction audits, extension/API checks, Supabase migration/function verification, public contact intake, telemetry, and trust/reputation smoke, with clear skip reasons for missing credentials or unavailable environments.
 - Maintain a `Business Access Coverage` section in `docs/qa-test-backlog.md` when access-risk work is active. For each major object, identify role data needs, missing allow/deny scenarios, required seeded records, and workflows that should block RLS hardening until tested.
 - For RLS-sensitive workflows, require both positive and negative QA proof: legitimate access still works and unrelated cross-role or cross-company access is denied.
+- For Supabase-backed workflow QA, validate with the production auth token shape whenever possible. Clerk session tokens may evaluate as the `anon` database role while still carrying a signed-in `sub`; tests that only assume `authenticated` can miss production failures.
+- For mutating QA, verify cleanup order and final cleanup counts. A passing workflow that leaves `qa-*` data behind is a harness defect unless the retained data is intentional and documented.
 - Recommend the narrowest high-value tests before broad suites.
 - Verify QA target reachability separately from credential presence, and add an explicit preflight recommendation when suites fail before first navigation.
 - When a workflow creates records or state changes, verify that matching read, update, and queue or history coverage exists before calling the workflow covered.
@@ -110,6 +112,7 @@ _Last updated: 2026-06-07 by Codex._
 - Maintain a `Business Rule Alignment` section in `docs/security-review-backlog.md` when access-risk work is active. Map risky RLS policies, edge functions, public RPCs, service-role paths, and route guards to `docs/business-access-rules.md`.
 - When a public edge function or unauthenticated write path sends email, creates records, or touches reputation-sensitive infrastructure, require a matching business rule in `docs/business-access-rules.md` plus anti-abuse proof in source or deployment config before calling it production-ready.
 - Do not recommend stricter RLS as a standalone goal. Recommend business-rule-accurate access, with explicit allow/deny examples and rollback-safe validation.
+- When reviewing write paths, check whether the app actually needs returned rows. If it does not, prefer `return=minimal` or equivalent no-return writes; if it does, require matching `USING` policy proof for the returned row and any embedded relationships.
 - Check current advisories or exploit patterns affecting dependencies, frameworks, auth providers, extensions, or Supabase/Postgres.
 - Use Supabase read-only SQL, catalog, and security advisors when available to inspect exposed schemas, RLS, grants, views, storage, and `SECURITY DEFINER` helper exposure. If unavailable, state the exact limitation.
 - For RLS or elevated-backend changes, compare intended role boundaries for admin, client admin, client finance, client member, and Bum flows before recommending rollout.
@@ -158,7 +161,7 @@ _Last updated: 2026-06-07 by Codex._
 - Review the actual current working tree, staged files, branch, target remote, and exact commit SHA before deciding.
 - Validate that the push scope matches the user's requested work and does not accidentally include secrets, private data, unsafe env values, or unrelated changes.
 - Treat RLS, Supabase policies, grants, migrations, edge functions, service-role code, Clerk auth, route guards, extension APIs, admin-only APIs, mailbox access, payment flows, legal/privacy data, public endpoints, and telemetry as high-risk surfaces.
-- For RLS or authorization changes, require mapping to `docs/business-access-rules.md`, positive and negative role cases, and evidence that legitimate workflows still work after hardening.
+- For RLS or authorization changes, require mapping to `docs/business-access-rules.md`, positive and negative role cases, production-token-shape awareness, and evidence that legitimate workflows still work after hardening.
 - For public endpoints or email-triggering paths, require abuse-control review and Trust & Reputation impact.
 - Run the narrowest meaningful validation before GO: lint, tests, build, dependency audit, Supabase connector checks, function deployment checks, or targeted source review depending on what changed. If a check cannot run, say exactly why and account for the risk.
 - Return the exact decision structure from `docs/code-review-expert-role.md`, including `Decision: GO` or `Decision: NO-GO`.

@@ -10,6 +10,8 @@ Before reviewing, read docs/company-wide-rules.md, docs/consultant-team-rules.md
 
 Every run: inspect the latest GitHub Actions evidence for QA, E2E Smoke, Visual UI Audit, and Deep QA Hotfix Audit; inspect local Playwright helpers and recent test failures; verify whether .env.qa exists and whether the documented variable contract passes after sourcing it; identify flaky tests, missing artifacts, overbroad specs, route/audit gaps, skipped role coverage, false-positive monitors, browser-state hazards, and timeout-prone flows; prioritize harness fixes that make future QA evidence more deterministic. Use local Playwright only as reproduction or preflight unless GitHub evidence is unavailable.
 
+For RLS-sensitive workflows, own the harness reliability details that make access evidence trustworthy: production auth token shape capture without logging secrets, role/session setup, direct Supabase allow/deny helpers, mutating workflow cleanup order, cleanup verification counts, stale QA-data detection, and avoiding false failures from `.select().single()`/`RETURNING` behavior when the product only needs a write. If a test passes while cleanup leaves `qa-*` data behind, treat that as a harness defect until cleanup is fixed or the leftover data is intentionally retained and documented.
+
 When the Deep QA client path, goToAuthPath(), localStorage, route navigation, chrome-error://chromewebdata/, or audit cancellation appears in evidence, treat it as a harness reliability problem until product evidence proves otherwise. Split broad audits by route, role, or workflow when needed. If a product defect is discovered while debugging harness reliability, hand it to QA Test Engineer and Lead Developer instead of burying it in this backlog.
 
 Use this structure:

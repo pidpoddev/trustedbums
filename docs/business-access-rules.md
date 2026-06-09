@@ -10,6 +10,8 @@ For broader company, product, website, terminology, trust, and operating behavio
 
 RLS hardening must preserve legitimate Trusted Bums workflows. Every proposed access change should map to this document and include before/after QA checks for affected roles.
 
+Every new or changed Supabase data workflow must include RLS/authorization proof before release. The proof must cover both sides of access: allowed roles can complete their legitimate portal/API/extension workflow, and disallowed roles cannot read or mutate cross-role or cross-company data through direct Supabase access, route guards, edge functions, public RPC, or extension APIs. Tests must use the production auth token shape where possible; Trusted Bums Clerk session tokens may evaluate as the `anon` database role while still carrying a signed-in `sub`, so policies must be validated against that reality rather than an assumed `authenticated` role. For writes that do not need returned rows, prefer minimal-return patterns to avoid accidental RLS `USING` failures during `RETURNING`.
+
 ## Ownership Model
 
 - Product Ops defines the business workflow and handoff rules.

@@ -74,6 +74,9 @@ Decision: GO or NO-GO
 - State whether the change touches Supabase tables, policies, grants, migrations, RPCs, service-role edge functions, Clerk auth, route guards, extension APIs, or role-scoped portal APIs.
 - If it does, map the change to `docs/business-access-rules.md`.
 - Check whether positive and negative role cases are covered for Admin, Client Admin, Client Finance, Client Member, Bum, and Public Visitor where relevant.
+- Check whether the tests use the production auth token shape or explicitly document why they cannot. Trusted Bums Clerk session tokens may evaluate under the `anon` database role while still carrying a signed-in `sub`; do not assume all signed-in browser writes evaluate as `authenticated`.
+- Check write paths for accidental `RETURNING`/`.select().single()` dependencies. If returned rows are unnecessary, require `return=minimal` or equivalent no-return writes; if returned rows are necessary, require matching `USING`/read policy proof.
+- Check that mutating QA includes cleanup verification and does not leave `qa-*` data behind.
 - If live Supabase policy/advisor access is unavailable, say so explicitly and downgrade confidence instead of overclaiming.
 
 ### Validation Run
@@ -111,7 +114,7 @@ The reviewer should be conservative about security, authorization, data isolatio
 - If package files changed, run or justify skipping dependency/audit checks.
 - If application code changed, run or justify skipping lint, unit tests, and build.
 - If Supabase code changed, inspect `supabase/config.toml`, edge functions, migrations, `verify_jwt` posture, service-role usage, and RLS implications.
-- If RLS, grants, policies, or access rules changed, require business-rule mapping and allow/deny tests before GO.
+- If RLS, grants, policies, access rules, or Supabase-backed workflows changed, require business-rule mapping, positive and negative role tests, production-token-shape awareness, and mutating cleanup proof before GO.
 - If a change came from one specialist role but materially affects another role, confirm Lead Developer has documented the cross-specialist impact check. Examples: Security hardening can break UX/onboarding; Product Ops queues can affect UI density and Accessibility; Data/export changes can affect Privacy and Client Finance workflows; Trust controls can affect conversion and content.
 - If public endpoints, email senders, webhooks, telemetry, mailbox access, or reputation-sensitive code changed, include Trust and Security impact.
 - If generated artifacts are staged, confirm whether they are intended to be versioned.
