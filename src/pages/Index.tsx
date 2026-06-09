@@ -34,8 +34,8 @@ const storyCards = [
   },
   {
     eyebrow: "02",
-    title: "A credible route changes the first touch",
-    copy: "A trusted path can start the conversation in a way no sequence, script, or generic SDR campaign can.",
+    title: "Trust opens the side door",
+    copy: "A credible friend can start the conversation in a way no sequence, script, or generic SDR campaign can.",
     image: "/brand-trust-connector.svg",
   },
   {
@@ -48,8 +48,8 @@ const storyCards = [
 
 const proofPoints = [
   { value: "Hard", label: "accounts, not easy volume" },
-  { value: "Qualified", label: "requests reviewed by humans" },
-  { value: "Controlled", label: "warm-intro workflows" },
+  { value: "Warm", label: "routes into guarded buyers" },
+  { value: "Aligned", label: "commission-based outcomes" },
 ];
 
 const defaultContactForm = {
@@ -252,7 +252,7 @@ const Index = () => {
                 </SignInButton>
                 <SignupIntentDialog lockedRole="CLIENT">
                   <Button size="sm" className="rounded-full px-5 shadow-[0_0_28px_rgba(255,122,26,0.35)]">
-                    Client signup
+                    Sign up
                   </Button>
                 </SignupIntentDialog>
               </>
@@ -284,17 +284,17 @@ const Index = () => {
             <div className="brand-rise max-w-4xl">
               <div className="inline-flex rotate-[-1.5deg] items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-4 py-2 text-sm font-bold uppercase tracking-[0.18em] text-orange-100 shadow-[0_0_35px_rgba(255,122,26,0.28)]">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Client intro strategy
+                BUMS = Bring Us More Sales
               </div>
 
               <h1 className="mt-7 max-w-5xl font-display text-5xl font-black leading-[0.92] tracking-[-0.06em] md:text-7xl xl:text-8xl">
-                Reach the accounts your team cannot crack.
-                <span className="mt-3 block text-primary">Warm access beats cold volume.</span>
+                Your buyer is ignoring strangers.
+                <span className="mt-3 block text-primary">Good thing we know a friend.</span>
               </h1>
 
               <p className="mt-7 max-w-2xl text-xl leading-8 text-orange-50/78">
-                Trusted Bums helps serious companies turn hard-to-reach target accounts into credible warm-introduction
-                workflows. Bring the accounts, blockers, and urgency. We help determine whether trust can open the door.
+                Trusted Bums turns hard-to-reach decision makers into warm conversations through credible human
+                introductions. The name is playful. The access is not.
               </p>
 
               <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -360,7 +360,7 @@ const Index = () => {
                 <p className="mt-2 text-sm font-semibold">Trust still gets through.</p>
               </div>
               <div className="absolute -right-3 -top-5 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur">
-                Built for strategic accounts
+                No stranger danger sales pitch
               </div>
             </div>
           </div>
@@ -370,7 +370,7 @@ const Index = () => {
               {Array.from({ length: 2 }).map((_, groupIndex) => (
                 <div key={groupIndex} className="brand-marquee-segment flex shrink-0 items-center">
                   <span>Warm introductions</span>
-                  <span className="text-primary">Client strategy</span>
+                  <span className="text-primary">Bring Us More Sales</span>
                   <span>Trusted Bums</span>
                   <span className="text-primary">Hard accounts</span>
                   <span>Relationship-led revenue</span>
@@ -386,12 +386,12 @@ const Index = () => {
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">Why it works</p>
                 <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
-                  Your best accounts do not need more pitches.
+                  Decision makers do not need more pitches.
                 </h2>
               </div>
               <p className="text-lg leading-8 text-muted-foreground">
-                Your ideal buyer may never hear your message because their inbox is already crowded. We replace the
-                noise with a human reason to listen: a trusted route and a serious reason for the conversation.
+                Your ideal buyer may never hear your message because their inbox is already an arena. We replace the
+                noise with a human reason to listen: a trusted person making a credible introduction.
               </p>
             </div>
 
@@ -435,7 +435,7 @@ const Index = () => {
                 <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5">
                   <Handshake className="h-7 w-7 text-primary" />
                   <p className="mt-4 font-display text-xl font-black">More credibility</p>
-                  <p className="mt-2 text-sm text-white/65">The first touch follows a credible path instead of another cold ask.</p>
+                  <p className="mt-2 text-sm text-white/65">The first touch comes from someone the buyer already trusts.</p>
                 </div>
               </div>
             </div>
@@ -456,16 +456,16 @@ const Index = () => {
             <div className="max-w-3xl">
               <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">How it works</p>
               <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
-                A Client workflow, not a favor spreadsheet.
+                A real revenue channel, not a favor spreadsheet.
               </h2>
             </div>
 
             <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
               {[
-                ["Name the accounts", "Tell us which target accounts or buyer groups matter and why they are blocked."],
-                ["Qualify the fit", "We review urgency, role, company, and seriousness before moving into a strategy call."],
-                ["Find the route", "Approved workflows look for credible relationship paths instead of more cold activity."],
-                ["Track the value", "If the path turns into durable revenue, the work stays tied to clear marketplace economics."],
+                ["Choose the doors", "Clients name the accounts and decision makers that are worth a trusted route."],
+                ["Match the Bum", "We find the Bum with the right relationship, context, and credibility."],
+                ["Make it warm", "The approach feels natural because it comes through trust, not automation."],
+                ["Track the value", "If the intro turns into durable revenue, everyone can see the aligned economics."],
               ].map(([title, copy], index) => (
                 <div key={title} className="rounded-[1.75rem] bg-secondary/55 p-6">
                   <p className="font-display text-sm font-black uppercase tracking-[0.2em] text-primary">
@@ -485,13 +485,13 @@ const Index = () => {
               <div className="mb-6 w-fit rounded-2xl bg-primary/10 p-4">
                 <Briefcase className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="font-display text-3xl font-black tracking-[-0.04em]">Built for Client demand</h3>
+              <h3 className="font-display text-3xl font-black tracking-[-0.04em]">For Clients</h3>
               <p className="mt-4 text-muted-foreground">
-                Target the customer accounts your team struggles to reach, explain the blocker, and move qualified demand
-                into a structured warm-introduction review.
+                Target the Customer accounts your team struggles to reach, define commission terms, upload training, and track
+                introductions in a structured Client workflow.
               </p>
               <div className="mt-6 space-y-3">
-                {["Hard account targeting", "Manual seriousness review", "Commission-aligned workflow"].map((item) => (
+                {["Hard account targeting", "Commission-aligned strategy", "Bum training and enablement"].map((item) => (
                   <p key={item} className="flex items-center gap-3 text-sm font-semibold">
                     <CheckCircle2 className="h-5 w-5 text-primary" />
                     {item}
