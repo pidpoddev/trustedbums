@@ -81,3 +81,6 @@ verify_jwt = false
 
 [functions.dmarc-reports]
 verify_jwt = false
+
+[functions.sync-claim-decision-replies]
+verify_jwt = false

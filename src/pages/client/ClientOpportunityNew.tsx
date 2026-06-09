@@ -29,9 +29,11 @@ import {
   listSelectableClientPayPrograms,
   respondToOpportunityQuestion,
   updateCustomerTargetResponseStatus,
+  updateOpportunityClaimStatus,
   updateOwnOpportunityRegistration,
   type ClientPayProgramApprovalStatus,
   type CustomerTargetResponseRecord,
+  type OpportunityClaimDeclineReason,
   type OpportunityClaimRecord,
   type OpportunityQuestionRecord,
   type OpportunityQuestionVisibility,
@@ -40,6 +42,7 @@ import {
 import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromTargetResponseStatus } from "@/lib/opportunityModel";
 import { formatDateForTimeZone } from "@/lib/timezone";
 import { parseOpportunityImportFile, toOpportunityInput, type OpportunityImportRow } from "@/lib/opportunityImport";
+import { claimDeclineReasonLabel, claimDeclineReasons } from "@/lib/claimConfig";
 
 const REGISTERED_OPPORTUNITIES_PAGE_SIZE = 6;
 
@@ -187,6 +190,13 @@ function bumName(claim: OpportunityClaimRecord | null) {
   return claim.profiles?.full_name ?? claim.profiles?.email ?? "Bum assigned";
 }
 
+function claimDecisionSummary(claim: OpportunityClaimRecord | null) {
+  if (!claim) return null;
+  if (claim.status !== "DECLINED") return null;
+  const reason = claimDeclineReasonLabel(claim.decline_reason_code) ?? "Declined";
+  return claim.decline_reason_note ? `${reason}: ${claim.decline_reason_note}` : reason;
+}
+
 function nextStepForOpportunity(opportunity: OpportunityRegistration, assignedClaim: OpportunityClaimRecord | null) {
   if (opportunity.status === "Submitted") {
     return "Trusted Bums review";
@@ -247,6 +257,8 @@ export default function ClientOpportunityNew() {
   const [editNotes, setEditNotes] = useState("");
   const [questionResponses, setQuestionResponses] = useState<Record<string, string>>({});
   const [questionVisibilities, setQuestionVisibilities] = useState<Record<string, OpportunityQuestionVisibility>>({});
+  const [claimDeclineReasonById, setClaimDeclineReasonById] = useState<Record<string, OpportunityClaimDeclineReason>>({});
+  const [claimDeclineNoteById, setClaimDeclineNoteById] = useState<Record<string, string>>({});
   const [responsePayProgramIds, setResponsePayProgramIds] = useState<Record<string, string>>({});
   const [isRequestingPlan, setIsRequestingPlan] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -377,6 +389,42 @@ export default function ClientOpportunityNew() {
     onError: (error) => {
       toast({
         title: "Unable to reject response",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const claimDecisionMutation = useMutation({
+    mutationFn: ({
+      claim,
+      decision,
+      declineReason,
+      declineNote,
+    }: {
+      claim: OpportunityClaimRecord;
+      decision: "APPROVED" | "DECLINED";
+      declineReason?: OpportunityClaimDeclineReason;
+      declineNote?: string;
+    }) =>
+      updateOpportunityClaimStatus(
+        user!,
+        claim.id,
+        decision,
+        declineNote,
+        decision === "DECLINED" ? declineReason ?? "OTHER" : null,
+        declineNote,
+      ),
+    onSuccess: async (claim) => {
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-claims", user?.clientId] });
+      toast({
+        title: claim.status === "APPROVED" ? "Claim approved" : "Claim declined",
+        description: claim.status === "APPROVED" ? "The Bum can now move forward with the introduction path." : "The Bum will see the decline reason.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update claim",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -1436,6 +1484,9 @@ export default function ClientOpportunityNew() {
                           <div className="space-y-1">
                             <p>{bumName(assignedClaim)}</p>
                             {assignedClaim ? <p className="text-xs text-muted-foreground">{assignedClaim.status.replaceAll("_", " ").toLowerCase()}</p> : null}
+                            {claimDecisionSummary(assignedClaim) ? (
+                              <p className="max-w-[18rem] text-xs text-destructive">{claimDecisionSummary(assignedClaim)}</p>
+                            ) : null}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -1446,9 +1497,68 @@ export default function ClientOpportunityNew() {
                         </TableCell>
                         <TableCell>{opportunity.client_contact ?? opportunity.trusted_bums_contact ?? "Client team"}</TableCell>
                         <TableCell className="text-right">
-                          <Button type="button" variant="outline" size="sm" onClick={() => startEditing(opportunity)}>
-                            Edit
-                          </Button>
+                          <div className="flex flex-col items-end gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => startEditing(opportunity)}>
+                              Edit
+                            </Button>
+                            {assignedClaim?.status === "PROPOSED" ? (
+                              <div className="grid w-64 gap-2 rounded-md border bg-muted/20 p-2 text-left">
+                                <p className="text-xs font-medium">Claim decision</p>
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    disabled={claimDecisionMutation.isPending}
+                                    onClick={() => claimDecisionMutation.mutate({ claim: assignedClaim, decision: "APPROVED" })}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={claimDecisionMutation.isPending}
+                                    onClick={() => {
+                                      const reason = claimDeclineReasonById[assignedClaim.id] ?? "ALREADY_CONNECTED";
+                                      claimDecisionMutation.mutate({
+                                        claim: assignedClaim,
+                                        decision: "DECLINED",
+                                        declineReason: reason,
+                                        declineNote: claimDeclineNoteById[assignedClaim.id],
+                                      });
+                                    }}
+                                  >
+                                    Decline
+                                  </Button>
+                                </div>
+                                <Select
+                                  value={claimDeclineReasonById[assignedClaim.id] ?? "ALREADY_CONNECTED"}
+                                  onValueChange={(value: OpportunityClaimDeclineReason) =>
+                                    setClaimDeclineReasonById((current) => ({ ...current, [assignedClaim.id]: value }))
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {claimDeclineReasons.map((reason) => (
+                                      <SelectItem key={reason.value} value={reason.value}>
+                                        {reason.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Textarea
+                                  rows={2}
+                                  value={claimDeclineNoteById[assignedClaim.id] ?? ""}
+                                  onChange={(event) =>
+                                    setClaimDeclineNoteById((current) => ({ ...current, [assignedClaim.id]: event.target.value }))
+                                  }
+                                  placeholder="Optional detail for the Bum"
+                                />
+                              </div>
+                            ) : null}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { claimStatusConfig } from "@/lib/claimConfig";
+import { claimDeclineReasonLabel, claimStatusConfig } from "@/lib/claimConfig";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   buildTopLineShareSchedule,
@@ -139,6 +139,16 @@ export default function BumClaims() {
                   <div className="rounded-xl border bg-card p-3 text-sm text-muted-foreground">
                     <p className="font-medium text-foreground">Request note</p>
                     <p className="mt-1">{claim.note}</p>
+                  </div>
+                ) : null}
+
+                {claim.status === "DECLINED" ? (
+                  <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                    <p className="font-medium">Why this Claim was declined</p>
+                    <p className="mt-1">
+                      {claimDeclineReasonLabel(claim.decline_reason_code) ?? "Other"}
+                      {claim.decline_reason_note ? `: ${claim.decline_reason_note}` : ""}
+                    </p>
                   </div>
                 ) : null}
 

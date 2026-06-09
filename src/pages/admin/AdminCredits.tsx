@@ -21,7 +21,7 @@ import {
   type OpportunityClaimStrength,
 } from "@/lib/portalApi";
 
-const claimStatuses: OpportunityClaimStatus[] = ["PROPOSED", "APPROVED", "SCHEDULED", "MEETING_HELD", "EXPIRED", "DISPUTED", "CLOSED"];
+const claimStatuses: OpportunityClaimStatus[] = ["PROPOSED", "APPROVED", "DECLINED", "SCHEDULED", "MEETING_HELD", "EXPIRED", "DISPUTED", "CLOSED"];
 const relationshipStrengths: OpportunityClaimStrength[] = ["STRONG", "MODERATE", "WEAK"];
 
 function ClaimShareRow({ claim }: { claim: OpportunityClaimRecord }) {

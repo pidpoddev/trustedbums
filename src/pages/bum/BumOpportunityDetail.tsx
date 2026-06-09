@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { MeetingTranscriptsSection } from "@/components/MeetingTranscriptsSection";
-import { claimStatusConfig, type ClaimStatus, type RelationshipStrength, isClaimStatus, isRelationshipStrength } from "@/lib/claimConfig";
+import { claimDeclineReasonLabel, claimStatusConfig, type ClaimStatus, type RelationshipStrength, isClaimStatus, isRelationshipStrength } from "@/lib/claimConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
@@ -44,6 +44,8 @@ interface ActivityEntry {
   note: string;
   at: string;
 }
+
+const bumClaimUpdateStatuses: ClaimStatus[] = ["SCHEDULED", "MEETING_HELD", "EXPIRED", "DISPUTED", "CLOSED"];
 
 export default function BumOpportunityDetail() {
   const { id } = useParams();
@@ -358,6 +360,15 @@ export default function BumOpportunityDetail() {
                     />
                     {claim.meeting_locked ? <StatusBadge label="Share locked" variant="secondary" /> : null}
                   </div>
+                  {claim.status === "DECLINED" ? (
+                    <div className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                      <p className="font-medium">Why this Claim was declined</p>
+                      <p className="mt-1">
+                        {claimDeclineReasonLabel(claim.decline_reason_code) ?? "Other"}
+                        {claim.decline_reason_note ? `: ${claim.decline_reason_note}` : ""}
+                      </p>
+                    </div>
+                  ) : null}
                   <p className="mt-2 text-sm text-muted-foreground">
                     {shareSchedule.length
                       ? shareSchedule.map((item) => `${item.label}: ${item.topLinePercent}% top line`).join(" · ")
@@ -450,8 +461,8 @@ export default function BumOpportunityDetail() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {Object.entries(claimStatusConfig).map(([key, cfg]) => (
-                    <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                  {bumClaimUpdateStatuses.map((key) => (
+                    <SelectItem key={key} value={key}>{claimStatusConfig[key].label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

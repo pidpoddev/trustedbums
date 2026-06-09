@@ -1103,8 +1103,9 @@ export interface ClientPayProgramRequestInput {
   request_reason?: string;
 }
 
-export type OpportunityClaimStatus = "PROPOSED" | "APPROVED" | "SCHEDULED" | "MEETING_HELD" | "EXPIRED" | "DISPUTED" | "CLOSED";
+export type OpportunityClaimStatus = "PROPOSED" | "APPROVED" | "DECLINED" | "SCHEDULED" | "MEETING_HELD" | "EXPIRED" | "DISPUTED" | "CLOSED";
 export type OpportunityClaimStrength = "STRONG" | "MODERATE" | "WEAK";
+export type OpportunityClaimDeclineReason = "ALREADY_CONNECTED" | "NO_LONGER_OPPORTUNITY" | "WRONG_CONTACT_LEVEL" | "NOT_RELEVANT" | "DUPLICATE" | "OTHER";
 
 export interface OpportunityClaimRecord {
   id: string;
@@ -1119,6 +1120,13 @@ export interface OpportunityClaimRecord {
   relationship_strength: OpportunityClaimStrength;
   note: string | null;
   status: OpportunityClaimStatus;
+  decline_reason_code: OpportunityClaimDeclineReason | null;
+  decline_reason_note: string | null;
+  client_decision_token: string | null;
+  client_decision_source: string | null;
+  client_decision_received_at: string | null;
+  client_decision_email_message_id: string | null;
+  client_decision_email_from: string | null;
   expires_at: string;
   created_at: string;
   updated_at: string;
@@ -3948,6 +3956,8 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
       relationship_strength: data.relationship_strength,
       bum_name: user.name || user.email,
       admin_note: data.note ?? "",
+      claim_id: data.id,
+      claim_decision_token: data.client_decision_token ?? "",
     },
     triggeredBy: "OPPORTUNITY_CLAIM_CREATED",
   }).catch((error) => {
@@ -4379,10 +4389,31 @@ export async function respondToOpportunityQuestion(user: AuthUser, questionId: s
   return normalizedQuestion;
 }
 
-export async function updateOpportunityClaimStatus(user: AuthUser, claimId: string, status: OpportunityClaimStatus, note?: string) {
-  const payload: Partial<Pick<OpportunityClaimRecord, "status" | "note">> = { status };
+export async function updateOpportunityClaimStatus(
+  user: AuthUser,
+  claimId: string,
+  status: OpportunityClaimStatus,
+  note?: string,
+  declineReasonCode?: OpportunityClaimDeclineReason | null,
+  declineReasonNote?: string,
+) {
+  const payload: Partial<Pick<OpportunityClaimRecord, "status" | "note" | "decline_reason_code" | "decline_reason_note" | "client_decision_source" | "client_decision_received_at">> = {
+    status,
+  };
   if (note?.trim()) {
     payload.note = note.trim();
+  }
+  if (status === "DECLINED") {
+    payload.decline_reason_code = declineReasonCode ?? "OTHER";
+    payload.decline_reason_note = declineReasonNote?.trim() || note?.trim() || null;
+    payload.client_decision_source = "portal";
+    payload.client_decision_received_at = new Date().toISOString();
+  }
+  if (status === "APPROVED") {
+    payload.decline_reason_code = null;
+    payload.decline_reason_note = null;
+    payload.client_decision_source = "portal";
+    payload.client_decision_received_at = new Date().toISOString();
   }
 
   const { data, error } = await supabase
@@ -4401,6 +4432,7 @@ export async function updateOpportunityClaimStatus(user: AuthUser, claimId: stri
 
   await createAuditEvent(user, "opportunity_claim_status_changed", "opportunity_claims", data.id, {
     status,
+    decline_reason_code: data.decline_reason_code,
   });
 
   if (status === "APPROVED") {
