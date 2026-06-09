@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthUser } from "@/data/authData";
 
 const customerTargetPolicySource = readFileSync(
@@ -58,28 +58,6 @@ function createCompaniesTableMock(calls: {
   };
 }
 
-function createCustomerTargetsTableMock(calls: {
-  targetUpsertPayloads: unknown[];
-}) {
-  return {
-    upsert: vi.fn((payload) => {
-      calls.targetUpsertPayloads.push(payload);
-      return {
-        select: vi.fn(() => ({
-          single: vi.fn(async () =>
-            createQueryResult({
-              id: "target-1",
-              ...payload,
-              created_at: "2026-06-08T00:00:00.000Z",
-              updated_at: "2026-06-08T00:00:00.000Z",
-            }),
-          ),
-        })),
-      };
-    }),
-  };
-}
-
 function createAuditEventsTableMock(calls: {
   auditInsertPayloads: unknown[];
 }) {
@@ -108,6 +86,10 @@ describe("customer target company rules", () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("creates client target companies as prospects with company-scoped target and audit rows", async () => {
     const calls = {
       auditInsertPayloads: [] as unknown[],
@@ -115,12 +97,14 @@ describe("customer target company rules", () => {
       targetUpsertPayloads: [] as unknown[],
     };
 
+    vi.stubGlobal("fetch", vi.fn(async (_url, init) => {
+      calls.targetUpsertPayloads.push(JSON.parse(String((init as RequestInit).body)));
+      return new Response(null, { status: 204 });
+    }));
+
     fromMock.mockImplementation((table: string) => {
       if (table === "companies") {
         return createCompaniesTableMock(calls);
-      }
-      if (table === "customer_targets") {
-        return createCustomerTargetsTableMock(calls);
       }
       if (table === "audit_events") {
         return createAuditEventsTableMock(calls);

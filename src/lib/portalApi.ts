@@ -1713,6 +1713,31 @@ async function upsertCompanyDomainBestEffort(companyId: string, domain: string, 
   }
 }
 
+async function upsertCustomerTargetMinimal(record: CustomerTargetRecord) {
+  const token = await getSupabaseAccessToken();
+  const url = new URL("/rest/v1/customer_targets", supabaseUrl);
+  url.searchParams.set("on_conflict", "client_company_id,target_company_id");
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token ?? supabasePublishableKey}`,
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify(record),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null) as { message?: string; error?: string; code?: string } | null;
+    const message = payload?.message ?? payload?.error ?? `Unable to save target account (${response.status}).`;
+    const error = new Error(message) as Error & { code?: string };
+    error.code = payload?.code;
+    throw error;
+  }
+}
+
 async function findExistingCompanyMatch(input: {
   companyName: string;
   companyWebsite?: string | null;
@@ -5607,13 +5632,7 @@ export async function createCustomerTarget(user: AuthUser, input: CustomerTarget
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await supabase
-    .from("customer_targets")
-    .upsert(targetRecord, { onConflict: "client_company_id,target_company_id" });
-
-  if (error) {
-    throw error;
-  }
+  await upsertCustomerTargetMinimal(targetRecord);
 
   const { error: auditError } = await supabase.from("audit_events").insert({
     company_id: user.clientId,
