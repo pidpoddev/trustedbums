@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-09 - Finish TB-0057 DMARC enforcement
+
+- Trigger: Ryan confirmed the needed access was available and asked Codex to continue `TB-0057`.
+- Implementation branch: Current local workspace with pre-existing unrelated shared-mailbox, BlackCurrant, email-preview, marketing-graphics, and email-template migration changes still present.
+- What changed: Deployed `dmarc-reports` version 3 to Supabase project `vaoqvtxqvbptyxddpoju`, reran the live mailbox-backed DMARC review, confirmed Google ZIP plus Microsoft/Yahoo GZIP aggregate reports parse with no errors, advanced `_dmarc.trustedbums.com` from monitor-only to quarantine in DreamHost, verified authoritative DNS, and updated trust/access docs so agents can treat the mailbox parser and DMARC quarantine evidence as live.
+- Main surfaces changed: `docs/trust-reputation-backlog.md`, `docs/dmarc-report-review.md`, `docs/shared-mailbox-operations.md`, `docs/consultant-access-needs.md`, `docs/agents/consultant-access-needs.md`, and `docs/codex-edit-log.md`.
+- Checks run: Supabase Edge Function deploy for `dmarc-reports` version 3 with `verify_jwt=false`; authenticated admin invocation of `https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/dmarc-reports` with `mailbox=bums@trustedbums.com`, `days=90`, `top=100`; DreamHost DNS panel verification for `_dmarc`; repeated `dig @ns1.dreamhost.com`, `dig @ns2.dreamhost.com`, `dig @ns3.dreamhost.com`, and default-resolver TXT checks for `_dmarc.trustedbums.com`.
+- Results: The live mailbox review scanned 100 messages, found 17 likely DMARC reports, parsed all 17 reports, summarized 44 reported messages, and found 44 aligned passes with 0 full SPF/DKIM alignment failures and no parse errors. DNS now resolves `_dmarc.trustedbums.com` as `v=DMARC1; p=quarantine; rua=mailto:bums@trustedbums.com; pct=100;`. Prior rollback record: `v=DMARC1; p=none; rua=mailto:bums@trustedbums.com; pct=100;`.
+- Recheck agents: Trust And Reputation Consultant, Security Engineer, Lead Developer, Release Verification Agent, Data Analytics Engineer.
+- Next run should verify: after at least one clean reporting window under quarantine, review aggregate trends and consider `p=reject; pct=100` only if no legitimate full-fail sender drift appears.
+
 ### 2026-06-09 - Run TB-0057 mailbox-backed DMARC review
 
 - Trigger: Ryan asked to do Scrum Tracker item `TB-0057`.

@@ -44,10 +44,10 @@ The Microsoft app should not have practical read access to unrelated employee or
 ## Evidence Status
 
 - Product-side function exists for DMARC metadata review and aggregate XML parsing: `supabase/functions/dmarc-reports/index.ts`.
-- Supabase Edge Function `dmarc-reports` version 2 is deployed and active with XML, gzip, and zip attachment parsing.
+- Supabase Edge Function `dmarc-reports` version 3 is deployed and active with XML, gzip, and zip attachment parsing.
 - Microsoft Graph `Mail.Read` application permission has admin consent on the Trusted Bums Scheduler app registration.
 - Exchange application access policy was created for app ID `06a570a0-06f4-432a-8b3b-709d6cf762dc` with `RestrictAccess` scoped to `bums@trustedbums.com`.
 - Positive access check completed: `Test-ApplicationAccessPolicy` returned `Granted` for `bums@trustedbums.com`.
 - No unrelated-mailbox negative test is required while the tenant has only one operational mailbox. If another mailbox is added later, rerun `Test-ApplicationAccessPolicy` against it and expect denial unless that mailbox is intentionally added to the scope.
-- Current mailbox-backed DMARC review completed on 2026-06-09 through the deployed function: 100 messages scanned, 17 likely DMARC reports found, 8 reports parsed, 19 reported messages summarized, 19 aligned passes, and 0 full alignment failures in parsed reports.
-- Source fix pending deployment: Microsoft/Yahoo `.xml.gz` attachments exposed a gzip-vs-ZIP classification defect in deployed version 2. The repo source now handles gzip before ZIP and has regression coverage in `src/test/dmarcReportsFunction.test.ts`; deploy `dmarc-reports` before treating Microsoft/Yahoo aggregate parsing as production-clean.
+- Current mailbox-backed DMARC review completed on 2026-06-09 through deployed function version 3: 100 messages scanned, 17 likely DMARC reports found, 17 reports parsed, 44 reported messages summarized, 44 aligned passes, and 0 full alignment failures in parsed reports.
+- Microsoft/Yahoo `.xml.gz` attachments now parse cleanly in production after the gzip-before-ZIP fix. `_dmarc.trustedbums.com` now resolves as `v=DMARC1; p=quarantine; rua=mailto:bums@trustedbums.com; pct=100;`; the prior rollback record was `v=DMARC1; p=none; rua=mailto:bums@trustedbums.com; pct=100;`.

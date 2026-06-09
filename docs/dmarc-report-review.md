@@ -79,15 +79,15 @@ Result summary:
 
 - Messages scanned: 100.
 - Likely DMARC report messages found: 17.
-- Parsed reports: 8.
-- Parsed reported message count: 19.
-- Aligned pass count: 19.
+- Parsed reports: 17.
+- Parsed reported message count: 44.
+- Aligned pass count: 44.
 - Full SPF/DKIM alignment failures: 0.
-- Current `_dmarc.trustedbums.com`: `v=DMARC1; p=none; rua=mailto:bums@trustedbums.com; pct=100;`.
+- Current `_dmarc.trustedbums.com`: `v=DMARC1; p=quarantine; rua=mailto:bums@trustedbums.com; pct=100;`.
 - Current root SPF: `v=spf1 include:spf.protection.outlook.com -all`.
-- Current aligned senders seen in parsed reports: Microsoft 365/Outlook using `trustedbums.com` SPF/DKIM and Clerk/SendGrid using `clkmail.trustedbums.com` SPF plus `trustedbums.com` DKIM selector `clk`.
+- Current aligned senders seen in parsed reports: Microsoft 365/Outlook using `trustedbums.com` SPF/DKIM, Yahoo aggregate feedback with no full failures, and Clerk/SendGrid using `clkmail.trustedbums.com` SPF plus `trustedbums.com` DKIM selector `clk`.
 
-The live version still returned parse errors for Microsoft/Yahoo `.xml.gz` reports because `application/gzip` was classified as ZIP. The source fix in `supabase/functions/dmarc-reports/index.ts` handles gzip before ZIP and is covered by `src/test/dmarcReportsFunction.test.ts`; deploy that function before using Microsoft/Yahoo aggregate output as final enforcement evidence.
+The source fix in `supabase/functions/dmarc-reports/index.ts` handles gzip before ZIP and is covered by `src/test/dmarcReportsFunction.test.ts`. Codex deployed it to Supabase project `vaoqvtxqvbptyxddpoju` as `dmarc-reports` version 3 on 2026-06-09, then reran the live review. Google ZIP, Microsoft/Outlook GZIP, and Yahoo GZIP aggregate reports parsed without gzip/zip classification errors. DreamHost panel and repeated authoritative DNS checks against ns1/ns2/ns3 confirmed the DMARC policy is now `p=quarantine; pct=100`.
 
 ## Site Workflow Uses
 
@@ -103,11 +103,11 @@ Each new workflow should define what it can read, what it can store, who can see
 
 ## Enforcement Plan
 
-1. Deploy the `dmarc-reports` gzip parser fix to Supabase project `vaoqvtxqvbptyxddpoju`.
-2. Rerun the mailbox review until Google ZIP reports plus Microsoft/Yahoo GZIP reports parse without gzip/zip classification errors.
-3. Confirm all legitimate sender rows align through SPF or DKIM for `trustedbums.com`; remediate or explicitly accept any unexplained full failures.
-4. Change `_dmarc.trustedbums.com` from monitor-only to `v=DMARC1; p=quarantine; rua=mailto:bums@trustedbums.com; pct=100;`.
-5. Treat Ryan as rollback owner and preserve the previous monitor-only record in the change note.
+1. Done on 2026-06-09: deployed the `dmarc-reports` gzip parser fix to Supabase project `vaoqvtxqvbptyxddpoju` as version 3.
+2. Done on 2026-06-09: reran the mailbox review and confirmed Google ZIP reports plus Microsoft/Yahoo GZIP reports parse without gzip/zip classification errors.
+3. Done on 2026-06-09: confirmed the expanded parsed report set has 44 aligned messages and 0 full SPF/DKIM alignment failures.
+4. Done on 2026-06-09: changed `_dmarc.trustedbums.com` from monitor-only to `v=DMARC1; p=quarantine; rua=mailto:bums@trustedbums.com; pct=100;`.
+5. Rollback owner: Ryan. Prior monitor-only rollback record: `v=DMARC1; p=none; rua=mailto:bums@trustedbums.com; pct=100;`.
 6. After at least one clean reporting window under quarantine, consider `p=reject; pct=100`.
 
 ## Next Improvement
