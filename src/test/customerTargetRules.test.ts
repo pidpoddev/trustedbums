@@ -162,6 +162,7 @@ describe("customer target company rules", () => {
     ]);
     expect(calls.targetUpsertPayloads).toEqual([
       expect.objectContaining({
+        id: expect.any(String),
         client_company_id: "client-company-1",
         target_company_id: "target-company-1",
         created_by: "client-admin-1",
@@ -176,7 +177,7 @@ describe("customer target company rules", () => {
         user_id: "client-admin-1",
         event_type: "customer_target_created",
         entity_type: "customer_targets",
-        entity_id: "target-1",
+        entity_id: calls.targetUpsertPayloads[0]?.id,
         event_data: expect.objectContaining({
           target_company_id: "target-company-1",
           target_account_name: "Acme",

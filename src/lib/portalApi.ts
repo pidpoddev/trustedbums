@@ -5567,37 +5567,49 @@ export async function createCustomerTarget(user: AuthUser, input: CustomerTarget
     throw new Error("Only client users linked to a company can create target accounts.");
   }
 
+  const targetId = globalThis.crypto?.randomUUID?.() ?? `target-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const status = input.status ?? "PROSPECT";
+  const priority = input.priority ?? "MEDIUM";
+  const targetAccountName = input.target_account_name.trim();
+  const businessUnit = toNullableString(input.business_unit);
+  const keyContactName = toNullableString(input.key_contact_name);
+  const keyContactTitle = toNullableString(input.key_contact_title);
+  const keyContactEmail = toNullableString(input.key_contact_email);
+  const expectedProductService = toNullableString(input.expected_product_service);
+  const expectedTimeline = toNullableString(input.expected_timeline);
+  const notes = toNullableString(input.notes);
+
   const targetCompany = await ensureCompany({
-    companyName: input.target_account_name,
+    companyName: targetAccountName,
     companyWebsite: input.company_website,
     linkedinCompanyUrl: input.linkedin_company_url,
-    email: input.key_contact_email,
+    email: keyContactEmail,
     relationshipStage: "PROSPECT",
   });
 
-  const { data, error } = await supabase
+  const targetRecord: CustomerTargetRecord = {
+    id: targetId,
+    client_company_id: user.clientId,
+    target_company_id: targetCompany.id,
+    created_by: user.id,
+    status,
+    priority,
+    target_account_name: targetAccountName,
+    business_unit: businessUnit,
+    key_contact_name: keyContactName,
+    key_contact_title: keyContactTitle,
+    key_contact_email: keyContactEmail,
+    expected_product_service: expectedProductService,
+    estimated_deal_value: input.estimated_deal_value ?? null,
+    expected_timeline: expectedTimeline,
+    notes,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
     .from("customer_targets")
-    .upsert(
-      {
-        client_company_id: user.clientId,
-        target_company_id: targetCompany.id,
-        created_by: user.id,
-        status: input.status ?? "PROSPECT",
-        priority: input.priority ?? "MEDIUM",
-        target_account_name: input.target_account_name.trim(),
-        business_unit: toNullableString(input.business_unit),
-        key_contact_name: toNullableString(input.key_contact_name),
-        key_contact_title: toNullableString(input.key_contact_title),
-        key_contact_email: toNullableString(input.key_contact_email),
-        expected_product_service: toNullableString(input.expected_product_service),
-        estimated_deal_value: input.estimated_deal_value ?? null,
-        expected_timeline: toNullableString(input.expected_timeline),
-        notes: toNullableString(input.notes),
-      },
-      { onConflict: "client_company_id,target_company_id" },
-    )
-    .select("*")
-    .single<CustomerTargetRecord>();
+    .upsert(targetRecord, { onConflict: "client_company_id,target_company_id" });
 
   if (error) {
     throw error;
@@ -5608,11 +5620,11 @@ export async function createCustomerTarget(user: AuthUser, input: CustomerTarget
     user_id: user.id,
     event_type: "customer_target_created",
     entity_type: "customer_targets",
-    entity_id: data.id,
+    entity_id: targetId,
     event_data: {
       target_company_id: targetCompany.id,
-      target_account_name: input.target_account_name.trim(),
-      status: data.status,
+      target_account_name: targetAccountName,
+      status,
     },
   });
 
@@ -5620,7 +5632,7 @@ export async function createCustomerTarget(user: AuthUser, input: CustomerTarget
     throw auditError;
   }
 
-  return data;
+  return targetRecord;
 }
 
 export async function listCustomerTargets(user?: Pick<AuthUser, "role" | "clientId"> | null) {
