@@ -6,6 +6,10 @@ const customerTargetPolicySource = readFileSync(
   "supabase/migrations/20260607194500_remove_saved_target_read_entitlement.sql",
   "utf8",
 );
+const customerTargetManagementPolicySource = readFileSync(
+  "supabase/migrations/20260609230000_restrict_customer_target_management_roles.sql",
+  "utf8",
+);
 
 const fromMock = vi.fn();
 
@@ -177,5 +181,16 @@ describe("customer target company rules", () => {
     expect(customerTargetPolicySource).toContain("response.status in ('ACCEPTED', 'CONTACTED', 'MEETING_SET')");
     expect(customerTargetPolicySource).toContain("public.teams_meetings");
     expect(customerTargetPolicySource).not.toContain("public.bum_saved_items");
+  });
+
+  it("limits customer target management to admins and client target operators", () => {
+    expect(customerTargetManagementPolicySource).toContain("private.can_manage_customer_targets");
+    expect(customerTargetManagementPolicySource).toContain("profile.access_status = 'APPROVED'");
+    expect(customerTargetManagementPolicySource).toContain("profile.disabled_at is null");
+    expect(customerTargetManagementPolicySource).toContain("profile.client_access_role in ('CLIENT_ADMIN', 'CLIENT_MEMBER')");
+    expect(customerTargetManagementPolicySource).toContain("Clients can read own customer targets");
+    expect(customerTargetManagementPolicySource).toContain("Clients can create own customer targets");
+    expect(customerTargetManagementPolicySource).toContain("Clients can update own customer targets");
+    expect(customerTargetManagementPolicySource).not.toContain("CLIENT_FINANCE");
   });
 });

@@ -37,16 +37,18 @@ The active QA issue is now documentation/test-contract drift, not a reproduced h
 - Acceptance criteria: a current-head visual artifact exists and passes for the updated public Client and Bum landing surfaces plus signup-intent states.
 
 ### P1 - [TB-0020] Keep customer-target create/save coverage tied to seeded allow/deny proof
-- Evidence: `5c6d451`, `7609b0d`, `73f0b06`, and the later current-head smoke/deep runs proved the customer-target save path is operational under the signed-in session-token shape, but the seeded live allow/deny matrix is still missing.
+- Current implementation note: v1 is now proven against live Supabase with rolled-back synthetic matrix rows. The matrix proved Client Admin same-company read/create allow, Client Member same-company read allow, Client Finance read/create deny, foreign Client Admin deny, assigned Bum read allow, unassigned Bum deny, and Admin rescue read allow. The live policy gap that allowed Client Finance direct target creation was fixed by `supabase/migrations/20260609230000_restrict_customer_target_management_roles.sql`, and cleanup verification returned zero synthetic rows across profiles, companies, customer targets, access requests, extension captures, Bum contacts, and performance telemetry.
+- Evidence: `5c6d451`, `7609b0d`, `73f0b06`, and the later current-head smoke/deep runs proved the customer-target save path is operational under the signed-in session-token shape. The 2026-06-09 rolled-back live Supabase matrix now adds direct seeded allow/deny proof for the customer-target create/read boundaries.
 - Why it matters: Route smoke can pass while direct data-path or cross-role denial still regresses.
-- Recommendation: Use `supabase/qa_authorization_seed.sql` plus real QA role accounts to prove create/read boundaries for Client Admin, Client Member if intended, Client Finance, Bum, and foreign-company denial.
-- Acceptance criteria: one allowed and one denied seeded case is recorded for each relevant role boundary, with cleanup verified.
+- Recommendation: Keep `supabase/migrations/20260609230000_restrict_customer_target_management_roles.sql` and the source-level regression in `src/test/customerTargetRules.test.ts` as the standing guardrail for customer-target management roles.
+- Acceptance criteria: one allowed and one denied seeded case is recorded for each relevant role boundary, with cleanup verified. This is complete for customer-target create/read boundaries as of the 2026-06-09 live matrix.
 
 ### P1 - [TB-0021] Run the Client/Bum go-live workflow gate before external launch
-- Evidence: `tests/e2e/go-live-client-bum-workflow.spec.ts` and `qa:go-live` still exist, but this pass relied on hosted smoke and deep coverage as the narrowest release reproduction and did not rerun the broader go-live lane.
+- Current implementation note: `corepack pnpm run qa:go-live` passed against the hosted QA target on 2026-06-09 with 4 passed Chromium workflow tests and 1 optional mutating smoke skipped by configuration.
+- Evidence: `tests/e2e/go-live-client-bum-workflow.spec.ts` and `qa:go-live` still exist, and the 2026-06-09 hosted-target run passed the broader go-live lane.
 - Why it matters: Legitimate workflow failures can still hide outside smoke and deep coverage, especially in auth/bootstrap, terms, and target-save paths.
-- Recommendation: Run `corepack pnpm run qa:go-live` against the hosted QA target before any external launch call.
-- Acceptance criteria: the go-live suite passes on hosted QA, with cleanup counts documented if mutation mode is enabled.
+- Recommendation: Keep `corepack pnpm run qa:go-live` as the broader external-launch gate whenever release scope needs more than hosted smoke and deep QA.
+- Acceptance criteria: the go-live suite passes on hosted QA, with cleanup counts documented if mutation mode is enabled. This pass did not enable mutation mode, so no created-record cleanup was needed.
 
 ### P1 - [TB-0072] Verify Potential DM matches and LinkedIn candidate buttons
 - Evidence: `TB-0072` is FIXED in `/admin/scrum`: the live Trusted Bums Supabase project has 11 BlackCurrant Potential DM matches across 4 target accounts, all labeled `Research Bot`, and [BumOpportunityDetail.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumOpportunityDetail.tsx) renders Source and LinkedIn candidate buttons for each match when URLs exist.
@@ -58,9 +60,9 @@ The active QA issue is now documentation/test-contract drift, not a reproduced h
 
 ### Customer target creation and reads
 - Roles: Client Admin and Client Member are the intended company-scoped operators for target-management routes; Client Finance is finance-only; Bum and Public Visitor are denied; Admin remains the marketplace override role.
-- Current proof: route access in [src/App.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx), target-save workflow assertions in [tests/e2e/go-live-client-bum-workflow.spec.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/go-live-client-bum-workflow.spec.ts), minimal-return writes in [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), and policy/source guards in [src/test/customerTargetRules.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/customerTargetRules.test.ts).
-- Missing allow/deny proof: same-company allow, finance-role deny, cross-company deny, Bum deny without assignment, and Admin rescue checks against seeded data.
-- Seed data needed: two client companies, one Client Admin, one Client Member, one Client Finance, one Bum, at least one own-company target, and at least one foreign-company target.
+- Current proof: route access in [src/App.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx), target-save workflow assertions in [tests/e2e/go-live-client-bum-workflow.spec.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/go-live-client-bum-workflow.spec.ts), minimal-return writes in [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), policy/source guards in [src/test/customerTargetRules.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/customerTargetRules.test.ts), and live rolled-back Supabase RLS proof for same-company allow, finance-role deny, cross-company deny, assigned-Bum allow, unassigned-Bum deny, and Admin rescue read.
+- Missing allow/deny proof: none for the customer-target create/read boundaries covered by TB-0020. Keep future fixture expansion focused on adjacent workflows such as customer target responses, meetings, and reporting exports.
+- Seed data needed: no additional seed data for the customer-target create/read boundary closed by TB-0020. Reuse the same two-company role matrix if adjacent target-response, meeting, or reporting-export boundaries are expanded later.
 
 ### Extension API destinations and page captures
 - Roles: Bum allow only for owned or explicitly assigned target destinations and created page captures; unrelated Bum and unrelated client-company users deny; Admin support only when explicitly intended.
