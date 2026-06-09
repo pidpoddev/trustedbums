@@ -14,6 +14,7 @@ import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createTrainingMaterial,
   deleteTrainingMaterial,
+  downloadBumExtensionPackage,
   getTrainingMaterialAttachmentPreviewUrl,
   getTrainingMaterialAttachmentUrl,
   listCompanies,
@@ -332,6 +333,28 @@ export default function ClientTrainings() {
     },
   });
 
+  const extensionDownloadMutation = useMutation({
+    mutationFn: () => downloadBumExtensionPackage(user!),
+    onSuccess: (blob) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "trustedbums-extension.zip";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Extension download started", description: "Install only the current package from your Bum portal." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to download extension",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const downloadAttachment = async (attachment: TrainingMaterialAttachment) => {
     try {
       const url = await getTrainingMaterialAttachmentUrl(attachment);
@@ -461,6 +484,32 @@ export default function ClientTrainings() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
+        {user?.role === "BUM" ? (
+          <Card className="border-primary/30 bg-primary/5 hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-primary p-2"><Download className="h-5 w-5 text-primary-foreground" /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium">Trusted Bums extension</p>
+                    <Badge variant="secondary">Bum only</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">Download the current pre-store extension package from your approved Bum account.</p>
+                  <Button
+                    className="mt-3"
+                    size="sm"
+                    onClick={() => extensionDownloadMutation.mutate()}
+                    disabled={extensionDownloadMutation.isPending}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {extensionDownloadMutation.isPending ? "Preparing..." : "Download extension"}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
         {filteredTrainings.map((training) => (
           <Card key={training.id} className="hover:shadow-md transition-shadow">
             <CardContent className="pt-6">

@@ -2014,6 +2014,33 @@ export async function bootstrapSupabaseProfile(input: {
   return payload;
 }
 
+export async function downloadBumExtensionPackage(user: AuthUser) {
+  if (user.role !== "BUM") {
+    throw new Error("Only approved Bum accounts can download the extension package.");
+  }
+
+  const token = await getSupabaseAccessToken();
+
+  if (!token) {
+    throw new Error("Sign in again before downloading the extension package.");
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/bum-extension-download`, {
+    method: "GET",
+    headers: {
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(payload.error || `Unable to download the extension package (${response.status}).`);
+  }
+
+  return response.blob();
+}
+
 export async function getOwnProfileSettings(userId: string) {
   return getProfileRecord(userId);
 }

@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-09 - Gate TB-0059 extension package behind Bum access
+
+- Trigger: Ryan asked whether `TB-0059` can put the pre-store extension zip behind the Bum login.
+- Implementation branch: Current local workspace with pre-existing unrelated BlackCurrant, email-preview, marketing-graphics, and email-template migration changes still present.
+- What changed: Removed `trustedbums-extension.zip` from public static assets, added a DreamHost deny rule for `/downloads/trustedbums-extension.zip`, added a `bum-extension-download` Supabase function that verifies Clerk session JWTs and approved `BUM` profiles before returning the package, and added a Bum-only download card to Training & Assets.
+- Main surfaces changed: `public/.htaccess`, `src/lib/portalApi.ts`, `src/pages/client/ClientTrainings.tsx`, `supabase/config.toml`, `supabase/functions/bum-extension-download/index.ts`, `supabase/functions/bum-extension-download/trustedbums-extension.zip`, `supabase/functions/bum-extension-download/trustedbums-extension.zip.b64`, `src/test/bumExtensionDownload.test.ts`, `docs/trust-reputation-backlog.md`, and `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/bumExtensionDownload.test.ts src/test/scrumQueueRegression.test.ts`; `corepack pnpm run lint`; `corepack pnpm run build`; `corepack pnpm run test`.
+- Results: Targeted regression passed 8 tests, lint passed, production build passed and rendered 14 route metadata files, and the full unit suite passed 117 tests across 32 files. The source build no longer contains the public zip path, and `.htaccess` forbids the old public download URL before the SPA fallback.
+- Recheck agents: Trust & Reputation, Security Engineer, QA Test Engineer, Release Verification, Lead Developer.
+- Next run should verify: after GitHub deploy, production `curl -I -L https://trustedbums.com/downloads/trustedbums-extension.zip` returns a non-public response, and `bum-extension-download` must be deployed to Supabase before the Bum portal download button is treated as live-ready. Local Supabase CLI deploy was blocked by missing `SUPABASE_ACCESS_TOKEN`.
+
 ### 2026-06-09 - Complete TB-0058 initial HTML route metadata
 
 - Trigger: Ryan asked to process `TB-0058`, make it a standard, and keep browser tab titles short.

@@ -15,6 +15,9 @@ AddType application/xml .xml
 AddType text/plain .txt
 RewriteRule ^(sitemap\.xml|robots\.txt)$ - [L]
 
+# Keep the pre-store extension package off the public site.
+RewriteRule ^downloads/trustedbums-extension\.zip$ - [F,L]
+
 # Let Apache serve real files and directories directly.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
