@@ -1,5 +1,5 @@
 import { clerk, clerkSetup } from "@clerk/testing/playwright";
-import { type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 const appBootstrapTimeoutMs = 15_000;
 const protectedRouteTimeoutMs = 25_000;
@@ -295,6 +295,7 @@ async function getTermsPromptDebugState(page: Page) {
     acceptButtonEnabled: await acceptButton.isEnabled({ timeout: 500 }).catch(() => false),
     skipButtonVisible: await skipButton.isVisible({ timeout: 500 }).catch(() => false),
     checkboxVisible: await checkbox.isVisible({ timeout: 500 }).catch(() => false),
+    checkboxChecked: await checkbox.isChecked({ timeout: 500 }).catch(() => false),
     visibleErrors,
     visibleText: visibleText.slice(0, 1_000),
   };
@@ -316,7 +317,11 @@ export async function acceptTermsIfPrompted(page: Page, destinationPath: string)
 
   if (await acceptButton.isVisible({ timeout: 15_000 }).catch(() => false)) {
     const checkbox = page.getByRole("checkbox").first();
-    await checkbox.click({ timeout: 5_000 });
+    if (!(await checkbox.isChecked({ timeout: 5_000 }).catch(() => false))) {
+      await checkbox.click({ timeout: 5_000 });
+    }
+    await expect(checkbox).toBeChecked({ timeout: 5_000 });
+    await expect(acceptButton).toBeEnabled({ timeout: 5_000 });
     await acceptButton.click();
     await page.waitForLoadState("networkidle").catch(() => undefined);
 
