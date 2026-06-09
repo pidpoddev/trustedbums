@@ -29,7 +29,7 @@ Tracker entries live in `/admin/scrum` and `public.admin_scrum_items`. Set `adde
 
 Google Analytics is configured as an approved aggregate website analytics source for `https://trustedbums.com`: account/property `Trusted Bums`, stream `Trusted Bums Web`, measurement ID `G-P6B5EYQMVN`, tracked by `TB-0066`. Agents may use GA for traffic, source, funnel, campaign, content, and engagement evidence once live data collection is proven. Until `TB-0066` is closed, treat GA as configured but pending data collection. Do not place raw visitor-level data, private exports, credentials, or unnecessary campaign details in repo markdown.
 
-Bing Webmaster Tools is configured as an approved search and Microsoft-side reputation evidence source for `https://trustedbums.com/`, tracked by `TB-0071`. Agents may use Bing for crawl, indexing, sitemap, SEO/GEO, backlink, keyword, and reputation evidence once production verification succeeds. Until `TB-0071` is closed, treat Bing as configured but pending verification. Do not place private exports, credentials, or unnecessary query/campaign detail in repo markdown.
+Bing Webmaster Tools is verified as an approved search and Microsoft-side reputation evidence source for `https://trustedbums.com/`, tracked by closed item `TB-0071`. Agents may use Bing for crawl, indexing, sitemap, SEO/GEO, backlink, keyword, and reputation evidence when report data is available. The production sitemap `https://trustedbums.com/sitemap.xml` was submitted on 2026-06-09 and may show `Processing` while Bing builds reports. Do not place private exports, credentials, or unnecessary query/campaign detail in repo markdown.
 
 ## Code Review Gate
 

@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-09 - Complete Bing Webmaster verification and sitemap submission
+
+- Trigger: Ryan corrected that the Bing Webmaster setup had not actually finished verification.
+- Implementation branch: `main`, commit `6512a6c`.
+- What changed: Pushed the Bing verification tag and Analytics setup to `main`, let DreamHost deploy run `27209133291` publish it, verified that production serves the `msvalidate.01` tag, completed Bing Verify for `https://trustedbums.com/`, submitted `https://trustedbums.com/sitemap.xml`, and updated agent docs from pending verification to verified with sitemap `Processing`.
+- Main surfaces changed: `docs/company-wide-rules.md`, `docs/consultant-team-rules.md`, `docs/consultant-access-needs.md`, `docs/agents/README.md`, `docs/agents/company-wide-rules.md`, `docs/agents/consultant-team-rules.md`, `docs/agents/consultant-access-needs.md`, and `docs/codex-edit-log.md`.
+- Checks run: Code Review Agent GO for `6512a6c`; `git push origin main`; GitHub/DreamHost deploy run `27209133291`; `curl https://trustedbums.com/` verification-tag check; `curl https://trustedbums.com/sitemap.xml`; `curl https://trustedbums.com/robots.txt`; Bing Webmaster Verify; Bing sitemap submission.
+- Results: Bing Webmaster Tools is verified for `https://trustedbums.com/`; the sitemap is submitted and currently `Processing`; `TB-0071` is ready to close with production and Bing dashboard evidence.
+- Recheck agents: Trust & Reputation, B2B Growth, Data/Analytics, Content, Marketing Graphics, UX, UI, Performance, QA, Release Verification, and Lead Developer should use Bing Webmaster Tools as a verified evidence source when report data is available.
+- Next run should verify: Bing sitemap processing completes with discovered URLs and any Bing crawl/index/report data is cited with date range and report context.
+
 ### 2026-06-09 - Enforce Scrum Tracker closeout sweeps in triggered agents
 
 - Trigger: The current-head QA, visual, and code-review work completed successfully, but `TB-0017`, `TB-0018`, and `TB-0019` were still open in the live Admin Scrum Tracker until manually closed with evidence.
