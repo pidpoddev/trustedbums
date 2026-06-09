@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { getQaAccount, goToAuthedPath, goToAuthedPathAllowingRedirect, hasExternalQaTarget } from "./helpers/auth";
+import {
+  getQaAccount,
+  goToAuthedPath,
+  goToAuthedPathAllowingRedirect,
+  goToPathWithCurrentSession,
+  hasExternalQaTarget,
+} from "./helpers/auth";
 
 test.describe("authenticated role smoke", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run authenticated role smoke tests.");
@@ -35,7 +41,7 @@ test.describe("authenticated role smoke", () => {
     await expect(page.getByRole("heading", { name: "Customer Payment Reports", exact: true })).toBeVisible();
 
     if (!isMobile) {
-      await goToAuthedPath(page, finance, "/client/exports");
+      await goToPathWithCurrentSession(page, "/client/exports");
       await expect(page.getByRole("heading", { name: "Exports" })).toBeVisible();
     }
   });

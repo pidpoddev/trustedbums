@@ -421,6 +421,24 @@ async function clickRouteLinkIfVisible(page: Page, path: string) {
   return true;
 }
 
+async function waitForProtectedRouteSettle(page: Page) {
+  if (page.isClosed()) {
+    throw new Error("The authenticated E2E page closed before the protected route could settle.");
+  }
+
+  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch((error) => {
+    if (page.isClosed() || /Target page, context or browser has been closed/i.test(String(error))) {
+      throw new Error("The authenticated E2E page closed while waiting for route network activity to settle.");
+    }
+  });
+
+  await page.waitForFunction(() => document.readyState !== "loading", undefined, { timeout: 3_000 }).catch((error) => {
+    if (page.isClosed() || /Target page, context or browser has been closed/i.test(String(error))) {
+      throw new Error("The authenticated E2E page closed while waiting for document readiness.");
+    }
+  });
+}
+
 async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedPathOptions = {}) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await page.goto(path, { waitUntil: "domcontentloaded", timeout: protectedRouteTimeoutMs });
@@ -429,7 +447,7 @@ async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedP
     await page.waitForURL((url) => url.pathname.includes("/terms"), { timeout: 3_000 }).catch(() => undefined);
     await acceptTermsIfPrompted(page, path);
 
-    await page.waitForTimeout(750);
+    await waitForProtectedRouteSettle(page);
 
     const currentPath = new URL(page.url()).pathname.replace(/\/$/, "") || "/";
     const expectedPath = path.replace(/\/$/, "") || "/";
