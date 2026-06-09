@@ -117,6 +117,22 @@ When adding a rule, include:
 - QA proof: Agent Inputs cite local preview checks on `127.0.0.1:8080` when used, and external reachability/TLS notes cite `rcdl.tplinkdns.com` unless the user explicitly overrides it.
 - Open questions: Whether `rcdl.tplinkdns.com` is expected to present a publicly trusted TLS chain from all consultant environments.
 
+### Google Analytics is an approved source for specialist evidence
+- Rule: Trusted Bums agents may use the Google Analytics property for `https://trustedbums.com` when their work requires website traffic, funnel, source, campaign, or engagement evidence.
+- Applies to: Data/Analytics, B2B Growth, UX, UI, Product Ops, Trust & Reputation, Performance, QA, Release Verification, Lead Developer, `docs/*-backlog.md`, and `docs/agents/*`.
+- Why it matters: GA gives the specialist team current website and acquisition evidence so recommendations can move beyond source-only assumptions.
+- Implementation notes: The GA4 web stream is `Trusted Bums Web` with measurement ID `G-P6B5EYQMVN`; tracker item `TB-0066` records the setup. Agents should use aggregate GA evidence when relevant, cite dashboard/date-range context in Agent Inputs, and avoid placing raw visitor, user-level, private, or unnecessary campaign data in repo markdown. Google Analytics is optional product analytics and must stay tied to the site's Analytics consent category in product code.
+- QA proof: GA currently shows data collection pending after stream creation; close `TB-0066` only after production deploy plus GA "data received" or comparable current reporting evidence proves live collection.
+- Open questions: Which GA role/access path should each automation use once the deployed site starts collecting data?
+
+### Bing Webmaster Tools is an approved source for search and reputation evidence
+- Rule: Trusted Bums agents may use Bing Webmaster Tools for `https://trustedbums.com` when their work requires Bing search visibility, crawl, indexing, sitemap, SEO/GEO, backlink, keyword, or Microsoft-side reputation evidence.
+- Applies to: Trust & Reputation, B2B Growth, Data/Analytics, Content, Marketing Graphics, UX, UI, Performance, QA, Release Verification, Lead Developer, `docs/*-backlog.md`, and `docs/agents/*`.
+- Why it matters: Bing Webmaster Tools gives the team Microsoft search and crawl evidence that complements GA, public crawl checks, and domain-reputation review.
+- Implementation notes: Tracker item `TB-0071` records the Bing setup. Bing has a site entry for `https://trustedbums.com/`, `index.html` includes the `msvalidate.01` verification tag, and `public/robots.txt` points Bingbot to `https://trustedbums.com/sitemap.xml`. Agents should use aggregate/report-level Bing evidence, cite dashboard/date-range/report context in Agent Inputs, and avoid placing private exports, credentials, or unnecessary query/campaign detail in repo markdown.
+- QA proof: Bing currently shows the site as not verified after setup; close `TB-0071` only after production deploy exposes the verification tag and Bing Verify plus sitemap/dashboard checks succeed.
+- Open questions: Which agent-safe Bing Webmaster access path should each automation use once verification succeeds?
+
 ### Agent findings must be tracked with TB IDs
 - Rule: Any agent-created or agent-preserved recommendation, bug, release blocker, QA gap, security finding, access blocker, or implementation follow-up must have an Admin Tools Scrum Tracker item and a `TB-` tracking ID before the agent publishes its handoff.
 - Applies to: All specialist agents, Lead Developer, Code Review, Release Verification, QA, Security, Product Ops, Trust & Reputation, Data, Performance, Accessibility, UX, UI, Content, Marketing Graphics, B2B Growth, Legal/Compliance, `docs/*-backlog.md`, `docs/lead-developer-recommendations.md`, and `/admin/scrum`.

@@ -25,6 +25,12 @@ Every agent must create or update an Admin Tools Scrum Tracker item for any reco
 
 Tracker entries live in `/admin/scrum` and `public.admin_scrum_items`. Set `added_by_agent` to the agent name, classify true defects with `item_type = BUG`, and use a stable `source_key` for imported git commits, GitHub runs, or backlog sections so repeated runs update the same item instead of creating duplicates. Before opening a new item, search existing open, blocked, fixed, and recently closed tracker rows by `source_key`, title, affected route/table/workflow, GitHub commit/run ID, backlog heading, and related `TB-` references. When the best action is to add context to another agent's existing ticket, update that existing `TB-` item with the additional evidence, affected agent, recommendation, or blocker and cite the same `TB-` number in the handoff.
 
+## Shared Evidence Sources
+
+Google Analytics is configured as an approved aggregate website analytics source for `https://trustedbums.com`: account/property `Trusted Bums`, stream `Trusted Bums Web`, measurement ID `G-P6B5EYQMVN`, tracked by `TB-0066`. Agents may use GA for traffic, source, funnel, campaign, content, and engagement evidence once live data collection is proven. Until `TB-0066` is closed, treat GA as configured but pending data collection. Do not place raw visitor-level data, private exports, credentials, or unnecessary campaign details in repo markdown.
+
+Bing Webmaster Tools is configured as an approved search and Microsoft-side reputation evidence source for `https://trustedbums.com/`, tracked by `TB-0071`. Agents may use Bing for crawl, indexing, sitemap, SEO/GEO, backlink, keyword, and reputation evidence once production verification succeeds. Until `TB-0071` is closed, treat Bing as configured but pending verification. Do not place private exports, credentials, or unnecessary query/campaign detail in repo markdown.
+
 ## Code Review Gate
 
 Pushes or merges to `main` require a Code Review Agent GO decision for the exact commit being pushed. The local hook lives in `.githooks/pre-push` and runs `scripts/code-review-gate.mjs`.

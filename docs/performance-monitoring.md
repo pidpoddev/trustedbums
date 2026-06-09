@@ -3,6 +3,7 @@
 The app now supports two no-cost performance monitoring paths:
 
 - `VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN`: loads Cloudflare Web Analytics when a free Cloudflare token is provided.
+- `VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID`: loads Google Analytics only after a visitor opts into the optional Analytics consent category.
 - `VITE_PERFORMANCE_BEACON_URL`: sends lightweight Web Vitals-style browser metrics to an endpoint you control.
 
 Metrics currently captured in browsers that support them:
@@ -14,6 +15,8 @@ Metrics currently captured in browsers that support them:
 - TTFB
 
 Trusted Bums classifies this telemetry as necessary operational monitoring for reliability, troubleshooting, and performance regression detection. Optional product analytics and marketing measurement remain consent-controlled separately.
+
+The production Google Analytics web stream is `Trusted Bums Web` for `https://trustedbums.com` with measurement ID `G-P6B5EYQMVN`.
 
 No real keys or tokens should be committed. The repo contains placeholder variable names in the env templates; add real values through the deployment provider or local QA env file.
 

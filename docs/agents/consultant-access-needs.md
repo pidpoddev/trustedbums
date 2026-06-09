@@ -13,7 +13,7 @@ All agents need write/read access to the Admin Tools Scrum Tracker through `/adm
 ### P0 - Provide domain reputation, DNS, and webmaster access
 - Why it matters: Trust & Reputation, Security, Content, UX, and Lead Developer need to know whether `trustedbums.com` is blocked, distrusted, misconfigured, spoofable, poorly indexed, or weakly credible to web-security systems and buyers.
 - Needed access: DreamHost hosting or DNS dashboard (or whichever provider is authoritative now), registrar/DNS records, Google Search Console security/manual-action reports, Bing Webmaster Tools, Google Safe Browsing status where available, Microsoft Defender/SmartScreen reputation feedback, DMARC aggregate reports, postmaster tools, Microsoft 365 or other email-provider domain-authentication dashboards, and any security/reputation scanner dashboards already in use.
-- Current status: This gap narrowed on 2026-05-31. After sourcing `.env.qa`, `curl -I -L --max-time 20 "$QA_BASE_URL"` returned HTTP 200 for `https://trustedbums.com`, so the runner can now reach the deployed site. The remaining missing evidence is still dashboard-level rather than routability-level: the consultant session has no registrar or DNS dashboard, no Google Search Console or Bing Webmaster evidence, no Safe Browsing or SmartScreen feedback, no postmaster data, and no email-auth dashboard access.
+- Current status: This gap narrowed on 2026-06-09. After sourcing `.env.qa`, earlier checks returned HTTP 200 for `https://trustedbums.com`, so the runner can reach the deployed site. Bing Webmaster Tools setup is now in progress under `TB-0071`: the site entry exists for `https://trustedbums.com/`, the app has the `msvalidate.01` verification tag, and `public/robots.txt` already allows Bingbot with the production sitemap URL. Bing still showed `Not verified` on 2026-06-09 because the verification tag needs a production deployment before Bing can confirm ownership. The remaining missing evidence is still dashboard-level rather than routability-level: registrar or DNS dashboard, Google Search Console, verified Bing Webmaster dashboard/sitemap proof, Safe Browsing or SmartScreen feedback, postmaster data, and email-auth dashboard access.
 
 ### P0 - Stabilize Supabase consultant tooling for project `vaoqvtxqvbptyxddpoju`
 - Why it matters: Security, Data/Analytics, Performance, Product Ops, and Lead Developer need consistent live validation for RLS, policies, grants, views, functions, advisors, and safe aggregates.
@@ -70,6 +70,16 @@ All agents need write/read access to the Admin Tools Scrum Tracker through `/adm
 - Needed access: Deployment-provider confirmation for `VITE_PERFORMANCE_BEACON_URL` and `VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN`, plus retention expectations for `performance_metric_events`.
 - Current status: Product classification is decided as necessary operational monitoring, consent/legal copy is aligned, repo env templates include the variable names, Cloudflare Web Analytics setup was completed, the Supabase beacon endpoint is deployed, `/admin/performance` provides admin review, and live Supabase data now confirms stored beacon rows. Still needed: confirm production deployment-provider values, retention period, and the complete set of allowed telemetry origins behind the recent `403` beacon rejects.
 
+### P2 - Verify Google Analytics live collection and agent access path
+- Why it matters: B2B Growth, Data/Analytics, UX, UI, Product Ops, Trust & Reputation, Performance, Release Verification, and Lead Developer can now use GA as the primary website analytics source, but only after deployment and consented traffic prove collection is live.
+- Needed access: Google Analytics property access for the `Trusted Bums` account/property, the `Trusted Bums Web` stream for `https://trustedbums.com`, date-range-filtered aggregate reports, source/medium and campaign reports, landing-page/event aggregates, and an agreed agent-safe way to cite aggregate GA evidence without exporting raw visitor-level data.
+- Current status: GA4 setup is complete under `TB-0066`: web stream `Trusted Bums Web`, stream URL `https://trustedbums.com`, stream ID `15031871944`, and measurement ID `G-P6B5EYQMVN`. The repo now has a consent-gated GA loader and the GitHub deployment secret `VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID` is set. GA still showed `Data collection is pending` on 2026-06-09, so agents may cite GA as configured but should not claim live website analytics evidence until production deploy plus GA data-received proof closes `TB-0066`.
+
+### P2 - Verify Bing Webmaster Tools ownership, sitemap, and agent access path
+- Why it matters: Trust & Reputation, B2B Growth, Data/Analytics, Content, Marketing Graphics, UX, UI, Performance, Release Verification, and Lead Developer can use Bing Webmaster Tools for Microsoft search visibility, crawl, sitemap, indexing, SEO/GEO, backlink, keyword, and reputation evidence, but only after production verification succeeds.
+- Needed access: Bing Webmaster Tools access for the `https://trustedbums.com/` site entry, verification status, sitemap submission/status, crawl/indexing reports, SEO/GEO reports, keyword/backlink reports, Microsoft-side security or reputation messages when available, and an agreed agent-safe way to cite aggregate Bing evidence without exporting private data.
+- Current status: Bing setup is complete locally under `TB-0071`: the site entry exists, `index.html` includes `<meta name="msvalidate.01" content="F262EC5D731F39A7B9C8912DF741F807" />`, `public/robots.txt` allows Bingbot, and `public/sitemap.xml` is already present. Bing still showed `Not verified` on 2026-06-09, so agents may cite Bing as configured but should not claim verified Bing Webmaster evidence until production deploy plus Bing Verify and sitemap/dashboard checks close `TB-0071`.
+
 ### P1 - Provide product, design, and operations source-of-truth artifacts
 - Why it matters: UX, UI, Content, Product Ops, and Data/Analytics need stronger non-code evidence to validate terminology, queue design, workflow ownership, access handoffs, visual intent, funnel friction, and customer trust objections.
 - Needed access: Brand and design sources, approved screenshot baselines, funnel or product analytics, session recordings, support tickets or macros, support queue exports with current statuses and SLAs, customer-feedback exports, sales-objection notes, CRM or sales-pipeline exports for reverse-opportunity and target-response follow-through, onboarding materials, finance reconciliation and exception samples, admin audit/log examples, operations SOPs, and narrated role walkthroughs for Admin, Client Admin, Client Finance, Client Member, and Bum accounts.
@@ -78,7 +88,7 @@ All agents need write/read access to the Admin Tools Scrum Tracker through `/adm
 ## Role Access Matrix
 
 ### UX Consultant
-- Core access: Authenticated role accounts, browser screenshots, funnel analytics, session recordings, support or customer feedback.
+- Core access: Authenticated role accounts, browser screenshots, Google Analytics funnel and landing-page aggregates when live, session recordings, support or customer feedback.
 - If missing: Keep recommendations source-backed and say which user-confidence questions remain open.
 
 ### UI Consultant
@@ -110,7 +120,7 @@ All agents need write/read access to the Admin Tools Scrum Tracker through `/adm
 - If missing: Distinguish measured production evidence from local build or source inference.
 
 ### Data And Analytics Engineer
-- Core access: Supabase SQL, analytics or event data, export samples, reconciliation examples, and metric owners.
+- Core access: Supabase SQL, Google Analytics aggregate reporting when live, product analytics or event data, export samples, reconciliation examples, and metric owners.
 - If missing: Treat metric definitions and data quality as inferred, not confirmed.
 
 ### Product Ops Workflow Analyst

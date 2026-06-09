@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { ClerkTicketHandler } from "@/components/ClerkTicketHandler";
 import { ConsentManager } from "@/components/ConsentManager";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { PerformanceMonitoring } from "@/components/PerformanceMonitoring";
 import { RouteMetadata } from "@/components/RouteMetadata";
 import { ClientAccessRoute } from "@/components/ClientAccessRoute";
@@ -96,6 +97,7 @@ const App = () => (
           <AuthProvider>
             <AppErrorBoundary>
               <PerformanceMonitoring />
+              <GoogleAnalytics />
               <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading...</div>}>
               <Routes>
                 <Route path="/" element={<><RouteMetadata title="Trusted Bums | Client Warm Introduction Strategy" description="Trusted Bums helps companies reach hard-to-access target accounts through credible warm-introduction strategy." path="/" /><Index /></>} />

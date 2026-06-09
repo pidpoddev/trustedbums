@@ -820,6 +820,28 @@ This file is the running handoff log for implementation work Codex has made in t
 - Recheck agents: UX Consultant, UI Consultant, QA/Test Engineer, Product Ops Workflow Analyst, Accessibility Specialist, Lead Developer.
 - Next run should verify: whether client-finance search now lands on `/client/payments`, whether the payment page keeps a single primary `Customer Payment Reports` heading, whether dashboard redirects now explain blocked routes and route agreement recovery correctly, whether the public signup flow preserves typed company names after email edits, and whether local DNS/browser reachability is restored on this runner.
 
+### 2026-06-09 - Set up Bing Webmaster Tools verification
+
+- Trigger: Ryan asked Codex to set up Bing Webmaster Tools for Trusted Bums while logged into the Bing dashboard.
+- Implementation branch: Current local workspace with pre-existing unrelated untracked marketing graphics assets.
+- What changed: Added `https://trustedbums.com/` to Bing Webmaster Tools, added the Bing verification meta tag to `index.html`, confirmed `public/robots.txt` allows Bingbot and points to `https://trustedbums.com/sitemap.xml`, created Admin Scrum Tracker item `TB-0071`, and updated agent/company/access docs so specialists can use Bing Webmaster aggregate evidence once verification is live.
+- Main surfaces changed: `index.html`, `docs/company-wide-rules.md`, `docs/consultant-team-rules.md`, `docs/consultant-access-needs.md`, `docs/agents/README.md`, `docs/agents/company-wide-rules.md`, `docs/agents/consultant-team-rules.md`, `docs/agents/consultant-access-needs.md`, and `docs/codex-edit-log.md`.
+- Checks run: Bing Webmaster Tools add-site flow in Chrome; Supabase SQL duplicate search and tracker insert for `TB-0071`; local static-file review of `public/robots.txt` and `public/sitemap.xml`.
+- Results: Bing site entry exists, but Bing still shows `Not verified` because production does not yet serve the new verification tag. `TB-0071` is `FIXED`, not `CLOSED`; close it only after production deploy plus Bing Verify and sitemap/dashboard checks succeed.
+- Recheck agents: Trust & Reputation, B2B Growth, Data/Analytics, Content, Marketing Graphics, UX, UI, Performance, QA, Release Verification, and Lead Developer should treat Bing as configured but pending verification until `TB-0071` is closed.
+- Next run should verify: production deployment includes `<meta name="msvalidate.01" content="F262EC5D731F39A7B9C8912DF741F807" />`, Bing Verify succeeds, `https://trustedbums.com/sitemap.xml` is submitted or detected in Bing, and agent-safe Bing report access is documented.
+
+### 2026-06-09 - Set up Google Analytics and agent evidence rules
+
+- Trigger: Ryan asked Codex to set up Google Analytics in the Trusted Bums Chrome profile and then create a `TB-` tracker item plus update agent docs so specialists can pull analytics data when required.
+- Implementation branch: Current local workspace with pre-existing unrelated untracked marketing graphics assets.
+- What changed: Created the GA4 `Trusted Bums` account/property and `Trusted Bums Web` stream for `https://trustedbums.com`, added consent-gated Google Analytics loading behind `VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID`, passed the GitHub deployment secret through the DreamHost workflow, documented measurement ID `G-P6B5EYQMVN`, created Admin Scrum Tracker item `TB-0066`, and updated agent/company/access docs to treat GA as an approved aggregate evidence source once live collection is proven.
+- Main surfaces changed: `src/components/GoogleAnalytics.tsx`, `src/App.tsx`, `.env.example`, `.env.production`, `.github/workflows/deploy_dreamhost.yaml`, `README.md`, `docs/performance-monitoring.md`, `docs/company-wide-rules.md`, `docs/consultant-team-rules.md`, `docs/consultant-access-needs.md`, `docs/agents/README.md`, `docs/agents/company-wide-rules.md`, `docs/agents/consultant-team-rules.md`, `docs/agents/consultant-access-needs.md`, and `docs/codex-edit-log.md`.
+- Checks run: Google Analytics UI setup in the Chrome `b` profile; Supabase SQL duplicate search and tracker insert for `TB-0066`; GitHub secret set/list for `VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID`; `corepack pnpm exec tsc --noEmit`; `corepack pnpm run lint`; `corepack pnpm run build`.
+- Results: GA stream exists and the app build includes the consent-gated measurement path. `TB-0066` is `FIXED`, not `CLOSED`, because GA still showed `Data collection is pending`; close it only after production deploy and GA data-received evidence prove live collection.
+- Recheck agents: Data Analytics Engineer, B2B Growth Marketer, UX Consultant, UI Consultant, Product Ops Workflow Analyst, Trust And Reputation Consultant, Performance Engineer, QA/Test Engineer, Release Verification Agent, Lead Developer.
+- Next run should verify: production deployment completed with the GA measurement secret, a consented visit records in GA, `TB-0066` can be moved from `FIXED` to `CLOSED`, and specialist backlogs start using GA aggregates with date-range/source context instead of source-only assumptions.
+
 ### 2026-06-09 - Backfill Scrum Tracker IDs and harden Admin Scrum operations
 
 - Trigger: Ryan asked whether agent backlogs were exhaustively listed in Jira, then asked to run the top scrum items.
