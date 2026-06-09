@@ -8,6 +8,9 @@ const rootCompanyRules = readFileSync("docs/company-wide-rules.md", "utf8");
 const agentReadme = readFileSync("docs/agents/README.md", "utf8");
 const codeReviewAgent = readFileSync("docs/agents/code-review-agent.md", "utf8");
 const agentBusinessAccessRules = readFileSync("docs/agents/business-access-rules.md", "utf8");
+const leadDeveloperPrompt = readFileSync("docs/agents/automation-prompts/trusted-bums-daily-lead-developer.toml", "utf8");
+const releaseVerificationPrompt = readFileSync("docs/agents/automation-prompts/trusted-bums-daily-release-verification-agent.toml", "utf8");
+const qaTestPrompt = readFileSync("docs/agents/automation-prompts/trusted-bums-daily-qa-test-engineer.toml", "utf8");
 
 describe("agent scrum tracker rules", () => {
   it("requires agents to create tracker items and cite returned TB IDs", () => {
@@ -32,5 +35,14 @@ describe("agent scrum tracker rules", () => {
     expect(agentBusinessAccessRules).toContain("Every active agent recommendation has a returned `TB-` ID");
     expect(agentBusinessAccessRules).toContain("Cross-agent additions update the original `TB-` item");
     expect(agentBusinessAccessRules).toContain("without first searching the matching `source_key`");
+  });
+
+  it("requires triggered agents to close tracker items when proof is complete", () => {
+    for (const source of [leadDeveloperPrompt, releaseVerificationPrompt, qaTestPrompt]) {
+      expect(source).toContain("tracker closeout sweep");
+      expect(source).toContain("public.admin_scrum_items");
+      expect(source).toContain("closure note");
+      expect(source).toContain("evidence links");
+    }
   });
 });

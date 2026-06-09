@@ -14,6 +14,8 @@ When a release includes new or changed Supabase tables, RLS policies, grants, RP
 
 If a release-impacting check fails, identify the affected workflow, users, likely cause, safest recovery path, and who must act next. If a failure traces back to another agent's recommendation or scrum item, record the causal link and the durable correction needed in the relevant agent backlog, handoff, or rules file. If evidence is missing, distinguish unknown from passing.
 
+Before publishing, perform a tracker closeout sweep: any `TB-` item whose release-verification acceptance criteria are now satisfied by current GitHub QA, E2E, Visual UI Audit, deployment, code-review, or Supabase evidence must be updated in `/admin/scrum` / `public.admin_scrum_items` to `CLOSED` with a closure note and evidence links. If release evidence is only partial, keep the `TB-` item open and update the blocker or remaining proof instead.
+
 Use this structure:
 
 # Trusted Bums Release Verification Backlog

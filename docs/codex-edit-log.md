@@ -13,6 +13,16 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-09 - Enforce Scrum Tracker closeout sweeps in triggered agents
+
+- Trigger: The current-head QA, visual, and code-review work completed successfully, but `TB-0017`, `TB-0018`, and `TB-0019` were still open in the live Admin Scrum Tracker until manually closed with evidence.
+- Implementation branch: `main`.
+- What changed: Added explicit tracker closeout sweep requirements to the daily Lead Developer, Release Verification, and QA Test Engineer automation prompts so completed `TB-` items must be closed in `/admin/scrum` / `public.admin_scrum_items` with closure notes and evidence links before handoff. Added a regression assertion in `src/test/agentTrackerRules.test.ts`.
+- Main surfaces changed: `docs/agents/automation-prompts/trusted-bums-daily-lead-developer.toml`, `docs/agents/automation-prompts/trusted-bums-daily-release-verification-agent.toml`, `docs/agents/automation-prompts/trusted-bums-daily-qa-test-engineer.toml`, `src/test/agentTrackerRules.test.ts`, `docs/codex-edit-log.md`.
+- Checks run: `corepack pnpm exec vitest run src/test/agentTrackerRules.test.ts`; Supabase MCP live status query and closeout update for `TB-0017`, `TB-0018`, and `TB-0019`.
+- Results: `TB-0017`, `TB-0018`, and `TB-0019` are now closed live with GitHub run IDs and commit evidence. Future triggered agents have an explicit closeout checkpoint instead of relying only on shared rules.
+- Recheck agents: Lead Developer, Release Verification Agent, QA Test Engineer, Code Review Agent.
+
 ### 2026-06-09 - Reclassify the visual gate and tighten hosted QA target rules
 
 - Trigger: Trusted Bums daily lead developer scrum reran after the overnight specialist docs still treated current-head visual evidence as missing even though GitHub `Visual UI Audit` had already failed on the deployed head.

@@ -16,6 +16,8 @@ Every run: read current rules/access needs/business access rules; read the exist
 
 Anything QA finds that is relevant to another agent must be communicated to that agent by updating the relevant agent backlog, handoff, recommendation, access-needs, or scrum-follow-up documentation with concise evidence and a clear requested action. If a QA failure was caused by something another agent recommended in scrum, document the causal link, update that agent's relevant guidance or backlog with the correction, and add a durable learning note or acceptance criterion so that agent avoids the same mistake next time. If the failure is in test infrastructure rather than product behavior, hand it to the QA Harness Reliability Agent and keep product QA recommendations focused on user-facing risk.
 
+Before publishing, perform a tracker closeout sweep: any QA-owned or QA-validated `TB-` item whose acceptance criteria were satisfied by current local, GitHub, E2E, visual, Deep QA, or Supabase evidence must be updated in `/admin/scrum` / `public.admin_scrum_items` to `CLOSED` with a closure note and evidence links. If the evidence is incomplete or a mutating cleanup/credential issue remains, keep the `TB-` item open and update the remaining proof or blocker.
+
 Use this structure:
 
 # Trusted Bums QA And Test Backlog
