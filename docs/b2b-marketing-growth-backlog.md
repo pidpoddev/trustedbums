@@ -36,6 +36,7 @@ The safest near-term growth path is not broader top-of-funnel volume. It is a sh
 - Acceptance criteria: the Client landing keeps a clearly primary buyer CTA; Client intake captures buyer role, urgency, blocker, and target-account context; the admin queue exposes owner, next action, and qualification state; and Product Ops can distinguish qualified strategy requests from general inquiries before escalation.
 
 ### P0 - [TB-0035] Build a claim-safe proof spine before scaling demand
+- Current implementation note: v1 is now documented in `docs/claim-safe-proof-spine.md`. Founder-led sales, referral asks, Content, B2B Growth, Marketing Graphics, Trust, and Bum recruiting should use that file as the shared proof source until a fuller approved claims matrix or brand source replaces it. The proof spine includes the reusable narrative, Client acquisition variant, investor/advisor referral variant, Bum recruiting variant, approved public proof categories, private/internal-only proof categories, forbidden claims, and agent handoff rules.
 - Growth goal: proof, qualified Client acquisition, referral conversion, and sales enablement.
 - Audience: Client buyers, investor or advisor referral sources, and high-quality Bum candidates evaluating marketplace seriousness.
 - Channel: founder-led sales, one-pagers, referral asks, LinkedIn organic, manual follow-up.
