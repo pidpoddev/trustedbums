@@ -8,6 +8,10 @@ function read(path: string) {
   return readFileSync(join(root, path), "utf8");
 }
 
+const extensionManifest = JSON.parse(read("chrome-extension/trustedbums/manifest.json")) as {
+  host_permissions: string[];
+};
+
 describe("Bum extension download gating", () => {
   it("keeps the pre-store extension out of public static assets", () => {
     expect(existsSync(join(root, "public/downloads/trustedbums-extension.zip"))).toBe(false);
@@ -40,5 +44,11 @@ describe("Bum extension download gating", () => {
     expect(trainingPage).toContain("Trusted Bums extension");
     expect(trainingPage).toContain('user?.role === "BUM"');
     expect(config).toContain("[functions.bum-extension-download]");
+  });
+
+  it("keeps pre-store extension host permissions narrowly scoped", () => {
+    expect(extensionManifest.host_permissions).toContain("https://vaoqvtxqvbptyxddpoju.supabase.co/*");
+    expect(extensionManifest.host_permissions).not.toContain("https://*.supabase.co/*");
+    expect(extensionManifest.host_permissions).not.toContain("https://api.trustedbums.com/*");
   });
 });

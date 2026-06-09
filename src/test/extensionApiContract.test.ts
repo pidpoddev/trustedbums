@@ -31,6 +31,13 @@ describe("extension API contract", () => {
     expect(functionSource).toContain("apiVersion: API_VERSION");
   });
 
+  it("restricts extension API CORS to configured extension origins", () => {
+    expect(functionSource).toContain("EXTENSION_API_ALLOWED_ORIGINS");
+    expect(functionSource).toContain("chrome-extension://eemjcjegjdmeghobmfdbaiammapaefde");
+    expect(functionSource).toContain("allowedCorsOrigins.has(origin)");
+    expect(functionSource).not.toContain('"Access-Control-Allow-Origin": "*"');
+  });
+
   it("does not expose client target-account destinations to Bum extension sessions", () => {
     expect(functionSource).toContain('if (normalizeRole(profile) === "CLIENT") return Boolean(profile.company_id && target.client_company_id === profile.company_id)');
     expect(functionSource).not.toContain('if (normalizeRole(profile) === "BUM") return true');

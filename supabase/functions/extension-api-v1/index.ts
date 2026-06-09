@@ -50,12 +50,12 @@ interface CaptureRow {
 }
 
 const API_VERSION = "v1";
-const corsHeaders = {
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-trustedbums-client",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Origin": "*",
-  "Content-Type": "application/json",
-};
+const allowedCorsOrigins = new Set(
+  (Deno.env.get("EXTENSION_API_ALLOWED_ORIGINS") ?? "chrome-extension://eemjcjegjdmeghobmfdbaiammapaefde")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+);
 const allowedCaptureTypes: CaptureType[] = ["LINKEDIN_PROFILE", "LINKEDIN_COMPANY", "WEB_PAGE", "OTHER"];
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -70,8 +70,27 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-function json(status: number, payload: Record<string, unknown>) {
-  return new Response(JSON.stringify({ apiVersion: API_VERSION, ...payload }), { status, headers: corsHeaders });
+function corsHeaders(request: Request) {
+  const origin = request.headers.get("origin")?.trim();
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-trustedbums-client",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Content-Type": "application/json",
+    Vary: "Origin",
+  };
+
+  if (origin && allowedCorsOrigins.has(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+
+  return headers;
+}
+
+function json(request: Request, status: number, payload: Record<string, unknown>) {
+  return new Response(JSON.stringify({ apiVersion: API_VERSION, ...payload }), {
+    status,
+    headers: corsHeaders(request),
+  });
 }
 
 function getBearerToken(request: Request) {
@@ -189,7 +208,7 @@ function canAccessCustomerTarget(profile: ProfileRow, target: CustomerTargetRow)
   return false;
 }
 
-async function listContext(profile: ProfileRow) {
+async function listContext(request: Request, profile: ProfileRow) {
   let opportunityQuery = supabaseAdmin
     .from("opportunity_registrations")
     .select("id, company_id, target_account_name, status, companies(id, name, linkedin_company_url)")
@@ -222,7 +241,7 @@ async function listContext(profile: ProfileRow) {
   if (opportunityError) throw opportunityError;
   if (targetError) throw targetError;
 
-  return json(200, {
+  return json(request, 200, {
     profile: {
       id: profile.id,
       name: profile.full_name,
@@ -317,7 +336,7 @@ async function createPageCapture(request: Request, profile: ProfileRow) {
   if (destinationType === "CUSTOMER_TARGET" && !customerTargetId) throw new Error("customerTargetId is required for customer target captures.");
 
   const existing = await findExistingCapture(profile, clientRequestId);
-  if (existing) return json(200, { capture: serializeCapture(existing), idempotent: true });
+  if (existing) return json(request, 200, { capture: serializeCapture(existing), idempotent: true });
 
   let companyId: string | null = null;
   let destinationSummary: Record<string, unknown> = {};
@@ -376,25 +395,32 @@ async function createPageCapture(request: Request, profile: ProfileRow) {
     },
   });
 
-  return json(201, { capture: serializeCapture(data) });
+  return json(request, 201, { capture: serializeCapture(data) });
 }
 
 Deno.serve(async (request: Request) => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (request.method === "OPTIONS") {
+    const origin = request.headers.get("origin")?.trim();
+
+    return new Response(null, {
+      status: origin && !allowedCorsOrigins.has(origin) ? 403 : 204,
+      headers: corsHeaders(request),
+    });
+  }
 
   try {
     const profile = await getCurrentProfile(getBearerToken(request));
     const path = routePath(request);
 
     if (request.method === "GET" && (path === "/context" || path === "/")) {
-      return await listContext(profile);
+      return await listContext(request, profile);
     }
 
     if (request.method === "POST" && path === "/page-captures") {
       return await createPageCapture(request, profile);
     }
 
-    return json(404, { error: "Unknown extension API endpoint." });
+    return json(request, 404, { error: "Unknown extension API endpoint." });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to process extension API request.";
     const status = /missing bearer|session token|verify|jwt|profile/i.test(message)
@@ -404,6 +430,6 @@ Deno.serve(async (request: Request) => {
         : /required|valid|destination/i.test(message)
           ? 400
           : 500;
-    return json(status, { error: message });
+    return json(request, status, { error: message });
   }
 });
