@@ -301,7 +301,7 @@ test.describe("public visual UI audit", () => {
     await page.goto("/");
     await dismissConsentBanner(page);
     await page.getByRole("button", { name: /^Sign up$/i }).click();
-    await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Create your Client account" })).toBeVisible();
     await captureVisualState(page, testInfo, "public-signup-intent", { route: "/", name: "public-signup-intent" });
 
     await page.keyboard.press("Escape");
