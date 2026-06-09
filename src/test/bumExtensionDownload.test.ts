@@ -11,8 +11,9 @@ function read(path: string) {
 describe("Bum extension download gating", () => {
   it("keeps the pre-store extension out of public static assets", () => {
     expect(existsSync(join(root, "public/downloads/trustedbums-extension.zip"))).toBe(false);
-    expect(existsSync(join(root, "supabase/functions/bum-extension-download/trustedbums-extension.zip"))).toBe(true);
-    expect(existsSync(join(root, "supabase/functions/bum-extension-download/trustedbums-extension.zip.b64"))).toBe(true);
+    expect(existsSync(join(root, "supabase/functions/bum-extension-download/trustedbums-extension.zip"))).toBe(false);
+    expect(existsSync(join(root, "supabase/functions/bum-extension-download/trustedbums-extension.zip.b64"))).toBe(false);
+    expect(existsSync(join(root, "supabase/functions/bum-extension-download/trustedbums-extension.zip.enc"))).toBe(true);
   });
 
   it("forbids the old public download URL before the SPA fallback", () => {
@@ -32,7 +33,8 @@ describe("Bum extension download gating", () => {
 
     expect(functionSource).toContain('profile.role !== "BUM"');
     expect(functionSource).toContain('profile.access_status !== "APPROVED"');
-    expect(functionSource).toContain("trustedbums-extension.zip.b64");
+    expect(functionSource).toContain("BUM_EXTENSION_PACKAGE_KEY_B64");
+    expect(functionSource).toContain("trustedbums-extension.zip.enc");
     expect(portalApi).toContain("downloadBumExtensionPackage");
     expect(portalApi).toContain("/functions/v1/bum-extension-download");
     expect(trainingPage).toContain("Trusted Bums extension");

@@ -22,6 +22,10 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const clerkFrontendApiUrl = Deno.env.get("CLERK_FRONTEND_API_URL");
+const extensionPackageKeyBase64 = Deno.env.get("BUM_EXTENSION_PACKAGE_KEY_B64");
+const extensionPackageUrl =
+  Deno.env.get("BUM_EXTENSION_PACKAGE_URL") ??
+  "https://raw.githubusercontent.com/pidpoddev/trustedbums/main/supabase/functions/bum-extension-download/trustedbums-extension.zip.enc";
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -133,6 +137,46 @@ function base64ToBytes(value: string) {
   return bytes;
 }
 
+async function decryptExtensionPackage(encryptedPackageBase64: string) {
+  if (!extensionPackageKeyBase64) {
+    throw new Error("The extension package key is not configured.");
+  }
+
+  const encryptedPackage = base64ToBytes(encryptedPackageBase64);
+  const iv = encryptedPackage.slice(0, 12);
+  const tag = encryptedPackage.slice(12, 28);
+  const ciphertext = encryptedPackage.slice(28);
+  const key = await crypto.subtle.importKey("raw", base64ToBytes(extensionPackageKeyBase64), "AES-GCM", false, [
+    "decrypt",
+  ]);
+
+  return new Uint8Array(
+    await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv,
+        tagLength: 128,
+      },
+      key,
+      new Uint8Array([...ciphertext, ...tag]),
+    ),
+  );
+}
+
+async function readExtensionPackage() {
+  const response = await fetch(extensionPackageUrl, {
+    headers: {
+      Accept: "text/plain, application/octet-stream",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("The extension package is not available.");
+  }
+
+  return decryptExtensionPackage(await response.text());
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -151,8 +195,7 @@ Deno.serve(async (request) => {
       return json(403, { error: "Only approved Bum accounts can download this extension package." });
     }
 
-    const zipBase64 = await Deno.readTextFile(new URL("./trustedbums-extension.zip.b64", import.meta.url));
-    const zipBytes = base64ToBytes(zipBase64);
+    const zipBytes = await readExtensionPackage();
 
     return new Response(zipBytes, {
       status: 200,
