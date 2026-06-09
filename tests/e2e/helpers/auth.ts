@@ -281,6 +281,44 @@ async function getTermsPromptDebugState(page: Page) {
   const acceptButton = page.getByRole("button", { name: /accept.*continue/i });
   const skipButton = page.getByRole("button", { name: /skip this login/i });
   const checkbox = page.getByRole("checkbox").first();
+  const tokenState = await page.evaluate(async () => {
+    const clerk = (window as typeof window & {
+      Clerk?: {
+        session?: {
+          getToken: (options?: { template?: string }) => Promise<string | null>;
+        };
+      };
+    }).Clerk;
+
+    async function readTokenState(options?: { template?: string }) {
+      const token = await clerk?.session?.getToken(options).catch(() => null);
+      if (!token) {
+        return { present: false };
+      }
+
+      try {
+        const encodedPayload = token.split(".")[1] ?? "";
+        const normalizedPayload = encodedPayload.replace(/-/g, "+").replace(/_/g, "/");
+        const paddedPayload = normalizedPayload.padEnd(Math.ceil(normalizedPayload.length / 4) * 4, "=");
+        const payload = JSON.parse(atob(paddedPayload)) as Record<string, unknown>;
+
+        return {
+          present: true,
+          hasSub: typeof payload.sub === "string" && payload.sub.length > 0,
+          role: typeof payload.role === "string" ? payload.role : null,
+          aud: typeof payload.aud === "string" ? payload.aud : Array.isArray(payload.aud) ? "array" : null,
+          hasExp: typeof payload.exp === "number",
+        };
+      } catch (error) {
+        return { present: true, decodeError: error instanceof Error ? error.message : String(error) };
+      }
+    }
+
+    return {
+      session: await readTokenState(),
+      supabaseTemplate: await readTokenState({ template: "supabase" }),
+    };
+  }).catch((error) => ({ error: String(error) }));
   const visibleText = await page.locator("body").innerText().catch(() => "");
   const visibleErrors = visibleText
     .split("\n")
@@ -296,6 +334,7 @@ async function getTermsPromptDebugState(page: Page) {
     skipButtonVisible: await skipButton.isVisible({ timeout: 500 }).catch(() => false),
     checkboxVisible: await checkbox.isVisible({ timeout: 500 }).catch(() => false),
     checkboxChecked: await checkbox.isChecked({ timeout: 500 }).catch(() => false),
+    tokenState,
     visibleErrors,
     visibleText: visibleText.slice(0, 1_000),
   };
