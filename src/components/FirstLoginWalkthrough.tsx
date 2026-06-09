@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle2, MapPinned } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { FIRST_LOGIN_WALKTHROUGH_EVENT } from "@/lib/firstLoginWalkthrough";
+import {
+  FIRST_LOGIN_WALKTHROUGH_AUTOSTART_DISABLED_KEY,
+  FIRST_LOGIN_WALKTHROUGH_EVENT,
+} from "@/lib/firstLoginWalkthrough";
 import {
   Dialog,
   DialogContent,
@@ -138,7 +141,10 @@ export function FirstLoginWalkthrough() {
     const key = getStorageKey(user.id, user.role, user.clientAccessRole);
     setStorageKey(key);
 
-    if (!isImpersonating && window.localStorage.getItem(key) !== "complete") {
+    const autoStartDisabled =
+      window.localStorage.getItem(FIRST_LOGIN_WALKTHROUGH_AUTOSTART_DISABLED_KEY) === "true";
+
+    if (!isImpersonating && !autoStartDisabled && window.localStorage.getItem(key) !== "complete") {
       setStepIndex(0);
       setOpen(true);
     }

@@ -85,6 +85,7 @@ export async function signIn(page: Page, account: QaAccount) {
           source: "settings",
         }),
       );
+      window.localStorage.setItem("trustedbums:first-login-walkthrough:disable-autostart", "true");
     } catch {
       // Browser error documents can deny localStorage; the app page will receive this init script again.
     }

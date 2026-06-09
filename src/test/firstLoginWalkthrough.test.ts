@@ -30,4 +30,10 @@ describe("first login walkthrough", () => {
     expect(walkthroughSource).toContain("isImpersonating");
     expect(walkthroughEventSource).toContain("trustedbums:open-first-login-walkthrough");
   });
+
+  it("lets automated QA disable only the first-login autostart", () => {
+    expect(walkthroughEventSource).toContain("FIRST_LOGIN_WALKTHROUGH_AUTOSTART_DISABLED_KEY");
+    expect(walkthroughEventSource).toContain("trustedbums:first-login-walkthrough:disable-autostart");
+    expect(walkthroughSource).toContain("FIRST_LOGIN_WALKTHROUGH_AUTOSTART_DISABLED_KEY");
+  });
 });
