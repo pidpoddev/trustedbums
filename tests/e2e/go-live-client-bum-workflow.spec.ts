@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { getQaAccount, goToAuthedPath, goToAuthedPathAllowingRedirect, hasExternalQaTarget, type QaAccount } from "./helpers/auth";
-import { cleanupCreatedRecords, collectVisibleErrorText, createDeepQaRunId, type QaCreatedRecord } from "./helpers/deepQa";
+import { cleanupCreatedRecords, collectVisibleErrorText, createDeepQaRunId, hasQaCleanupCredential, type QaCreatedRecord } from "./helpers/deepQa";
 
 function isGoLiveMutationEnabled() {
   return process.env.QA_GO_LIVE_MUTATION === "1";
@@ -247,8 +247,8 @@ test.describe("go-live Client and Bum workflow gate", () => {
     test.setTimeout(180_000);
     test.skip(!isGoLiveMutationEnabled(), "Set QA_GO_LIVE_MUTATION=1 to run mutating go-live workflow smoke.");
     test.skip(
-      !process.env.QA_SUPABASE_SERVICE_ROLE_KEY,
-      "Set QA_SUPABASE_SERVICE_ROLE_KEY before mutating go-live workflow smoke so created records can be cleaned up.",
+      !hasQaCleanupCredential(),
+      "Set QA_SUPABASE_SERVICE_ROLE_KEY to a Supabase service_role JWT before mutating go-live workflow smoke.",
     );
     test.skip(testInfo.project.name !== "chromium", "Run mutating go-live workflow smoke once on desktop Chromium.");
 

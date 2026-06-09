@@ -54,6 +54,22 @@ export function isDeepMutationEnabled() {
   return process.env.QA_DEEP_MUTATION === "1";
 }
 
+export function hasQaCleanupCredential() {
+  const serviceRoleKey = process.env.QA_SUPABASE_SERVICE_ROLE_KEY ?? "";
+  if (!serviceRoleKey.startsWith("eyJ")) {
+    return false;
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(serviceRoleKey.split(".")[1] ?? "", "base64url").toString("utf8")) as {
+      role?: string;
+    };
+    return payload.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
 export async function attachLeadDevHotfixReport(
   testInfo: TestInfo,
   runId: string,
@@ -236,6 +252,10 @@ async function deleteByField(table: string, field: string, value: string) {
 
   if (!supabaseUrl || !serviceRoleKey) {
     return { skipped: true, reason: "Set QA_SUPABASE_URL/VITE_SUPABASE_URL and QA_SUPABASE_SERVICE_ROLE_KEY to enable cleanup." };
+  }
+
+  if (!hasQaCleanupCredential()) {
+    return { skipped: true, reason: "QA_SUPABASE_SERVICE_ROLE_KEY is not a Supabase service_role JWT accepted by the REST cleanup path." };
   }
 
   if (table === "companies" && field === "name") {

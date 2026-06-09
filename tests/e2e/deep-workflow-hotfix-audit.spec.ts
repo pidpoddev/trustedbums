@@ -5,6 +5,7 @@ import {
   cleanupCreatedRecords,
   createDeepQaRunId,
   exploreVisibleNonDestructiveButtons,
+  hasQaCleanupCredential,
   installDeepQaMonitors,
   isDeepMutationEnabled,
   type DeepQaIssue,
@@ -189,7 +190,7 @@ async function createClientTarget(page: Page, runId: string, records: QaCreatedR
   await page.getByLabel("Notes", { exact: true }).fill(`Created by ${runId}; safe to delete.`);
   records.push({ table: "customer_targets", field: "target_account_name", value: name });
   await page.getByRole("button", { name: "Save target account" }).click();
-  await expect(page.getByText("Target account saved")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Target account saved", { exact: true })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(name)).toBeVisible({ timeout: 20_000 });
 }
 
@@ -318,12 +319,7 @@ test.describe("deep workflow hotfix audit", () => {
     test.skip(testInfo.project.name !== "chromium", "Run mutating workflow QA once on desktop Chromium.");
     test.skip(Boolean(activeSuite && activeSuite !== "client"), "Run mutating deep QA once in the client deep suite.");
     test.skip(!isDeepMutationEnabled(), "Set QA_DEEP_MUTATION=1 to create and clean up QA workflow records.");
-
-    if (!process.env.QA_SUPABASE_URL || !process.env.QA_SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error(
-        "Mutating deep QA requires QA_SUPABASE_URL and QA_SUPABASE_SERVICE_ROLE_KEY so created qa-deep records can be cleaned up before the test exits.",
-      );
-    }
+    test.skip(!hasQaCleanupCredential(), "Set QA_SUPABASE_SERVICE_ROLE_KEY to a Supabase service_role JWT before mutating deep QA.");
 
     const runId = createDeepQaRunId();
     const issues: DeepQaIssue[] = [];

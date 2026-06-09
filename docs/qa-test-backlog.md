@@ -1,8 +1,20 @@
 # Trusted Bums QA And Test Backlog
 
-_Last updated: 2026-06-09 by Codex._
+_Last updated: 2026-06-09 by Codex mutation QA._
 
 ## Executive Read
+
+2026-06-09 mutation QA update on current local head `558ef0f` plus uncommitted harness hardening:
+
+- Sourced `corepack pnpm run qa:env`: passed.
+- Sourced `corepack pnpm run qa:target-preflight`: passed against `https://trustedbums.com` with DNS, HTTPS, app shell, Clerk, and extension API checks green.
+- Initial hosted Chromium mutation run with `QA_GO_LIVE_MUTATION=1 QA_DEEP_MUTATION=1 QA_DEEP_SUITE=client` attempted the real mutating Client/Bum go-live and deep workflow lanes. Five non-mutating hosted workflow tests passed; two mutation checks failed.
+- Failure 1 was QA harness strictness, not a product save failure: `deep-workflow-hotfix-audit.spec.ts` matched both the exact `Target account saved` toast and its live-region wrapper. The harness now uses an exact text locator for that toast.
+- Failure 2 is a real mutation-QA cleanup blocker: the configured `QA_SUPABASE_SERVICE_ROLE_KEY` is an `sb-secret` value, not a Supabase `service_role` JWT accepted by the REST cleanup helper. The browser write path created synthetic target-company data, but REST cleanup could not delete the `companies` rows.
+- Supabase MCP database cleanup removed the synthetic rows left by the failed run: 2 `company_domains`, 2 `customer_targets`, 1 `opportunity_registrations`, and 2 `companies` rows. Follow-up MCP verification returned zero remaining rows for `companies`, `customer_targets`, `opportunity_registrations`, and `company_domains`.
+- The harness now refuses to run mutating go-live/deep workflow checks unless `QA_SUPABASE_SERVICE_ROLE_KEY` is a Supabase `service_role` JWT. Rerun with mutation flags produced 5 passed and 2 explicitly skipped, with no synthetic data created.
+
+Mutation QA is therefore **not fully green**. Hosted route/workflow coverage is green, cleanup was manually verified through Supabase MCP, and the remaining blocker is providing an automated cleanup credential that can delete synthetic company rows before enabling mutating browser QA as a release gate.
 
 Current `main` is `9f42bf4`, and its hosted release state is mixed rather than green:
 
@@ -23,6 +35,12 @@ Local preflight is clean once `.env.qa` is sourced:
 The active QA issue is now documentation/test-contract drift, not a reproduced hosted product outage. That still blocks a clean release call because GitHub `QA` is authoritative for the exact head.
 
 ## Active Recommendations
+
+### P0 - Provide a real automated cleanup credential before treating mutating browser QA as green
+- Evidence: On 2026-06-09, `QA_GO_LIVE_MUTATION=1 QA_DEEP_MUTATION=1 QA_DEEP_SUITE=client corepack pnpm exec playwright test tests/e2e/go-live-client-bum-workflow.spec.ts tests/e2e/deep-workflow-hotfix-audit.spec.ts --project=chromium` passed five hosted workflow checks but failed both mutation checks. One failure was a fixed duplicate-toast locator; the other left one `qa-go-live-* target` company row because the configured cleanup key could read but not delete the synthetic company through the REST cleanup path. Supabase MCP cleanup then removed all synthetic rows and verified zero remaining.
+- Why it matters: Mutating QA is only safe as a repeatable release gate if the same automated run that creates test rows can clean every created surface before exit.
+- Recommendation: Provide a Supabase `service_role` JWT accepted by the REST cleanup helper, or add an approved admin cleanup endpoint/RPC scoped to `qa-deep-*` and `qa-go-live-*` records. Keep the new cleanup guard in `tests/e2e/helpers/deepQa.ts` so mutating tests skip instead of leaving data when cleanup authority is insufficient.
+- Acceptance criteria: With cleanup authority present, the combined hosted Chromium command passes with the mutating go-live and deep workflow tests executed, not skipped; the cleanup report records zero remaining synthetic rows for companies, target accounts, opportunities, and related domains.
 
 ### P1 - [TB-0017] Restore the seeded-proof QA backlog contract and rerun current-head QA
 - Evidence: GitHub `QA` run `27178512695` failed because `docs/qa-test-backlog.md` no longer contains seeded-proof sections that `src/test/scrumQueueRegression.test.ts` still treats as required QA scaffolding.
@@ -84,6 +102,10 @@ The active QA issue is now documentation/test-contract drift, not a reproduced h
 
 ## Cross-Agent Follow-Ups
 
+### QA Harness Reliability / Lead Developer - cleanup credential must be release-gate capable before mutation QA is enforced
+- Causal link: The 2026-06-09 mutation QA attempt proved the browser write path can create synthetic target-company rows, while the configured cleanup secret could not remove the created `companies` rows through the REST helper. Supabase MCP cleanup was successful, but MCP cleanup is not part of the automated Playwright teardown.
+- Requested action: Treat mutating browser QA as guarded coverage until the automated cleanup credential or cleanup endpoint is fixed. Do not mark mutation QA fully green from a skipped mutation test.
+
 ### Release Verification / Lead Developer - keep current head at HOTFIX-FORWARD until QA and visual evidence are clean
 - Evidence: current head `9f42bf4` passed deploy plus hosted smoke/deep QA, but `QA` is red and no current-head visual artifact exists.
 - Requested action: keep the release ledger at `HOTFIX-FORWARD` until the red `QA` workflow, missing visual audit, and stale exact-head review state are all closed together.
@@ -98,6 +120,7 @@ The active QA issue is now documentation/test-contract drift, not a reproduced h
 
 ## Coverage Map
 
+- 2026-06-09 mutation QA attempt on current local head `558ef0f` plus harness hardening: sourced `qa:env` passed; sourced `qa:target-preflight` passed; initial hosted mutation run had 5 passed and 2 failed; Supabase MCP cleanup deleted 2 `company_domains`, 2 `customer_targets`, 1 `opportunity_registrations`, and 2 `companies`; MCP verification returned zero remaining synthetic rows; rerun after cleanup guard had 5 passed and 2 skipped.
 - Hosted green on current head: DreamHost deploy run `27178512660` and `E2E Smoke` run `27178530411`, including all deep shards.
 - Hosted red on current head: `QA` run `27178512695`.
 - Latest completed product-code head with fully green QA/deploy/E2E: `73f0b06` via runs `27175589606`, `27175589605`, and `27175606654`.
@@ -106,12 +129,14 @@ The active QA issue is now documentation/test-contract drift, not a reproduced h
 
 ## Watchlist
 
+- Do not enable mutating browser QA as a required release gate until cleanup happens inside the automated run. Manual Supabase MCP cleanup is acceptable recovery evidence for this run, not a durable release mechanism.
 - Do not treat `trustedbums.com` health plus green hosted smoke as enough for `GO` while GitHub `QA` is red on the same head.
 - Treat public landing-page and copy changes as visual-evidence-bound changes; do not reuse `441fd92` screenshots silently.
 - Keep the seeded live allow/deny lane explicit for customer targets, represented contacts, extension captures, and client-team approval until fixtures exist and the regression test is intentionally relaxed.
 
 ## Access Requests And Evidence Gaps
 
+- Provide a Supabase `service_role` JWT or an approved scoped cleanup RPC/endpoint for Playwright mutation QA. The current `QA_SUPABASE_SERVICE_ROLE_KEY` shape is not accepted by the REST cleanup path for deleting synthetic `companies` rows.
 - Apply `supabase/qa_authorization_seed.sql` in a protected QA database and run the missing live role-scoped allow/deny checks.
 - Trigger a current-head `Visual UI Audit` run for `9f42bf4` or its hotfix-forward successor.
 - Refresh exact-head Code Review evidence for the next hotfix-forward head.
@@ -119,6 +144,11 @@ The active QA issue is now documentation/test-contract drift, not a reproduced h
 
 ## Agent Inputs
 
+- Date of latest mutation run: 2026-06-09.
+- Files, tests, docs, workflows, and commands reviewed for mutation QA: [tests/e2e/go-live-client-bum-workflow.spec.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/go-live-client-bum-workflow.spec.ts), [tests/e2e/deep-workflow-hotfix-audit.spec.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/deep-workflow-hotfix-audit.spec.ts), [tests/e2e/helpers/deepQa.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/deepQa.ts), sourced `corepack pnpm run qa:env`, sourced `corepack pnpm run qa:target-preflight`, `QA_GO_LIVE_MUTATION=1 QA_DEEP_MUTATION=1 QA_DEEP_SUITE=client corepack pnpm exec playwright test tests/e2e/go-live-client-bum-workflow.spec.ts tests/e2e/deep-workflow-hotfix-audit.spec.ts --project=chromium`, and Supabase MCP cleanup/verification queries on project `vaoqvtxqvbptyxddpoju`.
+- Checks that could not fully run and why: the mutating go-live and deep workflow tests are now skipped by guard because the configured cleanup credential is not a Supabase `service_role` JWT accepted by the REST cleanup path. Initial mutation attempt did run writes, then required Supabase MCP cleanup to return synthetic row counts to zero.
+
+Historical prior run:
 - Date of run: 2026-06-08.
 - Files, tests, docs, workflows, and commands reviewed: current [docs/qa-test-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-test-backlog.md), current [docs/release-verification-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/release-verification-backlog.md), current [docs/lead-developer-recommendations.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/lead-developer-recommendations.md), [docs/qa-authorization-fixtures.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-authorization-fixtures.md), [src/test/scrumQueueRegression.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumQueueRegression.test.ts), [src/test/serviceRoleAuthorization.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/serviceRoleAuthorization.test.ts), [src/test/customerTargetRules.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/customerTargetRules.test.ts), [src/App.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx), [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [supabase/migrations/20260608141000_limit_raw_extension_capture_reads.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260608141000_limit_raw_extension_capture_reads.sql), `git rev-parse HEAD`, `git show --stat --summary 0ee2f44`, `git show --stat --summary 9f42bf4`, raw and sourced `corepack pnpm run qa:env`, sourced `corepack pnpm run qa:target-preflight`, and GitHub runs `27178512695`, `27178512660`, `27178530411`, `27167324836`, `27177006002`, and `27175606654`.
 - Checks that could not run and why: there is still no current-head `Visual UI Audit` run for `0ee2f44` or `9f42bf4`; the next hosted `QA` rerun requires a new push or manual retrigger after the backlog/test contract fix; and `qa:go-live` was not rerun because hosted smoke and deep coverage already isolated the active release blocker to the red `QA` workflow plus missing visual evidence.
