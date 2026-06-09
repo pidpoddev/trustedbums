@@ -22,15 +22,16 @@ type SignupRole = Extract<UserRole, "CLIENT" | "BUM">;
 interface SignupIntentDialogProps {
   children: ReactElement;
   initialRole?: SignupRole;
+  lockedRole?: SignupRole;
 }
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-export function SignupIntentDialog({ children, initialRole }: SignupIntentDialogProps) {
+export function SignupIntentDialog({ children, initialRole, lockedRole }: SignupIntentDialogProps) {
   const [open, setOpen] = useState(false);
-  const [role, setRole] = useState<SignupRole | "">(initialRole ?? "");
+  const [role, setRole] = useState<SignupRole | "">(lockedRole ?? initialRole ?? "");
   const [email, setEmail] = useState("");
   const [manualCompanyName, setManualCompanyName] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -52,7 +53,7 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
     setOpen(nextOpen);
 
     if (nextOpen) {
-      setRole(initialRole ?? "");
+      setRole(lockedRole ?? initialRole ?? "");
       setEmail("");
       setManualCompanyName("");
       setSubmitted(false);
@@ -86,14 +87,21 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create your account</DialogTitle>
+          <DialogTitle>
+            {lockedRole === "CLIENT" ? "Create your Client account" : lockedRole === "BUM" ? "Apply as a Bum" : "Create your account"}
+          </DialogTitle>
           <DialogDescription>
-            Choose whether you are a Client Prospect or Bum Prospect, then add the email you want attached to Trusted Bums access.
+            {lockedRole === "CLIENT"
+              ? "Add the work email and company name you want attached to Trusted Bums Client access."
+              : lockedRole === "BUM"
+                ? "Add the email you want attached to your Trusted Bums application."
+                : "Choose whether you are a Client Prospect or Bum Prospect, then add the email you want attached to Trusted Bums access."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
-          <div className="space-y-3">
+          {!lockedRole ? (
+            <div className="space-y-3">
             <Label>Account type</Label>
             <RadioGroup value={role} onValueChange={(value) => setRole(value as SignupRole)} className="grid gap-3 sm:grid-cols-2">
               <Label
@@ -128,7 +136,8 @@ export function SignupIntentDialog({ children, initialRole }: SignupIntentDialog
               </Label>
             </RadioGroup>
             {submitted && !role ? <p className="text-sm text-destructive">Select Client Prospect or Bum Prospect.</p> : null}
-          </div>
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <Label htmlFor="signup-email">Email</Label>

@@ -31,7 +31,7 @@ The safest near-term growth path is not broader top-of-funnel volume. It is a sh
 - Activation path: homepage or referral traffic -> Client-specific intake branch with role, named-account count, current blocker, urgency, and disqualifiers -> manual seriousness review -> founder strategy call -> Client Prospect or company setup.
 - Metric: primary metric is qualified Client strategy requests that pass manual review. Quality metrics are form-completion rate, named-account seriousness rate, verified-company-domain rate, and strategy-request-to-call rate.
 - Trust and brand risk: mixed acquisition and recruiting language, silent field resets, and generic toast-only recovery make the brand feel brittle and low-trust at the first handoff.
-- Recommendation: create a dedicated Client path or form branch, preserve typed company names, add inline error recovery plus reassurance near submit, and require named-account seriousness signals before follow-up.
+- Recommendation: create a dedicated Client path or form branch, preserve typed company names, add inline error recovery plus reassurance near submit, and require named-account seriousness signals before follow-up. Use `docs/client-buyer-intake-strategy.md` as the execution strategy.
 - Acceptance criteria: a distinct Client CTA exists; Client intake collects role and named-account context; manually entered client company names persist unless intentionally replaced; invalid submit states show inline recovery; and Product Ops can name the review owner and next-step workflow.
 
 ### P0 - Build a claim-safe proof spine before scaling demand

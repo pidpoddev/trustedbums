@@ -34,8 +34,8 @@ const storyCards = [
   },
   {
     eyebrow: "02",
-    title: "Trust opens the side door",
-    copy: "A credible friend can start the conversation in a way no sequence, script, or generic SDR campaign can.",
+    title: "A credible route changes the first touch",
+    copy: "A trusted path can start the conversation in a way no sequence, script, or generic SDR campaign can.",
     image: "/brand-trust-connector.svg",
   },
   {
@@ -48,8 +48,8 @@ const storyCards = [
 
 const proofPoints = [
   { value: "Hard", label: "accounts, not easy volume" },
-  { value: "Warm", label: "routes into guarded buyers" },
-  { value: "Aligned", label: "commission-based outcomes" },
+  { value: "Qualified", label: "requests reviewed by humans" },
+  { value: "Controlled", label: "warm-intro workflows" },
 ];
 
 const defaultContactForm = {
@@ -250,9 +250,9 @@ const Index = () => {
                     Sign in
                   </Button>
                 </SignInButton>
-                <SignupIntentDialog>
+                <SignupIntentDialog lockedRole="CLIENT">
                   <Button size="sm" className="rounded-full px-5 shadow-[0_0_28px_rgba(255,122,26,0.35)]">
-                    Sign up
+                    Client signup
                   </Button>
                 </SignupIntentDialog>
               </>
@@ -280,24 +280,21 @@ const Index = () => {
       <main>
         <section className="relative bg-[#08111f] text-white">
           <div className="hero-grid absolute inset-0 opacity-70" />
-          <div className="absolute -left-32 top-20 h-80 w-80 rounded-full bg-primary/30 blur-3xl" />
-          <div className="absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
-
           <div className="container relative mx-auto grid min-h-[760px] gap-12 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
             <div className="brand-rise max-w-4xl">
               <div className="inline-flex rotate-[-1.5deg] items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-4 py-2 text-sm font-bold uppercase tracking-[0.18em] text-orange-100 shadow-[0_0_35px_rgba(255,122,26,0.28)]">
                 <Sparkles className="h-4 w-4 text-primary" />
-                BUMS = Bring Us More Sales
+                Client intro strategy
               </div>
 
               <h1 className="mt-7 max-w-5xl font-display text-5xl font-black leading-[0.92] tracking-[-0.06em] md:text-7xl xl:text-8xl">
-                Your buyer is ignoring strangers.
-                <span className="mt-3 block text-primary">Good thing we know a friend.</span>
+                Reach the accounts your team cannot crack.
+                <span className="mt-3 block text-primary">Warm access beats cold volume.</span>
               </h1>
 
               <p className="mt-7 max-w-2xl text-xl leading-8 text-orange-50/78">
-                Trusted Bums turns hard-to-reach decision makers into warm conversations through credible human
-                introductions. The name is playful. The access is not.
+                Trusted Bums helps serious companies turn hard-to-reach target accounts into credible warm-introduction
+                workflows. Bring the accounts, blockers, and urgency. We help determine whether trust can open the door.
               </p>
 
               <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -308,13 +305,23 @@ const Index = () => {
                         Request an intro strategy <ArrowRight className="ml-1 h-5 w-5" />
                       </a>
                     </Button>
-                    <SignupIntentDialog initialRole="BUM">
+                    <Button
+                      asChild
+                      size="lg"
+                      variant="outline"
+                      className="h-14 rounded-full border-white/25 bg-white/8 px-8 text-base font-bold text-white hover:bg-white hover:text-[#08111f]"
+                    >
+                      <Link to="/bums">
+                        For Bums <ArrowRight className="ml-1 h-5 w-5" />
+                      </Link>
+                    </Button>
+                    <SignupIntentDialog lockedRole="CLIENT">
                       <Button
                         size="lg"
                         variant="outline"
                         className="h-14 rounded-full border-white/25 bg-white/8 px-8 text-base font-bold text-white hover:bg-white hover:text-[#08111f]"
                       >
-                        Become a Bum <ArrowRight className="ml-1 h-5 w-5" />
+                        Create Client account <ArrowRight className="ml-1 h-5 w-5" />
                       </Button>
                     </SignupIntentDialog>
                   </>
@@ -353,7 +360,7 @@ const Index = () => {
                 <p className="mt-2 text-sm font-semibold">Trust still gets through.</p>
               </div>
               <div className="absolute -right-3 -top-5 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur">
-                No stranger danger sales pitch
+                Built for strategic accounts
               </div>
             </div>
           </div>
@@ -363,7 +370,7 @@ const Index = () => {
               {Array.from({ length: 2 }).map((_, groupIndex) => (
                 <div key={groupIndex} className="brand-marquee-segment flex shrink-0 items-center">
                   <span>Warm introductions</span>
-                  <span className="text-primary">Bring Us More Sales</span>
+                  <span className="text-primary">Client strategy</span>
                   <span>Trusted Bums</span>
                   <span className="text-primary">Hard accounts</span>
                   <span>Relationship-led revenue</span>
@@ -379,12 +386,12 @@ const Index = () => {
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">Why it works</p>
                 <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
-                  Decision makers do not need more pitches.
+                  Your best accounts do not need more pitches.
                 </h2>
               </div>
               <p className="text-lg leading-8 text-muted-foreground">
-                Your ideal buyer may never hear your message because their inbox is already an arena. We replace the
-                noise with a human reason to listen: a trusted person making a credible introduction.
+                Your ideal buyer may never hear your message because their inbox is already crowded. We replace the
+                noise with a human reason to listen: a trusted route and a serious reason for the conversation.
               </p>
             </div>
 
@@ -428,7 +435,7 @@ const Index = () => {
                 <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5">
                   <Handshake className="h-7 w-7 text-primary" />
                   <p className="mt-4 font-display text-xl font-black">More credibility</p>
-                  <p className="mt-2 text-sm text-white/65">The first touch comes from someone the buyer already trusts.</p>
+                  <p className="mt-2 text-sm text-white/65">The first touch follows a credible path instead of another cold ask.</p>
                 </div>
               </div>
             </div>
@@ -449,16 +456,16 @@ const Index = () => {
             <div className="max-w-3xl">
               <p className="text-sm font-black uppercase tracking-[0.28em] text-primary">How it works</p>
               <h2 className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.04em] md:text-6xl">
-                A real revenue channel, not a favor spreadsheet.
+                A Client workflow, not a favor spreadsheet.
               </h2>
             </div>
 
             <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
               {[
-                ["Choose the doors", "Clients name the accounts and decision makers that are worth a trusted route."],
-                ["Match the Bum", "We find the Bum with the right relationship, context, and credibility."],
-                ["Make it warm", "The approach feels natural because it comes through trust, not automation."],
-                ["Track the value", "If the intro turns into durable revenue, everyone can see the aligned economics."],
+                ["Name the accounts", "Tell us which target accounts or buyer groups matter and why they are blocked."],
+                ["Qualify the fit", "We review urgency, role, company, and seriousness before moving into a strategy call."],
+                ["Find the route", "Approved workflows look for credible relationship paths instead of more cold activity."],
+                ["Track the value", "If the path turns into durable revenue, the work stays tied to clear marketplace economics."],
               ].map(([title, copy], index) => (
                 <div key={title} className="rounded-[1.75rem] bg-secondary/55 p-6">
                   <p className="font-display text-sm font-black uppercase tracking-[0.2em] text-primary">
@@ -473,18 +480,18 @@ const Index = () => {
         </section>
 
         <section className="container mx-auto px-6 py-10">
-          <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">
+          <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_0.9fr]">
             <div className="rounded-[2rem] border bg-card p-8 shadow-sm md:p-10">
               <div className="mb-6 w-fit rounded-2xl bg-primary/10 p-4">
                 <Briefcase className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="font-display text-3xl font-black tracking-[-0.04em]">For Clients</h3>
+              <h3 className="font-display text-3xl font-black tracking-[-0.04em]">Built for Client demand</h3>
               <p className="mt-4 text-muted-foreground">
-                Target the Customer accounts your team struggles to reach, define commission terms, upload training, and track
-                introductions in a structured Client workflow.
+                Target the customer accounts your team struggles to reach, explain the blocker, and move qualified demand
+                into a structured warm-introduction review.
               </p>
               <div className="mt-6 space-y-3">
-                {["Hard account targeting", "Commission-aligned strategy", "Bum training and enablement"].map((item) => (
+                {["Hard account targeting", "Manual seriousness review", "Commission-aligned workflow"].map((item) => (
                   <p key={item} className="flex items-center gap-3 text-sm font-semibold">
                     <CheckCircle2 className="h-5 w-5 text-primary" />
                     {item}
@@ -497,19 +504,21 @@ const Index = () => {
               <div className="mb-6 w-fit rounded-2xl bg-accent/10 p-4">
                 <Users className="h-7 w-7 text-accent" />
               </div>
-              <h3 className="font-display text-3xl font-black tracking-[-0.04em]">For Bums</h3>
+              <h3 className="font-display text-3xl font-black tracking-[-0.04em]">Looking to become a Bum?</h3>
               <p className="mt-4 text-muted-foreground">
-                Apply as a Bum Prospect and turn trusted relationships into a revenue channel once approved. Bring Us More Sales is
-                the joke, but it is also the job.
+                Bum recruiting is separate from Client intake so buyers and relationship operators each get the right path.
               </p>
               <div className="mt-6 space-y-3">
-                {["Bum profile", "Opportunity matching", "Transparent payout tracking"].map((item) => (
+                {["Invite-first recruiting", "Relationship credibility review", "Separate Bum signup path"].map((item) => (
                   <p key={item} className="flex items-center gap-3 text-sm font-semibold">
                     <CheckCircle2 className="h-5 w-5 text-accent" />
                     {item}
                   </p>
                 ))}
               </div>
+              <Button asChild className="mt-8 rounded-full">
+                <Link to="/bums">Open Bum landing page</Link>
+              </Button>
             </div>
           </div>
         </section>
@@ -536,13 +545,21 @@ const Index = () => {
                       >
                         <a href="#contact-form">Talk to Trusted Bums</a>
                       </Button>
-                      <SignupIntentDialog initialRole="BUM">
+                      <Button
+                        asChild
+                        size="lg"
+                        variant="outline"
+                        className="h-14 rounded-full border-white/25 bg-white/8 px-8 text-base font-bold text-white hover:bg-white hover:text-[#08111f]"
+                      >
+                        <Link to="/bums">Become a Bum</Link>
+                      </Button>
+                      <SignupIntentDialog lockedRole="CLIENT">
                         <Button
                           size="lg"
                           variant="outline"
                           className="h-14 rounded-full border-white/25 bg-white/8 px-8 text-base font-bold text-white hover:bg-white hover:text-[#08111f]"
                         >
-                          Become a Bum
+                          Client signup
                         </Button>
                       </SignupIntentDialog>
                     </>
@@ -624,7 +641,6 @@ const Index = () => {
                       className="h-12 w-full rounded-md border border-white/15 bg-white px-3 text-base text-[#08111f] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                     >
                       <option value="CLIENT">I need introductions for my company</option>
-                      <option value="BUM">I want to become a Bum</option>
                       <option value="GENERAL">I have a general question</option>
                     </select>
                   </div>

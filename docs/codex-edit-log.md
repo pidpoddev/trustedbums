@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-08 - Refresh QA backlog for current-head smoke drift and target-save coverage
+
+- Trigger: Trusted Bums daily QA Test Engineer automation reran after the repo advanced beyond the last fully-documented green head and the QA backlog no longer matched the role prompt structure.
+- Implementation branch: `main`.
+- What changed: Rewrote `docs/qa-test-backlog.md` into the required QA structure, updated it from stale `441fd92` current-head language to the actual `41187e0` state, recorded that current-head `QA` run `27176979784` and DreamHost deploy run `27176979797` passed, then tightened the wording again once smoke plus `Deep QA (admin)` and `Deep QA (bum)` in `E2E Smoke` run `27177006002` passed while `Deep QA (client)` was still running. Preserved the latest fully completed green smoke/deep proof on `73f0b06`, and added Business Access Coverage plus cross-agent follow-ups for customer-target create/save RLS proof. Updated `docs/lead-developer-recommendations.md` so Lead Developer no longer treats `441fd92` as the current fully-green head once the remaining current deep QA finishes.
+- Main surfaces changed: `docs/qa-test-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/codex-edit-log.md`.
+- Checks run: sourced `corepack pnpm run qa:env`; sourced `corepack pnpm run qa:target-preflight`; `corepack pnpm exec vitest run src/test/customerTargetRules.test.ts src/test/accessBoundaryRegression.test.ts src/test/qaAuthorizationFixtures.test.ts src/test/serviceRoleAuthorization.test.ts`; `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 16 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --workflow "Visual UI Audit" --limit 8 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --workflow "Deep QA Hotfix Audit" --limit 8 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run view 27177006002 --json ...`; `/Users/macdaddy/bin/gh-trustedbums run view 27175606654 --json ...`; targeted `git log`, `git show`, `rg`, and `sed`; official Playwright, Supabase, and Vitest docs review.
+- Results: Local QA preflight is green again, the newest customer-target auth/fixture suite is green locally, the release-facing doc drift is now called out explicitly, and seeded live allow/deny proof remains the highest-value unresolved QA lane for the target-save workflow.
+- Recheck agents: Lead Developer, Release Verification Agent, QA/Test Engineer, Security Engineer, Product Ops Workflow Analyst.
+- Next run should verify: the final `Deep QA (client)` result for `E2E Smoke` run `27177006002`, whether a fresh `Visual UI Audit` run is needed beyond `27167324836`, and whether seeded live customer-target allow/deny proof is scheduled next.
+
 ### 2026-06-08 - Reconcile docs to final green current head
 
 - Trigger: Ryan asked to do the next three cleanup items: refresh release docs, handle the stale Code Review marker, and clean the dirty specialist docs.

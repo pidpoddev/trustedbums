@@ -4,39 +4,41 @@ _Last updated: 2026-06-08 by Codex._
 
 ## Executive Read
 
-The prior release blocker is closed. Current `main` is `441fd92`, and the hosted gates for that head are green:
+The old extension-preflight `NO-GO` is still closed, but the repo moved beyond the last fully-documented green head. Current `main` is `41187e0`:
 
-- GitHub `QA` run `27167307017`: passed.
-- DreamHost deploy run `27167306961`: passed.
-- GitHub `E2E Smoke` run `27167339658`: passed.
-- GitHub `Visual UI Audit` run `27167324836`: passed.
-- Smoke result: `34 passed, 6 skipped`.
+- GitHub `QA` run `27176979784` on `41187e0`: passed.
+- DreamHost deploy run `27176979797` on `41187e0`: passed.
+- GitHub `E2E Smoke` run `27177006002` on `41187e0`: smoke passed, `Deep QA (admin)` and `Deep QA (bum)` passed, and `Deep QA (client)` was still running at review time.
+
+The latest completed product-code release proof is still green on `73f0b06`:
+
+- GitHub `QA` run `27175589606`: passed.
+- DreamHost deploy run `27175589605`: passed.
+- GitHub `E2E Smoke` run `27175606654`: passed.
 - Deep QA matrix in that E2E run passed for `admin`, `bum`, and `client`.
-- Visual UI Audit passed with `18 passed`.
 
-The old docs that framed the release as `NO-GO` because of missing `QA_EXTENSION_API_BASE_URL` / `QA_EXTENSION_API_TOKEN` were stale. The current issue that caused the 12 skipped E2E count was different: the contact-intake smoke path skipped because Supabase URL env values were missing, and then briefly failed because GitHub supplied a blank `QA_SUPABASE_FUNCTIONS_URL` override. Both are fixed.
-
-The remaining 6 smoke skips are expected under the current non-mutating profile: 2 mutating contact-send checks and 4 desktop-only portal-interaction checks on mobile. The Bum contact-picker smoke checks now pass after the QA selector was updated to the current `Claim intro` action.
+The latest hosted visual artifact is still GitHub `Visual UI Audit` run `27167324836` on `441fd92`, which passed with `18 passed`. Do not keep calling `441fd92` the current fully-green head after `27177006002` settles; refresh the release-facing docs to the real head.
 
 ## Current Classifications
 
-- `Release smoke/deploy/visual state`: `GREEN`. Current head `441fd92` has green QA, deploy, smoke, deep QA, and Visual UI Audit evidence.
+- `Release smoke/deploy state`: `PENDING CURRENT-HEAD CLIENT DEEP QA`. Current head `41187e0` has green QA, deploy, smoke, and passed `Deep QA (admin)` plus `Deep QA (bum)` evidence, but `Deep QA (client)` in `27177006002` was still running during this review.
+- `Latest completed product-code smoke/deep state`: `GREEN`. `73f0b06` passed QA, deploy, E2E smoke, and deep shards.
 - `Remaining E2E skips`: `EXPECTED`. They are fixture/mode/design skips, not unexplained failures.
 - `Public and client recovery UX`: `SHIPPED`. Signup company-name retention, inline public contact recovery, client blocked-state messaging, and agreement recovery routing are in current `main`.
 - `Seeded access-boundary proof`: `NEEDS QA PROOF`. Source and regression coverage are stronger, but seeded live allow/deny fixtures remain the durable next QA layer.
-- `Current-head visual audit`: `GREEN`. GitHub run `27167324836` passed on `441fd92`.
-- `Exact Code Review marker`: `WAIVED FOR 441fd92`. `.codex-review-decision.json` still points at `c9b7b07`, but the current cleanup records a release waiver because current-head hosted QA, deploy, E2E, and Visual UI Audit all passed and the final code delta was QA-selector-only.
+- `Current-head visual audit`: `STALE VS HEAD`. Latest visual artifact is still `27167324836` on `441fd92`; decide whether to reuse it explicitly or rerun it after `27177006002`.
+- `Exact Code Review marker`: `WAIVED FOR 441fd92 ONLY`. Do not assume that waiver applies to later heads automatically.
 - `Supabase Auth leaked-password protection`: `BLOCKED BY PLAN/ACCESS`. Still depends on Supabase plan capability.
 - `External DNS rcdl.tplinkdns.com`: `INFRASTRUCTURE FOLLOW-UP`. Trusted Bums testing remains constrained to port `8080`; `rcdl.tplinkdns.com` is external DNS context, not the primary release target.
 
 ## Recommended Implementation Queue
 
-### Closed - Ship the release-state doc cleanup
+### P1 - Refresh the release ledger after current-head smoke closes
 
-- Classification: `DONE`.
-- Why now: The repo evidence is green, but stale docs still point at old failed runs and old `NO-GO` language. That creates bad scrum decisions.
-- Acceptance criteria: `docs/release-verification-backlog.md`, `docs/qa-test-backlog.md`, and this file all point at current head `441fd92`, current green runs, and the expected 6-skip explanation.
-- Validation: doc diff review plus current GitHub run ids.
+- Classification: `READY`.
+- Why now: QA found that the lead doc still names `441fd92` as the current fully-green head even though `main` is now `41187e0` and `Deep QA (client)` in `27177006002` is still in flight.
+- Acceptance criteria: release-facing docs name `41187e0`, record the final result of `27177006002`, and state whether `27167324836` is intentionally reused visual evidence or needs replacement.
+- Validation: GitHub run review plus doc diff.
 
 ### Closed - Ship public and client recovery-path fixes
 
@@ -76,4 +78,4 @@ The remaining 6 smoke skips are expected under the current non-mutating profile:
 ## Agent Inputs
 
 - Date of run: 2026-06-08.
-- Evidence reviewed: current head `441fd92`, GitHub runs `27167307017`, `27167306961`, `27167339658`, and `27167324836`, local focused QA selector checks, current `git status`, and release/QA backlog stale sections.
+- Evidence reviewed: current head `41187e0`, GitHub runs `27176979784`, `27176979797`, `27177006002`, `27175589606`, `27175589605`, `27175606654`, and `27167324836`, plus the QA backlog refresh.

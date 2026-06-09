@@ -11,8 +11,10 @@ const clientTermsSource = readFileSync("src/pages/client/ClientTerms.tsx", "utf8
 
 describe("E2E smoke regression coverage", () => {
   it("asserts the current signup validation copy", () => {
-    expect(stagingSmokeSource).toContain("Select Client Prospect or Bum Prospect.");
+    expect(stagingSmokeSource).toContain("Create your Client account");
+    expect(stagingSmokeSource).toContain("Apply as a Bum");
     expect(stagingSmokeSource).not.toContain("Select Client or Bum.");
+    expect(signupIntentSource).toContain("lockedRole");
   });
 
   it("keeps only the page header as the exact Customer Payment Reports heading", () => {

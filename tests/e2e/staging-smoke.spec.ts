@@ -6,10 +6,16 @@ test.describe("staging smoke", () => {
 
   test("loads public pages and primary marketing affordances", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Your buyer is ignoring strangers/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Reach the accounts your team cannot crack/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /Request an intro strategy/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Sign up$/i })).toBeVisible();
+    await expect(page.getByRole("banner").getByRole("button", { name: /^Client signup$/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /For Bums/i }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: /Accessibility settings/i })).toBeVisible();
+
+    await page.goto("/bums");
+    await expect(page.getByRole("heading", { name: /Turn trusted relationships into approved intro work/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Apply as a Bum/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /For Clients/i }).first()).toBeVisible();
 
     await page.goto("/privacy-policy");
     await expect(page.getByRole("heading", { name: /Privacy Policy/i })).toBeVisible();
@@ -35,14 +41,12 @@ test.describe("staging smoke", () => {
 
   test("validates the signup intent dialog before Clerk handoff", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: /^Sign up$/i }).click();
+    await page.getByRole("banner").getByRole("button", { name: /^Client signup$/i }).click();
 
-    await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Create your Client account" })).toBeVisible();
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByText("Select Client Prospect or Bum Prospect.")).toBeVisible();
     await expect(page.getByText("Enter a valid email address.")).toBeVisible();
 
-    await page.locator('label[for="signup-client"]').click();
     await page.locator("#signup-email").fill("qa-smoke@example.com");
     await page.getByRole("button", { name: "Continue" }).click();
     await expect(page.getByText("Enter the company name.")).toBeVisible();
@@ -50,6 +54,19 @@ test.describe("staging smoke", () => {
     await page.locator("#signup-company").fill("QA Smoke Co");
     await page.locator("#signup-email").fill("qa-smoke-updated@example.com");
     await expect(page.locator("#signup-company")).toHaveValue("QA Smoke Co");
+    await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled();
+  });
+
+  test("validates the separate Bum signup path before Clerk handoff", async ({ page }) => {
+    await page.goto("/bums");
+    await page.getByRole("button", { name: /^Apply as a Bum$/i }).first().click();
+
+    await expect(page.getByRole("heading", { name: "Apply as a Bum" })).toBeVisible();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page.getByText("Enter a valid email address.")).toBeVisible();
+    await expect(page.locator("#signup-company")).toHaveCount(0);
+
+    await page.locator("#signup-email").fill("qa-bum-smoke@example.com");
     await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled();
   });
 
