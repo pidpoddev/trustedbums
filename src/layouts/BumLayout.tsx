@@ -3,6 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { PortalHeaderActions } from "@/components/PortalHeaderActions";
 import { PortalGlobalSearch } from "@/components/PortalGlobalSearch";
 import { ConversationDock } from "@/components/ConversationDock";
+import { FirstLoginWalkthrough } from "@/components/FirstLoginWalkthrough";
 import { useLocation, Outlet } from "react-router-dom";
 import {
   Sidebar,
@@ -104,6 +105,7 @@ export default function BumLayout() {
           <div className="p-4 pb-24 sm:p-6 sm:pb-28">
             <Outlet />
           </div>
+          <FirstLoginWalkthrough />
           <ConversationDock />
         </main>
       </div>

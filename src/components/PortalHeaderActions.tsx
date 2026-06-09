@@ -1,8 +1,9 @@
-import { LogOut, Settings } from "lucide-react";
+import { HelpCircle, LogOut, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ImpersonationControls } from "@/components/ImpersonationControls";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 import { SubmitFeedbackButton } from "@/components/SubmitFeedbackButton";
+import { openFirstLoginWalkthrough } from "@/lib/firstLoginWalkthrough";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ export function PortalHeaderActions() {
   const { user, signOut } = useAuth();
   const profilePath = getProfilePath(user?.role);
   const profileLabel = user?.role === "CLIENT" ? "User Profile" : "Profile settings";
+  const canShowWalkthrough = user?.role === "CLIENT" || user?.role === "BUM";
 
   return (
     <div className="ml-auto flex items-center gap-3">
@@ -64,6 +66,12 @@ export function PortalHeaderActions() {
             <span className="mt-1 block truncate text-xs font-normal text-muted-foreground">{user?.email}</span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {canShowWalkthrough ? (
+            <DropdownMenuItem onClick={openFirstLoginWalkthrough}>
+              <HelpCircle className="mr-2 h-4 w-4" />
+              Show walkthrough
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem asChild>
             <Link to={profilePath}>
               <Settings className="mr-2 h-4 w-4" />
