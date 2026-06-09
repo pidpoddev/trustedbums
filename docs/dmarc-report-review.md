@@ -1,6 +1,6 @@
 # Shared Mailbox And DMARC Review
 
-_Last updated: 2026-05-29 by Codex._
+_Last updated: 2026-06-09 by Codex._
 
 ## Goal
 
@@ -63,6 +63,32 @@ Call the function as an authenticated admin with:
 
 The response lists likely DMARC report emails by sender, subject, received date, attachment names/sizes, parsed report counts, source IPs, DMARC policy disposition, SPF/DKIM alignment results, and aggregate pass/fail counts. If the response says Graph is unauthorized, check the Microsoft client secret/runtime config first, because tenant consent and the positive mailbox-scope check are now complete.
 
+## Current Review Evidence
+
+Codex invoked the live `dmarc-reports` function as an authenticated admin on 2026-06-09 with:
+
+```json
+{
+  "mailbox": "bums@trustedbums.com",
+  "days": 90,
+  "top": 100
+}
+```
+
+Result summary:
+
+- Messages scanned: 100.
+- Likely DMARC report messages found: 17.
+- Parsed reports: 8.
+- Parsed reported message count: 19.
+- Aligned pass count: 19.
+- Full SPF/DKIM alignment failures: 0.
+- Current `_dmarc.trustedbums.com`: `v=DMARC1; p=none; rua=mailto:bums@trustedbums.com; pct=100;`.
+- Current root SPF: `v=spf1 include:spf.protection.outlook.com -all`.
+- Current aligned senders seen in parsed reports: Microsoft 365/Outlook using `trustedbums.com` SPF/DKIM and Clerk/SendGrid using `clkmail.trustedbums.com` SPF plus `trustedbums.com` DKIM selector `clk`.
+
+The live version still returned parse errors for Microsoft/Yahoo `.xml.gz` reports because `application/gzip` was classified as ZIP. The source fix in `supabase/functions/dmarc-reports/index.ts` handles gzip before ZIP and is covered by `src/test/dmarcReportsFunction.test.ts`; deploy that function before using Microsoft/Yahoo aggregate output as final enforcement evidence.
+
 ## Site Workflow Uses
 
 Once mailbox access is verified, the same shared-mailbox permission can support:
@@ -74,6 +100,15 @@ Once mailbox access is verified, the same shared-mailbox permission can support:
 - Support triage where the source email belongs in the company operations mailbox.
 
 Each new workflow should define what it can read, what it can store, who can see it in the portal, retention expectations, and whether the message body or attachments are truly needed.
+
+## Enforcement Plan
+
+1. Deploy the `dmarc-reports` gzip parser fix to Supabase project `vaoqvtxqvbptyxddpoju`.
+2. Rerun the mailbox review until Google ZIP reports plus Microsoft/Yahoo GZIP reports parse without gzip/zip classification errors.
+3. Confirm all legitimate sender rows align through SPF or DKIM for `trustedbums.com`; remediate or explicitly accept any unexplained full failures.
+4. Change `_dmarc.trustedbums.com` from monitor-only to `v=DMARC1; p=quarantine; rua=mailto:bums@trustedbums.com; pct=100;`.
+5. Treat Ryan as rollback owner and preserve the previous monitor-only record in the change note.
+6. After at least one clean reporting window under quarantine, consider `p=reject; pct=100`.
 
 ## Next Improvement
 

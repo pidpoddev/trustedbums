@@ -1,6 +1,6 @@
 # Shared Mailbox Operations
 
-_Last updated: 2026-05-29 by Codex._
+_Last updated: 2026-06-09 by Codex._
 
 ## Mailbox
 
@@ -12,6 +12,7 @@ Approved uses:
 - Legal document requests and legal follow-ups.
 - Public visitor questions.
 - Client, Bum, and partner questions that come through the site.
+- Client criteria replies that define routing rules for Trusted Bums opportunities, such as BlackCurrant outreach criteria.
 - Complaints, abuse reports, privacy requests, and escalation intake.
 - Support triage where the message belongs to Trusted Bums operations.
 
@@ -29,6 +30,7 @@ The Microsoft app should not have practical read access to unrelated employee or
 - Legal, complaint, privacy, and abuse messages should be classified before broad display in the portal.
 - Sensitive messages should be visible only to admins or a future explicitly authorized operations/legal role.
 - Every mailbox-reading workflow should log who initiated the read, what category was handled, and whether any durable app record was created.
+- Client criteria replies may be summarized into structured opportunity-routing fields, but raw reply bodies should stay out of durable product docs unless a founder/admin explicitly approves storing the text.
 
 ## Implementation Queue
 
@@ -37,6 +39,7 @@ The Microsoft app should not have practical read access to unrelated employee or
 3. Add categories for DMARC, legal, question, complaint, privacy, abuse, support, and uncategorized.
 4. Add an Admin Portal shared inbox/reputation intake surface.
 5. Add retention and redaction rules before storing message bodies or attachments.
+6. Add a client-criteria intake path that can turn approved client replies into structured opportunity-routing rules.
 
 ## Evidence Status
 
@@ -46,3 +49,5 @@ The Microsoft app should not have practical read access to unrelated employee or
 - Exchange application access policy was created for app ID `06a570a0-06f4-432a-8b3b-709d6cf762dc` with `RestrictAccess` scoped to `bums@trustedbums.com`.
 - Positive access check completed: `Test-ApplicationAccessPolicy` returned `Granted` for `bums@trustedbums.com`.
 - No unrelated-mailbox negative test is required while the tenant has only one operational mailbox. If another mailbox is added later, rerun `Test-ApplicationAccessPolicy` against it and expect denial unless that mailbox is intentionally added to the scope.
+- Current mailbox-backed DMARC review completed on 2026-06-09 through the deployed function: 100 messages scanned, 17 likely DMARC reports found, 8 reports parsed, 19 reported messages summarized, 19 aligned passes, and 0 full alignment failures in parsed reports.
+- Source fix pending deployment: Microsoft/Yahoo `.xml.gz` attachments exposed a gzip-vs-ZIP classification defect in deployed version 2. The repo source now handles gzip before ZIP and has regression coverage in `src/test/dmarcReportsFunction.test.ts`; deploy `dmarc-reports` before treating Microsoft/Yahoo aggregate parsing as production-clean.

@@ -233,18 +233,19 @@ function base64ToBytes(value: string) {
 function extractXmlDocuments(attachment: GraphAttachment) {
   if (!attachment.contentBytes) return [] as Array<{ fileName: string; xml: string }>;
   const name = attachment.name ?? "dmarc-report";
+  const contentType = attachment.contentType ?? "";
   const bytes = base64ToBytes(attachment.contentBytes);
 
-  if (/\.zip$/i.test(name) || /zip/i.test(attachment.contentType ?? "")) {
+  if (/\.gz$/i.test(name) || /(?:^|\/)(?:x-)?gzip$/i.test(contentType)) {
+    const xmlName = name.replace(/\.gz$/i, "");
+    return [{ fileName: xmlName || name, xml: strFromU8(gunzipSync(bytes)) }];
+  }
+
+  if (/\.zip$/i.test(name) || /(?:^|\/)(?:x-)?zip(?:$|[+;-])/i.test(contentType)) {
     const entries = unzipSync(bytes);
     return Object.entries(entries)
       .filter(([entryName]) => /\.xml$/i.test(entryName))
       .map(([entryName, entryBytes]) => ({ fileName: `${name}/${entryName}`, xml: strFromU8(entryBytes) }));
-  }
-
-  if (/\.gz$/i.test(name) || /gzip/i.test(attachment.contentType ?? "")) {
-    const xmlName = name.replace(/\.gz$/i, "");
-    return [{ fileName: xmlName || name, xml: strFromU8(gunzipSync(bytes)) }];
   }
 
   return [{ fileName: name, xml: strFromU8(bytes) }];

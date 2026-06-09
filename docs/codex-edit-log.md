@@ -1,6 +1,6 @@
 # Trusted Bums Codex Edit Log
 
-_Last updated: 2026-06-08 by Codex._
+_Last updated: 2026-06-09 by Codex._
 
 This file is the running handoff log for implementation work Codex has made in this repo. Specialist agents should read it before preserving backlog items so they can recheck shipped changes, downgrade stale recommendations, and add only the remaining gaps.
 
@@ -12,6 +12,17 @@ This file is the running handoff log for implementation work Codex has made in t
 - If a pushed commit included pre-existing dirty files outside the current implementation scope, call that out instead of implying Codex authored every line.
 
 ## Additional Agent Recheck Requests
+
+### 2026-06-09 - Run TB-0057 mailbox-backed DMARC review
+
+- Trigger: Ryan asked to do Scrum Tracker item `TB-0057`.
+- Implementation branch: Current local workspace with pre-existing unrelated shared-mailbox, BlackCurrant, email-preview, marketing-graphics, and email-template migration changes.
+- What changed: Invoked the deployed `dmarc-reports` function as an authenticated admin against `bums@trustedbums.com`, documented the current mailbox-backed review results, fixed a source parser defect that treated `application/gzip` DMARC reports as ZIP files, added regression coverage, and narrowed the trust/access docs from "mailbox access missing" to "deploy parser fix and apply DMARC DNS enforcement after expanded review."
+- Main surfaces changed: `supabase/functions/dmarc-reports/index.ts`, `src/test/dmarcReportsFunction.test.ts`, `docs/trust-reputation-backlog.md`, `docs/dmarc-report-review.md`, `docs/shared-mailbox-operations.md`, `docs/consultant-access-needs.md`, `docs/agents/consultant-access-needs.md`, and `docs/codex-edit-log.md`.
+- Checks run: Authenticated admin invocation of `https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/dmarc-reports` with `mailbox=bums@trustedbums.com`, `days=90`, `top=100`; `dig +short TXT _dmarc.trustedbums.com`; `dig +short TXT trustedbums.com`; `dig +short TXT selector1._domainkey.trustedbums.com`; `dig +short TXT clk._domainkey.trustedbums.com`; `dig +short TXT clkmail.trustedbums.com`; live Supabase edge-function inventory for project `vaoqvtxqvbptyxddpoju`; current official Google and Microsoft DMARC guidance review; and `corepack pnpm exec vitest run src/test/dmarcReportsFunction.test.ts`.
+- Results: The mailbox-backed review scanned 100 messages, found 17 likely DMARC reports, parsed 8 reports, summarized 19 reported messages, and found 19 aligned passes with 0 full SPF/DKIM alignment failures in parsed reports. DNS remains monitor-only at `_dmarc.trustedbums.com` with `p=none; pct=100`; root SPF is Microsoft-only; current parsed sender evidence includes Microsoft 365/Outlook and Clerk/SendGrid alignment. Live function version 2 still needs the source gzip parser fix deployed before Microsoft/Yahoo `.xml.gz` reports can be treated as production-clean. No `SUPABASE_ACCESS_TOKEN`, Supabase CLI, DreamHost API key, or DNS dashboard control-plane access was available in-session, so DMARC enforcement was not flipped.
+- Recheck agents: Trust And Reputation Consultant, Security Engineer, Lead Developer, Release Verification Agent, Data Analytics Engineer.
+- Next run should verify: deploy `dmarc-reports` from the fixed source, rerun the 90-day mailbox review until Google/Microsoft/Yahoo aggregate reports parse cleanly, then change `_dmarc.trustedbums.com` to `p=quarantine; pct=100` with Ryan as rollback owner and close or advance `TB-0057` only after live evidence confirms enforcement.
 
 ### 2026-06-09 - Complete Bing Webmaster verification and sitemap submission
 
