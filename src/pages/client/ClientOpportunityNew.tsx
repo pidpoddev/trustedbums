@@ -241,6 +241,7 @@ export default function ClientOpportunityNew() {
   const { user } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
+  const linkedClaimId = useMemo(() => new URLSearchParams(location.search).get("claimId"), [location.search]);
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initialForm);
@@ -329,6 +330,8 @@ export default function ClientOpportunityNew() {
     const tab = params.get("tab");
     if (tab === "questions" || tab === "responses") {
       setActiveTab(tab);
+    } else if (params.get("claimId")) {
+      setActiveTab("pipeline");
     }
   }, [location.search]);
 
@@ -1454,10 +1457,11 @@ export default function ClientOpportunityNew() {
                   {visibleOpportunities.map((opportunity) => {
                     const opportunityClaims = claimsByOpportunity.get(opportunity.id) ?? [];
                     const assignedClaim = getAssignedClaim(opportunityClaims);
+                    const isLinkedClaim = Boolean(linkedClaimId && opportunityClaims.some((claim) => claim.id === linkedClaimId));
                     const plan = opportunity.client_pay_programs;
 
                     return (
-                      <TableRow key={opportunity.id}>
+                      <TableRow key={opportunity.id} className={isLinkedClaim ? "bg-primary/5" : ""}>
                         <TableCell>
                           <div className="space-y-1">
                             <p className="font-medium">{opportunity.target_account_name}</p>
@@ -1502,7 +1506,7 @@ export default function ClientOpportunityNew() {
                               Edit
                             </Button>
                             {assignedClaim?.status === "PROPOSED" ? (
-                              <div className="grid w-64 gap-2 rounded-md border bg-muted/20 p-2 text-left">
+                              <div className={`grid w-64 gap-2 rounded-md border p-2 text-left ${isLinkedClaim ? "border-primary/50 bg-primary/10" : "bg-muted/20"}`}>
                                 <p className="text-xs font-medium">Claim decision</p>
                                 <div className="flex justify-end gap-2">
                                   <Button

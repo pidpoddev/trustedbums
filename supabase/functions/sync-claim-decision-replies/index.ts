@@ -38,9 +38,19 @@ interface ClaimRow {
   id: string;
   opportunity_registration_id: string;
   company_id: string | null;
+  bum_user_id: string;
+  contact_name: string;
+  contact_company: string;
+  note: string | null;
   status: string;
   decline_reason_code: DeclineReasonCode | null;
   client_decision_token: string | null;
+  opportunity_registrations?: {
+    id: string;
+    target_account_name: string | null;
+    companies?: { id: string; name: string | null } | null;
+  } | null;
+  profiles?: { id: string; full_name: string | null; email: string | null } | null;
 }
 
 interface BumSignupRequestRow {
@@ -83,6 +93,7 @@ const microsoftClientId = Deno.env.get("MICROSOFT_CLIENT_ID");
 const microsoftClientSecret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
 const defaultMailbox = Deno.env.get("CLAIM_DECISION_MAILBOX") ?? Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
 const microsoftSenderEmail = Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
+const portalBaseUrl = (Deno.env.get("PORTAL_BASE_URL") ?? "https://trustedbums.com").replace(/\/+$/, "");
 const syncSecret = Deno.env.get("CLAIM_DECISION_SYNC_SECRET");
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -294,7 +305,7 @@ async function recordEvent(message: GraphMessage, input: {
 async function loadClaim(token: string | null, claimId: string | null) {
   let query = supabaseAdmin
     .from("opportunity_claims")
-    .select("id, opportunity_registration_id, company_id, status, decline_reason_code, client_decision_token");
+    .select("id, opportunity_registration_id, company_id, bum_user_id, contact_name, contact_company, note, status, decline_reason_code, client_decision_token, opportunity_registrations(id, target_account_name, companies(id, name)), profiles(id, full_name, email)");
 
   if (token) {
     query = query.eq("client_decision_token", token);
@@ -307,6 +318,21 @@ async function loadClaim(token: string | null, claimId: string | null) {
   const { data, error } = await query.maybeSingle<ClaimRow>();
   if (error) throw error;
   return data;
+}
+
+async function notifyBumClaimApproved(accessToken: string, claim: ClaimRow) {
+  const recipientEmail = claim.profiles?.email?.trim();
+  if (!recipientEmail) return;
+
+  await sendTemplateEmail(accessToken, "opportunity_claim_accepted_bum", recipientEmail, {
+    bum_name: claim.profiles?.full_name?.trim() || recipientEmail,
+    target_account_name: claim.opportunity_registrations?.target_account_name ?? "this opportunity",
+    contact_name: claim.contact_name,
+    contact_company: claim.contact_company,
+    client_name: claim.opportunity_registrations?.companies?.name ?? "the client",
+    admin_note: claim.note ?? "",
+    intro_setup_url: `${portalBaseUrl}/bum/opportunities/${encodeURIComponent(claim.opportunity_registration_id)}?claimId=${encodeURIComponent(claim.id)}`,
+  }, "OPPORTUNITY_CLAIM_ACCEPTED");
 }
 
 async function loadAdminBySender(message: GraphMessage) {
@@ -493,7 +519,7 @@ async function applyBumSignupApproval(message: GraphMessage, requestId: string, 
   return "processed";
 }
 
-async function applyDecision(message: GraphMessage, claim: ClaimRow, decision: Decision, text: string) {
+async function applyDecision(message: GraphMessage, claim: ClaimRow, decision: Decision, text: string, accessToken: string) {
   if (claim.status !== "PROPOSED") {
     await recordEvent(message, {
       claimId: claim.id,
@@ -551,6 +577,11 @@ async function applyDecision(message: GraphMessage, claim: ClaimRow, decision: D
     status: "PROCESSED",
     note: "Claim decision applied.",
   });
+  if (decision === "APPROVED") {
+    await notifyBumClaimApproved(accessToken, claim).catch((error) => {
+      console.warn("Unable to send claim approval notification", error);
+    });
+  }
   return "processed";
 }
 
@@ -616,7 +647,7 @@ Deno.serve(async (request) => {
           continue;
         }
 
-        const result = await applyDecision(message, claim, decision, text);
+        const result = await applyDecision(message, claim, decision, text, accessToken);
         if (result === "processed") processed += 1;
         else skipped += 1;
       } catch (error) {

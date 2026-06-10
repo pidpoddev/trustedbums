@@ -127,7 +127,9 @@ async function resolveRecipients(group: RecipientGroup, input: SendAdminEmailReq
   if (group === "CLIENT_COMPANY") {
     const companyId = metadata.company_id;
     if (!companyId) throw new Error("CLIENT_COMPANY emails require metadata.company_id.");
-    const { data, error } = await supabaseAdmin.from("profiles").select("id, full_name, email").eq("company_id", companyId).eq("role", "CLIENT");
+    let query = supabaseAdmin.from("profiles").select("id, full_name, email").eq("company_id", companyId).eq("role", "CLIENT");
+    if (metadata.client_admin_only === "true") query = query.eq("client_access_role", "CLIENT_ADMIN");
+    const { data, error } = await query;
     if (error) throw error;
     return (data ?? []).map(profileToRecipient).filter(Boolean) as Recipient[];
   }
