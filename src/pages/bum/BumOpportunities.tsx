@@ -706,7 +706,7 @@ export default function BumOpportunities() {
           return (
           <Card key={`target-${targetAccount.id}`} className={cn("transition-shadow hover:shadow-md", isHidden && "border-muted bg-muted/30 opacity-80")}>
             <CardContent className="pt-5">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start">
+              <div className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
                 <div className="rounded-xl bg-primary/10 p-3">
                   <Target className="h-5 w-5 text-primary" />
                 </div>
@@ -773,7 +773,7 @@ export default function BumOpportunities() {
                     </div>
                   ) : null}
                 </div>
-                <div className="flex shrink-0 flex-row gap-2 md:flex-col md:items-end">
+                <div className="flex flex-wrap items-center gap-2 border-t pt-3 md:col-start-2">
                   <Button
                     size="icon"
                     variant={isHearted ? "default" : "outline"}
@@ -821,7 +821,7 @@ export default function BumOpportunities() {
                     }}
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
-                    I have a question
+                    Question
                   </Button>
                   <Button size="sm" variant="outline" asChild>
                     <a
@@ -833,7 +833,7 @@ export default function BumOpportunities() {
                       rel="noreferrer"
                     >
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      Find connections
+                      Connections
                     </a>
                   </Button>
                   <Button
@@ -864,7 +864,7 @@ export default function BumOpportunities() {
           return (
           <Card key={opportunity.id} className={cn("transition-shadow hover:shadow-md", isHidden && "border-muted bg-muted/30 opacity-80")}>
             <CardContent className="pt-5">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start">
+              <div className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
                 <div className="rounded-xl bg-accent/10 p-3">
                   <Briefcase className="h-5 w-5 text-accent" />
                 </div>
@@ -928,7 +928,7 @@ export default function BumOpportunities() {
                     </div>
                   ) : null}
                 </div>
-                <div className="flex shrink-0 flex-row gap-2 md:flex-col md:items-end">
+                <div className="flex flex-wrap items-center gap-2 border-t pt-3 md:col-start-2">
                   <Button
                     size="icon"
                     variant={isHearted ? "default" : "outline"}
@@ -979,7 +979,7 @@ export default function BumOpportunities() {
                       rel="noreferrer"
                     >
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      Find connections
+                      Connections
                     </a>
                   </Button>
                   <Button size="sm" asChild>
