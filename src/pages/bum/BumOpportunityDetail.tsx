@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "react-router-dom";
 import { openConversationDock } from "@/lib/conversationDock";
@@ -33,6 +33,7 @@ import {
   listPotentialDecisionMakerMatchesForOpportunity,
   listOpportunityClaims,
   listOpportunityQuestionsForBum,
+  type PotentialDecisionMakerMatchRecord,
   updateOpportunityClaimStatus,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
@@ -94,7 +95,9 @@ export default function BumOpportunityDetail() {
   const [strength, setStrength] = useState<RelationshipStrength>("MODERATE");
   const [note, setNote] = useState("");
   const [questionText, setQuestionText] = useState("");
-  const [addedDecisionMakerMatchIds, setAddedDecisionMakerMatchIds] = useState<Set<string>>(new Set());
+  const [decisionMakerMatchForClaim, setDecisionMakerMatchForClaim] = useState<PotentialDecisionMakerMatchRecord | null>(null);
+  const [claimedDecisionMakerMatchIds, setClaimedDecisionMakerMatchIds] = useState<Set<string>>(new Set());
+  const claimFormRef = useRef<HTMLDivElement | null>(null);
 
   const [updateClaimId, setUpdateClaimId] = useState("");
   const [updateStatus, setUpdateStatus] = useState<ClaimStatus>("SCHEDULED");
@@ -110,13 +113,38 @@ export default function BumOpportunityDetail() {
         relationshipStrength: strength,
         note,
       }),
-    onSuccess: (claim) => {
+    onSuccess: async (claim) => {
+      if (decisionMakerMatchForClaim) {
+        try {
+          await createBumRepresentedContact({
+            name: decisionMakerMatchForClaim.person_name,
+            title: decisionMakerMatchForClaim.title,
+            companyName: decisionMakerMatchForClaim.company || opp!.target_account_name,
+            email: contactEmail,
+            linkedinUrl: decisionMakerMatchForClaim.linkedin_url_candidate,
+            relationshipStrength: "unknown",
+            note: [
+              `Claimed ${opp!.target_account_name} because I know this person.`,
+              decisionMakerMatchForClaim.recommended_bum_ask ? `Suggested warm-path ask: ${decisionMakerMatchForClaim.recommended_bum_ask}` : null,
+              decisionMakerMatchForClaim.evidence_summary ? `Research note: ${decisionMakerMatchForClaim.evidence_summary}` : null,
+              note ? `Claim context: ${note}` : null,
+            ].filter(Boolean).join("\n\n"),
+            opportunityRegistrationId: opp!.id,
+          });
+          queryClient.invalidateQueries({ queryKey: ["opportunity-contact-picker", user?.id] });
+          queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] });
+          setClaimedDecisionMakerMatchIds((current) => new Set(current).add(decisionMakerMatchForClaim.id));
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "Claim created, but the contact could not be saved.");
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["opportunity-claims", id] });
       toast.success(`Claim requested for ${claim.contact_name} at ${claim.contact_company}`);
       setContact("");
       setCompany("");
       setContactEmail("");
       setNote("");
+      setDecisionMakerMatchForClaim(null);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Unable to request claim");
@@ -138,30 +166,6 @@ export default function BumOpportunityDetail() {
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Unable to send question");
-    },
-  });
-
-  const addDecisionMakerContactMutation = useMutation({
-    mutationFn: (match: (typeof decisionMakerMatches)[number]) =>
-      createBumRepresentedContact({
-        name: match.person_name,
-        title: match.title,
-        companyName: match.company || opp!.target_account_name,
-        linkedinUrl: match.linkedin_url_candidate,
-        relationshipStrength: "unknown",
-        note: [
-          `Added from Potential decision-maker matches for ${opp!.target_account_name}.`,
-          match.recommended_bum_ask ? `Suggested warm-path ask: ${match.recommended_bum_ask}` : null,
-          match.evidence_summary ? `Research note: ${match.evidence_summary}` : null,
-        ].filter(Boolean).join("\n\n"),
-      }),
-    onSuccess: (response, match) => {
-      queryClient.invalidateQueries({ queryKey: ["opportunity-contact-picker", user?.id] });
-      setAddedDecisionMakerMatchIds((current) => new Set(current).add(match.id));
-      toast.success(`${response.contact.name} was added to your contacts`);
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Unable to add this contact");
     },
   });
 
@@ -209,6 +213,19 @@ export default function BumOpportunityDetail() {
       return;
     }
     createClaimMutation.mutate();
+  };
+
+  const startClaimFromDecisionMakerMatch = (match: PotentialDecisionMakerMatchRecord) => {
+    setContact(match.person_name);
+    setCompany(match.company || opp!.target_account_name);
+    setContactEmail("");
+    setStrength(match.rating === "Priority A" ? "STRONG" : "MODERATE");
+    setNote([
+      match.recommended_bum_ask ? `I know this person and can help with this warm-path ask: ${match.recommended_bum_ask}` : "I know this person and can recommend a path into this opportunity.",
+      match.evidence_summary ? `Research context: ${match.evidence_summary}` : null,
+    ].filter(Boolean).join("\n\n"));
+    setDecisionMakerMatchForClaim(match);
+    requestAnimationFrame(() => claimFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const submitQuestion = () => {
@@ -337,15 +354,14 @@ export default function BumOpportunityDetail() {
                   </div>
                 ) : null}
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    className="bg-emerald-600 text-white hover:bg-emerald-700"
-                    disabled={!user || addDecisionMakerContactMutation.isPending || addedDecisionMakerMatchIds.has(match.id)}
-                    onClick={() => addDecisionMakerContactMutation.mutate(match)}
-                  >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    {addedDecisionMakerMatchIds.has(match.id) ? "Added to Contacts" : "Add to my Contacts"}
-                  </Button>
+                  {match.linkedin_url_candidate ? (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={match.linkedin_url_candidate} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        View LinkedIn
+                      </a>
+                    </Button>
+                  ) : null}
                   {match.source_urls.map((sourceUrl) => (
                     <Button key={sourceUrl} size="sm" variant="outline" asChild>
                       <a href={sourceUrl} target="_blank" rel="noreferrer">
@@ -354,14 +370,15 @@ export default function BumOpportunityDetail() {
                       </a>
                     </Button>
                   ))}
-                  {match.linkedin_url_candidate ? (
-                    <Button size="sm" variant="outline" asChild>
-                      <a href={match.linkedin_url_candidate} target="_blank" rel="noreferrer">
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        LinkedIn candidate
-                      </a>
-                    </Button>
-                  ) : null}
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    disabled={!user || claimedDecisionMakerMatchIds.has(match.id)}
+                    onClick={() => startClaimFromDecisionMakerMatch(match)}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    {claimedDecisionMakerMatchIds.has(match.id) ? "Claim requested" : "I know this person - Claim this Opportunity"}
+                  </Button>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
                   LinkedIn check: {match.linkedin_manual_check.replace(/_/g, " ")} · Current company: {match.current_company_verified}
@@ -477,13 +494,22 @@ export default function BumOpportunityDetail() {
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card ref={claimFormRef}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" /> Request a claim
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {decisionMakerMatchForClaim ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
+                <p className="font-medium">Claiming via {decisionMakerMatchForClaim.person_name}</p>
+                <p className="mt-1">
+                  Add their email if you know it, tighten the relationship context, then submit the claim.
+                  This will also save them to your Contacts with this opportunity attached.
+                </p>
+              </div>
+            ) : null}
             <div className="grid gap-2">
               <Label>Contact name</Label>
               <Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Jane Doe" />
@@ -493,7 +519,7 @@ export default function BumOpportunityDetail() {
               <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Target company" />
             </div>
             <div className="grid gap-2">
-              <Label>Email if known</Label>
+              <Label>{decisionMakerMatchForClaim ? "Email if you know it" : "Email if known"}</Label>
               <Input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="jane@example.com" />
             </div>
             <div className="grid gap-2">
@@ -519,7 +545,7 @@ export default function BumOpportunityDetail() {
               <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Context the client should know..." rows={3} />
             </div>
             <Button onClick={submitRecommendation} className="w-full" disabled={createClaimMutation.isPending}>
-              Request claim
+              {createClaimMutation.isPending ? "Requesting..." : decisionMakerMatchForClaim ? "Claim this opportunity" : "Request claim"}
             </Button>
           </CardContent>
         </Card>
