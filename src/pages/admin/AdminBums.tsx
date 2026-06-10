@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit3, Plus, Power, PowerOff, Search } from "lucide-react";
+import { Check, Edit3, Plus, Power, PowerOff, Search, ShieldQuestion, X } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
 import { PaginationControls } from "@/components/PaginationControls";
 import { PageHeader } from "@/components/PageHeader";
@@ -18,7 +18,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getPageItems } from "@/lib/pagination";
 import {
+  approveAdminCompanyAccessRequest,
+  denyAdminCompanyAccessRequest,
   inviteBum,
+  listAdminCompanyAccessRequests,
   listAdminBumProfiles,
   listProfiles,
   listTermsAcceptances,
@@ -28,6 +31,7 @@ import {
   type BumAvailabilityStatus,
   type BumProfileRecord,
   type BumVerificationStatus,
+  type ClientCompanyAccessRequestRecord,
 } from "@/lib/portalApi";
 
 type BumTypeFilter = "ALL" | "VISIBLE_TO_CLIENTS" | "AGREEMENT_ACCEPTED" | "PROFILE_READY" | "HIDDEN" | "DISABLED";
@@ -56,6 +60,10 @@ function splitList(value: string) {
 
 function isBumDisabled(bum: Pick<BumProfileRecord, "profiles">) {
   return bum.profiles?.access_status === "DISABLED" || Boolean(bum.profiles?.disabled_at);
+}
+
+function formatSignupDate(value: string) {
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
@@ -270,8 +278,17 @@ export default function AdminBums() {
   const queryClient = useQueryClient();
   const bumProfilesQuery = useQuery({ queryKey: ["admin-bum-profiles"], queryFn: listAdminBumProfiles });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
+  const accessRequestsQuery = useQuery({
+    queryKey: ["admin-company-access-requests"],
+    queryFn: () => listAdminCompanyAccessRequests(user!),
+    enabled: Boolean(user?.role === "ADMIN"),
+  });
   const termsVersionsQuery = useQuery({ queryKey: ["admin-terms-versions"], queryFn: listTermsVersions });
   const acceptancesQuery = useQuery({ queryKey: ["admin-terms-acceptances"], queryFn: listTermsAcceptances });
+  const pendingBumSignupRequests = useMemo(
+    () => (accessRequestsQuery.data ?? []).filter((request) => request.request_type === "BUM_SIGNUP"),
+    [accessRequestsQuery.data],
+  );
 
   const inviteMutation = useMutation({
     mutationFn: () => inviteBum({ email: inviteEmail, name: inviteName, note: inviteNote }),
@@ -309,6 +326,41 @@ export default function AdminBums() {
     onError: (error) => {
       toast({
         title: "Unable to update Bum access",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  const approveBumSignupMutation = useMutation({
+    mutationFn: (request: ClientCompanyAccessRequestRecord) => approveAdminCompanyAccessRequest(user!, request.id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-company-access-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-bum-profiles"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-profiles"] }),
+      ]);
+      toast({ title: "Bum approved", description: "The signup now has Bum portal access." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to approve Bum",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  const denyBumSignupMutation = useMutation({
+    mutationFn: (request: ClientCompanyAccessRequestRecord) => denyAdminCompanyAccessRequest(user!, request.id, "Denied from Admin Bums approval queue."),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-company-access-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-profiles"] }),
+      ]);
+      toast({ title: "Bum signup denied", description: "The pending signup was denied." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to deny Bum",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -483,6 +535,50 @@ export default function AdminBums() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {pendingBumSignupRequests.length ? (
+        <Card className="mb-6 border-primary/30 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="mb-4 flex items-center gap-2">
+              <ShieldQuestion className="h-5 w-5 text-primary" />
+              <h2 className="font-display text-lg font-semibold">Pending Bum Signups</h2>
+              <Badge variant="secondary">{pendingBumSignupRequests.length}</Badge>
+            </div>
+            <div className="grid gap-3">
+              {pendingBumSignupRequests.map((request) => (
+                <div key={request.id} className="flex flex-col gap-3 rounded-md border bg-card p-3 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0">
+                    <p className="break-words font-medium">{request.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Requested {formatSignupDate(request.created_at)}
+                      {request.email_domain ? ` · ${request.email_domain}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      disabled={approveBumSignupMutation.isPending || denyBumSignupMutation.isPending}
+                      onClick={() => approveBumSignupMutation.mutate(request)}
+                    >
+                      <Check className="mr-2 h-4 w-4" />
+                      Approve Bum
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={approveBumSignupMutation.isPending || denyBumSignupMutation.isPending}
+                      onClick={() => denyBumSignupMutation.mutate(request)}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Deny
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)] md:items-end mb-6">
         <div className="relative min-w-0">
