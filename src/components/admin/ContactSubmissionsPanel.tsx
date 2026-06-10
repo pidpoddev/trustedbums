@@ -318,7 +318,7 @@ export function ContactSubmissionsPanel({ companies }: ContactSubmissionsPanelPr
         </div>
         <div className="grid gap-3 md:grid-cols-[1fr_180px_220px] md:items-end">
           <Input
-            placeholder="Search contacts, emails, companies, or notes..."
+            placeholder="Search contacts"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />

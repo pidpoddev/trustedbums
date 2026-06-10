@@ -12,7 +12,7 @@ describe("conversation dock layout", () => {
     for (const layoutPath of portalLayouts) {
       const source = readFileSync(layoutPath, "utf8");
 
-      expect(source, layoutPath).toContain("p-4 pb-24 sm:p-6 sm:pb-28");
+      expect(source, layoutPath).toContain("p-4 pb-32 sm:p-6 sm:pb-28");
       expect(source, layoutPath).toContain("<ConversationDock />");
     }
   });

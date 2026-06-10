@@ -1,76 +1,72 @@
 # Trusted Bums Release Verification Backlog
 
-_Last updated: 2026-06-08 by Codex daily release verification automation._
+_Last updated: 2026-06-09 by Codex daily release verification automation._
 
 ## Release Decision
 
-Decision: HOTFIX-FORWARD for the current deployed head `9f42bf4`.
+Decision: `HOTFIX-FORWARD` for current `main` head `ff59d2c`.
 
-The deployed app is not showing a confirmed live product outage: DreamHost deploy, hosted smoke, and all three deep shards passed on `9f42bf4`, and `https://trustedbums.com` returned `HTTP 200` with current security headers. The release evidence is still not clean enough to call `GO` because the authoritative GitHub `QA` workflow is red on the exact head, the exact-commit Code Review marker is stale, and the visible landing-page and marketing-copy changes have no matching current-head `Visual UI Audit` artifact.
+The stale `9f42bf4` red-QA story is no longer current release truth. Current `main` has green hosted `QA`, DreamHost deploy, and `E2E Smoke` evidence on `ff59d2c`. The release is still not a clean `GO` because current-head `Visual UI Audit` run `27247209520` failed in the public visual audit, and `.codex-review-decision.json` does not match `ff59d2c`. The source now includes a complete production visual-audit workflow, and the complete audit passed locally against `https://trustedbums.com`; release still needs a successful exact-head hosted artifact after these changes are pushed.
 
 ## Evidence Summary
 
-- Current `main` head: `9f42bf4` (`Restore Client marketing copy`).
-- Prior visible route change still in scope on current head: `0ee2f44` (`Split public Client and Bum landing pages`).
-- GitHub `Deploy TrustedBums to DreamHost` run `27178512660` on `9f42bf4`: passed.
-- GitHub `E2E Smoke` run `27178530411` on `9f42bf4`: passed.
-- Deep QA matrix inside `27178530411`: `smoke`, `Deep QA (admin)`, `Deep QA (bum)`, and `Deep QA (client)` all passed.
-- GitHub `QA` run `27178512695` on `9f42bf4`: failed in `Unit tests`.
-- Current-head `QA` failure cause: `src/test/scrumQueueRegression.test.ts` still requires `docs/qa-test-backlog.md` to carry the seeded proof lanes `Extension API destinations and page captures`, `Bum represented contacts`, and `Client team, domain approval, and access-role assignment`. The current backlog rewrite dropped those exact sections, so the release proof failed on documentation/test-contract drift rather than a reproduced product outage.
-- Local hotfix-forward verification after restoring that contract: `corepack pnpm exec vitest run src/test/scrumQueueRegression.test.ts` passed, and `corepack pnpm run qa` passed locally (`26` test files, `95` tests, production build green). Hosted `QA` evidence is still red until GitHub reruns on the fixed head.
-- Current-head `Visual UI Audit`: missing. The latest visual artifact is still run `27167324836` on older head `441fd92`.
-- Local QA env state:
-  - Raw shell `corepack pnpm run qa:env`: failed because the shell was not preloaded with `QA_BASE_URL`, Clerk keys, or the role-email variables.
-  - After sourcing `.env.qa`, `corepack pnpm run qa:env`: passed.
-  - After sourcing `.env.qa`, `corepack pnpm run qa:target-preflight`: passed DNS, HTTPS, app shell, Clerk, and extension API preflight.
-- Current public trust smoke:
-  - `curl -I -L --max-time 20 https://trustedbums.com`: returned `HTTP/2 200` with `Strict-Transport-Security`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, and `Content-Security-Policy`.
-  - `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`: still failed TLS verification with `curl: (60) SSL certificate problem: unable to get local issuer certificate`, so the external DNS target remains context only, not release proof.
-- Exact Code Review marker: `.codex-review-decision.json` still points at `c9b7b07`, not `9f42bf4`.
-- Deployment/function drift relevance: no `supabase/` migrations or edge-function files changed between last completed product-code green head `73f0b06` and current head `9f42bf4`; the new release risk is front-end plus documentation evidence drift, not a newly introduced backend deploy mismatch.
+- Current `main` head: `ff59d2c` (`Add BlackCurrant research and email assets`).
+- GitHub `QA` run `27244531408` on `ff59d2c`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27244531370` on `ff59d2c`: passed.
+- GitHub `E2E Smoke` run `27244546687` on `ff59d2c`: passed.
+- Deep QA matrix inside `27244546687`: `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)` all passed.
+- GitHub `Visual UI Audit` run `27247209520` on `ff59d2c`: failed. The public marketing/privacy test timed out in both `chromium` and `mobile-chrome` waiting for the `Accessibility settings` button after the signup dialog step; the other 16 visual checks passed and artifacts uploaded.
+- Latest successful hosted visual artifact: run `27200213766` on older head `fffe28c`.
+- Local complete production visual audit: `QA_BASE_URL=https://trustedbums.com QA_VISUAL_AUDIT_SCOPE=complete corepack pnpm run qa:visual:complete` passed 18 desktop/mobile checks in about 11 minutes after the source fix.
+- Exact Code Review marker: `.codex-review-decision.json` records `GO` for `e023694f`, not `ff59d2c`.
+- Raw shell QA env state: `corepack pnpm run qa:env` failed before sourcing because `QA_BASE_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `QA_ADMIN_EMAIL`, `QA_CLIENT_ADMIN_EMAIL`, `QA_CLIENT_FINANCE_EMAIL`, `QA_CLIENT_MEMBER_EMAIL`, and `QA_BUM_EMAIL` were not exported in the shell.
+- Sourced local QA env state: after sourcing `.env.qa`, `corepack pnpm run qa:env` passed and `corepack pnpm run qa:target-preflight` passed against `https://trustedbums.com` with DNS, HTTPS, app shell, Clerk, and extension API checks green.
+- Public trust smoke: `curl -I -L --max-time 20 https://trustedbums.com` returned `HTTP/2 200` with HSTS and CSP headers; `curl -I -L --max-time 20 https://rcdl.tplinkdns.com` still failed TLS verification.
+- Partial live Supabase fallback via generic connector: project `vaoqvtxqvbptyxddpoju` is `ACTIVE_HEALTHY`; edge-function inventory still includes `extension-api-v1` v3 and `performance-beacon` v3; recent edge logs showed fresh `performance-beacon` `202` traffic plus `profile-bootstrap` and `sync-claim-decision-replies` `200` traffic; auth logs returned no entries in the last 24 hours. This session did not have callable live migration, SQL, or advisor surfaces.
 
 ## Failed Or Missing Checks
 
-### P1 - [TB-0017] GitHub QA is red on the exact deployed head
-- Evidence: GitHub `QA` run `27178512695` failed on `9f42bf4` in `Unit tests`; `src/test/scrumQueueRegression.test.ts` expected seeded access-proof sections that were removed from `docs/qa-test-backlog.md`.
-- Impact: Release evidence is not trustworthy enough for `GO` because the authoritative `QA` workflow on the exact deployed head is failing, and production build plus browser-smoke steps were skipped after the unit-test failure.
-- Recommendation: HOTFIX-FORWARD by restoring the required backlog/test contract, rerunning `QA`, and keeping the causal link visible in the QA backlog and lead handoff.
-- Acceptance criteria: a new `QA` run on the exact release head or successor passes lint, unit tests, production build, and browser smoke.
+### P2 - [TB-0018] Pair current release heads with current visual evidence or an explicit reuse rule
+- Evidence: `27247209520` failed on exact head `ff59d2c`; the latest completed successful artifact remains `27200213766` on `fffe28c`. The exact-head failure is the public marketing/privacy test timing out in both `chromium` and `mobile-chrome` while waiting for the `Accessibility settings` button after the signup dialog closes. The checked-in visual spec now fixes that sequencing, retains `/bums` and `/admin/scrum`, and adds a complete pre-go-live scope; local complete production audit passed, but hosted artifact proof is still pending.
+- Impact: Release reviewers still cannot cite a clean exact-head screenshot artifact for the current public and authenticated visible surface.
+- Recommendation: Dispatch `Complete Visual UI Audit` on `https://trustedbums.com` after these changes are pushed, review the retained screenshots/artifacts, and then decide whether `TB-0018` can close.
+- Acceptance criteria: a successful exact-head visual artifact exists, or a no-visual-delta reuse rule is recorded for the exact commit range; the retained artifact still captures `/bums` and `/admin/scrum`.
 
-### P1 - [TB-0018] Current-head visual evidence is missing for visible public-route changes
-- Evidence: `0ee2f44` and `9f42bf4` changed [src/pages/Index.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/Index.tsx), [src/pages/BumLanding.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/BumLanding.tsx), [src/components/SignupIntentDialog.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/SignupIntentDialog.tsx), and route wiring in [src/App.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx), but no `Visual UI Audit` run exists for either head. The latest visual artifact is still `27167324836` on `441fd92`.
-- Impact: The public landing split and marketing-copy restoration are visible trust and conversion surfaces, so the old screenshot set cannot be treated as current release proof.
-- Recommendation: HOLD fresh `GO` status until GitHub `Visual UI Audit` runs on `9f42bf4` or a successor head and passes.
-- Acceptance criteria: a current-head `Visual UI Audit` artifact exists and shows the updated public Client and Bum landing surfaces plus any changed signup copy states.
-
-### P1 - [TB-0019] Exact-commit Code Review evidence is stale
-- Evidence: `.codex-review-decision.json` still records `GO` for `c9b7b07`; there is no current-head Code Review marker for `0ee2f44` or `9f42bf4`.
-- Impact: Release Verification does not replace Code Review. The lack of exact-commit review evidence weakens confidence that the visible release scope was intentionally reviewed before the automated deploy.
-- Recommendation: Refresh Code Review for the next hotfix-forward head, or explicitly record a scoped waiver from Lead Developer tied to the exact new head after the red `QA` item and visual evidence gap are closed.
-- Acceptance criteria: `.codex-review-decision.json` matches the release head, or the lead handoff records a deliberate exact-head waiver with the new hosted evidence.
+### Current exact-head Code Review marker is stale
+- Evidence: `.codex-review-decision.json` points at `e023694f`, while current `main` is `ff59d2c`.
+- Impact: Release Verification does not replace Code Review. Even with green hosted QA and E2E, the current head still needs an exact review marker or an explicit Lead Developer waiver before `GO`.
+- Recommendation: Run Code Review Agent after the current visual audit finishes, or record a deliberate exact-head waiver tied to `ff59d2c` and the hosted evidence above.
+- Acceptance criteria: `.codex-review-decision.json` matches `ff59d2c`, or the lead handoff records an exact-head waiver.
 
 ### P2 - [TB-0024] External DNS TLS path remains unsuitable for release proof
-- Evidence: `https://rcdl.tplinkdns.com` still fails TLS verification from this runner, while `https://trustedbums.com` is healthy and was the GitHub smoke target that passed.
-- Impact: External DNS context is still useful for infrastructure tracking, but it cannot be used to corroborate current release status from this runner.
+- Evidence: Current runner check `curl -I -L --max-time 20 https://rcdl.tplinkdns.com` still fails TLS verification with `SSL certificate problem: unable to get local issuer certificate`, while hosted QA and release proof are anchored to `https://trustedbums.com`.
+- Impact: The external DNS target remains useful infrastructure context, but it should not be treated as release proof from this runner.
 - Recommendation: Keep release proof anchored to `https://trustedbums.com` until the `rcdl.tplinkdns.com` certificate chain is fixed or independently verified through provider dashboards.
 - Acceptance criteria: `curl -I -L --max-time 20 https://rcdl.tplinkdns.com` completes a clean TLS handshake and returns an expected HTTP response.
 
+## Closed Or Satisfied In This Cleanup
+
+- `TB-0017` remains closed: current-head GitHub `QA` run `27244531408` passed on `ff59d2c`.
+- `TB-0030` is source-satisfied by `8a9e2d7`: `SignupIntentDialog` now wires signup intent group and field errors with programmatic names, descriptions, and invalid state.
+- `TB-0031` is source-satisfied by `8a9e2d7`: `AdminScrumTracker` now exposes explicit labels and help text for search, filters, and create-form controls.
+- `TB-0053` and `TB-0056` remain historically closed from the 2026-06-09 admin scrum hardening pass. This run rechecked the current source and release posture only; it did not have callable live migration or SQL surfaces to restate those database claims as freshly verified.
+
 ## Cross-Agent Follow-Ups
 
-### QA/Test Engineer and Lead Developer - restore the backlog/test contract that broke current-head QA
-- Causal link: the earlier `docs/qa-test-backlog.md` rewrite removed seeded-proof sections that `src/test/scrumQueueRegression.test.ts` still treats as required release scaffolding.
-- Durable correction: keep the seeded proof lanes explicit until the test is intentionally relaxed, and treat backlog rewrites as test-governed artifacts rather than prose-only cleanup.
+### QA/Test Engineer and Lead Developer - stop carrying the old red-QA story
+- Current truth: the old `27178512695` failure on `9f42bf4` is historical. Current `ff59d2c` hosted QA, deploy, and E2E evidence is green.
+- Requested action: keep future handoffs focused on the remaining exact-head visual and Code Review gaps instead of reopening the stale QA-red narrative.
 
-### Lead Developer and Release Verification - do not upgrade current head to GO on E2E alone
-- Evidence: `27178530411` is green, but `27178512695` is red and no current-head visual artifact exists for the changed landing pages.
-- Requested action: treat the next state as `HOTFIX-FORWARD` until `QA`, `Visual UI Audit`, and exact-head Code Review evidence are reconciled together.
+### UI, Accessibility, QA Harness, and Release Verification - run complete production visual audit
+- Current truth: visual audit proof is red on exact head `ff59d2c`, but the source now fixes the public signup/accessibility sequencing and adds retained `/bums`, `/admin/scrum`, and complete-scope go-live coverage. The local complete production audit passed 18 checks against `https://trustedbums.com`.
+- Requested action: dispatch `Complete Visual UI Audit` against `https://trustedbums.com`, inspect the artifacts, and use that exact-head hosted run as the visual gate before closing `TB-0018`.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-08.
-- Current evidence reviewed: `git rev-parse HEAD`; `git log --oneline -8`; `.codex-review-decision.json`; raw and sourced `corepack pnpm run qa:env`; sourced `corepack pnpm run qa:target-preflight`; `git diff --name-only 73f0b06..9f42bf4`; `git diff --name-only 41187e0..9f42bf4`; `git show --stat --summary 0ee2f44`; `git show --stat --summary 9f42bf4`; GitHub runs `27178512695`, `27178512660`, `27178530411`, `27167324836`, `27177006002`, and `27175606654`; current `docs/qa-test-backlog.md`; current `docs/lead-developer-recommendations.md`; current `docs/codex-edit-log.md`; and `src/test/scrumQueueRegression.test.ts`.
-- Public checks reviewed: `curl -I -L --max-time 20 https://trustedbums.com` and `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`.
-- Checks that could not run and why:
-  - No current-head `Visual UI Audit` workflow exists yet for `0ee2f44` or `9f42bf4`.
-  - No current-head exact-commit Code Review marker exists yet for `0ee2f44` or `9f42bf4`.
-  - `qa:go-live` was not rerun because hosted smoke and deep coverage already isolated the active release blocker to the red `QA` workflow plus missing visual evidence.
+- Date of run: 2026-06-09.
+- Current evidence reviewed: `git rev-parse HEAD`; `git log --oneline -8`; `.codex-review-decision.json`; GitHub workflow list; GitHub runs `27244531408`, `27244531370`, `27244546687`, `27247209520`, and Visual UI Audit history; raw `corepack pnpm run qa:env`; sourced `corepack pnpm run qa:env`; sourced `corepack pnpm run qa:target-preflight`; `curl -I -L --max-time 20 https://trustedbums.com`; `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`; `mcp__codex_apps__supabase._get_project`; `mcp__codex_apps__supabase._list_edge_functions`; `mcp__codex_apps__supabase._get_logs` for `edge-function` and `auth`; source review of `tests/e2e/visual-ui-audit.spec.ts`.
+- Checks that could not close and why:
+  - `Visual UI Audit` run `27247209520` failed after this refresh began; it is now the active release evidence blocker.
+  - `.codex-review-decision.json` was not updated because this was not a Code Review Agent run.
+  - This session did not have a callable Admin Scrum Tracker or Supabase write path, so tracker closeout stayed limited to source and backlog reconciliation rather than live row updates.
+  - This session did not have callable live migration history, read-only SQL, or advisor surfaces for Supabase, so prior database-only claims were treated as historical unless they were rechecked from current source.

@@ -60,7 +60,7 @@ export function PortalHeaderActions() {
             <span className="text-xs font-semibold">{getInitials(user?.name, user?.email)}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent align="end" sideOffset={10} collisionPadding={12} className="z-[90] w-[min(16rem,calc(100vw-1rem))] bg-background shadow-xl">
           <DropdownMenuLabel>
             <span className="block truncate">{user?.name ?? "Account"}</span>
             <span className="mt-1 block truncate text-xs font-normal text-muted-foreground">{user?.email}</span>

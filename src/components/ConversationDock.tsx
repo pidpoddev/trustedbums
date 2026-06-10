@@ -147,7 +147,7 @@ export function ConversationDock() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3">
+    <div className="fixed bottom-3 right-3 z-40 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-3 sm:bottom-4 sm:right-4 sm:max-w-[calc(100vw-2rem)]">
       {isOpen ? (
         <div
           className={cn(
@@ -318,9 +318,11 @@ export function ConversationDock() {
         </div>
       ) : null}
 
-      <Button type="button" className="rounded-full shadow-lg" onClick={handleChatButtonClick}>
-        <MessageSquare className="mr-2 h-4 w-4" />
-        Chat{threads.length ? ` (${threads.length})` : ""}
+      <Button type="button" className="h-11 rounded-full px-3 shadow-lg sm:h-10 sm:px-4" onClick={handleChatButtonClick}>
+        <MessageSquare className="h-4 w-4 sm:mr-2" />
+        <span className="sr-only sm:not-sr-only sm:inline">
+          Chat{threads.length ? ` (${threads.length})` : ""}
+        </span>
       </Button>
     </div>
   );

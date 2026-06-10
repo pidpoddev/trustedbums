@@ -81,7 +81,7 @@ export function SubmitFeedbackButton() {
           <span className="hidden sm:inline lg:hidden">Feedback</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] overflow-y-auto bg-background sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Submit feedback</DialogTitle>
           <DialogDescription>Send a bug, feature request, question, or other note to Trusted Bums.</DialogDescription>

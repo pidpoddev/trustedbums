@@ -3,9 +3,14 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { getQaAccount, goToAuthedPath, hasExternalQaTarget, type QaAccount } from "./helpers/auth";
 
 const MAX_SCREENSHOT_HEIGHT = 12_000;
+const visualAuditScope = process.env.QA_VISUAL_AUDIT_SCOPE?.trim().toLowerCase() || "standard";
 
 type RoleKey = "ADMIN" | "CLIENT_ADMIN" | "CLIENT_FINANCE" | "BUM";
 const allRoleKeys: RoleKey[] = ["ADMIN", "CLIENT_ADMIN", "CLIENT_FINANCE", "BUM"];
+
+if (!["standard", "complete"].includes(visualAuditScope)) {
+  throw new Error("Invalid QA_VISUAL_AUDIT_SCOPE value: " + visualAuditScope + ". Allowed values: standard, complete.");
+}
 
 interface VisualRoute {
   path: string;
@@ -20,6 +25,7 @@ interface VisualInteraction extends VisualRoute {
 const routesByRole: Record<RoleKey, VisualRoute[]> = {
   ADMIN: [
     { path: "/admin", heading: "Admin Dashboard", name: "admin-dashboard" },
+    { path: "/admin/scrum", heading: "Scrum Tracker", name: "admin-scrum-tracker" },
     { path: "/admin/clients", heading: "Clients", name: "admin-clients" },
     { path: "/admin/bums", heading: "Bums", name: "admin-bums" },
     { path: "/admin/opportunities", heading: "Opportunities", name: "admin-opportunities" },
@@ -65,6 +71,29 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/bum/earnings", heading: "Earnings", name: "bum-earnings" },
     { path: "/bum/reports", heading: "Bum Reports", name: "bum-reports" },
     { path: "/bum/profile", heading: "Profile", name: "bum-profile" },
+  ],
+};
+
+const completeRoutesByRole: Record<RoleKey, VisualRoute[]> = {
+  ADMIN: [
+    { path: "/admin/training-assets", heading: "Training & Assets", name: "admin-training-assets" },
+    { path: "/admin/performance", heading: "Performance Metrics", name: "admin-performance" },
+    { path: "/admin/troubleshooting", heading: "Troubleshooting Tools", name: "admin-troubleshooting" },
+    { path: "/admin/legal", heading: "Legal", name: "admin-legal" },
+  ],
+  CLIENT_ADMIN: [
+    { path: "/client/terms", heading: "Trusted Bums Client Agreement", name: "client-terms" },
+    { path: "/client/opportunities", heading: "Opportunities", name: "client-opportunities" },
+    { path: "/client/team", heading: "Team Management", name: "client-team" },
+    { path: "/client/user-profile", heading: "User Profile", name: "client-user-profile" },
+  ],
+  CLIENT_FINANCE: [
+    { path: "/client/terms", heading: "Trusted Bums Client Agreement", name: "client-finance-terms" },
+    { path: "/client/profile", heading: "Company Profile", name: "client-finance-profile" },
+    { path: "/client/user-profile", heading: "User Profile", name: "client-finance-user-profile" },
+  ],
+  BUM: [
+    { path: "/bum/terms", heading: "Trusted Bums Bum Agreement", name: "bum-terms" },
   ],
 };
 
@@ -159,12 +188,69 @@ const interactionsByRole: Record<RoleKey, VisualInteraction[]> = {
       heading: "Contacts",
       name: "bum-contacts-search",
       prepare: async (page) => {
-        await page.getByPlaceholder("Search contacts, companies, emails, or opportunity context").fill("visual-audit-empty");
-        await expect(page.getByPlaceholder("Search contacts, companies, emails, or opportunity context")).toHaveValue("visual-audit-empty");
+        await page.getByPlaceholder("Search contacts").fill("visual-audit-empty");
+        await expect(page.getByPlaceholder("Search contacts")).toHaveValue("visual-audit-empty");
       },
     },
   ],
 };
+
+const completeInteractionsByRole: Record<RoleKey, VisualInteraction[]> = {
+  ADMIN: [
+    {
+      path: "/admin/scrum",
+      heading: "Scrum Tracker",
+      name: "admin-scrum-search",
+      prepare: async (page) => {
+        await page.getByPlaceholder(/Search tracking ID/i).fill("TB-");
+        await expect(page.getByPlaceholder(/Search tracking ID/i)).toHaveValue("TB-");
+      },
+    },
+  ],
+  CLIENT_ADMIN: [
+    {
+      path: "/client/opportunities",
+      heading: "Opportunities",
+      name: "client-opportunities-filtered",
+      prepare: async (page) => {
+        const search = page.locator('input[placeholder*="Search"]').first();
+        if (await search.isVisible({ timeout: 5_000 }).catch(() => false)) {
+          await search.fill("visual-audit-empty");
+          await expect(search).toHaveValue("visual-audit-empty");
+        } else {
+          await expect(page.getByRole("heading", { name: "Opportunities" })).toBeVisible();
+        }
+      },
+    },
+  ],
+  CLIENT_FINANCE: [],
+  BUM: [
+    {
+      path: "/bum/prospects",
+      heading: "Prospects",
+      name: "bum-prospects-filtered",
+      prepare: async (page) => {
+        const search = page.locator('input[placeholder*="Search"]').first();
+        if (await search.isVisible({ timeout: 5_000 }).catch(() => false)) {
+          await search.fill("visual-audit-empty");
+          await expect(search).toHaveValue("visual-audit-empty");
+        } else {
+          await expect(page.getByRole("heading", { name: "Prospects" })).toBeVisible();
+        }
+      },
+    },
+  ],
+};
+
+const completePublicRoutes: VisualRoute[] = [
+  { path: "/login", heading: "Account access", name: "public-login" },
+  { path: "/legal/terms-of-service", heading: "Terms of Service", name: "public-terms-of-service" },
+  { path: "/legal/cookie-policy", heading: "Cookie Policy", name: "public-cookie-policy" },
+  { path: "/legal/dpa", heading: "Data Processing Addendum", name: "public-dpa" },
+  { path: "/legal/subprocessors", heading: "Subprocessors", name: "public-subprocessors" },
+  { path: "/legal/security", heading: "Security Overview", name: "public-security" },
+  { path: "/legal/acceptable-use", heading: "Acceptable Use Policy", name: "public-acceptable-use" },
+];
 
 function getSelectedRoles() {
   const rawRoles = process.env.QA_VISUAL_ROLES?.trim();
@@ -184,6 +270,14 @@ function getSelectedRoles() {
   }
 
   return selectedRoles as RoleKey[];
+}
+
+function getRoutesForRole(role: RoleKey) {
+  return visualAuditScope === "complete" ? [...routesByRole[role], ...completeRoutesByRole[role]] : routesByRole[role];
+}
+
+function getInteractionsForRole(role: RoleKey) {
+  return visualAuditScope === "complete" ? [...interactionsByRole[role], ...completeInteractionsByRole[role]] : interactionsByRole[role];
 }
 
 function shouldSkipRoleMismatch(error: unknown, role: RoleKey, auditedAnyRoute: boolean) {
@@ -280,12 +374,17 @@ test.describe("public visual UI audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run public visual UI audit.");
 
   test("public marketing and privacy states render cleanly", async ({ page }, testInfo) => {
-    test.setTimeout(120_000);
+    test.setTimeout(visualAuditScope === "complete" ? 180_000 : 120_000);
 
     await page.goto("/");
     await dismissConsentBanner(page);
     await expect(page.getByRole("heading", { name: /Your buyer is ignoring strangers/i })).toBeVisible();
     await captureVisualState(page, testInfo, "public-home", { route: "/", name: "public-home" });
+
+    await page.goto("/bums");
+    await dismissConsentBanner(page);
+    await expect(page.getByRole("heading", { name: /Turn trusted relationships into approved intro work/i })).toBeVisible();
+    await captureVisualState(page, testInfo, "public-bums", { route: "/bums", name: "public-bums" });
 
     await page.goto("/privacy-policy");
     await dismissConsentBanner(page);
@@ -301,13 +400,26 @@ test.describe("public visual UI audit", () => {
     await page.goto("/");
     await dismissConsentBanner(page);
     await page.getByRole("button", { name: /^Sign up$/i }).click();
-    await expect(page.getByRole("heading", { name: "Create your Client account" })).toBeVisible();
+    const signupDialog = page.getByRole("dialog", { name: "Create your Client account" });
+    await expect(signupDialog).toBeVisible();
     await captureVisualState(page, testInfo, "public-signup-intent", { route: "/", name: "public-signup-intent" });
 
-    await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Accessibility settings" }).click();
+    await signupDialog.getByRole("button", { name: "Close" }).click();
+    await expect(signupDialog).toBeHidden();
+    const accessibilityButton = page.getByRole("button", { name: "Accessibility settings" });
+    await expect(accessibilityButton).toBeVisible();
+    await accessibilityButton.click();
     await expect(page.getByText("Enable low-vision mode")).toBeVisible();
     await captureVisualState(page, testInfo, "public-accessibility-menu", { route: "/", name: "public-accessibility-menu" });
+
+    if (visualAuditScope === "complete") {
+      for (const route of completePublicRoutes) {
+        await page.goto(route.path);
+        await dismissConsentBanner(page);
+        await expect(page.getByRole("heading", { name: route.heading }).first()).toBeVisible({ timeout: 20_000 });
+        await captureVisualState(page, testInfo, route.name, { route: route.path, name: route.name, scope: visualAuditScope });
+      }
+    }
   });
 });
 
@@ -315,8 +427,8 @@ test.describe("authenticated visual UI audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run authenticated visual UI audit.");
 
   for (const role of getSelectedRoles()) {
-    const routes = routesByRole[role];
-    const interactions = interactionsByRole[role];
+    const routes = getRoutesForRole(role);
+    const interactions = getInteractionsForRole(role);
 
     test(`${role.toLowerCase().replaceAll("_", " ")} portal pages render cleanly`, async ({ page }, testInfo) => {
       test.setTimeout(240_000);

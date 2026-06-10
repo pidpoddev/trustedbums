@@ -146,7 +146,7 @@ test.describe("staging smoke", () => {
 
     await claimIntroButtons.first().click();
     await expect(page.getByText("Choose from your contacts")).toBeVisible();
-    await expect(page.getByPlaceholder("Search contacts, companies, emails, or context")).toBeVisible();
+    await expect(page.getByPlaceholder("Search contacts")).toBeVisible();
 
     await page.getByRole("button", { name: "Quick add" }).click();
     await expect(page.getByRole("textbox", { name: "Name", exact: true })).toBeVisible();

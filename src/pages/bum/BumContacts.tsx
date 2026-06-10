@@ -103,7 +103,7 @@ export default function BumContacts() {
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search contacts, companies, emails, or opportunity context"
+          placeholder="Search contacts"
           className="pl-9"
         />
       </div>

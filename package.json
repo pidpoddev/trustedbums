@@ -15,6 +15,8 @@
     "qa:target-preflight": "node scripts/qa-target-preflight.mjs",
     "qa:go-live": "playwright test tests/e2e/go-live-client-bum-workflow.spec.ts --project=chromium",
     "qa:deep": "playwright test tests/e2e/deep-workflow-hotfix-audit.spec.ts --project=chromium",
+    "qa:visual": "playwright test tests/e2e/visual-ui-audit.spec.ts",
+    "qa:visual:complete": "QA_VISUAL_AUDIT_SCOPE=complete playwright test tests/e2e/visual-ui-audit.spec.ts",
     "code-review:gate": "node scripts/code-review-gate.mjs",
     "install:hooks": "git config core.hooksPath .githooks",
     "test": "vitest run",

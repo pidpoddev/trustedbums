@@ -1,8 +1,20 @@
 # Trusted Bums UI Optimization Backlog
 
-_Last updated: 2026-06-08 by Codex daily UI consultant automation._
+_Last updated: 2026-06-10 by Codex UI visual cleanup pass._
 
 ## Executive Read
+
+2026-06-10 implementation update: the complete production visual audit screenshot review created `TB-0073` through `TB-0079` in the Admin Scrum Tracker. Source fixes are now in place for the concrete P1/P2 findings:
+
+- `TB-0073` fixed in source: feedback dialogs now use explicit opaque, viewport-bound dialog surfaces above fixed portal widgets.
+- `TB-0074` fixed in source: the mobile Bum opportunity contact picker is viewport-constrained, scrollable, and wraps long contact metadata.
+- `TB-0075` fixed in source: the mobile chat launcher is smaller, icon-only on narrow screens, lower z-index than dialogs/dropdowns, and portal layouts reserve more mobile bottom space.
+- `TB-0076` fixed in source: Admin Credits now renders stacked mobile claim cards while preserving desktop tables.
+- `TB-0077` fixed in source: the clipped mobile search placeholders identified in the QA screenshots were shortened.
+- `TB-0078` fixed in source: the account menu is now opaque, viewport-bound, and offset from the mobile header.
+- `TB-0079` remains open: broader authenticated mobile density still needs a dedicated pass after hosted visual proof.
+
+Checks run for this pass: `corepack pnpm exec tsc --noEmit`; `corepack pnpm exec vitest run src/test/uiVisualCleanup.test.ts src/test/conversationDockLayout.test.ts`; `corepack pnpm run build`; local complete-scope public visual audit passed on desktop and mobile. Full local authenticated visual proof could not complete because QA auth bootstrap timed out against `127.0.0.1:8080`, so the next required proof is a hosted `Complete Visual UI Audit` run after deploy.
 
 Current `main` is `9f42bf4`, but the last completed GitHub `Visual UI Audit` artifact is still run `27167324836` on `441fd92`. That artifact remains useful for unchanged authenticated portal surfaces, but it is stale for current public marketing routes because commits `0ee2f44` and `9f42bf4` changed [Index.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/Index.tsx) and added [BumLanding.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/BumLanding.tsx). This run dispatched a fresh current-head visual audit, run `27181180658`, against `https://rcdl.tplinkdns.com`; it was still in progress at backlog update time.
 

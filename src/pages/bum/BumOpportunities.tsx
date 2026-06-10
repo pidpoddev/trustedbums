@@ -389,7 +389,7 @@ export default function BumOpportunities() {
   });
 
   const renderContactPicker = () => (
-    <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+    <div className="min-w-0 space-y-3 rounded-md border bg-muted/20 p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Label>Choose from your contacts</Label>
@@ -410,7 +410,7 @@ export default function BumOpportunities() {
         <Input
           value={contactSearch}
           onChange={(event) => setContactSearch(event.target.value)}
-          placeholder="Search contacts, companies, emails, or context"
+          placeholder="Search contacts"
           className="pl-9"
         />
       </div>
@@ -498,14 +498,14 @@ export default function BumOpportunities() {
                 )}
                 onClick={() => applyContact(contact)}
               >
-                <span className="flex items-start justify-between gap-3">
+                <span className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                   <span className="min-w-0">
                     <span className="block font-medium">{contact.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
+                    <span className="block break-words text-xs text-muted-foreground">
                       {[contact.title, contact.companyName, contact.email].filter(Boolean).join(" | ") || contact.contextLabel}
                     </span>
                   </span>
-                  <Badge variant="outline" className="shrink-0">{contact.source.replaceAll("_", " ")}</Badge>
+                  <Badge variant="outline" className="w-fit shrink-0">{contact.source.replaceAll("_", " ")}</Badge>
                 </span>
               </button>
             );
@@ -1091,7 +1091,7 @@ export default function BumOpportunities() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-y-auto overflow-x-hidden bg-background sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="font-display">Connect a contact</DialogTitle>
             <DialogDescription>
@@ -1160,11 +1160,12 @@ export default function BumOpportunities() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={resetConnectionDialog}>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={resetConnectionDialog}>
               Cancel
             </Button>
             <Button
+              className="w-full sm:w-auto"
               disabled={!responseForm.contactName.trim() || !responseForm.contactCompany.trim() || opportunityClaimMutation.isPending}
               onClick={() => opportunityClaimMutation.mutate()}
             >

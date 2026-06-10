@@ -510,7 +510,7 @@ export default function ClientTargets() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search target accounts, contacts, products, or notes"
+                placeholder="Search targets"
                 className="pl-9"
               />
             </div>

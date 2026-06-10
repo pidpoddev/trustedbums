@@ -1,50 +1,48 @@
 # Trusted Bums Lead Developer Recommendations
 
-_Last updated: 2026-06-09 by Codex daily lead developer automation._
+_Last updated: 2026-06-10 by Codex lead cleanup pass._
 
 ## Executive Read
 
-Current release decision stays `HOTFIX-FORWARD` on deployed head `9f42bf4`, not `GO`.
+Current release decision stays `HOTFIX-FORWARD` on current head `ff59d2c`, not `GO`.
 
 - Completed work:
-  - Specialist backlog refreshes narrowed the queue to concrete release, admin-scrum, finance-access, trust, and terminology items.
-  - GitHub `Deploy TrustedBums to DreamHost` run `27178512660` passed on `9f42bf4`.
-  - GitHub `E2E Smoke` run `27178530411` passed on `9f42bf4`, including `smoke`, `admin`, `client`, and `bum`.
-  - `https://trustedbums.com` returned `HTTP/2 200` from this runner on 2026-06-09 with HSTS, CSP, and the expected baseline headers.
+  - GitHub `QA` run `27244531408`, DreamHost deploy run `27244531370`, and `E2E Smoke` run `27244546687` passed on `ff59d2c`.
+  - The old `9f42bf4` red-QA story is no longer current release truth.
+  - `TB-0030` and `TB-0031` are satisfied in current source; `TB-0053` and `TB-0056` remain historically closed from the 2026-06-09 admin scrum hardening pass.
 - Current priorities:
-  - Publish the docs-only `QA` contract repair already present in the dirty worktree and rerun GitHub `QA`.
-  - Rerun `Visual UI Audit` against `https://trustedbums.com`, not `https://rcdl.tplinkdns.com`.
-  - Keep the new local `/admin/scrum` rollout out of merge-ready status until audit integrity, closeout proof, accessibility, and index debt are fixed together.
+  - Fix or rebaseline current-head `Visual UI Audit` run `27247209520`, which failed waiting for `Accessibility settings` in the public visual audit after the signup dialog step.
+  - Refresh exact-head Code Review for `ff59d2c` after visual evidence lands, or record a deliberate waiver.
+  - Move to the next implementation item: `TB-0064` or `TB-0044`.
 - Current blockers:
-  - GitHub `QA` run `27178512695` is still red on the exact deployed head.
-  - GitHub `Visual UI Audit` run `27181180658` failed before route capture because auth bootstrap targeted `https://rcdl.tplinkdns.com` and timed out in [`tests/e2e/helpers/auth.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/auth.ts).
-  - `.codex-review-decision.json` is still stale at `c9b7b07`.
-  - DMARC review, live Supabase read-only SQL, and GTM evidence remain blocked by missing access.
+  - Current-head `Visual UI Audit` run `27247209520` failed in the public visual audit; 16 checks passed, but both desktop and mobile timed out waiting for `Accessibility settings`.
+  - `.codex-review-decision.json` is stale at `e023694f`, not `ff59d2c`.
+  - Broader GTM proof and some dashboard/control-plane evidence remain access-limited.
 - Recommended next actions:
-  1. Commit and push the `docs/qa-test-backlog.md` repair already sitting in the local worktree, then rerun GitHub `QA`.
-  2. Dispatch `Visual UI Audit` again with `target_url=https://trustedbums.com`; treat `rcdl.tplinkdns.com` as DNS or TLS context only.
-  3. If `QA` and `Visual UI Audit` are both green, run Code Review Agent on the resulting exact head.
+  1. Inspect the `27247209520` visual artifact/trace, fix or rebaseline the public `Accessibility settings` step, and update `TB-0018`.
+  2. Run Code Review Agent or record an exact-head waiver for `ff59d2c`.
+  3. Start `TB-0064`, then `TB-0044`.
 
 ## Recommendation Classification
 
-- `TB-0017 Restore the QA backlog/test contract and rerun GitHub QA`: `READY`.
-  - Reason: the current deployed head is blocked by GitHub `QA` run `27178512695`, but the required seeded-proof headings are already restored in the local dirty worktree and local follow-up evidence says the regression is narrow.
-  - Next owner: Lead Developer, then Release Verification.
-- `TB-0018 Run a current-head Visual UI Audit`: `BLOCKED BY ACCESS`.
-  - Reason: current-head run `27181180658` failed before auth bootstrap because it targeted `https://rcdl.tplinkdns.com`, not because the public route diff itself is confirmed broken.
-  - Next owner: Lead Developer plus QA Harness Reliability.
-- `TB-0019 Refresh the exact-head Code Review marker`: `BLOCKED BY ANOTHER SPECIALIST`.
-  - Reason: Code Review should run on the post-`QA` and post-visual candidate head, not the currently incomplete evidence set.
-  - Next owner: Code Review Agent.
-- `TB-0056 Move admin scrum tracker audit actors to a server-owned path`: `READY`.
-  - Reason: the new local tracker writes `created_by` and `updated_by` from browser-supplied `currentUserId` through [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), so audit actors are still forgeable.
-  - Next owner: Lead Developer with Security review.
-- `TB-0053 Require proof-backed closeout and audit history in admin scrum`: `READY`.
-  - Reason: the local tracker UI can close items without evidence links or a closeout note, and the current persistence path does not emit audit events.
-  - Next owner: Lead Developer with Product Ops review.
-- `TB-0031 Give the admin scrum tracker controls programmatic labels`: `READY`.
-  - Reason: the local tracker introduces unlabeled search and select controls and should be fixed in the same pass as the rest of the route hardening.
-  - Next owner: Lead Developer with Accessibility review.
+- `TB-0017 Restore the QA backlog/test contract and rerun GitHub QA`: `CLOSED`.
+  - Reason: current-head GitHub `QA` run `27244531408` passed on `ff59d2c`.
+  - Next owner: none.
+- `TB-0018 Pair current release heads with current visual evidence or explicit reuse rule`: `OPEN`.
+  - Reason: exact-head `Visual UI Audit` run `27247209520` failed waiting for the public `Accessibility settings` control after the signup dialog step. The checked-in spec already retains `/bums` and `/admin/scrum`; the blocker is the failing exact-head hosted interaction.
+  - Next owner: QA Harness Reliability, UI, Accessibility, Release Verification.
+- `TB-0019 Refresh the exact-head Code Review marker`: `NEEDS REFRESH`.
+  - Reason: prior tracker item closed for an older head, but `.codex-review-decision.json` currently records `e023694f`, not `ff59d2c`.
+  - Next owner: Code Review Agent after visual evidence.
+- `TB-0056 Move admin scrum tracker audit actors to a server-owned path`: `CLOSED`.
+  - Reason: browser helpers no longer send actor IDs, live Supabase has `set_admin_scrum_item_audit_fields`, and targeted tests lock the server-owned actor contract.
+  - Next owner: none.
+- `TB-0053 Require proof-backed closeout and audit history in admin scrum`: `CLOSED`.
+  - Reason: UI/API validation requires evidence plus closeout note, live Supabase has `admin_scrum_items_closeout_proof_check`, and audit-event triggers are live.
+  - Next owner: none.
+- `TB-0031 Give the admin scrum tracker controls programmatic labels`: `CLOSED`.
+  - Reason: `AdminScrumTracker` now labels search, filters, and create controls, and targeted tests lock the pattern.
+  - Next owner: none.
 - `TB-0049 Clear advisor-backed admin-table index debt`: `READY`.
   - Reason: the local `admin_scrum_items` rollout already adds advisor-backed index debt and currently relies on full-table client filtering.
   - Next owner: Lead Developer with Performance review.
@@ -78,35 +76,22 @@ Current release decision stays `HOTFIX-FORWARD` on deployed head `9f42bf4`, not 
 
 ## Recommended Implementation Queue
 
-### P0 - Publish the local QA-contract repair and rerun GitHub QA
-- Classification: `READY`.
-- Source: GitHub `QA` run `27178512695`, [`src/test/scrumQueueRegression.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumQueueRegression.test.ts), and the locally modified [`docs/qa-test-backlog.md`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-test-backlog.md).
-- Why now: This is the narrowest release blocker on the deployed head and appears to be a docs-only hotfix already staged in the worktree, not a reproduced product regression.
-- Recommended fix: Publish the restored seeded-proof backlog sections without mixing in unrelated dirty files, then rerun GitHub `QA`.
-- Likely files and routes: [`docs/qa-test-backlog.md`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-test-backlog.md), [`docs/release-verification-backlog.md`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/release-verification-backlog.md), and possibly [`docs/lead-developer-recommendations.md`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/lead-developer-recommendations.md).
-- Dependencies and risks: The worktree is already dirty; stage only the intended release-doc files. Do not declare `GO` until `QA`, current-head visual proof, and Code Review all reconcile.
-- Acceptance criteria: GitHub `QA` on the exact candidate head passes lint, unit tests, build, and smoke again.
-- Validation: targeted local `vitest` on `src/test/scrumQueueRegression.test.ts`, then GitHub `QA`.
+### P1 - Finish current-head release evidence
+- Classification: `IN PROGRESS`.
+- Source: GitHub `QA` run `27244531408`, deploy run `27244531370`, `E2E Smoke` run `27244546687`, failed `Visual UI Audit` run `27247209520`, and `.codex-review-decision.json`.
+- Why now: QA/deploy/E2E are green on `ff59d2c`, but release verification still needs a passing exact-head visual artifact and exact-head Code Review marker or waiver.
+- Recommended fix: inspect the uploaded `27247209520` artifact/trace, fix or rebaseline the public visual-audit step that expects `Accessibility settings`, keep the retained `/bums` and `/admin/scrum` visual coverage healthy, then run Code Review Agent or record an exact-head waiver for `ff59d2c`.
+- Likely files and routes: [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts), `.codex-review-decision.json`, and release handoff docs.
+- Acceptance criteria: `TB-0018` has completed exact-head visual proof or an explicit reuse rule, and release handoff has exact-head Code Review evidence or waiver.
+- Validation: GitHub `Visual UI Audit` artifact review plus Code Review Agent result.
 
-### P0 - Rerun `Visual UI Audit` on `https://trustedbums.com` and stop using `rcdl` as the default hosted QA target
-- Classification: `BLOCKED BY ACCESS`.
-- Source: GitHub `Visual UI Audit` run `27181180658`, [`.github/workflows/visual-ui-audit.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/visual-ui-audit.yml), and [`tests/e2e/helpers/auth.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/auth.ts).
-- Why now: Visual proof is now red, not merely missing, and the failure is procedural. Until the target discipline is corrected, UI, UX, Accessibility, QA, and Release Verification will keep reading false negatives from the wrong deployed host.
-- Recommended fix: Dispatch the workflow against `https://trustedbums.com`; reserve `https://rcdl.tplinkdns.com` for explicit DNS or TLS validation only. Keep the shared rule update in place so future automations do not drift back.
-- Likely files and routes: [`.github/workflows/visual-ui-audit.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/visual-ui-audit.yml), [`docs/consultant-team-rules.md`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/consultant-team-rules.md), [`docs/company-wide-rules.md`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/company-wide-rules.md), and the public routes changed in [`src/App.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx), [`src/pages/Index.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/Index.tsx), and [`src/pages/BumLanding.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/BumLanding.tsx).
-- Dependencies and risks: if `trustedbums.com` fails the rerun, reclassify the item from access-blocked to a real UI or auth defect immediately.
-- Acceptance criteria: current-head `Visual UI Audit` completes against `https://trustedbums.com` and yields actionable screenshots instead of base-target timeouts.
-- Validation: GitHub `Visual UI Audit` rerun plus artifact review.
-
-### P1 - Harden the local admin scrum rollout before merge
-- Classification: `READY`.
-- Source: [`src/pages/admin/AdminScrumTracker.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminScrumTracker.tsx), [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [`supabase/migrations/20260609025228_add_admin_scrum_items.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260609025228_add_admin_scrum_items.sql), [`supabase/migrations/20260609030014_extend_admin_scrum_items_tracking_metadata.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260609030014_extend_admin_scrum_items_tracking_metadata.sql), Product Ops `TB-0053`, Security `TB-0056`, Accessibility `TB-0031`, and Performance `TB-0049`.
-- Why now: This local-only rollout is about to become the coordination plane for QA, release, and specialist work. Shipping it without trusted actors, proof-backed closeout, labels, and index cleanup would create an unreliable operations system.
-- Recommended fix: move actor ownership server-side or DB-side, require evidence plus closeout note for `CLOSED` and `WONT_FIX`, emit audit events, add programmatic labels, and clear the first advisor-backed index debt before merge.
-- Likely files and routes: [`src/pages/admin/AdminScrumTracker.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminScrumTracker.tsx), [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [`src/layouts/AdminLayout.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/layouts/AdminLayout.tsx), [`src/App.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/App.tsx), and the `20260609*admin_scrum*` migrations.
-- Dependencies and risks: this is an auth, audit, accessibility, and performance bundle. Do not merge only the UI shell without the integrity work.
-- Acceptance criteria: actor spoofing is closed, closeout proof is mandatory, audit history is durable, controls are labeled, and targeted admin-table warnings are cleared or explicitly waived.
-- Validation: targeted `vitest`, Security review, Accessibility check, and post-DDL advisor review.
+### P1 - Keep admin scrum hardening closed and monitor only expansion risk
+- Classification: `CLOSED / WATCH`.
+- Source: [`src/pages/admin/AdminScrumTracker.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminScrumTracker.tsx), [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [`supabase/migrations/20260609100000_harden_admin_scrum_tracker_audit.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260609100000_harden_admin_scrum_tracker_audit.sql), live Supabase migration `20260609095404_harden_admin_scrum_tracker_audit`, Product Ops `TB-0053`, Security `TB-0056`, and Accessibility `TB-0031`.
+- Why now: The implementation work is done; keeping it in the active queue creates false priority pressure.
+- Recommended fix: leave `TB-0053`, `TB-0056`, and `TB-0031` closed unless the tracker expands beyond Admin-only operations or new visual/accessibility proof finds a real route issue.
+- Acceptance criteria: closed tracker rows carry evidence and future scrum changes trigger Security/Product Ops review only when scope changes.
+- Validation: live Supabase constraint/trigger checks and targeted `adminScrumTracker` tests.
 
 ### P1 - Split Client Finance reads into a finance-safe model and document admin-email reporting boundaries
 - Classification: `READY`.
@@ -141,12 +126,12 @@ Current release decision stays `HOTFIX-FORWARD` on deployed head `9f42bf4`, not 
 ## Fix Playbooks
 
 ### Release Truth Playbook
-- Publish the local `QA`-contract repair, rerun GitHub `QA`, rerun `Visual UI Audit` against `https://trustedbums.com`, then refresh exact-head Code Review on the surviving candidate head.
-- Do not let green deploy plus green `E2E Smoke` override a red `QA`, a red visual run, or a stale Code Review marker.
+- Current `QA`, deploy, and `E2E Smoke` are green on `ff59d2c`; do not reopen the old `9f42bf4` red-QA story.
+- Fix the exact-head `Visual UI Audit` failure, then refresh exact-head Code Review or record a deliberate waiver before `GO`.
 
 ### Admin Scrum Hardening Playbook
-- Treat the local `/admin/scrum` rollout as one merge unit across Security, Product Ops, Accessibility, and Performance.
-- If the tracker ships, it must ship with trusted actor ownership, proof-backed closeout, audit history, accessible controls, and bounded list performance.
+- Treat `/admin/scrum` actor ownership, proof-backed closeout, audit history, and accessible-control labeling as closed in source and live Supabase.
+- Keep performance and route-coverage improvements separate so they do not reopen already-satisfied audit and accessibility work.
 
 ### Trust Surface Playbook
 - Separate blocked trust work from unblocked trust work.
@@ -154,26 +139,26 @@ Current release decision stays `HOTFIX-FORWARD` on deployed head `9f42bf4`, not 
 
 ## Cross-Backlog Dependencies
 
-- The visual-audit target issue is a shared process defect, not only a UI or QA problem. Shared rules now distinguish `trustedbums.com` as the hosted QA default and `rcdl.tplinkdns.com` as fallback DNS or TLS context only.
-- The admin scrum rollout touches Security, Product Ops, Accessibility, and Performance at the same time; do not treat it as a UI-only admin page.
+- The current visual-audit gap is retained exact-head evidence, not the old wrong-target failure. Shared rules still distinguish `trustedbums.com` as the hosted QA default and `rcdl.tplinkdns.com` as fallback DNS or TLS context only.
+- The admin scrum audit/accessibility/Product Ops hardening is closed; only performance/index and retained visual coverage remain active around that route.
 - Finance-safe reporting depends on Security and QA because the risk is hidden in payload shape and role boundary proof, not only in what the current UI displays.
 - Growth `TB-0034` can move, but `TB-0035`, `TB-0057`, and broader GTM scaling remain blocked until CRM, brand, claims, and mailbox evidence return.
-- Performance items `TB-0047`, `TB-0048`, and `TB-0050` remain important, but they should stay behind the release and admin-scrum integrity queue until current release proof is green again.
+- Performance items `TB-0047`, `TB-0048`, and `TB-0050` remain important, but they should stay behind current release evidence cleanup, `TB-0064`, and `TB-0044`.
 
 ## Release Verification Handoff
 
-- Current decision: `HOTFIX-FORWARD` on `9f42bf4`.
-- Green evidence: deploy `27178512660`, smoke and deep `27178530411`, public `trustedbums.com` headers on 2026-06-09.
-- Red evidence: `QA` `27178512695`, `Visual UI Audit` `27181180658`, and stale `.codex-review-decision.json`.
-- Hold triggers: any failed rerun against `https://trustedbums.com`, any newly surfaced visual regression once the target is corrected, or any Code Review `NO-GO` on the candidate head.
-- Rollback is not currently recommended because the deployed site and hosted smoke are healthy; fix-forward remains the safer path while the blockers are evidence and process scoped.
+- Current decision: `HOTFIX-FORWARD` on `ff59d2c`.
+- Green evidence: QA `27244531408`, deploy `27244531370`, and E2E/deep `27244546687`.
+- Red/pending evidence: Visual UI Audit `27247209520` failed waiting for `Accessibility settings`; `.codex-review-decision.json` is stale for `ff59d2c`.
+- Hold triggers: failed exact-head visual run, missing exact-head Code Review marker or waiver, or any newly surfaced product regression.
+- Rollback is not currently recommended because the deployed site and hosted smoke/deep evidence are healthy; fix-forward remains the safer path while the blockers are evidence scoped.
 
 ## Consultant Quality And Access Audit
 
-- Security, Product Ops, Data, and Accessibility correctly converged on the local admin-scrum rollout as the highest-risk new engineering work.
-- Release Verification and QA correctly kept the deployed head out of `GO`, but yesterday’s handoff was already stale on visual evidence; the current truth is a failed hosted visual run, not a missing one.
+- Security, Product Ops, and Accessibility have closed the admin-scrum integrity/accessibility items; Data and Performance still have separate active queue work.
+- Release Verification and QA should now focus on the exact-head visual failure and Code Review freshness; the current truth is not a red QA workflow.
 - Trust and Growth recommendations remain directionally strong, but they are still materially limited by missing mailbox, DNS, CRM, claims, and brand-source access.
-- Supabase live access in this session was partial: URL, advisors, and logs were available, but read-only SQL was not. Keep live-SQL-dependent claims labeled as blocked or historical until the callable surface returns.
+- Supabase live access in this session was partial: project metadata, edge-function inventory, and logs were available, but read-only SQL, migrations, and advisors were not. Keep live-database claims labeled as blocked or historical until the callable surface returns.
 
 ## Team Rule Updates
 
@@ -190,7 +175,7 @@ Current release decision stays `HOTFIX-FORWARD` on deployed head `9f42bf4`, not 
   - `git log --since='2026-06-08 03:00' --name-only --pretty=format:'COMMIT %H %ad %s' --date=iso -- docs`
   - `git rev-parse --abbrev-ref HEAD`
   - `git rev-parse HEAD`
-  - GitHub runs `27178512660`, `27178512695`, `27178530411`, and `27181180658`
+  - GitHub runs `27244531408`, `27244531370`, `27244546687`, and `27247209520`
   - `curl -I -L --max-time 20 https://trustedbums.com`
   - `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`
   - source review of the local admin scrum route, tests, and migrations
