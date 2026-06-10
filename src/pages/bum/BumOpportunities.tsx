@@ -722,12 +722,32 @@ export default function BumOpportunities() {
 
           return (
           <Card key={`target-${targetAccount.id}`} className={cn("transition-shadow hover:shadow-md", isHidden && "border-muted bg-muted/30 opacity-80")}>
-            <CardContent className="pt-5">
+            <CardContent className="relative pt-5">
+              <Button
+                size="sm"
+                variant="outline"
+                className="mb-3 ml-auto flex md:absolute md:right-5 md:top-5 md:mb-0"
+                aria-expanded={isExpanded}
+                onClick={() =>
+                  setExpandedTargetIds((current) => {
+                    const next = new Set(current);
+                    if (next.has(targetAccount.id)) {
+                      next.delete(targetAccount.id);
+                    } else {
+                      next.add(targetAccount.id);
+                    }
+                    return next;
+                  })
+                }
+              >
+                {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+                {isExpanded ? "Show Less" : "Show More"}
+              </Button>
               <div className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
                 <div className="rounded-xl bg-primary/10 p-3">
                   <Target className="h-5 w-5 text-primary" />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 md:pr-36">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-display text-lg font-bold">
                       {targetAccount.target_companies?.name ?? targetAccount.target_account_name}
@@ -791,6 +811,19 @@ export default function BumOpportunities() {
                   ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 border-t pt-3 md:col-start-2">
+                  <Button size="sm" variant="outline" asChild>
+                    <a
+                      href={buildLinkedInFirstConnectionsUrl(
+                        targetAccount.target_companies?.name ?? targetAccount.target_account_name,
+                        targetAccount.target_companies?.linkedin_company_url,
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Check LinkedIn
+                    </a>
+                  </Button>
                   <Button
                     size="icon"
                     variant={isHearted ? "default" : "outline"}
@@ -812,25 +845,6 @@ export default function BumOpportunities() {
                   <Button
                     size="sm"
                     variant="outline"
-                    aria-expanded={isExpanded}
-                    onClick={() =>
-                      setExpandedTargetIds((current) => {
-                        const next = new Set(current);
-                        if (next.has(targetAccount.id)) {
-                          next.delete(targetAccount.id);
-                        } else {
-                          next.add(targetAccount.id);
-                        }
-                        return next;
-                      })
-                    }
-                  >
-                    {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
-                    {isExpanded ? "Show Less" : "Show More"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
                     className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200"
                     onClick={() => {
                       setTargetDialogMode("question");
@@ -840,19 +854,6 @@ export default function BumOpportunities() {
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Maybe
-                  </Button>
-                  <Button size="sm" variant="outline" asChild>
-                    <a
-                      href={buildLinkedInFirstConnectionsUrl(
-                        targetAccount.target_companies?.name ?? targetAccount.target_account_name,
-                        targetAccount.target_companies?.linkedin_company_url,
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Check LinkedIn
-                    </a>
                   </Button>
                   <Button
                     size="sm"
@@ -882,12 +883,32 @@ export default function BumOpportunities() {
 
           return (
           <Card key={opportunity.id} className={cn("transition-shadow hover:shadow-md", isHidden && "border-muted bg-muted/30 opacity-80")}>
-            <CardContent className="pt-5">
+            <CardContent className="relative pt-5">
+              <Button
+                size="sm"
+                variant="outline"
+                className="mb-3 ml-auto flex md:absolute md:right-5 md:top-5 md:mb-0"
+                aria-expanded={isExpanded}
+                onClick={() =>
+                  setExpandedOpportunityIds((current) => {
+                    const next = new Set(current);
+                    if (next.has(opportunity.id)) {
+                      next.delete(opportunity.id);
+                    } else {
+                      next.add(opportunity.id);
+                    }
+                    return next;
+                  })
+                }
+              >
+                {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+                {isExpanded ? "Show Less" : "Show More"}
+              </Button>
               <div className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
                 <div className="rounded-xl bg-accent/10 p-3">
                   <Briefcase className="h-5 w-5 text-accent" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 md:pr-36">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-display text-lg font-bold">{opportunity.target_account_name}</h3>
                     <StatusBadge label={opportunityOriginLabel("CLIENT_ORIGINATED")} variant="secondary" />
@@ -947,73 +968,56 @@ export default function BumOpportunities() {
                     </div>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 border-t pt-3 md:col-start-2">
-                  <Button
-                    size="icon"
-                    variant={isHearted ? "default" : "outline"}
-                    aria-label={isHearted ? "Unheart opportunity" : "Heart opportunity"}
-                    disabled={!user || saveMutation.isPending}
-                    onClick={() => saveMutation.mutate({ itemType: "OPPORTUNITY", itemId: opportunity.id, saved: !isHearted })}
-                  >
-                    <Heart className={cn("h-4 w-4", isHearted && "fill-current")} />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={isHidden ? "outline" : "destructive"}
-                    disabled={!user || hideMutation.isPending}
-                    onClick={() => hideMutation.mutate({ itemType: "OPPORTUNITY", itemId: opportunity.id, hidden: !isHidden })}
-                  >
-                    {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-                    {isHidden ? "Unhide" : "Skip/Hide"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    aria-expanded={isExpanded}
-                    onClick={() =>
-                      setExpandedOpportunityIds((current) => {
-                        const next = new Set(current);
-                        if (next.has(opportunity.id)) {
-                          next.delete(opportunity.id);
-                        } else {
-                          next.add(opportunity.id);
-                        }
-                        return next;
-                      })
-                    }
-                  >
-                    {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
-                    {isExpanded ? "Show Less" : "Show More"}
-                  </Button>
-                  <Button size="sm" variant="outline" asChild>
+                <div className="flex flex-col gap-3 border-t pt-3 md:col-start-2 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <a
+                        href={buildLinkedInFirstConnectionsUrl(opportunity.target_account_name)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Check LinkedIn
+                      </a>
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant={isHearted ? "default" : "outline"}
+                      aria-label={isHearted ? "Unheart opportunity" : "Heart opportunity"}
+                      disabled={!user || saveMutation.isPending}
+                      onClick={() => saveMutation.mutate({ itemType: "OPPORTUNITY", itemId: opportunity.id, saved: !isHearted })}
+                    >
+                      <Heart className={cn("h-4 w-4", isHearted && "fill-current")} />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={isHidden ? "outline" : "destructive"}
+                      disabled={!user || hideMutation.isPending}
+                      onClick={() => hideMutation.mutate({ itemType: "OPPORTUNITY", itemId: opportunity.id, hidden: !isHidden })}
+                    >
+                      {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+                      {isHidden ? "Unhide" : "Skip/Hide"}
+                    </Button>
+                    <Button size="sm" variant="outline" className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200" asChild>
+                      <Link to={"/bum/opportunities/" + opportunity.id + "?ask=1"}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Maybe
+                      </Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      onClick={() => openOpportunityConnection(opportunity)}
+                    >
+                      <Handshake className="mr-2 h-4 w-4" />
+                      Claim intro
+                    </Button>
+                  </div>
+                  <Button size="sm" variant="outline" className="self-start lg:self-auto" asChild>
                     <Link to={"/bum/opportunities/" + opportunity.id}>
                       {researchMatchCount ? <UserPlus className="mr-2 h-4 w-4" /> : <Briefcase className="mr-2 h-4 w-4" />}
                       Details
                     </Link>
-                  </Button>
-                  <Button size="sm" variant="outline" asChild>
-                    <a
-                      href={buildLinkedInFirstConnectionsUrl(opportunity.target_account_name)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Check LinkedIn
-                    </a>
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200" asChild>
-                    <Link to={"/bum/opportunities/" + opportunity.id + "?ask=1"}>
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Maybe
-                    </Link>
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="bg-emerald-600 text-white hover:bg-emerald-700"
-                    onClick={() => openOpportunityConnection(opportunity)}
-                  >
-                    <Handshake className="mr-2 h-4 w-4" />
-                    Claim intro
                   </Button>
                 </div>
               </div>
