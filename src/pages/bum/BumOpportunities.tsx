@@ -28,6 +28,7 @@ import {
   listCustomerTargets,
   listMarketplaceOpportunities,
   listOpportunityClaimSummaries,
+  listPotentialDecisionMakerMatchCountsForOpportunities,
   setBumSavedItem,
   setBumHiddenItem,
   updateBumRepresentedContact,
@@ -102,6 +103,10 @@ function contactSearchText(contact: BumRepresentedContactRecord) {
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
+}
+
+function normalizedTargetName(value: string | null | undefined) {
+  return value?.trim().toLowerCase() ?? "";
 }
 
 function claimStrengthFromTargetStrength(strength: CustomerTargetResponseStrength): RelationshipStrength {
@@ -539,19 +544,30 @@ export default function BumOpportunities() {
     const matchesTerm = termMatchesFilter(target.expected_timeline, termFilter);
     return matchesType && matchesQuery && matchesHeart && matchesHidden && matchesIndustry && matchesValue && matchesTerm;
   });
+  const opportunityTargetNames = new Set(filtered.map((opportunity) => normalizedTargetName(opportunity.target_account_name)));
+  const dedupedTargets = typeFilter === "TARGET_ACCOUNT"
+    ? filteredTargets
+    : filteredTargets.filter((target) => !opportunityTargetNames.has(normalizedTargetName(target.target_account_name)));
 
   const marketplaceItems = useMemo(
     () => [
-      ...filteredTargets.map((item) => ({ type: "target" as const, item })),
       ...filtered.map((item) => ({ type: "opportunity" as const, item })),
+      ...dedupedTargets.map((item) => ({ type: "target" as const, item })),
     ],
-    [filtered, filteredTargets],
+    [dedupedTargets, filtered],
   );
   const visibleMarketplaceItems = getPageItems(marketplaceItems, marketplacePage, MARKETPLACE_PAGE_SIZE);
   const visibleTargets = visibleMarketplaceItems.filter((entry) => entry.type === "target").map((entry) => entry.item);
   const visibleOpportunities = visibleMarketplaceItems
     .filter((entry) => entry.type === "opportunity")
     .map((entry) => entry.item);
+  const visibleOpportunityIds = visibleOpportunities.map((opportunity) => opportunity.id);
+  const decisionMakerMatchCountsQuery = useQuery({
+    queryKey: ["potential-decision-maker-match-counts", visibleOpportunityIds],
+    queryFn: () => listPotentialDecisionMakerMatchCountsForOpportunities(visibleOpportunityIds),
+    enabled: visibleOpportunityIds.length > 0,
+  });
+  const decisionMakerMatchCounts = decisionMakerMatchCountsQuery.data ?? {};
   const hiddenCount = hiddenOpportunityIds.size + hiddenTargetIds.size;
   const filterSummary = [typeFilter !== "ALL" ? typeFilters.find((filter) => filter.value === typeFilter)?.label : null, industry !== "ALL" ? industry : null, valueFilter !== "ALL" ? valueFilters.find((filter) => filter.value === valueFilter)?.label : null, termFilter !== "ALL" ? termFilters.find((filter) => filter.value === termFilter)?.label : null, heartedOnly ? "Hearted" : null, showHidden ? "Hidden shown" : null]
     .filter(Boolean)
@@ -843,6 +859,7 @@ export default function BumOpportunities() {
           const isHidden = hiddenOpportunityIds.has(opportunity.id);
           const isExpanded = expandedOpportunityIds.has(opportunity.id);
           const claimedBy = activeClaimByOpportunityId.get(opportunity.id);
+          const researchMatchCount = decisionMakerMatchCounts[opportunity.id] ?? 0;
 
           return (
           <Card key={opportunity.id} className={cn("transition-shadow hover:shadow-md", isHidden && "border-muted bg-muted/30 opacity-80")}>
@@ -857,6 +874,7 @@ export default function BumOpportunities() {
                     <StatusBadge label={opportunityOriginLabel("CLIENT_ORIGINATED")} variant="secondary" />
                     <StatusBadge label={opportunityStageLabel(stageFromRegistrationStatus(opportunity.status))} variant="info" />
                     <StatusBadge label={claimedBy ? "Already claimed" : "Open"} variant={claimedBy ? "warning" : "success"} />
+                    {researchMatchCount ? <StatusBadge label={`Research Bot ${researchMatchCount}`} variant="outline" /> : null}
                     {isHidden ? <StatusBadge label="Skipped" variant="outline" /> : null}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -947,6 +965,12 @@ export default function BumOpportunities() {
                   >
                     {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
                     Details
+                  </Button>
+                  <Button size="sm" variant={researchMatchCount ? "default" : "outline"} asChild>
+                    <Link to={"/bum/opportunities/" + opportunity.id}>
+                      {researchMatchCount ? <UserPlus className="mr-2 h-4 w-4" /> : <Briefcase className="mr-2 h-4 w-4" />}
+                      View details
+                    </Link>
                   </Button>
                   <Button size="sm" variant="outline" asChild>
                     <a

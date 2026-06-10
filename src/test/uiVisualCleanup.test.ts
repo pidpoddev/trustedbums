@@ -39,6 +39,14 @@ describe("UI visual cleanup guardrails", () => {
     expect(bumOpportunitiesSource).toContain('placeholder="Search contacts"');
   });
 
+  it("keeps researched opportunities discoverable before duplicate target cards", () => {
+    expect(bumOpportunitiesSource).toContain("listPotentialDecisionMakerMatchCountsForOpportunities");
+    expect(bumOpportunitiesSource).toContain("Research Bot ${researchMatchCount}");
+    expect(bumOpportunitiesSource).toContain("View details");
+    expect(bumOpportunitiesSource).toContain("dedupedTargets");
+    expect(bumOpportunitiesSource).toContain('...filtered.map((item) => ({ type: "opportunity" as const, item }))');
+  });
+
   it("uses stacked Admin Credits cards on mobile", () => {
     expect(adminCreditsSource).toContain("function ClaimShareMobileCard");
     expect(adminCreditsSource).toContain('className="space-y-3 md:hidden"');

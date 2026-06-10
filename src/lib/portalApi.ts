@@ -2956,6 +2956,32 @@ export async function listPotentialDecisionMakerMatchesForOpportunity(opportunit
   return data ?? [];
 }
 
+export async function listPotentialDecisionMakerMatchCountsForOpportunities(opportunityIds: string[]) {
+  const uniqueOpportunityIds = Array.from(new Set(opportunityIds.filter(Boolean)));
+  if (!uniqueOpportunityIds.length) {
+    return {};
+  }
+
+  const { data, error } = await supabase
+    .from("potential_decision_maker_matches")
+    .select("opportunity_registration_id")
+    .in("opportunity_registration_id", uniqueOpportunityIds)
+    .neq("research_status", "ARCHIVED")
+    .returns<Array<Pick<PotentialDecisionMakerMatchRecord, "opportunity_registration_id">>>();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).reduce<Record<string, number>>((counts, match) => {
+    if (match.opportunity_registration_id) {
+      counts[match.opportunity_registration_id] = (counts[match.opportunity_registration_id] ?? 0) + 1;
+    }
+
+    return counts;
+  }, {});
+}
+
 export async function listCompanyAgreements(companyId: string) {
   const { data, error } = await supabase
     .from("company_agreements")
