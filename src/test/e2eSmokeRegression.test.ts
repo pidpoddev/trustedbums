@@ -5,6 +5,7 @@ const stagingSmokeSource = readFileSync("tests/e2e/staging-smoke.spec.ts", "utf8
 const clientPaymentsSource = readFileSync("src/pages/client/ClientPayments.tsx", "utf8");
 const portalSearchSource = readFileSync("src/components/PortalGlobalSearch.tsx", "utf8");
 const signupIntentSource = readFileSync("src/components/SignupIntentDialog.tsx", "utf8");
+const fieldHelpSource = readFileSync("src/components/FieldHelp.tsx", "utf8");
 const publicIndexSource = readFileSync("src/pages/Index.tsx", "utf8");
 const clientDashboardSource = readFileSync("src/pages/client/ClientDashboard.tsx", "utf8");
 const clientTermsSource = readFileSync("src/pages/client/ClientTerms.tsx", "utf8");
@@ -15,6 +16,19 @@ describe("E2E smoke regression coverage", () => {
     expect(stagingSmokeSource).toContain("Apply as a Bum");
     expect(stagingSmokeSource).not.toContain("Select Client or Bum.");
     expect(signupIntentSource).toContain("lockedRole");
+  });
+
+  it("keeps signup field help accessible and reusable", () => {
+    expect(fieldHelpSource).toContain("export function FieldLabel");
+    expect(fieldHelpSource).toContain("export function FieldHelp");
+    expect(fieldHelpSource).toContain("helpLabel");
+    expect(fieldHelpSource).toContain("`${children} help`");
+    expect(signupIntentSource).toContain("FieldLabel");
+    expect(signupIntentSource).toContain("aria-labelledby={accountLabelId}");
+    expect(signupIntentSource).toContain("aria-describedby={emailError");
+    expect(signupIntentSource).toContain("aria-invalid={emailError}");
+    expect(signupIntentSource).toContain("aria-describedby={companyError");
+    expect(signupIntentSource).toContain("aria-invalid={companyError}");
   });
 
   it("keeps only the page header as the exact Customer Payment Reports heading", () => {

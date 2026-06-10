@@ -181,6 +181,14 @@ When adding a rule, include:
 - QA proof: Lead recommendations include cross-specialist dependencies and validation checks for material changes.
 - Open questions: Should high-risk changes require explicit specialist signoff before Code Review Agent GO?
 
+### New fields require clear labels and appropriate help
+- Rule: Every new user-facing field must have a clear programmatic label plus the right level of help. Non-obvious fields should use the shared `FieldLabel`/`FieldHelp` pattern or visible helper text. High-risk fields must not rely on tooltip-only guidance.
+- Applies to: Public forms, Admin portal, Client portal, Bum portal, dialogs, filters, report controls, onboarding, money movement, access management, opportunity workflows, profile fields, and any specialist-created UI.
+- Why it matters: Trusted Bums depends on users understanding role, company, opportunity, visibility, payout, and evidence fields without guessing. Tooltip-only guidance can also fail users on touch, keyboard, zoom, and assistive-technology workflows.
+- Implementation notes: Obvious low-risk fields such as first name, last name, email, simple search, or compact filters may use labels plus concise screen-reader helper text. Fields that affect access, client-visible profile content, money, legal state, visibility, status, evidence, or irreversible actions need persistent visible helper text, with a tooltip only as supplemental context. Use `aria-describedby` to connect helper and error text when that help affects correct entry.
+- QA proof: New or changed field surfaces should pass label/name inspection, keyboard focus checks for any help icon, mobile screenshot review when spacing could be affected, and targeted tests or source assertions for `aria-describedby`/`aria-invalid` on validation-heavy fields.
+- Open questions: Which mature forms should be upgraded next after signup and the admin scrum tracker?
+
 ### Main pushes require post-main QA and rollback guidance
 - Rule: After every successful push or merge to `main`, Lead Developer must run or trigger the broadest practical QA/release verification pass and recommend rollback, hotfix-forward, or hold-deploy if release-impacting checks fail.
 - Applies to: Lead Developer, Release Verification, Code Review Agent, QA, Security, Trust & Reputation, Supabase, public website, and deployment workflows.

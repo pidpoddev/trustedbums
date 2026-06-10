@@ -1,6 +1,7 @@
 import { SignUpButton } from "@clerk/react";
 import { Briefcase, Users } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { FieldLabel } from "@/components/FieldHelp";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,6 +43,16 @@ export function SignupIntentDialog({ children, initialRole, lockedRole }: Signup
   const companyIsRequired = role === "CLIENT";
   const companyIsValid = !companyIsRequired || Boolean(companyName.trim());
   const canContinue = Boolean(role && emailIsValid && companyIsValid);
+  const accountTypeError = submitted && !role;
+  const emailError = submitted && !emailIsValid;
+  const companyError = submitted && !companyIsValid;
+  const accountLabelId = "signup-account-type-label";
+  const accountHelpId = "signup-account-type-help";
+  const accountErrorId = "signup-account-type-error";
+  const emailHelpId = "signup-email-help";
+  const emailErrorId = "signup-email-error";
+  const companyHelpId = "signup-company-help";
+  const companyErrorId = "signup-company-error";
 
   useEffect(() => {
     if (role === "BUM") {
@@ -102,71 +113,103 @@ export function SignupIntentDialog({ children, initialRole, lockedRole }: Signup
         <div className="space-y-5">
           {!lockedRole ? (
             <div className="space-y-3">
-            <Label>Account type</Label>
-            <RadioGroup value={role} onValueChange={(value) => setRole(value as SignupRole)} className="grid gap-3 sm:grid-cols-2">
-              <Label
-                htmlFor="signup-client"
-                className="flex cursor-pointer items-start gap-3 rounded-md border p-4 transition-colors hover:bg-muted/60 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+              <FieldLabel
+                id={accountLabelId}
+                help="Choose Client Prospect when you are requesting company workspace access. Choose Bum Prospect when you are applying to make warm introductions."
               >
-                <RadioGroupItem id="signup-client" value="CLIENT" className="mt-1" />
-                <span>
-                  <span className="flex items-center gap-2 font-medium">
-                    <Briefcase className="h-4 w-4" />
-                    Client Prospect
-                  </span>
-                  <span className="mt-1 block text-sm font-normal text-muted-foreground">
-                    Company workspace
-                  </span>
-                </span>
-              </Label>
-              <Label
-                htmlFor="signup-bum"
-                className="flex cursor-pointer items-start gap-3 rounded-md border p-4 transition-colors hover:bg-muted/60 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+                Account type
+              </FieldLabel>
+              <p id={accountHelpId} className="text-sm text-muted-foreground">
+                This choice routes your request to the right onboarding path.
+              </p>
+              <RadioGroup
+                value={role}
+                onValueChange={(value) => setRole(value as SignupRole)}
+                className="grid gap-3 sm:grid-cols-2"
+                aria-labelledby={accountLabelId}
+                aria-describedby={accountTypeError ? `${accountHelpId} ${accountErrorId}` : accountHelpId}
+                aria-invalid={accountTypeError}
               >
-                <RadioGroupItem id="signup-bum" value="BUM" className="mt-1" />
-                <span>
-                  <span className="flex items-center gap-2 font-medium">
-                    <Users className="h-4 w-4" />
-                    Bum Prospect
+                <Label
+                  htmlFor="signup-client"
+                  className="flex cursor-pointer items-start gap-3 rounded-md border p-4 transition-colors hover:bg-muted/60 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+                >
+                  <RadioGroupItem id="signup-client" value="CLIENT" className="mt-1" />
+                  <span>
+                    <span className="flex items-center gap-2 font-medium">
+                      <Briefcase className="h-4 w-4" />
+                      Client Prospect
+                    </span>
+                    <span className="mt-1 block text-sm font-normal text-muted-foreground">
+                      Company workspace
+                    </span>
                   </span>
-                  <span className="mt-1 block text-sm font-normal text-muted-foreground">
-                    Bum account
+                </Label>
+                <Label
+                  htmlFor="signup-bum"
+                  className="flex cursor-pointer items-start gap-3 rounded-md border p-4 transition-colors hover:bg-muted/60 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+                >
+                  <RadioGroupItem id="signup-bum" value="BUM" className="mt-1" />
+                  <span>
+                    <span className="flex items-center gap-2 font-medium">
+                      <Users className="h-4 w-4" />
+                      Bum Prospect
+                    </span>
+                    <span className="mt-1 block text-sm font-normal text-muted-foreground">
+                      Bum account
+                    </span>
                   </span>
-                </span>
-              </Label>
-            </RadioGroup>
-            {submitted && !role ? <p className="text-sm text-destructive">Select Client Prospect or Bum Prospect.</p> : null}
+                </Label>
+              </RadioGroup>
+              {accountTypeError ? <p id={accountErrorId} className="text-sm text-destructive">Select Client Prospect or Bum Prospect.</p> : null}
             </div>
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="signup-email">Email</Label>
+            <FieldLabel
+              htmlFor="signup-email"
+              help="Use the email you want tied to Trusted Bums access. Client access is reviewed against company identity and domain rules."
+            >
+              Email
+            </FieldLabel>
+            <p id={emailHelpId} className="text-sm text-muted-foreground">
+              Use a work email for Client access when possible.
+            </p>
             <Input
               id="signup-email"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@company.com"
+              aria-describedby={emailError ? `${emailHelpId} ${emailErrorId}` : emailHelpId}
+              aria-invalid={emailError}
             />
-            {submitted && !emailIsValid ? <p className="text-sm text-destructive">Enter a valid email address.</p> : null}
+            {emailError ? <p id={emailErrorId} className="text-sm text-destructive">Enter a valid email address.</p> : null}
           </div>
 
           {role === "CLIENT" ? (
             <div className="space-y-2">
-              <Label htmlFor="signup-company">Company name</Label>
+              <FieldLabel
+                htmlFor="signup-company"
+                help="This is the company workspace you are requesting. If the email matches a known client, Trusted Bums fills the company name automatically."
+              >
+                Company name
+              </FieldLabel>
               <Input
                 id="signup-company"
                 value={companyName}
                 onChange={(event) => setManualCompanyName(event.target.value)}
                 readOnly={Boolean(knownClient)}
                 placeholder="Company name"
+                aria-describedby={companyError ? `${companyHelpId} ${companyErrorId}` : companyHelpId}
+                aria-invalid={companyError}
               />
               {knownClient ? (
-                <p className="text-sm text-muted-foreground">Matched existing Client workspace for {knownClient.company}.</p>
+                <p id={companyHelpId} className="text-sm text-muted-foreground">Matched existing Client workspace for {knownClient.company}.</p>
               ) : (
-                <p className="text-sm text-muted-foreground">Required for a first-time Client workspace request.</p>
+                <p id={companyHelpId} className="text-sm text-muted-foreground">Required for a first-time Client workspace request.</p>
               )}
-              {submitted && !companyIsValid ? <p className="text-sm text-destructive">Enter the company name.</p> : null}
+              {companyError ? <p id={companyErrorId} className="text-sm text-destructive">Enter the company name.</p> : null}
             </div>
           ) : null}
         </div>

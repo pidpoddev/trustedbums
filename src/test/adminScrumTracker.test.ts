@@ -5,6 +5,7 @@ const appSource = readFileSync("src/App.tsx", "utf8");
 const adminLayoutSource = readFileSync("src/layouts/AdminLayout.tsx", "utf8");
 const pageSource = readFileSync("src/pages/admin/AdminScrumTracker.tsx", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
+const companyRulesSource = readFileSync("docs/agents/company-wide-rules.md", "utf8");
 const migrationSource = readFileSync("supabase/migrations/20260609025228_add_admin_scrum_items.sql", "utf8");
 const metadataMigrationSource = readFileSync("supabase/migrations/20260609030014_extend_admin_scrum_items_tracking_metadata.sql", "utf8");
 const seedMigrationSource = readFileSync("supabase/migrations/20260609030608_seed_admin_scrum_tracker_initial_history.sql", "utf8");
@@ -62,6 +63,18 @@ describe("admin scrum tracker", () => {
     expect(pageSource).toContain("Closeout proof required");
     expect(pageSource).toContain('htmlFor="scrum-search"');
     expect(pageSource).toContain('id="scrum-status-filter"');
+  });
+
+  it("documents and applies the field-help standard to scrum controls", () => {
+    expect(companyRulesSource).toContain("New fields require clear labels and appropriate help");
+    expect(companyRulesSource).toContain("High-risk fields must not rely on tooltip-only guidance");
+    expect(pageSource).toContain("FieldLabel");
+    expect(pageSource).toContain('aria-describedby="scrum-title-help"');
+    expect(pageSource).toContain('aria-describedby="scrum-description-help"');
+    expect(pageSource).toContain('aria-describedby="scrum-evidence-help"');
+    expect(pageSource).toContain('aria-describedby="scrum-priority-help"');
+    expect(pageSource).toContain('id="scrum-search-help"');
+    expect(pageSource).toContain('aria-describedby="scrum-status-filter-help"');
   });
 
   it("backfills closed git work and current open items with stable source keys", () => {

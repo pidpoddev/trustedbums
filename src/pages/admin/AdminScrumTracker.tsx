@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, ClipboardList, ExternalLink, Plus, RefreshCw, Save, Search } from "lucide-react";
+import { FieldLabel } from "@/components/FieldHelp";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -329,51 +330,78 @@ export default function AdminScrumTracker() {
           <div className="grid gap-4 lg:grid-cols-[minmax(260px,1.4fr)_minmax(220px,0.8fr)]">
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="scrum-title">Title</Label>
-                <Input id="scrum-title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Short issue or follow-up title" />
+                <FieldLabel htmlFor="scrum-title" help="Use the short user-facing issue or follow-up name. This becomes the tracker row title.">
+                  Title
+                </FieldLabel>
+                <p id="scrum-title-help" className="text-sm text-muted-foreground">Keep this concise enough to scan in the tracker table.</p>
+                <Input id="scrum-title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Short issue or follow-up title" aria-describedby="scrum-title-help" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scrum-description">Description</Label>
-                <Textarea id="scrum-description" value={form.description ?? ""} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="What was found, why it matters, and what proof closes it" rows={5} />
+                <FieldLabel htmlFor="scrum-description" help="Explain the finding, impact, recommendation, and closeout proof so another agent can continue the work.">
+                  Description
+                </FieldLabel>
+                <p id="scrum-description-help" className="text-sm text-muted-foreground">Include what was found, why it matters, and what evidence closes it.</p>
+                <Textarea id="scrum-description" value={form.description ?? ""} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="What was found, why it matters, and what proof closes it" rows={5} aria-describedby="scrum-description-help" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scrum-evidence">Evidence links</Label>
-                <Textarea id="scrum-evidence" value={evidenceText} onChange={(event) => setEvidenceText(event.target.value)} placeholder="One GitHub, QA run, doc, or Supabase link per line" rows={3} />
+                <FieldLabel htmlFor="scrum-evidence" help="Add durable proof links only. Prefer GitHub run IDs, source files, docs, or Supabase evidence that future agents can re-open.">
+                  Evidence links
+                </FieldLabel>
+                <p id="scrum-evidence-help" className="text-sm text-muted-foreground">Enter one GitHub, QA run, doc, or Supabase link per line.</p>
+                <Textarea id="scrum-evidence" value={evidenceText} onChange={(event) => setEvidenceText(event.target.value)} placeholder="One GitHub, QA run, doc, or Supabase link per line" rows={3} aria-describedby="scrum-evidence-help" />
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <div className="space-y-2">
-                <Label htmlFor="scrum-priority">Priority</Label>
+                <FieldLabel htmlFor="scrum-priority" help="Use P0/P1 only for work that can block launch, trust, access, money movement, or core role workflows.">
+                  Priority
+                </FieldLabel>
+                <p id="scrum-priority-help" className="text-sm text-muted-foreground">Choose the urgency level used for triage and release planning.</p>
                 <Select value={form.priority} onValueChange={(value) => setForm((current) => ({ ...current, priority: value as AdminScrumItemPriority }))}>
-                  <SelectTrigger id="scrum-priority"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="scrum-priority" aria-describedby="scrum-priority-help"><SelectValue /></SelectTrigger>
                   <SelectContent>{ADMIN_SCRUM_ITEM_PRIORITIES.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scrum-source">Source</Label>
+                <FieldLabel htmlFor="scrum-source" help="Source identifies where the item originated, such as a specialist agent, scrum review, QA, or release verification.">
+                  Source
+                </FieldLabel>
+                <p id="scrum-source-help" className="text-sm text-muted-foreground">Pick the origin so repeated agent runs update the right workstream.</p>
                 <Select value={form.source} onValueChange={(value) => setForm((current) => ({ ...current, source: value as AdminScrumItemSource }))}>
-                  <SelectTrigger id="scrum-source"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="scrum-source" aria-describedby="scrum-source-help"><SelectValue /></SelectTrigger>
                   <SelectContent>{ADMIN_SCRUM_ITEM_SOURCES.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scrum-type">Type</Label>
+                <FieldLabel htmlFor="scrum-type" help="Classify true breakage as a bug. Use task or recommendation for follow-up work that is not currently broken behavior.">
+                  Type
+                </FieldLabel>
+                <p id="scrum-type-help" className="text-sm text-muted-foreground">Choose whether this is a bug, task, recommendation, blocker, or evidence gap.</p>
                 <Select value={form.itemType} onValueChange={(value) => setForm((current) => ({ ...current, itemType: value as AdminScrumItemType }))}>
-                  <SelectTrigger id="scrum-type"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="scrum-type" aria-describedby="scrum-type-help"><SelectValue /></SelectTrigger>
                   <SelectContent>{ADMIN_SCRUM_ITEM_TYPES.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scrum-area">Area</Label>
-                <Input id="scrum-area" value={form.relatedArea ?? ""} onChange={(event) => setForm((current) => ({ ...current, relatedArea: event.target.value }))} placeholder="Auth, RLS, QA, Client portal" />
+                <FieldLabel htmlFor="scrum-area" help="Name the product area, route, workflow, database object, or agent domain affected by this item.">
+                  Area
+                </FieldLabel>
+                <p id="scrum-area-help" className="text-sm text-muted-foreground">Examples: Auth, RLS, QA, Client portal, public signup.</p>
+                <Input id="scrum-area" value={form.relatedArea ?? ""} onChange={(event) => setForm((current) => ({ ...current, relatedArea: event.target.value }))} placeholder="Auth, RLS, QA, Client portal" aria-describedby="scrum-area-help" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scrum-owner">Owner</Label>
-                <Input id="scrum-owner" value={form.ownerLabel ?? ""} onChange={(event) => setForm((current) => ({ ...current, ownerLabel: event.target.value }))} placeholder="Lead Eng" />
+                <FieldLabel htmlFor="scrum-owner" help="Use the role or team accountable for the next action, not a private contact detail.">
+                  Owner
+                </FieldLabel>
+                <p id="scrum-owner-help" className="text-sm text-muted-foreground">Use a stable owner label such as Lead Eng, QA, Security, or UX.</p>
+                <Input id="scrum-owner" value={form.ownerLabel ?? ""} onChange={(event) => setForm((current) => ({ ...current, ownerLabel: event.target.value }))} placeholder="Lead Eng" aria-describedby="scrum-owner-help" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scrum-agent">Added by agent</Label>
-                <Input id="scrum-agent" value={form.addedByAgent ?? ""} onChange={(event) => setForm((current) => ({ ...current, addedByAgent: event.target.value }))} placeholder="Lead Developer" />
+                <FieldLabel htmlFor="scrum-agent" help="Name the specialist or workflow that created the item so future runs can de-duplicate and update it.">
+                  Added by agent
+                </FieldLabel>
+                <p id="scrum-agent-help" className="text-sm text-muted-foreground">Use the recurring agent name when this came from an automation or specialist pass.</p>
+                <Input id="scrum-agent" value={form.addedByAgent ?? ""} onChange={(event) => setForm((current) => ({ ...current, addedByAgent: event.target.value }))} placeholder="Lead Developer" aria-describedby="scrum-agent-help" />
               </div>
               <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.title.trim()} className="mt-1">
                 <ClipboardList className="mr-2 h-4 w-4" />
@@ -395,13 +423,15 @@ export default function AdminScrumTracker() {
           <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_160px_160px]">
             <div className="relative">
               <Label htmlFor="scrum-search" className="sr-only">Search scrum items</Label>
+              <p id="scrum-search-help" className="sr-only">Search by tracking ID, title, area, owner, agent, or evidence text.</p>
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input id="scrum-search" className="pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search tracking ID, title, area, owner" />
+              <Input id="scrum-search" className="pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search tracking ID, title, area, owner" aria-describedby="scrum-search-help" />
             </div>
             <div>
               <Label htmlFor="scrum-status-filter" className="sr-only">Filter scrum items by status</Label>
+              <p id="scrum-status-filter-help" className="sr-only">Limit tracked items to active, all, or one specific status.</p>
               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
-                <SelectTrigger id="scrum-status-filter"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="scrum-status-filter" aria-describedby="scrum-status-filter-help"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ACTIVE">Active</SelectItem>
                   <SelectItem value="ALL">All statuses</SelectItem>
@@ -413,8 +443,9 @@ export default function AdminScrumTracker() {
             </div>
             <div>
               <Label htmlFor="scrum-priority-filter" className="sr-only">Filter scrum items by priority</Label>
+              <p id="scrum-priority-filter-help" className="sr-only">Limit tracked items to all priorities or one selected priority.</p>
               <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value as PriorityFilter)}>
-                <SelectTrigger id="scrum-priority-filter"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="scrum-priority-filter" aria-describedby="scrum-priority-filter-help"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All priorities</SelectItem>
                   {ADMIN_SCRUM_ITEM_PRIORITIES.map((option) => (
@@ -425,8 +456,9 @@ export default function AdminScrumTracker() {
             </div>
             <div>
               <Label htmlFor="scrum-type-filter" className="sr-only">Filter scrum items by type</Label>
+              <p id="scrum-type-filter-help" className="sr-only">Limit tracked items to all item types or one selected type.</p>
               <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as TypeFilter)}>
-                <SelectTrigger id="scrum-type-filter"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="scrum-type-filter" aria-describedby="scrum-type-filter-help"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All types</SelectItem>
                   {ADMIN_SCRUM_ITEM_TYPES.map((option) => (
