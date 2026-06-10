@@ -43,6 +43,32 @@ interface ClaimRow {
   client_decision_token: string | null;
 }
 
+interface BumSignupRequestRow {
+  id: string;
+  requester_profile_id: string | null;
+  email: string | null;
+  request_type: string | null;
+  status: string | null;
+}
+
+interface AdminProfileRow {
+  id: string;
+  email: string | null;
+  role: string | null;
+  is_admin: boolean;
+}
+
+interface AdminEmailTemplateRow {
+  id: string;
+  slug: string;
+  name: string;
+  subject: string;
+  body: string;
+  recipient_group: string;
+  category: string;
+  reply_to: string | null;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-sync-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -56,6 +82,7 @@ const microsoftTenantId = Deno.env.get("MICROSOFT_TENANT_ID");
 const microsoftClientId = Deno.env.get("MICROSOFT_CLIENT_ID");
 const microsoftClientSecret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
 const defaultMailbox = Deno.env.get("CLAIM_DECISION_MAILBOX") ?? Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
+const microsoftSenderEmail = Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
 const syncSecret = Deno.env.get("CLAIM_DECISION_SYNC_SECRET");
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -114,6 +141,14 @@ function extractDecisionToken(text: string) {
 
 function extractClaimId(text: string) {
   return text.match(/claim\s+id\s*:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] ?? null;
+}
+
+function extractBumSignupRequestId(text: string) {
+  return (
+    text.match(/approval\s+request\s+id\s*:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] ??
+    text.match(/request\s+id\s*:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] ??
+    null
+  );
 }
 
 function extractDecision(text: string): Decision | null {
@@ -200,6 +235,38 @@ async function alreadyProcessed(messageId: string) {
   return Boolean(data);
 }
 
+async function bumApprovalAlreadyProcessed(messageId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("bum_signup_approval_email_events")
+    .select("id")
+    .eq("graph_message_id", messageId)
+    .maybeSingle<{ id: string }>();
+  if (error) throw error;
+  return Boolean(data);
+}
+
+async function recordBumApprovalEvent(message: GraphMessage, input: {
+  requestId?: string | null;
+  adminProfileId?: string | null;
+  decision?: "APPROVED" | "IGNORED" | null;
+  status: "PROCESSED" | "SKIPPED" | "FAILED";
+  note?: string;
+}) {
+  const { error } = await supabaseAdmin.from("bum_signup_approval_email_events").insert({
+    graph_message_id: message.id,
+    internet_message_id: message.internetMessageId ?? null,
+    access_request_id: input.requestId ?? null,
+    admin_profile_id: input.adminProfileId ?? null,
+    decision: input.decision ?? "IGNORED",
+    sender_email: message.from?.emailAddress?.address?.trim().toLowerCase() ?? null,
+    subject: message.subject ?? null,
+    received_at: message.receivedDateTime ?? null,
+    processing_status: input.status,
+    processing_note: input.note ?? null,
+  });
+  if (error && error.code !== "23505") throw error;
+}
+
 async function recordEvent(message: GraphMessage, input: {
   claimId?: string | null;
   decision?: Decision | "IGNORED" | null;
@@ -240,6 +307,190 @@ async function loadClaim(token: string | null, claimId: string | null) {
   const { data, error } = await query.maybeSingle<ClaimRow>();
   if (error) throw error;
   return data;
+}
+
+async function loadAdminBySender(message: GraphMessage) {
+  const senderEmail = message.from?.emailAddress?.address?.trim().toLowerCase();
+  if (!senderEmail) return null;
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("id, email, role, is_admin")
+    .ilike("email", senderEmail)
+    .maybeSingle<AdminProfileRow>();
+  if (error) throw error;
+  if (!data?.is_admin && data?.role !== "ADMIN") return null;
+  return data;
+}
+
+async function loadBumSignupRequest(requestId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("client_company_access_requests")
+    .select("id, requester_profile_id, email, request_type, status")
+    .eq("id", requestId)
+    .maybeSingle<BumSignupRequestRow>();
+  if (error) throw error;
+  return data;
+}
+
+function renderTemplate(template: string, metadata: Record<string, string>) {
+  return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_match, key: string) => metadata[key] ?? "");
+}
+
+function textToHtml(value: string) {
+  const escaped = value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+  return escaped.replace(/\n/g, "<br>");
+}
+
+async function sendTemplateEmail(accessToken: string, slug: string, recipientEmail: string, metadata: Record<string, string>, triggeredBy: string) {
+  const { data: template, error: templateError } = await supabaseAdmin
+    .from("admin_email_templates")
+    .select("id, slug, name, subject, body, recipient_group, category, reply_to")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle<AdminEmailTemplateRow>();
+  if (templateError) throw templateError;
+  if (!template) return;
+
+  const subject = renderTemplate(template.subject, metadata);
+  const body = renderTemplate(template.body, metadata);
+  const { data: campaign, error: campaignError } = await supabaseAdmin.from("admin_email_campaigns").insert({
+    template_id: template.id,
+    template_slug: template.slug,
+    name: template.name,
+    status: "DRAFT",
+    recipient_group: template.recipient_group,
+    recipient_count: 1,
+    category: template.category,
+    subject_snapshot: template.subject,
+    body_snapshot: template.body,
+    metadata,
+    created_by: null,
+  }).select("id").single<{ id: string }>();
+  if (campaignError) throw campaignError;
+
+  const { data: delivery, error: deliveryError } = await supabaseAdmin.from("admin_email_deliveries").insert({
+    campaign_id: campaign.id,
+    template_id: template.id,
+    template_slug: template.slug,
+    recipient_group: template.recipient_group,
+    recipient_email: recipientEmail,
+    subject,
+    body,
+    metadata,
+    status: "QUEUED",
+    triggered_by: triggeredBy,
+    category: template.category,
+    created_by: null,
+  }).select("id").single<{ id: string }>();
+  if (deliveryError) throw deliveryError;
+
+  const response = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(microsoftSenderEmail)}/sendMail`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: {
+        subject,
+        body: { contentType: "HTML", content: textToHtml(body) },
+        toRecipients: [{ emailAddress: { address: recipientEmail } }],
+        replyTo: template.reply_to ? [{ emailAddress: { address: template.reply_to } }] : undefined,
+      },
+      saveToSentItems: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as { error?: { code?: string; message?: string } };
+    const detail = [payload.error?.code, payload.error?.message].filter(Boolean).join(": ");
+    await supabaseAdmin.from("admin_email_deliveries").update({ status: "FAILED", error: detail || `Microsoft Graph sendMail failed with HTTP ${response.status}` }).eq("id", delivery.id);
+    await supabaseAdmin.from("admin_email_campaigns").update({ status: "FAILED", sent_at: new Date().toISOString() }).eq("id", campaign.id);
+    throw new Error(detail || `Microsoft Graph sendMail failed with HTTP ${response.status}`);
+  }
+
+  await supabaseAdmin.from("admin_email_deliveries").update({ status: "SENT", sent_at: new Date().toISOString(), error: null }).eq("id", delivery.id);
+  await supabaseAdmin.from("admin_email_campaigns").update({ status: "SENT", sent_at: new Date().toISOString() }).eq("id", campaign.id);
+}
+
+async function applyBumSignupApproval(message: GraphMessage, requestId: string, text: string, accessToken: string) {
+  const decision = extractDecision(text);
+  if (decision !== "APPROVED") {
+    await recordBumApprovalEvent(message, { requestId, decision: "IGNORED", status: "SKIPPED", note: "No clear Approve reply found." });
+    return "skipped";
+  }
+
+  const admin = await loadAdminBySender(message);
+  if (!admin) {
+    await recordBumApprovalEvent(message, { requestId, decision: "IGNORED", status: "SKIPPED", note: "Reply sender is not an admin profile." });
+    return "skipped";
+  }
+
+  const accessRequest = await loadBumSignupRequest(requestId);
+  if (!accessRequest || accessRequest.request_type !== "BUM_SIGNUP") {
+    await recordBumApprovalEvent(message, { requestId, adminProfileId: admin.id, decision: "IGNORED", status: "SKIPPED", note: "No matching Bum signup request found." });
+    return "skipped";
+  }
+  if (accessRequest.status !== "pending") {
+    await recordBumApprovalEvent(message, { requestId, adminProfileId: admin.id, decision: "IGNORED", status: "SKIPPED", note: `Request is already ${accessRequest.status}.` });
+    return "skipped";
+  }
+  if (!accessRequest.requester_profile_id) {
+    await recordBumApprovalEvent(message, { requestId, adminProfileId: admin.id, decision: "IGNORED", status: "SKIPPED", note: "Request has no profile to approve." });
+    return "skipped";
+  }
+
+  const { error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .update({ role: "BUM", is_admin: false, company_id: null, access_status: "APPROVED", disabled_at: null, disabled_by: null })
+    .eq("id", accessRequest.requester_profile_id);
+  if (profileError) throw profileError;
+
+  const reviewNote = `Approved by email reply from ${message.from?.emailAddress?.address ?? "unknown sender"}.`;
+  const { error: requestError } = await supabaseAdmin
+    .from("client_company_access_requests")
+    .update({
+      status: "approved",
+      reviewed_by: admin.id,
+      reviewed_at: new Date().toISOString(),
+      review_note: reviewNote,
+    })
+    .eq("id", accessRequest.id);
+  if (requestError) throw requestError;
+
+  await supabaseAdmin.from("audit_events").insert({
+    user_id: admin.id,
+    event_type: "admin_access_request_approved_by_email",
+    entity_type: "client_company_access_requests",
+    entity_id: accessRequest.id,
+    event_data: {
+      requestId: accessRequest.id,
+      requestType: accessRequest.request_type,
+      requesterProfileId: accessRequest.requester_profile_id,
+      graphMessageId: message.id,
+      senderEmail: message.from?.emailAddress?.address ?? null,
+      resultingState: { role: "BUM" },
+    },
+  });
+
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", accessRequest.requester_profile_id)
+    .maybeSingle<{ full_name: string | null; email: string | null }>();
+  const recipientEmail = profile?.email?.trim() || accessRequest.email?.trim();
+  if (recipientEmail) {
+    await sendTemplateEmail(accessToken, "bum_approved_login", recipientEmail, {
+      recipient_name: profile?.full_name?.trim() || recipientEmail,
+      bum_name: profile?.full_name?.trim() || recipientEmail,
+      login_url: "https://trustedbums.com/login",
+    }, "BUM_APPROVED");
+  }
+
+  await recordBumApprovalEvent(message, { requestId, adminProfileId: admin.id, decision: "APPROVED", status: "PROCESSED", note: "Bum signup approved by email reply." });
+  return "processed";
 }
 
 async function applyDecision(message: GraphMessage, claim: ClaimRow, decision: Decision, text: string) {
@@ -326,12 +577,25 @@ Deno.serve(async (request) => {
 
     for (const message of messages) {
       try {
+        const text = messageText(message);
+        const bumSignupRequestId = extractBumSignupRequestId(text);
+        if (bumSignupRequestId) {
+          if (await bumApprovalAlreadyProcessed(message.id)) {
+            skipped += 1;
+            continue;
+          }
+
+          const result = await applyBumSignupApproval(message, bumSignupRequestId, text, accessToken);
+          if (result === "processed") processed += 1;
+          else skipped += 1;
+          continue;
+        }
+
         if (await alreadyProcessed(message.id)) {
           skipped += 1;
           continue;
         }
 
-        const text = messageText(message);
         const token = extractDecisionToken(text);
         const claimId = extractClaimId(text);
         if (!token && !claimId) {

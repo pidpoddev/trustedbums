@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { Check, Edit3, Plus, Power, PowerOff, Search, ShieldQuestion, X } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -266,6 +267,8 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
 }
 
 export default function AdminBums() {
+  const [searchParams] = useSearchParams();
+  const highlightedRequestId = searchParams.get("requestId");
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<BumTypeFilter>("ALL");
   const [bumPage, setBumPage] = useState(1);
@@ -546,7 +549,12 @@ export default function AdminBums() {
             </div>
             <div className="grid gap-3">
               {pendingBumSignupRequests.map((request) => (
-                <div key={request.id} className="flex flex-col gap-3 rounded-md border bg-card p-3 md:flex-row md:items-center md:justify-between">
+                <div
+                  key={request.id}
+                  className={`flex flex-col gap-3 rounded-md border bg-card p-3 md:flex-row md:items-center md:justify-between ${
+                    highlightedRequestId === request.id ? "border-primary bg-primary/10 shadow-sm" : ""
+                  }`}
+                >
                   <div className="min-w-0">
                     <p className="break-words font-medium">{request.email}</p>
                     <p className="text-xs text-muted-foreground">

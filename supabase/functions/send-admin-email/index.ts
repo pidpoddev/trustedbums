@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import * as jose from "jsr:@panva/jose@6";
 
 interface ClaimsResponse { sub?: string }
-interface ProfileRow { id: string; company_id: string | null; full_name: string | null; email: string | null; role: string | null; is_admin: boolean }
+interface ProfileRow { id: string | null; company_id: string | null; full_name: string | null; email: string | null; role: string | null; is_admin: boolean }
 interface EmailTemplateRow { id: string; slug: string; name: string; recipient_group: RecipientGroup; trigger_event: string | null; subject: string; body: string; is_active: boolean; category: EmailCategory; reply_to: string | null; rate_limit_per_hour: number }
 interface BrandSettingsRow { sender_name: string; logo_url: string; accent_color: string; footer_text: string; physical_address: string | null }
 interface BumProfileRow { user_id: string; industries: string[] | null; profiles: Pick<ProfileRow, "id" | "full_name" | "email"> | null }
@@ -56,6 +56,10 @@ function isSelfOnlyCustomAction(input: SendAdminEmailRequest, currentProfile: Pr
   const currentEmail = currentProfile.email?.trim().toLowerCase();
   const recipients = (input.recipientEmails ?? []).map((email) => email.trim().toLowerCase()).filter(isEmail);
   return Boolean(currentEmail && recipients.length === 1 && recipients[0] === currentEmail);
+}
+function isInternalEmailRequest(request: Request) {
+  return request.headers.get("authorization") === `Bearer ${supabaseServiceRoleKey}` &&
+    request.headers.get("x-internal-email") === "trustedbums-edge";
 }
 function normalizeMetadata(metadata?: Record<string, unknown>) { return Object.fromEntries(Object.entries(metadata ?? {}).map(([key, value]) => [key, typeof value === "string" ? value.trim() : String(value ?? "")])) }
 function renderTemplate(template: string, metadata: Record<string, string>) { return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_match, key: string) => metadata[key] ?? "") }
@@ -238,6 +242,7 @@ function brandSettingsDefaults() {
 }
 
 async function handleAdminEmailOperation(operation: AdminEmailOperation, payload: Record<string, unknown>, currentProfile: ProfileRow) {
+  if (!currentProfile.id) return json(403, { error: "Internal email sends cannot manage email tools." });
   if (!isAdmin(currentProfile)) return json(403, { error: "Only admins can manage email tools." });
 
   switch (operation) {
@@ -337,9 +342,12 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return json(405, { error: "Method not allowed." });
   try {
     const input = await request.json().catch(() => ({})) as SendAdminEmailRequest;
-    const currentProfile = await getCurrentProfile(getBearerToken(request));
+    const currentProfile = isInternalEmailRequest(request)
+      ? { id: null, company_id: null, full_name: "Trusted Bums", email: null, role: "ADMIN", is_admin: true }
+      : await getCurrentProfile(getBearerToken(request));
     if (input.operation) return await handleAdminEmailOperation(input.operation, recordValue(input.payload), currentProfile);
     const mode: SendMode = input.mode === "action" || input.mode === "preview" || input.mode === "test" ? input.mode : "manual";
+    if (!currentProfile.id && mode !== "action") return json(403, { error: "Internal email sends must use action mode." });
     const template = await getTemplate(input);
     const metadata = normalizeMetadata(input.metadata);
     const group = input.recipientGroup ?? template.recipient_group;

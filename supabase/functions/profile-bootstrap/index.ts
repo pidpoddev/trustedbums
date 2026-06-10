@@ -69,8 +69,10 @@ const sharedEmailDomains = new Set([
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const supabasePublishableKey = Deno.env.get("SB_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
 const clerkSecretKey = Deno.env.get("CLERK_SECRET_KEY");
 const clerkFrontendApiUrl = Deno.env.get("CLERK_FRONTEND_API_URL");
+const portalBaseUrl = (Deno.env.get("PORTAL_BASE_URL") ?? "https://trustedbums.com").replace(/\/+$/, "");
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -271,7 +273,7 @@ async function upsertPendingRequest(input: {
     ? await supabaseAdmin.from("client_company_access_requests").update(payload).eq("id", existing.id).select("id").single<{ id: string }>()
     : await supabaseAdmin.from("client_company_access_requests").insert(payload).select("id").single<{ id: string }>();
   if (write.error) throw write.error;
-  return write.data;
+  return { ...write.data, created: !existing };
 }
 
 async function writeAudit(userId: string, eventType: string, eventData: Record<string, unknown>, companyId?: string | null) {
@@ -283,6 +285,46 @@ async function writeAudit(userId: string, eventType: string, eventData: Record<s
     entity_id: null,
     event_data: eventData,
   });
+}
+
+async function sendBumSignupAdminNotice(input: {
+  requestId: string;
+  name: string;
+  email: string;
+  emailDomain?: string | null;
+}) {
+  if (!supabasePublishableKey || !supabaseServiceRoleKey) return;
+
+  const approveUrl = `${portalBaseUrl}/admin/bums?requestId=${encodeURIComponent(input.requestId)}`;
+  const response = await fetch(`${supabaseUrl}/functions/v1/send-admin-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "x-internal-email": "trustedbums-edge",
+    },
+    body: JSON.stringify({
+      mode: "action",
+      templateSlug: "bum_signup_admin_review",
+      recipientEmails: ["bums@trustedbums.com"],
+      metadata: {
+        request_id: input.requestId,
+        bum_name: input.name,
+        user_name: input.name,
+        bum_email: input.email,
+        user_email: input.email,
+        email_domain: input.emailDomain ?? "",
+        approve_url: approveUrl,
+      },
+      triggeredBy: "BUM_SIGNUP_CREATED",
+    }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(payload.error || "Unable to send Bum signup approval notice.");
+  }
 }
 
 Deno.serve(async (request: Request) => {
@@ -398,6 +440,14 @@ Deno.serve(async (request: Request) => {
         evidence: { source: "signup_intent" },
       });
       await writeAudit(userId, "bum_access_requested", { requestId: accessRequest.id, email, emailDomain });
+      if (accessRequest.created) {
+        await sendBumSignupAdminNotice({
+          requestId: accessRequest.id,
+          name: profile.full_name ?? displayName(clerkUser, email, cleanString(body.fullName)),
+          email,
+          emailDomain,
+        }).catch((error) => console.warn("Unable to send Bum signup admin notice", error));
+      }
       return json(200, { profile, request: { id: accessRequest.id, status: "pending", type: "BUM_SIGNUP" } });
     }
 
