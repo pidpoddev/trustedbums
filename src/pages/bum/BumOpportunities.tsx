@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { openConversationDock } from "@/lib/conversationDock";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterPanel } from "@/components/FilterPanel";
-import { PaginationControls } from "@/components/PaginationControls";
 import { buildLinkedInFirstConnectionsUrl } from "@/lib/linkedinSearch";
-import { getPageItems } from "@/lib/pagination";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +43,14 @@ import { cn } from "@/lib/utils";
 import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink, UserPlus, Eye, EyeOff } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
-const MARKETPLACE_PAGE_SIZE = 6;
+const MARKETPLACE_PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 50] as const;
+type MarketplacePageSize = (typeof MARKETPLACE_PAGE_SIZE_OPTIONS)[number];
+
+function storedMarketplacePageSize(): MarketplacePageSize {
+  if (typeof window === "undefined") return 5;
+  const value = Number(window.localStorage.getItem("bum-opportunities-page-size"));
+  return MARKETPLACE_PAGE_SIZE_OPTIONS.includes(value as MarketplacePageSize) ? (value as MarketplacePageSize) : 5;
+}
 
 const responseFormInitial = {
   contactName: "",
@@ -141,7 +146,8 @@ export default function BumOpportunities() {
   const [selectedTarget, setSelectedTarget] = useState<CustomerTargetRecord | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<OpportunityRegistration | null>(null);
   const [targetDialogMode, setTargetDialogMode] = useState<TargetDialogMode>("connection");
-  const [marketplacePage, setMarketplacePage] = useState(1);
+  const [marketplacePageSize, setMarketplacePageSize] = useState<MarketplacePageSize>(() => storedMarketplacePageSize());
+  const [visibleItemCount, setVisibleItemCount] = useState(() => storedMarketplacePageSize());
   const [responseForm, setResponseForm] = useState(responseFormInitial);
   const [contactSearch, setContactSearch] = useState("");
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -149,12 +155,17 @@ export default function BumOpportunities() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [expandedOpportunityIds, setExpandedOpportunityIds] = useState<Set<string>>(new Set());
   const [expandedTargetIds, setExpandedTargetIds] = useState<Set<string>>(new Set());
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const searchQuery = searchParams.get("search") ?? "";
     setQuery(searchQuery);
-    setMarketplacePage(1);
   }, [searchParams]);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("bum-opportunities-page-size", String(marketplacePageSize));
+    }
+  }, [marketplacePageSize]);
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
     queryFn: listMarketplaceOpportunities,
@@ -573,7 +584,25 @@ export default function BumOpportunities() {
     ],
     [dedupedTargets, maybeFiltered, prioritizedFiltered],
   );
-  const visibleMarketplaceItems = getPageItems(marketplaceItems, marketplacePage, MARKETPLACE_PAGE_SIZE);
+  useEffect(() => {
+    setVisibleItemCount(marketplacePageSize);
+  }, [heartedOnly, industry, marketplacePageSize, query, showHidden, termFilter, typeFilter, valueFilter]);
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || visibleItemCount >= marketplaceItems.length) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleItemCount((current) => Math.min(current + marketplacePageSize, marketplaceItems.length));
+        }
+      },
+      { rootMargin: "240px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [marketplaceItems.length, marketplacePageSize, visibleItemCount]);
+  const visibleMarketplaceItems = marketplaceItems.slice(0, visibleItemCount);
   const visibleTargets = visibleMarketplaceItems.filter((entry) => entry.type === "target").map((entry) => entry.item);
   const visibleOpportunities = visibleMarketplaceItems
     .filter((entry) => entry.type === "opportunity")
@@ -607,7 +636,6 @@ export default function BumOpportunities() {
             onChange={(event) => {
               const value = event.target.value;
               setQuery(value);
-              setMarketplacePage(1);
               setSearchParams((current) => {
                 const next = new URLSearchParams(current);
                 if (value.trim()) {
@@ -698,7 +726,6 @@ export default function BumOpportunities() {
             className="w-full xl:w-auto"
             onClick={() => {
               setShowHidden((current) => !current);
-              setMarketplacePage(1);
             }}
           >
             {showHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
@@ -707,6 +734,36 @@ export default function BumOpportunities() {
         </div>
         </div>
       </FilterPanel>
+
+      <div className="flex flex-col gap-3 rounded-lg border bg-card px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          Showing {Math.min(visibleMarketplaceItems.length, marketplaceItems.length)} of {marketplaceItems.length} matching opportunit{marketplaceItems.length === 1 ? "y" : "ies"}
+        </p>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="opportunity-page-size" className="text-xs">Load</Label>
+          <Select
+            value={String(marketplacePageSize)}
+            onValueChange={(value) => {
+              const next = Number(value) as MarketplacePageSize;
+              if (MARKETPLACE_PAGE_SIZE_OPTIONS.includes(next)) {
+                setMarketplacePageSize(next);
+                setVisibleItemCount(next);
+              }
+            }}
+          >
+            <SelectTrigger id="opportunity-page-size" className="h-9 w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MARKETPLACE_PAGE_SIZE_OPTIONS.map((option) => (
+                <SelectItem key={option} value={String(option)}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {(opportunitiesQuery.isLoading || targetsQuery.isLoading) && (
         <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground">
@@ -1032,12 +1089,15 @@ export default function BumOpportunities() {
               : "No live opportunities are available yet."}
           </div>
         )}
-        <PaginationControls
-          page={marketplacePage}
-          pageSize={MARKETPLACE_PAGE_SIZE}
-          totalItems={marketplaceItems.length}
-          onPageChange={setMarketplacePage}
-        />
+        {visibleItemCount < marketplaceItems.length ? (
+          <div ref={loadMoreRef} className="py-2 text-center text-sm text-muted-foreground">
+            Loading more opportunities...
+          </div>
+        ) : marketplaceItems.length ? (
+          <div className="py-2 text-center text-sm text-muted-foreground">
+            End of list
+          </div>
+        ) : null}
       </div>
 
       <Dialog
