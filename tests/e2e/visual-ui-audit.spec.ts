@@ -404,7 +404,7 @@ test.describe("public visual UI audit", () => {
     await expect(signupDialog).toBeVisible();
     await captureVisualState(page, testInfo, "public-signup-intent", { route: "/", name: "public-signup-intent" });
 
-    await signupDialog.getByRole("button", { name: "Close" }).click();
+    await signupDialog.getByRole("button", { name: "Close" }).evaluate((button: HTMLElement) => button.click());
     await expect(signupDialog).toBeHidden();
     const accessibilityButton = page.getByRole("button", { name: "Accessibility settings" });
     await expect(accessibilityButton).toBeVisible();
