@@ -4367,6 +4367,26 @@ export async function listOpportunityQuestionsForBum(opportunityId: string) {
   return (data ?? []).map(normalizeOpportunityQuestion);
 }
 
+export async function listOpportunityQuestionOpportunityIdsForBum(bumUserId: string, opportunityIds: string[]) {
+  const uniqueOpportunityIds = Array.from(new Set(opportunityIds.filter(Boolean)));
+  if (!uniqueOpportunityIds.length) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("opportunity_questions")
+    .select("opportunity_registration_id")
+    .eq("bum_user_id", bumUserId)
+    .in("opportunity_registration_id", uniqueOpportunityIds)
+    .returns<Array<Pick<OpportunityQuestionRecord, "opportunity_registration_id">>>();
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.from(new Set((data ?? []).map((question) => question.opportunity_registration_id).filter(Boolean)));
+}
+
 export async function listClientOpportunityQuestions(user: AuthUser) {
   if (user.role !== "CLIENT" || !user.clientId) {
     throw new Error("Only client users can load opportunity questions.");

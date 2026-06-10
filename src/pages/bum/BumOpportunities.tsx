@@ -28,6 +28,7 @@ import {
   listCustomerTargets,
   listMarketplaceOpportunities,
   listOpportunityClaimSummaries,
+  listOpportunityQuestionOpportunityIdsForBum,
   listPotentialDecisionMakerMatchCountsForOpportunities,
   setBumSavedItem,
   setBumHiddenItem,
@@ -544,6 +545,21 @@ export default function BumOpportunities() {
     const matchesTerm = termMatchesFilter(target.expected_timeline, termFilter);
     return matchesType && matchesQuery && matchesHeart && matchesHidden && matchesIndustry && matchesValue && matchesTerm;
   });
+  const filteredOpportunityIds = filtered.map((opportunity) => opportunity.id);
+  const maybeOpportunityIdsQuery = useQuery({
+    queryKey: ["bum-maybe-opportunity-ids", user?.id, filteredOpportunityIds],
+    queryFn: () => listOpportunityQuestionOpportunityIdsForBum(user!.id, filteredOpportunityIds),
+    enabled: Boolean(user?.id) && filteredOpportunityIds.length > 0,
+  });
+  const maybeOpportunityIds = useMemo(() => new Set(maybeOpportunityIdsQuery.data ?? []), [maybeOpportunityIdsQuery.data]);
+  const prioritizedFiltered = useMemo(
+    () => filtered.filter((opportunity) => !maybeOpportunityIds.has(opportunity.id)),
+    [filtered, maybeOpportunityIds],
+  );
+  const maybeFiltered = useMemo(
+    () => filtered.filter((opportunity) => maybeOpportunityIds.has(opportunity.id)),
+    [filtered, maybeOpportunityIds],
+  );
   const opportunityTargetNames = new Set(filtered.map((opportunity) => normalizedTargetName(opportunity.target_account_name)));
   const dedupedTargets = typeFilter === "TARGET_ACCOUNT"
     ? filteredTargets
@@ -551,10 +567,11 @@ export default function BumOpportunities() {
 
   const marketplaceItems = useMemo(
     () => [
-      ...filtered.map((item) => ({ type: "opportunity" as const, item })),
+      ...prioritizedFiltered.map((item) => ({ type: "opportunity" as const, item })),
       ...dedupedTargets.map((item) => ({ type: "target" as const, item })),
+      ...maybeFiltered.map((item) => ({ type: "opportunity" as const, item })),
     ],
-    [dedupedTargets, filtered],
+    [dedupedTargets, maybeFiltered, prioritizedFiltered],
   );
   const visibleMarketplaceItems = getPageItems(marketplaceItems, marketplacePage, MARKETPLACE_PAGE_SIZE);
   const visibleTargets = visibleMarketplaceItems.filter((entry) => entry.type === "target").map((entry) => entry.item);
@@ -785,12 +802,12 @@ export default function BumOpportunities() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant={isHidden ? "outline" : "destructive"}
                     disabled={!user || hideMutation.isPending}
                     onClick={() => hideMutation.mutate({ itemType: "CUSTOMER_TARGET", itemId: targetAccount.id, hidden: !isHidden })}
                   >
                     {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-                    {isHidden ? "Unhide" : "Skip"}
+                    {isHidden ? "Unhide" : "Skip/Hide"}
                   </Button>
                   <Button
                     size="sm"
@@ -809,11 +826,12 @@ export default function BumOpportunities() {
                     }
                   >
                     {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
-                    Details
+                    {isExpanded ? "Show Less" : "Show More"}
                   </Button>
                   <Button
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
+                    className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200"
                     onClick={() => {
                       setTargetDialogMode("question");
                       setResponseForm(responseFormInitial);
@@ -821,7 +839,7 @@ export default function BumOpportunities() {
                     }}
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
-                    Question
+                    Maybe
                   </Button>
                   <Button size="sm" variant="outline" asChild>
                     <a
@@ -833,11 +851,12 @@ export default function BumOpportunities() {
                       rel="noreferrer"
                     >
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      Connections
+                      Check LinkedIn
                     </a>
                   </Button>
                   <Button
                     size="sm"
+                    className="bg-emerald-600 text-white hover:bg-emerald-700"
                     onClick={() => {
                       setTargetDialogMode("connection");
                       setResponseForm(responseFormInitial);
@@ -940,12 +959,12 @@ export default function BumOpportunities() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant={isHidden ? "outline" : "destructive"}
                     disabled={!user || hideMutation.isPending}
                     onClick={() => hideMutation.mutate({ itemType: "OPPORTUNITY", itemId: opportunity.id, hidden: !isHidden })}
                   >
                     {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-                    {isHidden ? "Unhide" : "Skip"}
+                    {isHidden ? "Unhide" : "Skip/Hide"}
                   </Button>
                   <Button
                     size="sm"
@@ -964,12 +983,12 @@ export default function BumOpportunities() {
                     }
                   >
                     {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
-                    Details
+                    {isExpanded ? "Show Less" : "Show More"}
                   </Button>
-                  <Button size="sm" variant={researchMatchCount ? "default" : "outline"} asChild>
+                  <Button size="sm" variant="outline" asChild>
                     <Link to={"/bum/opportunities/" + opportunity.id}>
                       {researchMatchCount ? <UserPlus className="mr-2 h-4 w-4" /> : <Briefcase className="mr-2 h-4 w-4" />}
-                      View details
+                      Details
                     </Link>
                   </Button>
                   <Button size="sm" variant="outline" asChild>
@@ -979,10 +998,10 @@ export default function BumOpportunities() {
                       rel="noreferrer"
                     >
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      Connections
+                      Check LinkedIn
                     </a>
                   </Button>
-                  <Button size="sm" asChild>
+                  <Button size="sm" variant="outline" className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200" asChild>
                     <Link to={"/bum/opportunities/" + opportunity.id + "?ask=1"}>
                       <MessageSquare className="mr-2 h-4 w-4" />
                       Maybe
@@ -990,6 +1009,7 @@ export default function BumOpportunities() {
                   </Button>
                   <Button
                     size="sm"
+                    className="bg-emerald-600 text-white hover:bg-emerald-700"
                     onClick={() => openOpportunityConnection(opportunity)}
                   >
                     <Handshake className="mr-2 h-4 w-4" />

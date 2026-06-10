@@ -42,9 +42,14 @@ describe("UI visual cleanup guardrails", () => {
   it("keeps researched opportunities discoverable before duplicate target cards", () => {
     expect(bumOpportunitiesSource).toContain("listPotentialDecisionMakerMatchCountsForOpportunities");
     expect(bumOpportunitiesSource).toContain("Research Bot ${researchMatchCount}");
-    expect(bumOpportunitiesSource).toContain("View details");
+    expect(bumOpportunitiesSource).toContain("listOpportunityQuestionOpportunityIdsForBum");
+    expect(bumOpportunitiesSource).toContain("prioritizedFiltered");
+    expect(bumOpportunitiesSource).toContain("maybeFiltered");
+    expect(bumOpportunitiesSource).toContain("Check LinkedIn");
+    expect(bumOpportunitiesSource).toContain("Skip/Hide");
+    expect(bumOpportunitiesSource).toContain("Show More");
     expect(bumOpportunitiesSource).toContain("dedupedTargets");
-    expect(bumOpportunitiesSource).toContain('...filtered.map((item) => ({ type: "opportunity" as const, item }))');
+    expect(bumOpportunitiesSource).toContain('...maybeFiltered.map((item) => ({ type: "opportunity" as const, item }))');
   });
 
   it("uses stacked Admin Credits cards on mobile", () => {
