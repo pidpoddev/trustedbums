@@ -13,6 +13,17 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-09 - Load full BlackCurrant Research Bot decision-maker coverage
+
+- Trigger: Ryan asked to run the full BlackCurrant research and prioritize energy leadership, data-center leaders, and chief development officers above generic CEO/COO contacts.
+- Implementation branch: Current local workspace with pre-existing unrelated BlackCurrant, email-preview, marketing-graphics, and email-template migration changes still present.
+- What changed: Loaded public-source Research Bot rows into the live Trusted Bums Supabase project for all 81 BlackCurrant target accounts in `public.potential_decision_maker_matches`. Updated the researcher playbook so BlackCurrant scoring favors direct energy, data-center, development, construction/design, power, utility/grid, and infrastructure platform owners over broad executive titles unless public evidence ties the CEO/COO to the relevant infrastructure lifecycle. Added a concise full-run report.
+- Main surfaces changed: `public.potential_decision_maker_matches` live data, `docs/decision-maker-researcher.md`, and `docs/decision-maker-research/blackcurrant-2026-06-09-full.md`.
+- Checks run: Live Supabase row-count and coverage queries for BlackCurrant target accounts and Research Bot matches.
+- Results: Live data now has 117 Research Bot matches covering 81 of 81 BlackCurrant target accounts, with 42 Priority A, 45 Priority B, 30 Watchlist, 27 `NEEDS_VERIFICATION`, and 14 score-0 route placeholders where public research did not confirm a named current owner.
+- Recheck agents: Decision-Maker Researcher, Product Ops Workflow Analyst, QA/Test Engineer, B2B Growth, Lead Developer.
+- Next run should verify: QA should spot-check deployed BlackCurrant opportunity detail pages for the expanded match set, confirm Source buttons still open public sources in a new tab/window, and treat `NEEDS_VERIFICATION` / score-0 rows as route-building prompts rather than outreach-ready contacts.
+
 ### 2026-06-09 - Add Research Bot provenance for potential decision-maker matches
 
 - Trigger: Ryan asked to create a Potential DM matches place for BlackCurrant research and add a "where this came from" field using `Research Bot`.

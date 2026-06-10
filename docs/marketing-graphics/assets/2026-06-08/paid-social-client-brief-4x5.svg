@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title>Trusted Bums client brief paid social plate</title>
+  <desc>Text-free paid social illustration with one structured client brief, a protected warm-intro route, and a distinct secondary recruiting lane.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8f1e7"/>
+      <stop offset="100%" stop-color="#f3ede4"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#04101c" flood-opacity="0.18"/>
+    </filter>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#04101c" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1350" fill="url(#bg)"/>
+  <circle cx="224" cy="168" r="124" fill="#ff8a24" opacity="0.08"/>
+  <circle cx="862" cy="212" r="148" fill="#178b83" opacity="0.08"/>
+  <circle cx="168" cy="1184" r="156" fill="#178b83" opacity="0.08"/>
+
+  <g filter="url(#shadow)">
+    <rect x="122" y="146" width="566" height="1048" rx="56" fill="#fbf6ee" stroke="#e6d8c9" stroke-width="3"/>
+    <rect x="196" y="226" width="286" height="42" rx="21" fill="#e6dfd4"/>
+    <rect x="196" y="330" width="354" height="34" rx="17" fill="#e0d9ce"/>
+    <rect x="196" y="412" width="318" height="34" rx="17" fill="#e0d9ce"/>
+    <rect x="196" y="494" width="272" height="34" rx="17" fill="#e0d9ce"/>
+    <rect x="196" y="578" width="184" height="34" rx="17" fill="#d7e3dc"/>
+    <circle cx="572" cy="348" r="17" fill="#ff9637"/>
+    <circle cx="530" cy="430" r="17" fill="#ff9637"/>
+    <circle cx="484" cy="512" r="17" fill="#ff9637"/>
+
+    <rect x="196" y="694" width="236" height="344" rx="36" fill="#0b1628"/>
+    <circle cx="314" cy="800" r="56" fill="#fbf6ee"/>
+    <path d="M248 918 Q 314 774 380 918 Z" fill="#fbf6ee"/>
+    <rect x="250" y="962" width="128" height="22" rx="11" fill="#ff7a1a"/>
+
+    <rect x="468" y="742" width="140" height="296" rx="32" fill="#efe7dc"/>
+    <rect x="502" y="794" width="74" height="16" rx="8" fill="#d6cec4"/>
+    <rect x="502" y="830" width="62" height="16" rx="8" fill="#d6cec4"/>
+    <rect x="502" y="866" width="80" height="16" rx="8" fill="#c4ddd2"/>
+    <circle cx="572" cy="950" r="18" fill="#7fb7ad"/>
+  </g>
+
+  <path d="M688 348 C 772 348, 748 614, 838 614 L 916 614" fill="none" stroke="#dad6d0" stroke-width="22" stroke-linecap="round"/>
+  <path d="M688 348 C 772 348, 748 614, 838 614 L 916 614" fill="none" stroke="#ff7317" stroke-width="13" stroke-linecap="round"/>
+  <path d="M688 430 C 760 430, 788 892, 870 892 L 936 892" fill="none" stroke="#dad6d0" stroke-width="16" stroke-linecap="round" opacity="0.48"/>
+  <path d="M688 430 C 760 430, 788 892, 870 892 L 936 892" fill="none" stroke="#7fb7ad" stroke-width="9" stroke-linecap="round" opacity="0.72"/>
+
+  <g filter="url(#cardShadow)">
+    <rect x="810" y="546" width="106" height="106" rx="32" fill="#fff2e4" stroke="#ffc48d" stroke-width="3"/>
+    <circle cx="863" cy="598" r="20" fill="#08111f"/>
+    <path d="M842 642 L 884 642 L 871 612 L 855 612 Z" fill="#08111f"/>
+    <rect x="916" y="592" width="24" height="10" rx="5" fill="#178b83"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="734" y="180" width="250" height="176" rx="34" fill="#0b1628" stroke="#223247" stroke-width="2"/>
+    <rect x="780" y="226" width="132" height="18" rx="9" fill="#324259"/>
+    <rect x="780" y="262" width="116" height="18" rx="9" fill="#324259"/>
+    <rect x="780" y="298" width="92" height="18" rx="9" fill="#324259"/>
+    <circle cx="926" cy="272" r="18" fill="#ff7a1a"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="722" y="830" width="264" height="212" rx="38" fill="#eef3f0" stroke="#d7e3dd" stroke-width="2"/>
+    <rect x="772" y="890" width="116" height="16" rx="8" fill="#c8dbd3"/>
+    <rect x="772" y="926" width="94" height="16" rx="8" fill="#c8dbd3"/>
+    <rect x="772" y="962" width="78" height="16" rx="8" fill="#c8dbd3"/>
+    <circle cx="920" cy="926" r="18" fill="#7fb7ad"/>
+  </g>
+
+  <rect x="862" y="418" width="98" height="98" rx="49" fill="#ff6b15" filter="url(#cardShadow)"/>
+  <rect x="906" y="442" width="12" height="50" rx="6" fill="#fff8f0"/>
+  <rect x="887" y="461" width="50" height="12" rx="6" fill="#fff8f0"/>
+</svg>

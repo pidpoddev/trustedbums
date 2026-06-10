@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="628" viewBox="0 0 1200 628" role="img" aria-labelledby="title desc">
+  <title>Trusted Bums serious path LinkedIn plate</title>
+  <desc>Text-free LinkedIn illustration showing a structured client brief, a protected buyer route, and a clearly separate secondary lane.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#08111f"/>
+      <stop offset="100%" stop-color="#11233b"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#020712" flood-opacity="0.2"/>
+    </filter>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#020712" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="628" fill="#f7f1e8"/>
+  <circle cx="214" cy="138" r="120" fill="#ff8a24" opacity="0.09"/>
+  <circle cx="1018" cy="126" r="82" fill="#178b83" opacity="0.08"/>
+  <rect x="420" y="110" width="714" height="398" rx="38" fill="url(#bg)"/>
+  <ellipse cx="970" cy="530" rx="194" ry="88" fill="#178b83" opacity="0.08"/>
+
+  <g filter="url(#shadow)">
+    <rect x="98" y="168" width="402" height="304" rx="40" fill="#fbf6ee" stroke="#eadbca" stroke-width="3"/>
+    <rect x="150" y="220" width="188" height="30" rx="15" fill="#e4ddd2"/>
+    <rect x="150" y="292" width="244" height="28" rx="14" fill="#ddd6cb"/>
+    <rect x="150" y="356" width="214" height="28" rx="14" fill="#ddd6cb"/>
+    <rect x="150" y="420" width="144" height="28" rx="14" fill="#d5e2da"/>
+    <circle cx="406" cy="306" r="15" fill="#ff9433"/>
+    <circle cx="376" cy="370" r="15" fill="#ff9433"/>
+    <rect x="306" y="414" width="124" height="34" rx="17" fill="#efe6da"/>
+  </g>
+
+  <path d="M500 306 C 592 306, 572 214, 700 214 L 862 214" fill="none" stroke="#d9d5cf" stroke-width="18" stroke-linecap="round"/>
+  <path d="M500 306 C 592 306, 572 214, 700 214 L 862 214" fill="none" stroke="#ff7317" stroke-width="10" stroke-linecap="round"/>
+  <path d="M500 370 C 588 370, 596 442, 690 442 L 822 442" fill="none" stroke="#d9d5cf" stroke-width="14" stroke-linecap="round" opacity="0.48"/>
+  <path d="M500 370 C 588 370, 596 442, 690 442 L 822 442" fill="none" stroke="#7fb7ad" stroke-width="8" stroke-linecap="round" opacity="0.72"/>
+
+  <g filter="url(#cardShadow)">
+    <rect x="662" y="170" width="102" height="102" rx="30" fill="#fff2e4" stroke="#ffc690" stroke-width="3"/>
+    <circle cx="713" cy="220" r="20" fill="#08111f"/>
+    <path d="M692 264 L 734 264 L 721 234 L 705 234 Z" fill="#08111f"/>
+    <rect x="768" y="214" width="26" height="10" rx="5" fill="#178b83"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="830" y="156" width="246" height="134" rx="30" fill="#0b1628" stroke="#223247" stroke-width="2"/>
+    <rect x="872" y="192" width="124" height="18" rx="9" fill="#314258"/>
+    <rect x="872" y="228" width="102" height="18" rx="9" fill="#314258"/>
+    <circle cx="1022" cy="220" r="18" fill="#ff7a1a"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="792" y="386" width="260" height="120" rx="30" fill="#eef3f0" stroke="#d7e4dd" stroke-width="2"/>
+    <rect x="830" y="420" width="96" height="16" rx="8" fill="#c5d9d1"/>
+    <rect x="830" y="454" width="72" height="16" rx="8" fill="#c5d9d1"/>
+    <circle cx="986" cy="446" r="16" fill="#7fb7ad"/>
+  </g>
+
+  <path d="M0 520 C 140 492, 276 494, 410 520 S 688 560, 834 526 S 1048 486, 1200 512 L 1200 628 L 0 628 Z" fill="#0b1628"/>
+  <path d="M0 536 C 186 574, 360 576, 534 548 S 840 504, 1200 548" fill="none" stroke="#17314b" stroke-width="8" opacity="0.52"/>
+</svg>

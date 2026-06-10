@@ -39,6 +39,8 @@ For BlackCurrant's AI data-center energy infrastructure offer, prioritize these 
 - Investor sponsor: Managing Director/Partner for Digital Infrastructure, Infrastructure Investing, Energy Transition, AI Infrastructure, or Portfolio Operations.
 - Secondary influencer: Sustainability, ESG, Public Policy, Community Relations, and Permitting when project risk depends on them.
 
+For BlackCurrant, do not over-rank generic CEO or COO contacts. Energy leadership, data-center leaders, chief development officers, construction/design owners, power procurement owners, utility/grid owners, and infrastructure platform owners are more valuable than broad corporate executives unless the CEO/COO is directly evidenced as owning data-center development, power, or infrastructure delivery. A CEO/COO with only broad corporate authority should usually top out as Priority B.
+
 ## Scoring Model
 
 Use a 100-point score. Keep the sub-scores visible so humans can disagree intelligently.
@@ -50,6 +52,8 @@ Use a 100-point score. Keep the sub-scores visible so humans can disagree intell
 - 18: Adjacent stakeholder likely to influence or evaluate.
 - 10: Executive or operator with plausible but indirect relevance.
 - 0: No clear connection to the opportunity.
+
+For BlackCurrant, reserve 30 for direct energy, data-center, development, construction/design, power, utility, grid, or infrastructure platform ownership. A generic CEO/COO should receive 18-24 unless public evidence shows they personally own the relevant infrastructure lifecycle.
 
 ### Current Company Confidence, 0-20
 
@@ -150,4 +154,3 @@ Return structured rows that can be reviewed or imported:
 - Flag duplicate names and parent/subsidiary ambiguity.
 - If the best available person is not a direct buyer, say that clearly and label them as an influencer or route-builder.
 - Prefer 3 to 8 strong candidates per target account over long, noisy lists.
-
