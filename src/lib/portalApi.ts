@@ -4140,6 +4140,18 @@ export async function listConversationThreads() {
   return (data ?? []).map(sortConversationThread);
 }
 
+export async function markConversationThreadRead(user: AuthUser, conversationId: string) {
+  const { error } = await supabase
+    .from("conversation_participants")
+    .update({ last_read_at: new Date().toISOString() })
+    .eq("conversation_id", conversationId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function createConversationThread(user: AuthUser, input: ConversationThreadInput) {
   const message = input.message.trim();
   if (!message) {

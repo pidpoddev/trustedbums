@@ -4,6 +4,10 @@ import { PortalHeaderActions } from "@/components/PortalHeaderActions";
 import { PortalGlobalSearch } from "@/components/PortalGlobalSearch";
 import { ConversationDock } from "@/components/ConversationDock";
 import { FirstLoginWalkthrough } from "@/components/FirstLoginWalkthrough";
+import { useAuth } from "@/contexts/AuthContext";
+import { unreadConversationCount } from "@/lib/conversationUnread";
+import { listConversationThreads } from "@/lib/portalApi";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation, Outlet } from "react-router-dom";
 import {
   Sidebar,
@@ -21,7 +25,6 @@ import {
   LayoutDashboard,
   Briefcase,
   Handshake,
-  Calendar,
   Wallet,
   User,
   Building2,
@@ -30,6 +33,7 @@ import {
   PlusCircle,
   Sparkles,
   BarChart3,
+  MessageSquare,
 } from "lucide-react";
 
 const navGroups = [
@@ -41,7 +45,7 @@ const navGroups = [
   { title: "Contacts", url: "/bum/contacts", icon: ContactRound },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
   { title: "Claims", url: "/bum/claims", icon: Handshake },
-  { title: "Live Conversations", url: "/bum/live-conversations", icon: Calendar },
+  { title: "Inbox", url: "/bum/live-conversations", icon: MessageSquare },
   { title: "Training & Assets", url: "/bum/trainings", icon: GraduationCap },
   ] },
   { label: "Finance", items: [
@@ -54,6 +58,16 @@ const navItems = [...navGroups.flatMap((group) => group.items), { title: "Profil
 
 export default function BumLayout() {
   const location = useLocation();
+  const { user } = useAuth();
+  const conversationsQuery = useQuery({
+    queryKey: ["conversation-threads"],
+    queryFn: listConversationThreads,
+    enabled: Boolean(user?.id),
+    refetchInterval: 30000,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+  });
+  const unreadCount = unreadConversationCount(conversationsQuery.data ?? [], user);
 
   return (
     <SidebarProvider>
@@ -82,6 +96,12 @@ export default function BumLayout() {
                           >
                             <item.icon className="mr-2 h-4 w-4" />
                             <span>{item.title}</span>
+                            {item.title === "Inbox" && unreadCount > 0 ? (
+                              <span className="ml-auto flex items-center gap-1.5">
+                                <span className="h-2.5 w-2.5 rounded-full bg-destructive shadow-[0_0_12px_hsl(var(--destructive))]" aria-hidden="true" />
+                                <span className="sr-only">{unreadCount} unread conversation{unreadCount === 1 ? "" : "s"}</span>
+                              </span>
+                            ) : null}
                           </NavLink>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -102,11 +122,11 @@ export default function BumLayout() {
             <PortalGlobalSearch />
             <PortalHeaderActions />
           </header>
-          <div className="p-4 pb-32 sm:p-6 sm:pb-28">
+          <div className="p-4 sm:p-6">
             <Outlet />
           </div>
           <FirstLoginWalkthrough />
-          <ConversationDock />
+          <ConversationDock showLauncher={false} />
         </main>
       </div>
     </SidebarProvider>

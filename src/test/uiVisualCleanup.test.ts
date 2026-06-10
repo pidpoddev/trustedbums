@@ -20,10 +20,11 @@ describe("UI visual cleanup guardrails", () => {
     expect(feedbackSource).toContain("max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] overflow-y-auto bg-background");
   });
 
-  it("keeps the mobile chat launcher from covering form actions", () => {
+  it("keeps the mobile chat launcher safe where it remains enabled", () => {
     expect(conversationDockSource).toContain("bottom-3 right-3 z-40");
     expect(conversationDockSource).toContain("h-11 rounded-full px-3");
     expect(conversationDockSource).toContain("sr-only sm:not-sr-only");
+    expect(conversationDockSource).toContain("showLauncher = true");
   });
 
   it("keeps mobile account menus opaque and viewport-bound", () => {

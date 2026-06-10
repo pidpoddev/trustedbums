@@ -98,7 +98,7 @@ const roleAudits: RoleAuditConfig[] = [
       { path: "/bum/contacts", heading: "Contacts", navName: "Contacts" },
       { path: "/bum/opportunities", heading: "Opportunities", navName: "Opportunities" },
       { path: "/bum/claims", heading: "Claims", navName: "Claims" },
-      { path: "/bum/live-conversations", heading: "Live Conversations", navName: "Live Conversations" },
+      { path: "/bum/live-conversations", heading: "Inbox", navName: "Inbox" },
       { path: "/bum/trainings", heading: "Training & Assets", navName: "Training & Assets" },
       { path: "/bum/earnings", heading: "Earnings", navName: "Earnings" },
       { path: "/bum/reports", heading: "Bum Reports", navName: "Reports" },

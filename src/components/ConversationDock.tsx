@@ -9,9 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { CONVERSATION_DOCK_OPEN_EVENT } from "@/lib/conversationDock";
+import { isConversationUnreadForUser } from "@/lib/conversationUnread";
 import {
   addConversationParticipantByEmail,
   listConversationThreads,
+  markConversationThreadRead,
   sendConversationMessage,
   type ConversationThreadRecord,
 } from "@/lib/portalApi";
@@ -46,7 +48,11 @@ function participantList(thread: ConversationThreadRecord) {
     .join(", ");
 }
 
-export function ConversationDock() {
+interface ConversationDockProps {
+  showLauncher?: boolean;
+}
+
+export function ConversationDock({ showLauncher = true }: ConversationDockProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -96,6 +102,18 @@ export function ConversationDock() {
       setSelectedId(threads[0]?.id ?? null);
     }
   }, [selectedId, threads]);
+
+  useEffect(() => {
+    if (!user || !isOpen || isMinimized || !selectedThread || !isConversationUnreadForUser(selectedThread, user)) {
+      return;
+    }
+
+    void markConversationThreadRead(user, selectedThread.id)
+      .then(() => queryClient.invalidateQueries({ queryKey: CONVERSATION_QUERY_KEY }))
+      .catch(() => {
+        // Read receipts should not block a conversation from opening.
+      });
+  }, [isMinimized, isOpen, queryClient, selectedThread, user]);
 
   const sendMutation = useMutation({
     mutationFn: () => sendConversationMessage(user!, selectedThread!.id, draft),
@@ -318,12 +336,14 @@ export function ConversationDock() {
         </div>
       ) : null}
 
-      <Button type="button" className="h-11 rounded-full px-3 shadow-lg sm:h-10 sm:px-4" onClick={handleChatButtonClick}>
-        <MessageSquare className="h-4 w-4 sm:mr-2" />
-        <span className="sr-only sm:not-sr-only sm:inline">
-          Chat{threads.length ? ` (${threads.length})` : ""}
-        </span>
-      </Button>
+      {showLauncher ? (
+        <Button type="button" className="h-11 rounded-full px-3 shadow-lg sm:h-10 sm:px-4" onClick={handleChatButtonClick}>
+          <MessageSquare className="h-4 w-4 sm:mr-2" />
+          <span className="sr-only sm:not-sr-only sm:inline">
+            Chat{threads.length ? ` (${threads.length})` : ""}
+          </span>
+        </Button>
+      ) : null}
     </div>
   );
 }

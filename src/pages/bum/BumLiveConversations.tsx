@@ -1,16 +1,30 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Target } from "lucide-react";
+import { Clock, MessageSquare, Target, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { ScheduleTeamsMeetingDialog } from "@/components/ScheduleTeamsMeetingDialog";
 import { TeamsMeetingsPanel } from "@/components/TeamsMeetingsPanel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
+import { openConversationDock } from "@/lib/conversationDock";
+import { isConversationUnreadForUser, latestConversationMessageAt } from "@/lib/conversationUnread";
 import { getPageItems } from "@/lib/pagination";
-import { listCustomerTargets, listTeamsMeetings, syncTeamsMeetingAttendance, type CustomerTargetStatus } from "@/lib/portalApi";
+import { formatDateTimeForTimeZone } from "@/lib/timezone";
+import {
+  listConversationThreads,
+  listCustomerTargets,
+  listTeamsMeetings,
+  markConversationThreadRead,
+  syncTeamsMeetingAttendance,
+  type ConversationThreadRecord,
+  type CustomerTargetStatus,
+} from "@/lib/portalApi";
 
 const TARGETS_PAGE_SIZE = 8;
 
@@ -31,11 +45,34 @@ function targetLabel(status: CustomerTargetStatus) {
   return status.replaceAll("_", " ");
 }
 
+function latestMessage(thread: ConversationThreadRecord) {
+  const latestAt = latestConversationMessageAt(thread);
+  return thread.conversation_messages?.find((message) => message.created_at === latestAt) ?? null;
+}
+
+function threadContext(thread: ConversationThreadRecord) {
+  if (thread.opportunity_registrations?.target_account_name) {
+    return thread.opportunity_registrations.target_account_name;
+  }
+
+  if (thread.customer_targets?.target_companies?.name || thread.customer_targets?.target_account_name) {
+    return thread.customer_targets.target_companies?.name ?? thread.customer_targets.target_account_name;
+  }
+
+  return thread.context_type.replaceAll("_", " ").toLowerCase();
+}
+
 export default function BumLiveConversations() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const timeZone = useUserTimeZone();
   const [targetsPage, setTargetsPage] = useState(1);
+  const conversationsQuery = useQuery({
+    queryKey: ["conversation-threads"],
+    queryFn: listConversationThreads,
+    enabled: Boolean(user?.id),
+  });
   const targetsQuery = useQuery({
     queryKey: ["bum-customer-targets"],
     queryFn: () => listCustomerTargets(null),
@@ -45,9 +82,29 @@ export default function BumLiveConversations() {
     queryFn: listTeamsMeetings,
   });
 
+  const conversations = useMemo(() => conversationsQuery.data ?? [], [conversationsQuery.data]);
   const targets = targetsQuery.data ?? [];
   const visibleTargets = getPageItems(targets, targetsPage, TARGETS_PAGE_SIZE);
   const meetings = meetingsQuery.data ?? [];
+  const unreadCount = user ? conversations.filter((thread) => isConversationUnreadForUser(thread, user)).length : 0;
+
+  useEffect(() => {
+    if (!user || conversationsQuery.isLoading || !conversations.length) {
+      return;
+    }
+
+    const unreadThreads = conversations.filter((thread) => isConversationUnreadForUser(thread, user));
+    if (!unreadThreads.length) {
+      return;
+    }
+
+    void Promise.all(unreadThreads.map((thread) => markConversationThreadRead(user, thread.id)))
+      .then(() => queryClient.invalidateQueries({ queryKey: ["conversation-threads"] }))
+      .catch(() => {
+        // Inbox should remain readable even if a read receipt update fails.
+      });
+  }, [conversations, conversationsQuery.isLoading, queryClient, user]);
+
   const syncAttendanceMutation = useMutation({
     mutationFn: () => syncTeamsMeetingAttendance(meetings.map((meeting) => meeting.id)),
     onSuccess: async (result) => {
@@ -76,9 +133,74 @@ export default function BumLiveConversations() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Live Conversations"
-        description="Schedule Microsoft Teams intros for client target accounts and track your upcoming calls."
+        title="Inbox"
+        description="Follow up on client messages, opportunity questions, and scheduled intro work from one place."
       />
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="font-display flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              Messages
+            </CardTitle>
+            {unreadCount > 0 ? (
+              <Badge variant="destructive" className="w-fit shadow-[0_0_18px_hsl(var(--destructive)/0.45)]">
+                {unreadCount} unread
+              </Badge>
+            ) : null}
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {conversationsQuery.error instanceof Error ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+              Unable to load Inbox messages: {conversationsQuery.error.message}
+            </div>
+          ) : null}
+
+          {conversations.map((thread) => {
+            const latest = latestMessage(thread);
+            const isUnread = user ? isConversationUnreadForUser(thread, user) : false;
+            return (
+              <div key={thread.id} className="rounded-xl border p-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      {isUnread ? <span className="h-2.5 w-2.5 rounded-full bg-destructive shadow-[0_0_12px_hsl(var(--destructive))]" aria-hidden="true" /> : null}
+                      <p className="truncate font-medium font-display">{thread.subject}</p>
+                      <StatusBadge label={thread.context_type.replaceAll("_", " ")} variant="info" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">{threadContext(thread)}</p>
+                    <p className="mt-2 line-clamp-2 text-sm text-muted-foreground/90">{latest?.body ?? "No messages yet."}</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5" />
+                        {thread.conversation_participants?.length ?? 0} participant{(thread.conversation_participants?.length ?? 0) === 1 ? "" : "s"}
+                      </span>
+                      {latest ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" />
+                          {formatDateTimeForTimeZone(latest.created_at, timeZone)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <Button type="button" variant={isUnread ? "default" : "outline"} onClick={() => openConversationDock(thread.id)}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Open
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+
+          {!conversationsQuery.isLoading && !conversationsQuery.error && !conversations.length ? (
+            <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+              No Inbox messages yet. Opportunity questions and client replies will appear here.
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <TeamsMeetingsPanel
         meetings={meetings}

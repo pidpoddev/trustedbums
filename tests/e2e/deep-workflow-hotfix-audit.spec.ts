@@ -90,7 +90,7 @@ const routeInventory: WorkflowRoute[] = [
   { role: "BUM", path: "/bum/opportunities", heading: "Opportunities", area: "Bum", workflow: "Opportunities" },
   { role: "BUM", path: "/bum/claims", heading: "Claims", area: "Bum", workflow: "Claims" },
   { role: "BUM", path: "/bum/trainings", heading: "Training & Assets", area: "Bum", workflow: "Training assets" },
-  { role: "BUM", path: "/bum/live-conversations", heading: "Live Conversations", area: "Bum", workflow: "Live conversations" },
+  { role: "BUM", path: "/bum/live-conversations", heading: "Inbox", area: "Bum", workflow: "Inbox" },
   { role: "BUM", path: "/bum/earnings", heading: "Earnings", area: "Bum", workflow: "Earnings" },
   { role: "BUM", path: "/bum/reports", heading: "Bum Reports", area: "Bum", workflow: "Reports" },
   { role: "BUM", path: "/bum/profile", heading: "Profile", area: "Bum", workflow: "Profile" },
