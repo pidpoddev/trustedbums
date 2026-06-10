@@ -9,6 +9,8 @@ const bumOpportunitiesSource = readFileSync("src/pages/bum/BumOpportunities.tsx"
 const adminCreditsSource = readFileSync("src/pages/admin/AdminCredits.tsx", "utf8");
 const contactSubmissionsSource = readFileSync("src/components/admin/ContactSubmissionsPanel.tsx", "utf8");
 const clientTargetsSource = readFileSync("src/pages/client/ClientTargets.tsx", "utf8");
+const tooltipSource = readFileSync("src/components/ui/tooltip.tsx", "utf8");
+const adminScrumTrackerSource = readFileSync("src/pages/admin/AdminScrumTracker.tsx", "utf8");
 
 describe("UI visual cleanup guardrails", () => {
   it("keeps dialogs above fixed portal widgets with opaque surfaces", () => {
@@ -45,5 +47,14 @@ describe("UI visual cleanup guardrails", () => {
   it("uses short mobile-safe search placeholders", () => {
     expect(contactSubmissionsSource).toContain('placeholder="Search contacts"');
     expect(clientTargetsSource).toContain('placeholder="Search targets"');
+  });
+
+  it("keeps mobile tooltip overlays from blocking modal controls", () => {
+    expect(tooltipSource).toContain("pointer-events-none z-50");
+  });
+
+  it("keeps the long scrum tracker list inside a bounded scroll area", () => {
+    expect(adminScrumTrackerSource).toContain("max-h-[620px] overflow-auto overscroll-contain rounded-md border md:max-h-[720px]");
+    expect(adminScrumTrackerSource).toContain('TableHeader className="sticky top-0 z-10 bg-background"');
   });
 });

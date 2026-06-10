@@ -477,9 +477,9 @@ export default function AdminScrumTracker() {
               <p>{scrumQuery.error instanceof Error ? scrumQuery.error.message : "Unable to load scrum tracker."}</p>
             </div>
           ) : filteredItems.length ? (
-            <div className="overflow-x-auto">
+            <div className="max-h-[620px] overflow-auto overscroll-contain rounded-md border md:max-h-[720px]">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-background">
                   <TableRow>
                     <TableHead>Item</TableHead>
                     <TableHead>Context</TableHead>
