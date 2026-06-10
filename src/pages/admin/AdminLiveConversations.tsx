@@ -38,11 +38,11 @@ export default function AdminLiveConversations() {
   const [targetsPage, setTargetsPage] = useState(1);
   const targetsQuery = useQuery({
     queryKey: ["admin-customer-targets-for-live-conversations"],
-    queryFn: () => listCustomerTargets(null),
+    queryFn: () => listCustomerTargets(null, { includeDisabled: true }),
   });
   const meetingsQuery = useQuery({
     queryKey: ["admin-teams-meetings"],
-    queryFn: listTeamsMeetings,
+    queryFn: () => listTeamsMeetings({ includeDisabled: true }),
   });
 
   const targets = targetsQuery.data ?? [];

@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit3, Plus, Search } from "lucide-react";
+import { Edit3, Plus, Power, PowerOff, Search } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
 import { PaginationControls } from "@/components/PaginationControls";
 import { PageHeader } from "@/components/PageHeader";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,13 +23,14 @@ import {
   listProfiles,
   listTermsAcceptances,
   listTermsVersions,
+  setAdminBumProfileDisabled,
   updateAdminBumProfile,
   type BumAvailabilityStatus,
   type BumProfileRecord,
   type BumVerificationStatus,
 } from "@/lib/portalApi";
 
-type BumTypeFilter = "ALL" | "VISIBLE_TO_CLIENTS" | "AGREEMENT_ACCEPTED" | "PROFILE_READY" | "HIDDEN";
+type BumTypeFilter = "ALL" | "VISIBLE_TO_CLIENTS" | "AGREEMENT_ACCEPTED" | "PROFILE_READY" | "HIDDEN" | "DISABLED";
 
 const ADMIN_BUMS_PAGE_SIZE = 8;
 
@@ -38,6 +40,7 @@ const bumTypeFilters: { value: BumTypeFilter; label: string }[] = [
   { value: "AGREEMENT_ACCEPTED", label: "Agreement accepted" },
   { value: "PROFILE_READY", label: "Profile ready" },
   { value: "HIDDEN", label: "Hidden from clients" },
+  { value: "DISABLED", label: "Disabled" },
 ];
 
 function joinList(values?: string[]) {
@@ -49,6 +52,10 @@ function splitList(value: string) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function isBumDisabled(bum: Pick<BumProfileRecord, "profiles">) {
+  return bum.profiles?.access_status === "DISABLED" || Boolean(bum.profiles?.disabled_at);
 }
 
 function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
@@ -258,7 +265,9 @@ export default function AdminBums() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteNote, setInviteNote] = useState("");
+  const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const bumProfilesQuery = useQuery({ queryKey: ["admin-bum-profiles"], queryFn: listAdminBumProfiles });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
   const termsVersionsQuery = useQuery({ queryKey: ["admin-terms-versions"], queryFn: listTermsVersions });
@@ -276,6 +285,30 @@ export default function AdminBums() {
     onError: (error) => {
       toast({
         title: "Unable to invite Bum",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  const bumDisabledMutation = useMutation({
+    mutationFn: ({ userId, disabled }: { userId: string; disabled: boolean }) =>
+      setAdminBumProfileDisabled(user!, userId, disabled),
+    onSuccess: async (_profile, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-bum-profiles"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-profiles"] }),
+        queryClient.invalidateQueries({ queryKey: ["client-visible-bum-profiles"] }),
+      ]);
+      toast({
+        title: variables.disabled ? "Bum disabled" : "Bum enabled",
+        description: variables.disabled
+          ? "That Bum and their related records are hidden outside Admin."
+          : "That Bum is available again outside Admin.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update Bum access",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -328,6 +361,8 @@ export default function AdminBums() {
               full_name: profilesById.get(profile.id)?.full_name ?? profile.full_name,
               email: profilesById.get(profile.id)?.email ?? profile.email,
               created_at: profilesById.get(profile.id)?.created_at ?? profile.created_at,
+              access_status: profilesById.get(profile.id)?.access_status ?? profile.access_status,
+              disabled_at: profilesById.get(profile.id)?.disabled_at ?? profile.disabled_at,
             },
           };
         }
@@ -338,6 +373,8 @@ export default function AdminBums() {
             full_name: profile.full_name,
             email: profile.email,
             created_at: profile.created_at,
+            access_status: profile.access_status,
+            disabled_at: profile.disabled_at,
           },
           hasAcceptedAgreement,
           acceptedTerms: acceptedTermsByUserId.get(profile.id) ?? [],
@@ -370,7 +407,8 @@ export default function AdminBums() {
               bum.relationship_companies?.length ||
               bum.worked_with_companies?.length,
           )) ||
-        (typeFilter === "HIDDEN" && !bum.is_visible_to_clients);
+        (typeFilter === "HIDDEN" && !bum.is_visible_to_clients) ||
+        (typeFilter === "DISABLED" && isBumDisabled(bum));
 
       const matchesQuery = [
         bum.profiles?.full_name,
@@ -499,9 +537,19 @@ export default function AdminBums() {
         ) : null}
 
         {!isLoading && !hasError ? visibleBums.map((bum) => (
-          <div key={bum.user_id} className="space-y-2">
-            <div className="flex justify-end">
+          <div key={bum.user_id} className={`space-y-2 rounded-lg ${isBumDisabled(bum) ? "border border-destructive/30 bg-destructive/5 p-3" : ""}`}>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {isBumDisabled(bum) ? <Badge variant="destructive">Disabled</Badge> : null}
               <AdminBumEditButton bum={bum} />
+              <Button
+                size="sm"
+                variant={isBumDisabled(bum) ? "default" : "destructive"}
+                disabled={bumDisabledMutation.isPending}
+                onClick={() => bumDisabledMutation.mutate({ userId: bum.user_id, disabled: !isBumDisabled(bum) })}
+              >
+                {isBumDisabled(bum) ? <Power className="mr-2 h-4 w-4" /> : <PowerOff className="mr-2 h-4 w-4" />}
+                {isBumDisabled(bum) ? "Enable" : "Disable"}
+              </Button>
             </div>
             <BumProfileCard profile={bum} showAdminMeta />
           </div>

@@ -375,7 +375,7 @@ function ClaimShareMobileCard({ claim }: { claim: OpportunityClaimRecord }) {
 export default function AdminCredits() {
   const claimsQuery = useQuery({
     queryKey: ["admin-opportunity-claims"],
-    queryFn: () => listOpportunityClaims(),
+    queryFn: () => listOpportunityClaims(undefined, { includeDisabled: true }),
   });
   const claims = claimsQuery.data ?? [];
 

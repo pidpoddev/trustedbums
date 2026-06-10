@@ -209,7 +209,7 @@ export default function AdminEmails() {
   const triggerRulesQuery = useQuery({ queryKey: ["admin-email-trigger-rules", user?.id], queryFn: listAdminEmailTriggerRules, enabled: canLoadAdminEmailData });
   const schedulesQuery = useQuery({ queryKey: ["admin-email-schedules", user?.id], queryFn: listAdminEmailSchedules, enabled: canLoadAdminEmailData });
   const brandQuery = useQuery({ queryKey: ["admin-email-brand", user?.id], queryFn: getAdminEmailBrandSettings, enabled: canLoadAdminEmailData });
-  const companiesQuery = useQuery({ queryKey: ["admin-email-companies", user?.id], queryFn: listCompanies, enabled: canLoadAdminEmailData });
+  const companiesQuery = useQuery({ queryKey: ["admin-email-companies", user?.id], queryFn: () => listCompanies({ includeInactive: true }), enabled: canLoadAdminEmailData });
 
   const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
   const deliveries = deliveriesQuery.data ?? [];

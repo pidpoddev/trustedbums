@@ -87,7 +87,7 @@ export default function AdminCommissionPlans() {
     notes: "",
   });
 
-  const companiesQuery = useQuery({ queryKey: ["admin-companies-for-commission-plans"], queryFn: listCompanies });
+  const companiesQuery = useQuery({ queryKey: ["admin-companies-for-commission-plans"], queryFn: () => listCompanies({ includeInactive: true }) });
   const plansQuery = useQuery({
     queryKey: ["admin-commission-plans"],
     queryFn: () => listClientPayPrograms(),

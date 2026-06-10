@@ -28,12 +28,12 @@ function statusLabel(value?: string | null) {
 }
 
 export default function AdminReports() {
-  const companiesQuery = useQuery({ queryKey: ["admin-reports-companies"], queryFn: listCompanies });
+  const companiesQuery = useQuery({ queryKey: ["admin-reports-companies"], queryFn: () => listCompanies({ includeInactive: true }) });
   const profilesQuery = useQuery({ queryKey: ["admin-reports-profiles"], queryFn: listProfiles });
   const bumProfilesQuery = useQuery({ queryKey: ["admin-reports-bum-profiles"], queryFn: listAdminBumProfiles });
-  const targetsQuery = useQuery({ queryKey: ["admin-reports-targets"], queryFn: () => listCustomerTargets(null) });
+  const targetsQuery = useQuery({ queryKey: ["admin-reports-targets"], queryFn: () => listCustomerTargets(null, { includeDisabled: true }) });
   const opportunitiesQuery = useQuery({ queryKey: ["admin-reports-opportunities"], queryFn: () => listOpportunityRegistrations() });
-  const claimsQuery = useQuery({ queryKey: ["admin-reports-claims"], queryFn: () => listOpportunityClaims() });
+  const claimsQuery = useQuery({ queryKey: ["admin-reports-claims"], queryFn: () => listOpportunityClaims(undefined, { includeDisabled: true }) });
   const paymentsQuery = useQuery({ queryKey: ["admin-reports-payment-reports"], queryFn: () => listCustomerPaymentReports() });
   const invoicesQuery = useQuery({ queryKey: ["admin-reports-invoices"], queryFn: () => listClaimInvoices() });
   const payoutsQuery = useQuery({ queryKey: ["admin-reports-payouts"], queryFn: listBumPayouts });

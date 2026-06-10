@@ -122,7 +122,7 @@ export default function AdminLegal() {
   const termsQuery = useQuery({ queryKey: ["admin-legal-terms"], queryFn: listTermsVersions });
   const assignmentsQuery = useQuery({ queryKey: ["admin-legal-assignments"], queryFn: listTermsAssignments });
   const legalQuery = useQuery({ queryKey: ["admin-legal-documents"], queryFn: listLegalDocuments });
-  const companiesQuery = useQuery({ queryKey: ["admin-legal-companies"], queryFn: listCompanies });
+  const companiesQuery = useQuery({ queryKey: ["admin-legal-companies"], queryFn: () => listCompanies({ includeInactive: true }) });
   const profilesQuery = useQuery({ queryKey: ["admin-legal-profiles"], queryFn: listProfiles });
 
   const termsVersions = termsQuery.data ?? [];

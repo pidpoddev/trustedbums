@@ -168,7 +168,7 @@ export default function AdminOpportunities() {
     expected_timeline: "",
     notes: "",
   });
-  const companiesQuery = useQuery({ queryKey: ["admin-companies-for-opportunities"], queryFn: listCompanies });
+  const companiesQuery = useQuery({ queryKey: ["admin-companies-for-opportunities"], queryFn: () => listCompanies({ includeInactive: true }) });
   const payProgramsQuery = useQuery({ queryKey: ["admin-pay-programs-for-opportunities"], queryFn: () => listClientPayPrograms() });
   const registrationsQuery = useQuery({
     queryKey: ["admin-opportunities", "All"],
@@ -176,7 +176,7 @@ export default function AdminOpportunities() {
   });
   const targetsQuery = useQuery({
     queryKey: ["admin-customer-targets"],
-    queryFn: () => listCustomerTargets(null),
+    queryFn: () => listCustomerTargets(null, { includeDisabled: true }),
   });
   const reverseOpportunitiesQuery = useQuery({
     queryKey: ["admin-reverse-opportunities"],

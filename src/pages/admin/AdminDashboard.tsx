@@ -190,7 +190,7 @@ export default function AdminDashboard() {
   });
 
   const summaryQuery = useQuery({ queryKey: ["admin-dashboard-summary"], queryFn: getAdminDashboardSummary, enabled: user?.role === "ADMIN", retry: 1 });
-  const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: listCompanies });
+  const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: () => listCompanies({ includeInactive: true }) });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
   const clerkUsersQuery = useQuery({
     queryKey: ["admin-clerk-users-summary"],
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
   });
   const customerTargetsQuery = useQuery({
     queryKey: ["admin-customer-targets"],
-    queryFn: () => listCustomerTargets(null),
+    queryFn: () => listCustomerTargets(null, { includeDisabled: true }),
   });
   const opportunitiesQuery = useQuery({
     queryKey: ["admin-opportunities", statusFilter],

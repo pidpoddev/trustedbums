@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Edit3, Link2, Plus, ScrollText, Search, ShieldQuestion, Users, X } from "lucide-react";
+import { Check, Edit3, Link2, Plus, Power, PowerOff, ScrollText, Search, ShieldQuestion, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import {
   approveAdminCompanyAccessRequestWithProof,
   createClientCompany,
   denyAdminCompanyAccessRequest,
+  setAdminClientCompanyDisabled,
   updateAdminClientCompany,
   listAdminProspectRecommendations,
   listAdminCompanyAccessRequests,
@@ -266,7 +267,7 @@ export default function AdminClients() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const timeZone = useUserTimeZone();
-  const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: listCompanies });
+  const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: () => listCompanies({ includeInactive: true }) });
   const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles });
   const opportunitiesQuery = useQuery({
     queryKey: ["admin-opportunities", "All"],
@@ -344,6 +345,32 @@ export default function AdminClients() {
       });
     },
   });
+  const clientDisabledMutation = useMutation({
+    mutationFn: ({ companyId, disabled }: { companyId: string; disabled: boolean }) =>
+      setAdminClientCompanyDisabled(user!, companyId, disabled),
+    onSuccess: async (_company, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-companies"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-profiles"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-opportunities"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-reports-companies"] }),
+        queryClient.invalidateQueries({ queryKey: ["client-visible-bum-profiles"] }),
+      ]);
+      toast({
+        title: variables.disabled ? "Client disabled" : "Client enabled",
+        description: variables.disabled
+          ? "The client and its related records are hidden outside Admin."
+          : "The client is available again outside Admin.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update client access",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const companySummaries = useMemo(() => {
     const profiles = profilesQuery.data ?? [];
@@ -355,6 +382,7 @@ export default function AdminClients() {
 
     const summaries = (companiesQuery.data ?? []).map((company) => {
       const users = profiles.filter((profile) => profile.company_id === company.id);
+      const activeUsers = users.filter((profile) => (profile.access_status ?? "APPROVED") === "APPROVED" && !profile.disabled_at);
       const companyOpportunities = opportunities.filter((opportunity) => opportunity.company_id === company.id);
       const companyRecommendations = recommendations.filter((recommendation) => recommendation.company_id === company.id);
       const companyContacts = contacts.filter((contact) => contact.company_id === company.id);
@@ -382,8 +410,9 @@ export default function AdminClients() {
       return {
         ...company,
         userCount: users.length,
-        primaryEmail: users[0]?.email ?? "No users yet",
-        latestUserLoginAt: users
+        activeUserCount: activeUsers.length,
+        primaryEmail: activeUsers[0]?.email ?? users[0]?.email ?? "No users yet",
+        latestUserLoginAt: activeUsers
           .map((profile) => profile.last_sign_in_at)
           .filter(Boolean)
           .sort((left, right) => new Date(right!).getTime() - new Date(left!).getTime())[0] ?? null,
@@ -393,6 +422,8 @@ export default function AdminClients() {
             email: profile.email,
             full_name: profile.full_name,
             role: profile.role,
+            access_status: profile.access_status,
+            disabled_at: profile.disabled_at,
             last_sign_in_at: profile.last_sign_in_at,
           }))
           .sort((left, right) => {
@@ -728,7 +759,7 @@ export default function AdminClients() {
 
         {!isLoading && !hasError ? filteredCompanies.map((company) => {
           return (
-            <Card key={company.id} className="hover:shadow-md transition-shadow">
+            <Card key={company.id} className={`transition-shadow hover:shadow-md ${company.relationship_stage === "INACTIVE" ? "border-destructive/30 bg-destructive/5" : ""}`}>
               <CardContent className="pt-6">
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="flex items-start gap-4">
@@ -740,6 +771,7 @@ export default function AdminClients() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium">{company.name}</p>
                           <StatusBadge label={company.relationship_stage} variant={stageVariant(company.relationship_stage)} />
+                          {company.relationship_stage === "INACTIVE" ? <Badge variant="destructive">Disabled</Badge> : null}
                           {company.linkedin_company_url ? (
                             <Badge variant="outline" className="inline-flex items-center gap-1">
                               <Link2 className="h-3 w-3" /> LinkedIn keyed
@@ -747,7 +779,8 @@ export default function AdminClients() {
                           ) : null}
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {company.userCount} user{company.userCount === 1 ? "" : "s"} · Primary: {company.primaryEmail}
+                          {company.activeUserCount} active user{company.activeUserCount === 1 ? "" : "s"}
+                          {company.userCount !== company.activeUserCount ? ` · ${company.userCount - company.activeUserCount} disabled` : ""} · Primary: {company.primaryEmail}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Last login: {company.latestUserLoginAt ? formatDateTimeForTimeZone(company.latestUserLoginAt, timeZone) : "Never recorded"}
@@ -788,7 +821,7 @@ export default function AdminClients() {
                         <div className="flex flex-wrap gap-2 pt-1">
                           {company.users.length ? (
                             company.users.map((profile) => (
-                              <Badge key={profile.id} variant="outline">
+                              <Badge key={profile.id} variant={profile.disabled_at || profile.access_status === "DISABLED" ? "destructive" : "outline"}>
                                 {(profile.full_name ?? profile.email ?? profile.id)} · {profile.last_sign_in_at ? formatDateForTimeZone(profile.last_sign_in_at, timeZone) : "Never"}
                               </Badge>
                             ))
@@ -810,7 +843,18 @@ export default function AdminClients() {
                   </div>
 
                   <div className="flex flex-col items-end gap-4">
-                    <AdminClientEditButton company={company} />
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <AdminClientEditButton company={company} />
+                      <Button
+                        size="sm"
+                        variant={company.relationship_stage === "INACTIVE" ? "default" : "destructive"}
+                        disabled={clientDisabledMutation.isPending}
+                        onClick={() => clientDisabledMutation.mutate({ companyId: company.id, disabled: company.relationship_stage !== "INACTIVE" })}
+                      >
+                        {company.relationship_stage === "INACTIVE" ? <Power className="mr-2 h-4 w-4" /> : <PowerOff className="mr-2 h-4 w-4" />}
+                        {company.relationship_stage === "INACTIVE" ? "Enable" : "Disable"}
+                      </Button>
+                    </div>
                     <div className="flex items-center gap-6">
                       <div className="text-center">
                       <Link

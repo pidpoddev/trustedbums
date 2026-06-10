@@ -298,7 +298,7 @@ export default function AdminTroubleshooting() {
   const [transcriptSyncSummary, setTranscriptSyncSummary] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: listCompanies });
+  const companiesQuery = useQuery({ queryKey: ["admin-companies"], queryFn: () => listCompanies({ includeInactive: true }) });
   const clerkUsersQuery = useQuery({
     queryKey: ["admin-clerk-users", submittedQuery],
     queryFn: () => listClerkAdminUsers({ query: submittedQuery || undefined, limit: 50 }),

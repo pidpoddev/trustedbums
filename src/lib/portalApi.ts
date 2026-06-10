@@ -440,7 +440,7 @@ export interface ProspectRecommendationRecord {
   created_at: string;
   updated_at: string;
   companies?: Pick<CompanyRecord, "id" | "name" | "website" | "relationship_stage" | "linkedin_company_url"> | null;
-  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "access_status" | "disabled_at"> | null;
 }
 
 export interface ProspectContactRecord {
@@ -484,7 +484,7 @@ export interface BumContactOpportunityOption {
   id: string;
   target_account_name: string;
   status: string;
-  companies?: Pick<CompanyRecord, "name"> | null;
+  companies?: Pick<CompanyRecord, "id" | "name" | "relationship_stage"> | null;
 }
 
 export interface BumContactDetailResponse {
@@ -571,7 +571,7 @@ export interface ReverseOpportunityRecord {
   created_at: string;
   updated_at: string;
   companies?: Pick<CompanyRecord, "id" | "name" | "website" | "relationship_stage" | "linkedin_company_url"> | null;
-  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "access_status" | "disabled_at"> | null;
 }
 
 export interface ReverseOpportunityInput {
@@ -614,9 +614,9 @@ export interface CustomerTargetRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  client_companies?: Pick<CompanyRecord, "id" | "name"> | null;
+  client_companies?: Pick<CompanyRecord, "id" | "name" | "relationship_stage"> | null;
   target_companies?: Pick<CompanyRecord, "id" | "name" | "website" | "linkedin_company_url"> | null;
-  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "access_status" | "disabled_at"> | null;
 }
 
 export type PotentialDecisionMakerRating = "Priority A" | "Priority B" | "Watchlist" | "Low confidence" | "Do not pursue";
@@ -700,10 +700,10 @@ export interface TeamsMeetingRecord {
   created_at: string;
   updated_at: string;
   customer_targets?: Pick<CustomerTargetRecord, "id" | "target_account_name" | "key_contact_name" | "key_contact_email"> & {
-    client_companies?: Pick<CompanyRecord, "id" | "name"> | null;
+    client_companies?: Pick<CompanyRecord, "id" | "name" | "relationship_stage"> | null;
     target_companies?: Pick<CompanyRecord, "id" | "name" | "website"> | null;
   };
-  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "access_status" | "disabled_at"> | null;
 }
 
 export type MeetingTranscriptSource = "GRAPH" | "MANUAL" | "UPLOAD";
@@ -907,9 +907,9 @@ export interface ClientBumIntroRequestRecord {
   admin_priority: AdminHandoffPriority;
   created_at: string;
   updated_at: string;
-  client_companies?: Pick<CompanyRecord, "id" | "name"> | null;
-  client_profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
-  bum_profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  client_companies?: Pick<CompanyRecord, "id" | "name" | "relationship_stage"> | null;
+  client_profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "access_status" | "disabled_at"> | null;
+  bum_profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "access_status" | "disabled_at"> | null;
 }
 
 export interface ClientBumIntroRequestInput {
@@ -1053,7 +1053,7 @@ export interface OpportunityRegistration {
   status: RegistrationStatus;
   created_at: string;
   updated_at: string;
-  companies?: Pick<CompanyRecord, "name"> | null;
+  companies?: Pick<CompanyRecord, "id" | "name" | "relationship_stage"> | null;
   client_pay_programs?: ClientPayProgramRecord | null;
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
 }
@@ -1175,9 +1175,10 @@ export interface OpportunityClaimRecord {
     OpportunityRegistration,
     "id" | "target_account_name" | "commission_rate" | "company_id" | "pay_program_id" | "commission_schedule_start_at"
   > & {
+    companies?: Pick<CompanyRecord, "id" | "name" | "relationship_stage"> | null;
     client_pay_programs?: ClientPayProgramRecord | null;
   } | null;
-  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "access_status" | "disabled_at"> | null;
 }
 
 export interface OpportunityClaimInput {
@@ -1443,7 +1444,7 @@ export interface BumProfileRecord {
   last_linkedin_imported_at: string | null;
   created_at: string;
   updated_at: string;
-  profiles?: Pick<ProfileRecord, "full_name" | "email" | "created_at"> | null;
+  profiles?: Pick<ProfileRecord, "full_name" | "email" | "created_at" | "access_status" | "disabled_at"> | null;
 }
 
 export interface BumProfileInput {
@@ -1609,6 +1610,14 @@ const SHARED_EMAIL_DOMAINS = new Set([
 
 function toNullableString(value?: string) {
   return value?.trim() ? value.trim() : null;
+}
+
+function isActiveCompany(company?: Pick<CompanyRecord, "relationship_stage"> | null) {
+  return !company || company.relationship_stage !== "INACTIVE";
+}
+
+function isActiveProfile(profile?: Pick<ProfileRecord, "access_status" | "disabled_at"> | null) {
+  return !profile || ((profile.access_status ?? "APPROVED") === "APPROVED" && !profile.disabled_at);
 }
 
 function toUniqueTrimmedArray(values?: string[]) {
@@ -2091,6 +2100,8 @@ export async function listClientIntroductionAttendees(companyId: string) {
     .select("id, full_name, email, invited_to_customer_introductions")
     .eq("company_id", companyId)
     .eq("role", "CLIENT")
+    .eq("access_status", "APPROVED")
+    .is("disabled_at", null)
     .eq("invited_to_customer_introductions", true)
     .not("email", "is", null)
     .order("full_name", { ascending: true })
@@ -2692,7 +2703,7 @@ export async function updateOwnOpportunityRegistration(
 export async function listOpportunityRegistrations(status?: string) {
   let query = supabase
     .from("opportunity_registrations")
-    .select("*, companies(name), client_pay_programs(*)")
+    .select("*, companies(id, name, relationship_stage), client_pay_programs(*)")
     .order("created_at", { ascending: false });
 
   if (status && status !== "All") {
@@ -2711,7 +2722,7 @@ export async function listOpportunityRegistrations(status?: string) {
 export async function listMarketplaceOpportunities() {
   const { data, error } = await supabase
     .from("opportunity_registrations")
-    .select("*, companies(name), client_pay_programs(*)")
+    .select("*, companies(id, name, relationship_stage), client_pay_programs(*)")
     .eq("status", "Accepted")
     .order("created_at", { ascending: false })
     .returns<OpportunityRegistration[]>();
@@ -2720,7 +2731,7 @@ export async function listMarketplaceOpportunities() {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).filter((opportunity) => isActiveCompany(opportunity.companies));
 }
 
 export async function listBumSavedItems(userId: string) {
@@ -2927,7 +2938,7 @@ export async function setBumHiddenItem(user: AuthUser, input: BumSavedItemInput,
 export async function getMarketplaceOpportunity(id: string) {
   const { data, error } = await supabase
     .from("opportunity_registrations")
-    .select("*, companies(name), client_pay_programs(*)")
+    .select("*, companies(id, name, relationship_stage), client_pay_programs(*)")
     .eq("id", id)
     .eq("status", "Accepted")
     .maybeSingle<OpportunityRegistration>();
@@ -2936,7 +2947,7 @@ export async function getMarketplaceOpportunity(id: string) {
     throw error;
   }
 
-  return data;
+  return data && isActiveCompany(data.companies) ? data : null;
 }
 
 export async function listPotentialDecisionMakerMatchesForOpportunity(opportunityId: string) {
@@ -3303,10 +3314,10 @@ export async function reviewClientPayProgram(
   return data;
 }
 
-export async function listOpportunityClaims(opportunityId?: string) {
+export async function listOpportunityClaims(opportunityId?: string, options: { includeDisabled?: boolean } = {}) {
   let query = supabase
     .from("opportunity_claims")
-    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, client_pay_programs(*)), profiles(id, full_name, email)")
+    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, companies(id, name, relationship_stage), client_pay_programs(*)), profiles(id, full_name, email, access_status, disabled_at)")
     .order("created_at", { ascending: false });
 
   if (opportunityId) {
@@ -3319,7 +3330,9 @@ export async function listOpportunityClaims(opportunityId?: string) {
     throw error;
   }
 
-  const claims = data ?? [];
+  const claims = options.includeDisabled
+    ? data ?? []
+    : (data ?? []).filter((claim) => isActiveCompany(claim.opportunity_registrations?.companies) && isActiveProfile(claim.profiles));
 
   const lockedClaimIds = new Set<string>();
   const claimIds = claims.map((claim) => claim.id).filter(Boolean);
@@ -3994,16 +4007,16 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
 
   const { data: opportunity, error: opportunityError } = await supabase
     .from("opportunity_registrations")
-    .select("id, company_id, target_account_name")
+    .select("id, company_id, target_account_name, companies(id, name, relationship_stage)")
     .eq("id", input.opportunityId)
     .eq("status", "Accepted")
-    .maybeSingle<Pick<OpportunityRegistration, "id" | "company_id" | "target_account_name">>();
+    .maybeSingle<Pick<OpportunityRegistration, "id" | "company_id" | "target_account_name"> & { companies?: Pick<CompanyRecord, "id" | "name" | "relationship_stage"> | null }>();
 
   if (opportunityError) {
     throw opportunityError;
   }
 
-  if (!opportunity) {
+  if (!opportunity || !isActiveCompany(opportunity.companies)) {
     throw new Error("That opportunity is no longer available.");
   }
 
@@ -5017,14 +5030,14 @@ export async function sendAdminEmail(input: AdminEmailSendInput) {
   return await invokeAdminEmailFunction<AdminEmailSendResult>(input, "Unable to send admin email.");
 }
 
-export async function listCompanies() {
+export async function listCompanies(options: { includeInactive?: boolean } = {}) {
   const { data, error } = await supabase.from("companies").select("*").order("created_at", { ascending: false }).returns<CompanyRecord[]>();
 
   if (error) {
     throw error;
   }
 
-  return data ?? [];
+  return options.includeInactive ? data ?? [] : (data ?? []).filter(isActiveCompany);
 }
 
 export async function getOwnClientCompany(user: AuthUser) {
@@ -5185,6 +5198,47 @@ export async function updateAdminClientCompany(
     name: data.name,
     website: data.website,
     linkedin_company_url: data.linkedin_company_url,
+    relationship_stage: data.relationship_stage,
+  });
+
+  return data;
+}
+
+export async function setAdminClientCompanyDisabled(user: AuthUser, companyId: string, disabled: boolean) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can disable client companies.");
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("companies")
+    .update({
+      relationship_stage: disabled ? "INACTIVE" : "CLIENT",
+    })
+    .eq("id", companyId)
+    .select("*")
+    .single<CompanyRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  const { error: profilesError } = await supabase
+    .from("profiles")
+    .update(
+      disabled
+        ? { access_status: "DISABLED", disabled_at: now, disabled_by: user.id }
+        : { access_status: "APPROVED", disabled_at: null, disabled_by: null },
+    )
+    .eq("company_id", companyId)
+    .eq("role", "CLIENT");
+
+  if (profilesError) {
+    throw profilesError;
+  }
+
+  await createAuditEvent(user, disabled ? "admin_client_company_disabled" : "admin_client_company_enabled", "companies", data.id, {
+    name: data.name,
     relationship_stage: data.relationship_stage,
   });
 
@@ -5778,7 +5832,7 @@ export async function listClientReverseOpportunities(user: AuthUser) {
 
   const { data, error } = await supabase
     .from("reverse_opportunities")
-    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email, access_status, disabled_at)")
     .eq("vendor_company_id", user.clientId)
     .order("created_at", { ascending: false })
     .returns<ReverseOpportunityRecord[]>();
@@ -5787,7 +5841,7 @@ export async function listClientReverseOpportunities(user: AuthUser) {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).filter((opportunity) => isActiveProfile(opportunity.profiles));
 }
 
 export async function updateReverseOpportunityStatus(
@@ -5880,10 +5934,10 @@ export async function createCustomerTarget(user: AuthUser, input: CustomerTarget
   return targetRecord;
 }
 
-export async function listCustomerTargets(user?: Pick<AuthUser, "role" | "clientId"> | null) {
+export async function listCustomerTargets(user?: Pick<AuthUser, "role" | "clientId"> | null, options: { includeDisabled?: boolean } = {}) {
   let query = supabase
     .from("customer_targets")
-    .select("*, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url), profiles(id, full_name, email)")
+    .select("*, client_companies:companies!customer_targets_client_company_id_fkey(id, name, relationship_stage), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url), profiles(id, full_name, email, access_status, disabled_at)")
     .order("created_at", { ascending: false });
 
   if (user?.role === "CLIENT" && user.clientId) {
@@ -5896,13 +5950,13 @@ export async function listCustomerTargets(user?: Pick<AuthUser, "role" | "client
     throw error;
   }
 
-  return data ?? [];
+  return options.includeDisabled ? data ?? [] : (data ?? []).filter((target) => isActiveCompany(target.client_companies) && isActiveProfile(target.profiles));
 }
 
-export async function listTeamsMeetings() {
+export async function listTeamsMeetings(options: { includeDisabled?: boolean } = {}) {
   const { data, error } = await supabase
     .from("teams_meetings")
-    .select("*, customer_targets(id, target_account_name, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website)), profiles(id, full_name, email)")
+    .select("*, customer_targets(id, target_account_name, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name, relationship_stage), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website)), profiles(id, full_name, email, access_status, disabled_at)")
     .order("start_time", { ascending: true })
     .returns<TeamsMeetingRecord[]>();
 
@@ -5910,7 +5964,9 @@ export async function listTeamsMeetings() {
     throw error;
   }
 
-  return data ?? [];
+  return options.includeDisabled
+    ? data ?? []
+    : (data ?? []).filter((meeting) => isActiveCompany(meeting.customer_targets?.client_companies) && isActiveProfile(meeting.profiles));
 }
 
 export async function listMeetingTranscripts(filters: MeetingTranscriptFilters = {}) {
@@ -6069,7 +6125,7 @@ export async function createClientBumIntroRequest(user: AuthUser, input: ClientB
   return data;
 }
 
-const CLIENT_BUM_INTRO_REQUEST_SELECT = "*, client_companies:companies!client_bum_intro_requests_client_company_id_fkey(id, name), client_profiles:profiles!client_bum_intro_requests_client_user_id_fkey(id, full_name, email), bum_profiles:profiles!client_bum_intro_requests_bum_user_id_fkey(id, full_name, email)";
+const CLIENT_BUM_INTRO_REQUEST_SELECT = "*, client_companies:companies!client_bum_intro_requests_client_company_id_fkey(id, name, relationship_stage), client_profiles:profiles!client_bum_intro_requests_client_user_id_fkey(id, full_name, email, access_status, disabled_at), bum_profiles:profiles!client_bum_intro_requests_bum_user_id_fkey(id, full_name, email, access_status, disabled_at)";
 
 export async function listClientBumIntroRequests(user: AuthUser) {
   let query = supabase
@@ -6095,7 +6151,16 @@ export async function listClientBumIntroRequests(user: AuthUser) {
     throw error;
   }
 
-  return data ?? [];
+  const requests = data ?? [];
+  if (user.role === "ADMIN") {
+    return requests;
+  }
+
+  return requests.filter((request) =>
+    isActiveCompany(request.client_companies) &&
+    isActiveProfile(request.client_profiles) &&
+    isActiveProfile(request.bum_profiles),
+  );
 }
 
 export async function updateClientBumIntroRequestStatus(
@@ -6150,7 +6215,7 @@ export async function claimClientBumIntroRequest(user: AuthUser, requestId: stri
   return data;
 }
 
-const CUSTOMER_TARGET_RESPONSE_SELECT = "*, customer_targets(id, target_account_name, business_unit, expected_product_service, estimated_deal_value, expected_timeline, notes, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url)), profiles(id, full_name, email), conversation_threads(id)";
+const CUSTOMER_TARGET_RESPONSE_SELECT = "*, customer_targets(id, target_account_name, business_unit, expected_product_service, estimated_deal_value, expected_timeline, notes, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name, relationship_stage), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url)), profiles(id, full_name, email, access_status, disabled_at), conversation_threads(id)";
 
 export async function listCustomerTargetResponses(user: AuthUser) {
   if (user.role !== "CLIENT" && user.role !== "ADMIN") {
@@ -6175,7 +6240,11 @@ export async function listCustomerTargetResponses(user: AuthUser) {
     throw error;
   }
 
-  return (data ?? []).map(normalizeCustomerTargetResponse);
+  const responses = data ?? [];
+  const visibleResponses = user.role === "ADMIN"
+    ? responses
+    : responses.filter((response) => isActiveCompany(response.customer_targets?.client_companies) && isActiveProfile(response.profiles));
+  return visibleResponses.map(normalizeCustomerTargetResponse);
 }
 
 export async function updateCustomerTargetResponseStatus(
@@ -6364,15 +6433,15 @@ export async function createCustomerTargetResponse(user: AuthUser, input: Custom
 
   const { data: target, error: targetError } = await supabase
     .from("customer_targets")
-    .select("id, client_company_id, target_account_name")
+    .select("id, client_company_id, target_account_name, client_companies:companies!customer_targets_client_company_id_fkey(id, name, relationship_stage)")
     .eq("id", input.customerTargetId)
-    .maybeSingle<Pick<CustomerTargetRecord, "id" | "client_company_id" | "target_account_name">>();
+    .maybeSingle<Pick<CustomerTargetRecord, "id" | "client_company_id" | "target_account_name"> & { client_companies?: Pick<CompanyRecord, "id" | "name" | "relationship_stage"> | null }>();
 
   if (targetError) {
     throw targetError;
   }
 
-  if (!target) {
+  if (!target || !isActiveCompany(target.client_companies)) {
     throw new Error("That target account is no longer available.");
   }
 
@@ -7362,7 +7431,7 @@ export async function inviteBum(input: BumInviteInput) {
 export async function getOwnBumProfile(userId: string) {
   const { data, error } = await supabase
     .from("bum_profiles")
-    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at, access_status, disabled_at)")
     .eq("user_id", userId)
     .maybeSingle<BumProfileRecord>();
 
@@ -7456,7 +7525,7 @@ export async function upsertOwnBumProfile(user: AuthUser, input: BumProfileInput
   const { data, error } = await supabase
     .from("bum_profiles")
     .upsert(payload, { onConflict: "user_id" })
-    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at, access_status, disabled_at)")
     .single<BumProfileRecord>();
 
   if (error) {
@@ -7551,7 +7620,7 @@ export async function updateAdminBumProfile(user: AuthUser, targetUserId: string
   const { data, error } = await supabase
     .from("bum_profiles")
     .upsert(payload, { onConflict: "user_id" })
-    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at, access_status, disabled_at)")
     .single<BumProfileRecord>();
 
   if (error) {
@@ -7565,10 +7634,38 @@ export async function updateAdminBumProfile(user: AuthUser, targetUserId: string
   return data;
 }
 
+export async function setAdminBumProfileDisabled(user: AuthUser, targetUserId: string, disabled: boolean) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can disable Bum profiles.");
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(
+      disabled
+        ? { access_status: "DISABLED", disabled_at: new Date().toISOString(), disabled_by: user.id }
+        : { access_status: "APPROVED", disabled_at: null, disabled_by: null },
+    )
+    .eq("id", targetUserId)
+    .eq("role", "BUM")
+    .select("*")
+    .single<ProfileRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, disabled ? "admin_bum_profile_disabled" : "admin_bum_profile_enabled", "profiles", targetUserId, {
+    email: data.email,
+  });
+
+  return data;
+}
+
 export async function listAdminBumProfiles() {
   const { data, error } = await supabase
     .from("bum_profiles")
-    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at, access_status, disabled_at)")
     .order("updated_at", { ascending: false })
     .returns<BumProfileRecord[]>();
 
@@ -7582,7 +7679,7 @@ export async function listAdminBumProfiles() {
 export async function listVisibleBumProfiles() {
   const { data, error } = await supabase
     .from("bum_profiles")
-    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at)")
+    .select("*, profiles!bum_profiles_user_id_fkey(full_name, email, created_at, access_status, disabled_at)")
     .eq("is_visible_to_clients", true)
     .order("verification_status", { ascending: false })
     .order("updated_at", { ascending: false })
@@ -7592,7 +7689,7 @@ export async function listVisibleBumProfiles() {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).filter((profile) => isActiveProfile(profile.profiles));
 }
 
 async function invokeImpersonationFunction(accessToken: string, body: Record<string, unknown>) {

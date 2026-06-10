@@ -77,7 +77,7 @@ export default function AdminPayments() {
   const [excludedAmount, setExcludedAmount] = useState("");
   const [receivedAt, setReceivedAt] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
-  const claimsQuery = useQuery({ queryKey: ["admin-opportunity-claims-for-payments"], queryFn: () => listOpportunityClaims() });
+  const claimsQuery = useQuery({ queryKey: ["admin-opportunity-claims-for-payments"], queryFn: () => listOpportunityClaims(undefined, { includeDisabled: true }) });
   const reportsQuery = useQuery({ queryKey: ["admin-customer-payment-reports"], queryFn: listCustomerPaymentReports });
   const invoicesQuery = useQuery({ queryKey: ["admin-claim-invoices"], queryFn: listClaimInvoices });
   const claims = useMemo(
