@@ -72,6 +72,7 @@ const categories: Array<{ value: AdminEmailCategory; label: string }> = [
 const triggerEvents: Array<{ value: TriggerRuleEvent; label: string }> = [
   { value: "CLIENT_SIGNUP_CREATED", label: "New client signup" },
   { value: "BUM_SIGNUP_CREATED", label: "New Bum signup" },
+  { value: "BUM_APPROVED", label: "Bum approved" },
   { value: "CLIENT_USER_CREATED", label: "New client user" },
   { value: "OPPORTUNITY_CLAIM_CREATED", label: "Opportunity claim created" },
   { value: "OPPORTUNITY_CLAIM_ACCEPTED", label: "Opportunity claim accepted" },

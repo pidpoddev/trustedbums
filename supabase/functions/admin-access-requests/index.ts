@@ -19,6 +19,7 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const clerkFrontendApiUrl = Deno.env.get("CLERK_FRONTEND_API_URL");
+const supabasePublishableKey = Deno.env.get("SB_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -68,6 +69,45 @@ function buildReviewNote(evidence: ReviewEvidence) {
   if (!evidence.proofCategory) return evidence.reviewNote;
   const note = evidence.reviewNote ? `Review note: ${evidence.reviewNote}` : "Review note: not provided";
   return `Proof category: ${evidence.proofCategory}\n${note}`;
+}
+
+async function sendBumApprovedEmail(token: string, accessRequest: Record<string, string | null>) {
+  const email = accessRequest.email?.trim();
+  if (!email || !supabasePublishableKey) return;
+
+  const { data: profile } = accessRequest.requester_profile_id
+    ? await supabaseAdmin
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", accessRequest.requester_profile_id)
+        .maybeSingle<{ full_name: string | null; email: string | null }>()
+    : { data: null };
+
+  const recipientName = profile?.full_name?.trim() || email;
+  const response = await fetch(`${supabaseUrl}/functions/v1/send-admin-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      mode: "action",
+      templateSlug: "bum_approved_login",
+      recipientEmails: [profile?.email?.trim() || email],
+      metadata: {
+        recipient_name: recipientName,
+        bum_name: recipientName,
+        login_url: "https://trustedbums.com/login",
+      },
+      triggeredBy: "BUM_APPROVED",
+    }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(payload.error || "Unable to send Bum approval email.");
+  }
 }
 
 function getBearerToken(request: Request) {
@@ -126,7 +166,7 @@ async function listRequests() {
   return data ?? [];
 }
 
-async function approveRequest(admin: ProfileRow, requestId: string, evidence: ReviewEvidence) {
+async function approveRequest(admin: ProfileRow, requestId: string, evidence: ReviewEvidence, token: string) {
   const { data: accessRequest, error: readError } = await supabaseAdmin
     .from("client_company_access_requests")
     .select("*")
@@ -219,6 +259,14 @@ async function approveRequest(admin: ProfileRow, requestId: string, evidence: Re
       },
     },
   });
+
+  if (accessRequest.request_type === "BUM_SIGNUP") {
+    try {
+      await sendBumApprovedEmail(token, accessRequest);
+    } catch (error) {
+      console.warn("Unable to send Bum approval email", error);
+    }
+  }
 }
 
 async function denyRequest(admin: ProfileRow, requestId: string, evidence: ReviewEvidence) {
@@ -278,7 +326,7 @@ Deno.serve(async (request: Request) => {
     const requestId = cleanString(body.requestId);
     if (!requestId) return json(400, { error: "Choose an access request." });
     if (action === "approve") {
-      await approveRequest(admin, requestId, readReviewEvidence(body));
+      await approveRequest(admin, requestId, readReviewEvidence(body), getBearerToken(request));
       return json(200, { approved: true, requests: await listRequests() });
     }
     if (action === "deny") {
