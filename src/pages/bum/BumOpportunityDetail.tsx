@@ -24,6 +24,7 @@ import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   buildTopLineShareSchedule,
   calculateTopLineSharePercent,
+  createBumRepresentedContact,
   createOpportunityClaim,
   createOpportunityQuestion,
   DEFAULT_BUM_COMMISSION_POOL_PERCENT,
@@ -35,7 +36,7 @@ import {
   updateOpportunityClaimStatus,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { ArrowLeft, Plus, Activity, MessageSquare, ExternalLink } from "lucide-react";
+import { ArrowLeft, Plus, Activity, MessageSquare, ExternalLink, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 interface ActivityEntry {
@@ -93,6 +94,7 @@ export default function BumOpportunityDetail() {
   const [strength, setStrength] = useState<RelationshipStrength>("MODERATE");
   const [note, setNote] = useState("");
   const [questionText, setQuestionText] = useState("");
+  const [addedDecisionMakerMatchIds, setAddedDecisionMakerMatchIds] = useState<Set<string>>(new Set());
 
   const [updateClaimId, setUpdateClaimId] = useState("");
   const [updateStatus, setUpdateStatus] = useState<ClaimStatus>("SCHEDULED");
@@ -136,6 +138,30 @@ export default function BumOpportunityDetail() {
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Unable to send question");
+    },
+  });
+
+  const addDecisionMakerContactMutation = useMutation({
+    mutationFn: (match: (typeof decisionMakerMatches)[number]) =>
+      createBumRepresentedContact({
+        name: match.person_name,
+        title: match.title,
+        companyName: match.company || opp!.target_account_name,
+        linkedinUrl: match.linkedin_url_candidate,
+        relationshipStrength: "unknown",
+        note: [
+          `Added from Potential decision-maker matches for ${opp!.target_account_name}.`,
+          match.recommended_bum_ask ? `Suggested warm-path ask: ${match.recommended_bum_ask}` : null,
+          match.evidence_summary ? `Research note: ${match.evidence_summary}` : null,
+        ].filter(Boolean).join("\n\n"),
+      }),
+    onSuccess: (response, match) => {
+      queryClient.invalidateQueries({ queryKey: ["opportunity-contact-picker", user?.id] });
+      setAddedDecisionMakerMatchIds((current) => new Set(current).add(match.id));
+      toast.success(`${response.contact.name} was added to your contacts`);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Unable to add this contact");
     },
   });
 
@@ -311,6 +337,15 @@ export default function BumOpportunityDetail() {
                   </div>
                 ) : null}
                 <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    disabled={!user || addDecisionMakerContactMutation.isPending || addedDecisionMakerMatchIds.has(match.id)}
+                    onClick={() => addDecisionMakerContactMutation.mutate(match)}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    {addedDecisionMakerMatchIds.has(match.id) ? "Added to Contacts" : "Add to my Contacts"}
+                  </Button>
                   {match.source_urls.map((sourceUrl) => (
                     <Button key={sourceUrl} size="sm" variant="outline" asChild>
                       <a href={sourceUrl} target="_blank" rel="noreferrer">
