@@ -23,7 +23,7 @@ function denyAnalyticsConsent() {
   }
 
   window.gtag("consent", "update", {
-    analytics_storage: granted ? "granted" : "denied",
+    analytics_storage: "denied",
     ad_storage: "denied",
     ad_user_data: "denied",
     ad_personalization: "denied",
@@ -38,7 +38,7 @@ function loadGoogleAnalytics() {
 
   if (!googleAnalyticsConfigured) {
     window.gtag("consent", "default", {
-      analytics_storage: "granted",
+      analytics_storage: "denied",
       ad_storage: "denied",
       ad_user_data: "denied",
       ad_personalization: "denied",
@@ -69,6 +69,12 @@ export function GoogleAnalytics() {
       const granted = hasAnalyticsConsent();
       if (granted) {
         loadGoogleAnalytics();
+        window.gtag?.("consent", "update", {
+          analytics_storage: "granted",
+          ad_storage: "denied",
+          ad_user_data: "denied",
+          ad_personalization: "denied",
+        });
         window.gtag?.("config", measurementId, {
           page_path: `${location.pathname}${location.search}`,
         });

@@ -38,6 +38,15 @@ jobs:
       - name: Include DreamHost SPA rewrite rules
         run: cp public/.htaccess dist/.htaccess
 
+      - name: Verify Google Analytics production tag
+        env:
+          VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: ${{ secrets.VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID }}
+        run: |
+          test -n "$VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID"
+          grep -R "$VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID" dist/assets
+          grep -Fq "https://www.googletagmanager.com" dist/.htaccess
+          grep -Fq "https://www.google-analytics.com" dist/.htaccess
+
       - name: Verify crawler assets
         run: |
           test -s dist/sitemap.xml
