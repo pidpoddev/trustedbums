@@ -79,17 +79,22 @@ function getDeniedAccessRecovery(deniedFrom: string | undefined, isFinanceUser: 
 
 function NextActionsCard({ actions }: { actions: DashboardAction[] }) {
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader>
         <CardTitle className="font-display">Next Actions</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-3">
+      <CardContent className="grid min-w-0 gap-3">
         {actions.map((action) => (
-          <Button key={action.title} asChild variant={action.primary ? "default" : "outline"} className="h-auto justify-between gap-3 py-3 text-left">
+          <Button
+            key={action.title}
+            asChild
+            variant={action.primary ? "default" : "outline"}
+            className="h-auto w-full min-w-0 justify-between gap-3 whitespace-normal py-3 text-left"
+          >
             <Link to={action.to}>
-              <span>
-                <span className="block font-medium">{action.title}</span>
-                <span className="block text-xs font-normal opacity-80">{action.description}</span>
+              <span className="min-w-0">
+                <span className="block break-words font-medium">{action.title}</span>
+                <span className="block break-words text-xs font-normal leading-snug opacity-80">{action.description}</span>
               </span>
               <ArrowRight className="h-4 w-4 shrink-0" />
             </Link>
