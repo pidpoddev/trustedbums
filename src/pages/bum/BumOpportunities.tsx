@@ -40,7 +40,7 @@ import {
 import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromTargetStatus } from "@/lib/opportunityModel";
 import type { RelationshipStrength } from "@/lib/claimConfig";
 import { cn } from "@/lib/utils";
-import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink, UserPlus, Eye, EyeOff } from "lucide-react";
+import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink, UserPlus, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 const MARKETPLACE_PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 50] as const;
@@ -129,6 +129,14 @@ function termMatchesFilter(term: string | null, filter: TermFilter) {
   if (filter === "SHORT") return /now|asap|urgent|week|month|30|45|60|short|pilot|near/.test(normalized);
   if (filter === "MEDIUM") return /quarter|q[1-4]|90|medium|semester/.test(normalized);
   return /annual|year|12|long|multi|ongoing|duration|receives revenue/.test(normalized);
+}
+
+function customerLeadUrl(clientId?: string | null, product?: string | null) {
+  const params = new URLSearchParams();
+  if (clientId) params.set("clientId", clientId);
+  if (product?.trim()) params.set("product", product.trim());
+  const query = params.toString();
+  return `/bum/reverse-opportunities${query ? `?${query}` : ""}`;
 }
 
 export default function BumOpportunities() {
@@ -912,6 +920,12 @@ export default function BumOpportunities() {
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Maybe
                   </Button>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link to={customerLeadUrl(targetAccount.client_company_id, targetAccount.expected_product_service)}>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Recommend customer
+                    </Link>
+                  </Button>
                   <Button
                     size="sm"
                     className="bg-emerald-600 text-white hover:bg-emerald-700"
@@ -1061,6 +1075,14 @@ export default function BumOpportunities() {
                         Maybe
                       </Link>
                     </Button>
+                    {opportunity.company_id ? (
+                      <Button size="sm" variant="outline" asChild>
+                        <Link to={customerLeadUrl(opportunity.company_id, opportunity.expected_product_service)}>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Recommend customer
+                        </Link>
+                      </Button>
+                    ) : null}
                     <Button
                       size="sm"
                       className="bg-emerald-600 text-white hover:bg-emerald-700"

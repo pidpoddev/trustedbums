@@ -30,7 +30,6 @@ import {
   Building2,
   ContactRound,
   GraduationCap,
-  Sparkles,
   BarChart3,
   MessageSquare,
 } from "lucide-react";
@@ -38,7 +37,6 @@ import {
 const navGroups = [
   { label: "Workspace", items: [
   { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
-  { title: "Customer Leads", url: "/bum/reverse-opportunities", icon: Sparkles },
   { title: "Clients", url: "/bum/clients", icon: Building2 },
   { title: "Contacts", url: "/bum/contacts", icon: ContactRound },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },

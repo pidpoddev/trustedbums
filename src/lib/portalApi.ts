@@ -597,6 +597,13 @@ export interface ReverseOpportunityInput {
   notes?: string;
 }
 
+export interface CustomerLeadDuplicateRecord {
+  source_type: "CUSTOMER_TARGET" | "CUSTOMER_LEAD";
+  record_id: string;
+  customer_name: string;
+  status: string | null;
+}
+
 export interface CustomerTargetRecord {
   id: string;
   client_company_id: string;
@@ -1657,12 +1664,16 @@ function normalizeDomain(value?: string | null) {
   }
 
   const withoutProtocol = trimmed.replace(/^https?:\/\//, "");
-  const withoutPath = withoutProtocol.split("/")[0] ?? "";
+  const withoutPath = withoutProtocol.split(/[/?#]/)[0] ?? "";
   const withoutWww = withoutPath.replace(/^www\./, "");
   const withoutPort = withoutWww.split(":")[0] ?? "";
   const normalized = withoutPort.replace(/\.$/, "");
 
   return normalized || null;
+}
+
+export function normalizeCustomerDomain(value?: string | null) {
+  return normalizeDomain(value);
 }
 
 function getEmailDomain(email?: string | null) {
@@ -5760,6 +5771,16 @@ export async function createReverseOpportunity(user: AuthUser, input: ReverseOpp
     clientMode = "EXISTING_CLIENT";
   }
 
+  const customerDomain = normalizeCustomerDomain(input.customer_company_website);
+  if (!customerDomain) {
+    throw new Error("Add the customer domain before submitting this customer lead.");
+  }
+
+  const duplicate = await findCustomerLeadDuplicate(vendorCompany.id, customerDomain);
+  if (duplicate) {
+    throw new Error(`Customer Opportunity already exists for this Client: ${duplicate.customer_name}.`);
+  }
+
   const { data, error } = await supabase
     .from("reverse_opportunities")
     .insert({
@@ -5772,7 +5793,7 @@ export async function createReverseOpportunity(user: AuthUser, input: ReverseOpp
       vendor_contact_email: toNullableString(input.vendor_contact_email),
       vendor_contact_linkedin_url: toNullableString(input.vendor_contact_linkedin_url),
       customer_company_name: input.customer_company_name.trim(),
-      customer_company_website: toNullableString(input.customer_company_website),
+      customer_company_website: customerDomain,
       customer_contact_name: toNullableString(input.customer_contact_name),
       customer_contact_title: toNullableString(input.customer_contact_title),
       customer_contact_email: toNullableString(input.customer_contact_email),
@@ -5799,6 +5820,26 @@ export async function createReverseOpportunity(user: AuthUser, input: ReverseOpp
   });
 
   return data;
+}
+
+export async function findCustomerLeadDuplicate(vendorCompanyId: string, customerDomain: string) {
+  const normalizedDomain = normalizeCustomerDomain(customerDomain);
+  if (!vendorCompanyId || !normalizedDomain) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .rpc("find_customer_lead_duplicate", {
+      p_vendor_company_id: vendorCompanyId,
+      p_customer_domain: normalizedDomain,
+    })
+    .returns<CustomerLeadDuplicateRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.[0] ?? null;
 }
 
 export async function listOwnReverseOpportunities(userId: string) {

@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getPageItems } from "@/lib/pagination";
 import { listBumSavedItems, listCompanies, listCustomerTargets, listMarketplaceOpportunities, setBumSavedItem } from "@/lib/portalApi";
 import { cn } from "@/lib/utils";
-import { Search, Building2, ExternalLink, Briefcase, Target, Heart, DollarSign, Clock, UserPlus } from "lucide-react";
+import { Search, Building2, ExternalLink, Briefcase, Target, Heart, DollarSign, Clock, UserPlus, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CLIENTS_PAGE_SIZE = 8;
@@ -409,6 +409,14 @@ export default function BumClients() {
                         </Link>
                       </Button>
                     )}
+                    {client.canHeart ? (
+                      <Button size="sm" asChild>
+                        <Link to={`/bum/reverse-opportunities?clientId=${encodeURIComponent(client.id)}`}>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Recommend customer
+                        </Link>
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               </CardContent>

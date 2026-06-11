@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, DollarSign, ExternalLink, Plus, Sparkles, Users } from "lucide-react";
+import { Building2, CheckCircle2, DollarSign, ExternalLink, Plus, Search, Sparkles, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,13 +14,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   createReverseOpportunity,
+  findCustomerLeadDuplicate,
   listCompanies,
   listOwnReverseOpportunities,
+  normalizeCustomerDomain,
+  type CustomerLeadDuplicateRecord,
   type ReverseOpportunityClientMode,
   type ReverseOpportunityStatus,
 } from "@/lib/portalApi";
 import { opportunityOriginLabel, opportunityStageLabel, stageFromReverseOpportunityStatus } from "@/lib/opportunityModel";
 import { formatDateForTimeZone } from "@/lib/timezone";
+import { useSearchParams } from "react-router-dom";
 
 const initialForm = {
   client_mode: "EXISTING_CLIENT" as ReverseOpportunityClientMode,
@@ -66,10 +70,17 @@ function statusLabel(status: ReverseOpportunityStatus) {
 
 export default function BumReverseOpportunities() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const timeZone = useUserTimeZone();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(() => ({
+    ...initialForm,
+    vendor_company_id: searchParams.get("clientId") ?? "",
+    expected_product_service: searchParams.get("product") ?? "",
+  }));
+  const [duplicate, setDuplicate] = useState<CustomerLeadDuplicateRecord | null>(null);
+  const [domainChecked, setDomainChecked] = useState(false);
 
   const companiesQuery = useQuery({
     queryKey: ["companies"],
@@ -85,6 +96,48 @@ export default function BumReverseOpportunities() {
     () => (companiesQuery.data ?? []).filter((company) => company.relationship_stage === "CLIENT"),
     [companiesQuery.data],
   );
+  const normalizedCustomerDomain = normalizeCustomerDomain(form.customer_company_website);
+  const canCheckDomain = form.client_mode === "EXISTING_CLIENT" && Boolean(form.vendor_company_id && normalizedCustomerDomain);
+
+  useEffect(() => {
+    const clientId = searchParams.get("clientId");
+    const product = searchParams.get("product");
+    if (!clientId && !product) return;
+    setForm((current) => ({
+      ...current,
+      client_mode: clientId ? "EXISTING_CLIENT" : current.client_mode,
+      vendor_company_id: clientId ?? current.vendor_company_id,
+      expected_product_service: product ?? current.expected_product_service,
+    }));
+  }, [searchParams]);
+
+  const duplicateCheckMutation = useMutation({
+    mutationFn: () => {
+      if (!form.vendor_company_id) throw new Error("Choose the Client first.");
+      if (!normalizedCustomerDomain) throw new Error("Add the customer domain first.");
+      return findCustomerLeadDuplicate(form.vendor_company_id, normalizedCustomerDomain);
+    },
+    onSuccess: (record) => {
+      setDuplicate(record);
+      setDomainChecked(true);
+      if (record) {
+        toast({
+          title: "Customer Opportunity already exists",
+          description: `${record.customer_name} is already listed for this Client.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Domain checked", description: "No existing Customer Opportunity was found for this Client." });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to check customer domain",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -123,6 +176,8 @@ export default function BumReverseOpportunities() {
             : "We created the Client Prospect record and queued the Customer Lead for review and outreach.",
       });
       setForm(initialForm);
+      setDuplicate(null);
+      setDomainChecked(false);
     },
     onError: (error) => {
       toast({
@@ -134,6 +189,10 @@ export default function BumReverseOpportunities() {
   });
 
   const updateField = (field: keyof typeof initialForm, value: string) => {
+    if (field === "vendor_company_id" || field === "customer_company_website" || field === "client_mode") {
+      setDuplicate(null);
+      setDomainChecked(false);
+    }
     setForm((current) => ({ ...current, [field]: value }));
   };
 
@@ -228,6 +287,39 @@ export default function BumReverseOpportunities() {
                 </>
               ) : null}
 
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="customer-company-website">Customer domain</Label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="customer-company-website"
+                    required
+                    value={form.customer_company_website}
+                    onChange={(event) => updateField("customer_company_website", event.target.value)}
+                    placeholder="dell.com"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!canCheckDomain || duplicateCheckMutation.isPending}
+                    onClick={() => duplicateCheckMutation.mutate()}
+                  >
+                    {domainChecked && !duplicate ? <CheckCircle2 className="mr-2 h-4 w-4" /> : <Search className="mr-2 h-4 w-4" />}
+                    {duplicateCheckMutation.isPending ? "Checking..." : "Check domain"}
+                  </Button>
+                </div>
+                {duplicate ? (
+                  <p className="text-sm font-medium text-destructive">
+                    Customer Opportunity already exists for this Client: {duplicate.customer_name}.
+                  </p>
+                ) : domainChecked ? (
+                  <p className="text-sm text-emerald-700">No existing Customer Opportunity found for this Client.</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Enter the customer domain first so we can prevent duplicate Customer Opportunities for this Client.
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="vendor-contact-name">Client decision-maker</Label>
                 <Input
@@ -269,7 +361,7 @@ export default function BumReverseOpportunities() {
 
             <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="customer-company-name">End customer company</Label>
+                <Label htmlFor="customer-company-name">Customer company</Label>
                 <Input
                   id="customer-company-name"
                   required
@@ -279,16 +371,7 @@ export default function BumReverseOpportunities() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="customer-company-website">End customer website</Label>
-                <Input
-                  id="customer-company-website"
-                  value={form.customer_company_website}
-                  onChange={(event) => updateField("customer_company_website", event.target.value)}
-                  placeholder="globalhealth.org"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customer-contact-name">End customer contact</Label>
+                <Label htmlFor="customer-contact-name">Customer contact</Label>
                 <Input
                   id="customer-contact-name"
                   value={form.customer_contact_name}
@@ -297,7 +380,7 @@ export default function BumReverseOpportunities() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="customer-contact-title">End customer title</Label>
+                <Label htmlFor="customer-contact-title">Customer title</Label>
                 <Input
                   id="customer-contact-title"
                   value={form.customer_contact_title}
@@ -306,7 +389,7 @@ export default function BumReverseOpportunities() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="customer-contact-email">End customer email</Label>
+                <Label htmlFor="customer-contact-email">Customer email</Label>
                 <Input
                   id="customer-contact-email"
                   type="email"
@@ -373,7 +456,7 @@ export default function BumReverseOpportunities() {
             </div>
 
             <div className="flex justify-end">
-              <Button disabled={createMutation.isPending}>
+              <Button disabled={createMutation.isPending || (form.client_mode === "EXISTING_CLIENT" && (!domainChecked || Boolean(duplicate)))}>
                 <Sparkles className="mr-2 h-4 w-4" />
                 {createMutation.isPending ? "Saving..." : "Save customer lead"}
               </Button>
