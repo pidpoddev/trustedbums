@@ -35,7 +35,6 @@ import {
   listOwnReverseOpportunities,
   listProfiles,
   listTrainingMaterialsForUser,
-  listVisibleBumProfiles,
   type BumRepresentedContactRecord,
   type ProspectRecommendationRecord,
 } from "@/lib/portalApi";
@@ -132,6 +131,8 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
     const accessRole = user?.clientAccessRole;
     const pages = [
       result({ id: "page:client-dashboard", icon: "page", category: "Page", title: "Client dashboard", subtitle: "Client overview", href: "/client/dashboard", terms: ["dashboard overview"] }),
+      result({ id: "page:client-inbox", icon: "conversation", category: "Page", title: "Inbox", subtitle: "Messages and opportunity conversations", href: "/client/live-conversations", terms: ["messages chat conversations inbox"] }),
+      result({ id: "page:client-claims", icon: "claim", category: "Page", title: "Claims", subtitle: "Accepted Claims and introduction status", href: "/client/claims", terms: ["claims introductions status commission term"] }),
       result({ id: "page:client-reports", icon: "report", category: "Page", title: "Reports", subtitle: "Client reporting", href: "/client/reports", terms: ["analytics reports"] }),
       result({ id: "page:client-profile", icon: "profile", category: "Page", title: "Company Profile", subtitle: "Company settings", href: "/client/profile", terms: ["company settings"] }),
       result({ id: "page:client-user-profile", icon: "profile", category: "Page", title: "User Profile", subtitle: "Personal settings", href: "/client/user-profile", terms: ["account settings"] }),
@@ -140,9 +141,7 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
 
     if (accessRole === "CLIENT_ADMIN" || accessRole === "CLIENT_MEMBER") {
       pages.push(
-        result({ id: "page:client-targets", icon: "target", category: "Page", title: "Target Accounts", subtitle: "Customer targets", href: "/client/targets", terms: ["accounts contacts customers"] }),
-        result({ id: "page:client-opportunities", icon: "opportunity", category: "Page", title: "Opportunities", subtitle: "Registered opportunities", href: "/client/opportunities", terms: ["pipeline registrations"] }),
-        result({ id: "page:client-bums", icon: "profile", category: "Page", title: "Bums", subtitle: "Bum directory", href: "/client/bum-directory", terms: ["directory relationships sellers"] }),
+        result({ id: "page:client-opportunities", icon: "opportunity", category: "Page", title: "Opportunities", subtitle: "Customer accounts, drafts, and Bum matching", href: "/client/opportunities", terms: ["pipeline registrations accounts contacts customers publish bums"] }),
         result({ id: "page:client-trainings", icon: "training", category: "Page", title: "Training & Assets", subtitle: "Bum enablement content", href: "/client/trainings", terms: ["training assets materials"] }),
         result({ id: "page:client-requests", icon: "conversation", category: "Page", title: "Customer Leads", subtitle: "Bum-submitted buyer demand", href: "/client/requests", terms: ["customer leads buyer demand conversations opportunities"] }),
       );
@@ -257,12 +256,6 @@ export function PortalGlobalSearch() {
     enabled: shouldFetchSearchData && user?.role === "ADMIN",
     staleTime: 60_000,
   });
-  const visibleBumsQuery = useQuery({
-    queryKey: ["portal-search", "visible-bums"],
-    queryFn: listVisibleBumProfiles,
-    enabled: shouldFetchSearchData && user?.role === "CLIENT",
-    staleTime: 60_000,
-  });
   const conversationsQuery = useQuery({
     queryKey: ["portal-search", "conversations", user?.id],
     queryFn: listConversationThreads,
@@ -313,14 +306,14 @@ export function PortalGlobalSearch() {
       ? (title: string) => "/bum/opportunities?search=" + encodeURIComponent(title)
       : user.role === "ADMIN"
         ? () => "/admin/opportunities"
-        : () => "/client/targets";
+        : () => "/client/opportunities";
 
     const targets = (targetsQuery.data ?? []).map((target) => {
       const title = target.target_companies?.name ?? target.target_account_name;
       return result({
         id: "target:" + target.id,
         icon: "target",
-        category: "Target account",
+        category: user.role === "CLIENT" ? "Opportunity account" : "Target account",
         title,
         subtitle: [target.client_companies?.name, target.status, target.expected_product_service].filter(Boolean).join(" · "),
         href: targetHref(title),
@@ -394,15 +387,6 @@ export function PortalGlobalSearch() {
         href: profile.role === "BUM" ? "/admin/bums" : "/admin/clients",
         terms: [profile.role, profile.client_access_role],
       })),
-      ...(visibleBumsQuery.data ?? []).map((bum) => result({
-        id: "bum:" + bum.user_id,
-        icon: "profile",
-        category: "Bum",
-        title: bum.profiles?.full_name ?? bum.profiles?.email ?? "Bum",
-        subtitle: [bum.headline, bum.availability_status].filter(Boolean).join(" · "),
-        href: "/client/bum-directory",
-        terms: [bum.bio, bum.linkedin_url, ...(bum.industries ?? []), ...(bum.regions ?? []), ...(bum.products_sold ?? []), ...(bum.relationship_companies ?? [])],
-      })),
     ];
 
     const conversations = (conversationsQuery.data ?? []).map((thread) => result({
@@ -411,7 +395,7 @@ export function PortalGlobalSearch() {
       category: "Conversation",
       title: thread.subject,
       subtitle: [thread.context_type, thread.opportunity_registrations?.target_account_name ?? thread.customer_targets?.target_account_name].filter(Boolean).join(" · "),
-      href: user.role === "ADMIN" ? "/admin/live-conversations" : user.role === "CLIENT" ? "/client/requests" : "/bum/live-conversations",
+      href: user.role === "ADMIN" ? "/admin/live-conversations" : user.role === "CLIENT" ? "/client/live-conversations" : "/bum/live-conversations",
       terms: [thread.conversation_messages?.[0]?.body],
     }));
 
@@ -453,7 +437,6 @@ export function PortalGlobalSearch() {
     targetsQuery.data,
     trainingQuery.data,
     user,
-    visibleBumsQuery.data,
     bumProspectsQuery.data,
   ]);
 
@@ -482,7 +465,6 @@ export function PortalGlobalSearch() {
     ownReverseQuery,
     adminReverseQuery,
     profilesQuery,
-    visibleBumsQuery,
     conversationsQuery,
     trainingQuery,
   ].some((queryState) => queryState.isLoading && queryState.fetchStatus !== "idle");

@@ -13,7 +13,6 @@ import {
   listClientReverseOpportunities,
   listCustomerPaymentReports,
   listCustomerTargetResponses,
-  listCustomerTargets,
   listOpportunityRegistrations,
 } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
@@ -120,11 +119,6 @@ export default function ClientDashboard() {
     queryFn: () => listOpportunityRegistrations(),
     enabled: Boolean(user?.id) && !isFinanceUser,
   });
-  const targetsQuery = useQuery({
-    queryKey: ["client-targets", user?.clientId],
-    queryFn: () => listCustomerTargets(user),
-    enabled: Boolean(user?.clientId) && !isFinanceUser,
-  });
   const reportsQuery = useQuery({
     queryKey: ["customer-payment-reports", user?.clientId],
     queryFn: () => listCustomerPaymentReports(user!),
@@ -146,7 +140,6 @@ export default function ClientDashboard() {
     enabled: Boolean(user?.clientId) && !isFinanceUser,
   });
   const opportunities = opportunitiesQuery.data ?? [];
-  const targets = targetsQuery.data ?? [];
   const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
   const targetResponses = targetResponsesQuery.data ?? [];
   const pendingTargetResponses = targetResponses.filter((response) => response.status === "PROPOSED");
@@ -156,9 +149,7 @@ export default function ClientDashboard() {
     ["Submitted", "Accepted", "Needs Clarification"].includes(opportunity.status),
   ).length;
   const acceptedCount = opportunities.filter((opportunity) => opportunity.status === "Accepted").length;
-  const targetProspectCount = targets.filter((target) =>
-    ["PROSPECT", "QUALIFYING", "INTRO_REQUESTED", "INTRO_IN_PROGRESS"].includes(target.status),
-  ).length;
+  const draftCount = opportunities.filter((opportunity) => opportunity.status === "Draft").length;
   const totalCommissionableRevenue = paymentReports.reduce(
     (sum, report) => sum + Number(report.commissionable_amount ?? 0),
     0,
@@ -188,9 +179,12 @@ export default function ClientDashboard() {
     !hasAcceptedCurrentTerms
       ? { title: "Review Client Agreement", description: "Open the Client Agreement center to review and accept the current version.", to: "/client/agreements", primary: true }
       : null,
-    targets.length
-      ? { title: "Register an opportunity", description: "Submit a deal for review and commission tracking.", to: "/client/opportunities/new", primary: !activeCount }
-      : { title: "Add first target account", description: "Start with the customer company you want to sell into.", to: "/client/targets", primary: true },
+    opportunities.length
+      ? { title: "Add another opportunity", description: "Create the next customer account or deal your team wants help with.", to: "/client/opportunities/new", primary: !activeCount }
+      : { title: "Create first opportunity", description: "Start with the customer company you want to sell into.", to: "/client/opportunities/new", primary: true },
+    draftCount
+      ? { title: "Publish draft opportunities", description: `${draftCount} draft opportunit${draftCount === 1 ? "y is" : "ies are"} waiting before Bums can match.`, to: "/client/opportunities" }
+      : null,
     pendingTargetResponses.length
       ? { title: "Review Bum responses", description: `${pendingTargetResponses.length} Bum response${pendingTargetResponses.length === 1 ? "" : "s"} awaiting approval.`, to: "/client/opportunities?tab=responses", primary: true }
       : null,
@@ -312,12 +306,12 @@ export default function ClientDashboard() {
       <div>
         <PageHeader
         title={`Welcome back, ${user?.name ?? "Client"}`}
-        description={`Manage terms and account registrations for ${user?.companyName ?? "your client workspace"}.`}
+        description={`Manage opportunities, Bum matching, and account activity for ${user?.companyName ?? "your client workspace"}.`}
         >
         <Button asChild>
-          <Link to="/client/targets">
+          <Link to="/client/opportunities/new">
             <PlusCircle className="mr-2 h-4 w-4" />
-            Add Target Account
+            New Opportunity
           </Link>
         </Button>
         </PageHeader>
@@ -337,12 +331,11 @@ export default function ClientDashboard() {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <StatCard title="Target Accounts" value={targets.length} icon={Target} to="/client/targets" />
+        <StatCard title="Draft Opportunities" value={draftCount} icon={Clock} to="/client/opportunities" />
         <StatCard title="Bum Responses" value={pendingTargetResponses.length} icon={Handshake} to="/client/opportunities?tab=responses" />
         <StatCard title="Customer Leads" value={reverseOpportunities.length} icon={Clock} to="/client/requests" />
         <StatCard title="Active Opportunities" value={activeCount} icon={Target} to="/client/opportunities" />
-        <StatCard title="Accepted" value={acceptedCount} icon={FileCheck} to="/client/opportunities" />
-        <StatCard title="Target Prospects" value={targetProspectCount} icon={Clock} to="/client/targets" />
+        <StatCard title="Published to Bums" value={acceptedCount} icon={FileCheck} to="/client/opportunities" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -373,31 +366,31 @@ export default function ClientDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">Target Accounts</CardTitle>
+            <CardTitle className="font-display">Opportunity Pipeline</CardTitle>
           </CardHeader>
           <CardContent>
-            {targets.length ? (
+            {opportunities.length ? (
               <div className="space-y-4">
-                {targets.slice(0, 6).map((targetAccount) => (
-                  <div key={targetAccount.id} className="flex items-center justify-between gap-4 border-b py-3 last:border-0">
+                {opportunities.slice(0, 6).map((opportunity) => (
+                  <div key={opportunity.id} className="flex items-center justify-between gap-4 border-b py-3 last:border-0">
                     <div>
-                      <p className="font-medium">{targetAccount.target_companies?.name ?? targetAccount.target_account_name}</p>
+                      <p className="font-medium">{opportunity.target_account_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {targetAccount.expected_product_service || "Target account"} · {targetAccount.priority} priority
+                        {opportunity.expected_product_service || opportunity.business_unit || "Opportunity"} · {opportunity.status === "Accepted" ? "published to Bums" : opportunity.status.toLowerCase()}
                       </p>
                     </div>
-                    <StatusBadge label={targetAccount.status.replaceAll("_", " ")} variant="info" />
+                    <StatusBadge label={opportunity.status === "Accepted" ? "Published" : opportunity.status} variant={opportunity.status === "Accepted" ? "success" : "info"} />
                   </div>
                 ))}
               </div>
             ) : (
               <div className="rounded-md border border-dashed p-6 text-center">
-                <p className="font-medium">No target accounts yet</p>
+                <p className="font-medium">No opportunities yet</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Add the customer companies you want to sell into before turning them into formal opportunity registrations.
+                  Add the customer companies you want to sell into, then publish ready opportunities to Bums.
                 </p>
                 <Button asChild className="mt-4">
-                  <Link to="/client/targets">Add Target Account</Link>
+                  <Link to="/client/opportunities/new">Create Opportunity</Link>
                 </Button>
               </div>
             )}
@@ -417,10 +410,10 @@ export default function ClientDashboard() {
                 <Link to="/client/requests">Review Customer Leads</Link>
               </Button>
               <Button asChild>
-                <Link to="/client/targets">Add target account</Link>
+                <Link to="/client/opportunities/new">Create opportunity</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link to="/client/opportunities">Register formal opportunity</Link>
+                <Link to="/client/opportunities">Open opportunities</Link>
               </Button>
               {canManagePayments ? (
                 <Button asChild variant="outline">

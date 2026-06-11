@@ -18,7 +18,7 @@ test.describe("critical opportunity workflow", () => {
     const clientPage = await clientContext.newPage();
 
     await goToAuthedPath(clientPage, clientAdmin, "/client/opportunities/new");
-    await expect(clientPage.getByRole("heading", { name: "Register a new opportunity" })).toBeVisible();
+    await expect(clientPage.getByRole("heading", { name: "New opportunity" })).toBeVisible();
 
     await clientPage.getByLabel("Customer account name").fill(targetAccount);
     await clientPage.getByLabel("Business unit / department").fill("QA");
@@ -30,9 +30,9 @@ test.describe("critical opportunity workflow", () => {
 
     await clientPage.getByLabel("Opportunity description").fill("Automated QA smoke opportunity.");
     await clientPage.getByLabel("Notes", { exact: true }).fill("Created by Playwright QA smoke testing.");
-    await clientPage.getByRole("button", { name: /submit opportunity registration/i }).click();
+    await clientPage.getByRole("button", { name: /publish opportunity to bums/i }).click();
 
-    await expect(clientPage.locator("#main-content").getByText("Opportunity published")).toBeVisible({ timeout: 20_000 });
+    await expect(clientPage.locator("#main-content").getByText("Opportunity published to Bums")).toBeVisible({ timeout: 20_000 });
     await clientContext.close();
 
     const adminContext = await browser.newContext();

@@ -48,11 +48,11 @@ const ClientDashboard = lazy(() => import("./pages/client/ClientDashboard"));
 const ClientAgreements = lazy(() => import("./pages/client/ClientAgreements"));
 const ClientTerms = lazy(() => import("./pages/client/ClientTerms"));
 const ClientOpportunityNew = lazy(() => import("./pages/client/ClientOpportunityNew"));
-const ClientTargets = lazy(() => import("./pages/client/ClientTargets"));
+const ClientLiveConversations = lazy(() => import("./pages/client/ClientLiveConversations"));
+const ClientClaims = lazy(() => import("./pages/client/ClientClaims"));
 const ClientProfile = lazy(() => import("./pages/client/ClientProfile"));
 const ClientUserProfile = lazy(() => import("./pages/client/ClientUserProfile"));
 const ClientTeam = lazy(() => import("./pages/client/ClientTeam"));
-const ClientBums = lazy(() => import("./pages/client/ClientBums"));
 const ClientTrainings = lazy(() => import("./pages/client/ClientTrainings"));
 const ClientRequests = lazy(() => import("./pages/client/ClientRequests"));
 const ClientExports = lazy(() => import("./pages/client/ClientExports"));
@@ -151,14 +151,16 @@ const App = () => (
                       <Route path="profile" element={<ClientProfile />} />
                       <Route path="user-profile" element={<ClientUserProfile />} />
                       <Route path="reports" element={<ClientReports />} />
+                      <Route path="live-conversations" element={<ClientLiveConversations />} />
+                      <Route path="claims" element={<ClientClaims />} />
                       <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN"]} />}>
                         <Route path="team" element={<ClientTeam />} />
                       </Route>
                       <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN", "CLIENT_MEMBER"]} />}>
-                        <Route path="targets" element={<ClientTargets />} />
+                        <Route path="targets" element={<Navigate to="/client/opportunities" replace />} />
                         <Route path="opportunities" element={<ClientOpportunityNew />} />
                         <Route path="opportunities/new" element={<ClientOpportunityNew />} />
-                        <Route path="bum-directory" element={<ClientBums />} />
+                        <Route path="bum-directory" element={<Navigate to="/client/opportunities" replace />} />
                         <Route path="trainings" element={<ClientTrainings />} />
                         <Route path="requests" element={<ClientRequests />} />
                       </Route>

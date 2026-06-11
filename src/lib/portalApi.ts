@@ -2637,6 +2637,7 @@ export async function updateOwnOpportunityRegistration(
     expected_timeline?: string;
     notes?: string;
     pay_program_id?: string | null;
+    status?: RegistrationStatus;
   },
 ) {
   if (user.role !== "CLIENT" || !user.clientId) {
@@ -2656,6 +2657,10 @@ export async function updateOwnOpportunityRegistration(
 
   if (!opportunity) {
     throw new Error("That opportunity could not be found.");
+  }
+
+  if (updates.status && !["Draft", "Accepted"].includes(updates.status)) {
+    throw new Error("Clients can only save draft opportunities or publish opportunities to Bums.");
   }
 
   let commissionRate = opportunity.commission_rate;
@@ -2694,6 +2699,7 @@ export async function updateOwnOpportunityRegistration(
       pay_program_id: updates.pay_program_id !== undefined ? updates.pay_program_id : opportunity.pay_program_id,
       commission_rate: commissionRate,
       commission_duration: commissionDuration,
+      status: updates.status ?? opportunity.status,
       updated_at: new Date().toISOString(),
     })
     .eq("id", opportunityId)
@@ -2707,9 +2713,75 @@ export async function updateOwnOpportunityRegistration(
   await createAuditEvent(user, "client_opportunity_updated", "opportunity_registrations", data.id, {
     estimated_deal_value: data.estimated_deal_value,
     pay_program_id: data.pay_program_id,
+    status: data.status,
   });
 
+  if (updates.status && updates.status !== opportunity.status) {
+    await supabase.from("opportunity_status_history").insert({
+      opportunity_id: data.id,
+      old_status: opportunity.status,
+      new_status: data.status,
+      changed_by: user.id,
+    });
+
+    if (data.status === "Accepted") {
+      await createAuditEvent(user, "client_opportunity_published", "opportunity_registrations", data.id, {
+        message: "Client published opportunity to Bums.",
+      });
+    }
+  }
+
   return data;
+}
+
+export async function deleteOwnOpportunityRegistration(user: AuthUser, opportunityId: string) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users can delete their opportunities.");
+  }
+
+  const { data: opportunity, error: opportunityError } = await supabase
+    .from("opportunity_registrations")
+    .select("id, company_id, target_account_name")
+    .eq("id", opportunityId)
+    .eq("company_id", user.clientId)
+    .maybeSingle<Pick<OpportunityRegistration, "id" | "company_id" | "target_account_name">>();
+
+  if (opportunityError) {
+    throw opportunityError;
+  }
+
+  if (!opportunity) {
+    throw new Error("That opportunity could not be found.");
+  }
+
+  const { data: existingClaim, error: claimError } = await supabase
+    .from("opportunity_claims")
+    .select("id")
+    .eq("opportunity_registration_id", opportunity.id)
+    .limit(1)
+    .maybeSingle<Pick<OpportunityClaimRecord, "id">>();
+
+  if (claimError) {
+    throw claimError;
+  }
+
+  if (existingClaim) {
+    throw new Error("Cannot delete this opportunity because a claim exists.");
+  }
+
+  const { error } = await supabase
+    .from("opportunity_registrations")
+    .delete()
+    .eq("id", opportunity.id)
+    .eq("company_id", user.clientId);
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "client_opportunity_deleted", "opportunity_registrations", opportunity.id, {
+    target_account_name: opportunity.target_account_name,
+  });
 }
 
 export async function listOpportunityRegistrations(status?: string) {
@@ -4568,6 +4640,54 @@ export async function updateOpportunityClaimStatus(
   declineReasonCode?: OpportunityClaimDeclineReason | null,
   declineReasonNote?: string,
 ) {
+  const { data: existingClaim, error: existingClaimError } = await supabase
+    .from("opportunity_claims")
+    .select("id, company_id, bum_user_id, opportunity_registration_id, status, opportunity_registrations(id, commission_schedule_start_at)")
+    .eq("id", claimId)
+    .maybeSingle<
+      Pick<OpportunityClaimRecord, "id" | "company_id" | "bum_user_id" | "opportunity_registration_id" | "status"> & {
+        opportunity_registrations?: Pick<OpportunityRegistration, "id" | "commission_schedule_start_at"> | null;
+      }
+    >();
+
+  if (existingClaimError) {
+    throw existingClaimError;
+  }
+
+  if (!existingClaim) {
+    throw new Error("That opportunity claim could not be found.");
+  }
+
+  if (existingClaim.status === "MEETING_HELD" && user.role !== "ADMIN") {
+    throw new Error("This claim is locked because the introduction has been made.");
+  }
+
+  if (user.role === "CLIENT") {
+    if (!user.clientId || existingClaim.company_id !== user.clientId) {
+      throw new Error("That claim is not assigned to your company.");
+    }
+
+    if (user.clientAccessRole !== "CLIENT_ADMIN" && user.clientAccessRole !== "CLIENT_MEMBER") {
+      throw new Error("Only client admins and members can update claim status.");
+    }
+
+    const clientClaimStatuses: OpportunityClaimStatus[] = ["APPROVED", "DECLINED", "SCHEDULED", "MEETING_HELD"];
+    if (!clientClaimStatuses.includes(status)) {
+      throw new Error("Clients can only approve, decline, schedule, or mark introductions made.");
+    }
+  } else if (user.role === "BUM") {
+    if (existingClaim.bum_user_id !== user.id) {
+      throw new Error("That claim is not assigned to you.");
+    }
+
+    const bumClaimStatuses: OpportunityClaimStatus[] = ["SCHEDULED", "MEETING_HELD", "EXPIRED", "DISPUTED", "CLOSED"];
+    if (!bumClaimStatuses.includes(status)) {
+      throw new Error("Bums can only update operational claim statuses.");
+    }
+  } else if (user.role !== "ADMIN") {
+    throw new Error("You do not have permission to update claim status.");
+  }
+
   const payload: Partial<Pick<OpportunityClaimRecord, "status" | "note" | "decline_reason_code" | "decline_reason_note" | "client_decision_source" | "client_decision_received_at">> = {
     status,
   };
@@ -4596,6 +4716,19 @@ export async function updateOpportunityClaimStatus(
 
   if (error) {
     throw error;
+  }
+
+  if (status === "MEETING_HELD" && !existingClaim.opportunity_registrations?.commission_schedule_start_at) {
+    const termStartAt = new Date().toISOString();
+    await supabase
+      .from("opportunity_registrations")
+      .update({ commission_schedule_start_at: termStartAt })
+      .eq("id", data.opportunity_registration_id)
+      .is("commission_schedule_start_at", null);
+
+    data.opportunity_registrations = data.opportunity_registrations
+      ? { ...data.opportunity_registrations, commission_schedule_start_at: termStartAt }
+      : data.opportunity_registrations;
   }
 
   await rebalanceOpportunityClaimShares(data.opportunity_registration_id);

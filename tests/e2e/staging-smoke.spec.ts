@@ -98,7 +98,7 @@ test.describe("staging smoke", () => {
       "/admin",
       "/admin/opportunities",
       "/client/dashboard",
-      "/client/targets",
+      "/client/opportunities",
       "/bum/dashboard",
       "/bum/opportunities",
       "/bum/contacts",
@@ -154,16 +154,15 @@ test.describe("staging smoke", () => {
     await expect(page.getByRole("button", { name: /Add and select contact/i })).toBeDisabled();
   });
 
-  test("client target add form opens without saving", async ({ page }) => {
+  test("client opportunity form opens without saving", async ({ page }) => {
     const clientAdmin = getQaAccount("CLIENT_ADMIN");
     test.skip(!clientAdmin, "Set QA_CLIENT_ADMIN_EMAIL.");
 
-    await goToAuthedPath(page, clientAdmin, "/client/targets");
-    await expect(page.getByRole("heading", { name: "Target Accounts" })).toBeVisible();
+    await goToAuthedPath(page, clientAdmin, "/client/opportunities/new");
+    await expect(page.getByRole("heading", { name: "Opportunities" })).toBeVisible();
 
-    await page.getByRole("button", { name: /Add target account/i }).first().click();
-    await expect(page.getByLabel("Target account name")).toBeVisible();
+    await expect(page.getByLabel("Customer account name")).toBeVisible();
     await expect(page.getByLabel("Expected product/service")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Save target account" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Publish Opportunity to Bums|Save Draft Opportunity/i })).toBeVisible();
   });
 });

@@ -6,6 +6,9 @@ import { ConversationDock } from "@/components/ConversationDock";
 import { FirstLoginWalkthrough } from "@/components/FirstLoginWalkthrough";
 import { getClientAccessLabel, type ClientAccessRole } from "@/data/authData";
 import { useAuth } from "@/contexts/AuthContext";
+import { unreadConversationCount } from "@/lib/conversationUnread";
+import { listConversationThreads } from "@/lib/portalApi";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation, Outlet } from "react-router-dom";
 import {
   Sidebar,
@@ -25,12 +28,12 @@ import {
   FileCheck,
   User,
   GraduationCap,
+  Handshake,
+  MessageSquare,
   MessageSquarePlus,
   Download,
   BarChart3,
   Briefcase,
-  Users,
-  Target,
   CreditCard,
 } from "lucide-react";
 
@@ -45,9 +48,9 @@ const navGroups: Array<{
 }> = [
   { label: "Workspace", items: [
   { title: "Dashboard", url: "/client/dashboard", icon: LayoutDashboard },
-  { title: "Target Accounts", url: "/client/targets", icon: Target, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
+  { title: "Inbox", url: "/client/live-conversations", icon: MessageSquare },
   { title: "Opportunities", url: "/client/opportunities", icon: Briefcase, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
-  { title: "Bums", url: "/client/bum-directory", icon: Users, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
+  { title: "Claims", url: "/client/claims", icon: Handshake },
   { title: "Training & Assets", url: "/client/trainings", icon: GraduationCap, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Customer Leads", url: "/client/requests", icon: MessageSquarePlus, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   ] },
@@ -57,7 +60,7 @@ const navGroups: Array<{
   { title: "Reports", url: "/client/reports", icon: BarChart3 },
   ] },
   { label: "Account", items: [
-  { title: "Team Management", url: "/client/team", icon: Users, allowedAccessRoles: ["CLIENT_ADMIN"] },
+  { title: "Team Management", url: "/client/team", icon: User, allowedAccessRoles: ["CLIENT_ADMIN"] },
   { title: "Company Profile", url: "/client/profile", icon: Building2 },
   { title: "User Profile", url: "/client/user-profile", icon: User },
   { title: "Client Agreement", url: "/client/agreements", icon: FileCheck },
@@ -69,6 +72,15 @@ const navItems = navGroups.flatMap((group) => group.items);
 export default function ClientLayout() {
   const location = useLocation();
   const { user } = useAuth();
+  const conversationsQuery = useQuery({
+    queryKey: ["conversation-threads"],
+    queryFn: listConversationThreads,
+    enabled: Boolean(user?.id),
+    refetchInterval: 30000,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+  });
+  const unreadCount = unreadConversationCount(conversationsQuery.data ?? [], user);
   const visibleNavItems = navItems.filter(
     (item) =>
       !item.allowedAccessRoles ||
@@ -111,6 +123,12 @@ export default function ClientLayout() {
                             >
                               <item.icon className="mr-2 h-4 w-4" />
                               <span>{item.title}</span>
+                              {item.title === "Inbox" && unreadCount > 0 ? (
+                                <span className="ml-auto flex items-center gap-1.5">
+                                  <span className="h-2.5 w-2.5 rounded-full bg-destructive shadow-[0_0_12px_hsl(var(--destructive))]" aria-hidden="true" />
+                                  <span className="sr-only">{unreadCount} unread conversation{unreadCount === 1 ? "" : "s"}</span>
+                                </span>
+                              ) : null}
                             </NavLink>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -132,11 +150,11 @@ export default function ClientLayout() {
             <PortalGlobalSearch />
             <PortalHeaderActions />
           </header>
-          <div className="p-4 pb-32 sm:p-6 sm:pb-28">
+          <div className="p-4 sm:p-6">
             <Outlet />
           </div>
           <FirstLoginWalkthrough />
-          <ConversationDock />
+          <ConversationDock showLauncher={false} />
         </main>
       </div>
     </SidebarProvider>

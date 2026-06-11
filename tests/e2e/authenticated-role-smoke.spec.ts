@@ -20,7 +20,7 @@ test.describe("authenticated role smoke", () => {
     await expect(page.getByRole("heading", { name: "Admin Dashboard" })).toBeVisible();
   });
 
-  test("client admin reaches the client dashboard and can open target workflows", async ({ page }) => {
+  test("client admin reaches the client dashboard and can open opportunity workflows", async ({ page }) => {
     const clientAdmin = getQaAccount("CLIENT_ADMIN");
     test.skip(!clientAdmin, "Set QA_CLIENT_ADMIN_EMAIL.");
 
@@ -29,8 +29,8 @@ test.describe("authenticated role smoke", () => {
     await expect(page).toHaveURL(/\/client\/dashboard\/?$/);
     await expect(page.getByRole("heading", { name: /Welcome back/i })).toBeVisible();
 
-    await page.goto("/client/targets");
-    await expect(page.getByRole("heading", { name: "Target Accounts" })).toBeVisible();
+    await page.goto("/client/opportunities");
+    await expect(page.getByRole("heading", { name: "Opportunities" })).toBeVisible();
   });
 
   test("client finance can open payments and exports", async ({ page, isMobile }) => {

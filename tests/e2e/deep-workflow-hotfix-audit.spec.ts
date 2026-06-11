@@ -56,9 +56,9 @@ const routeInventory: WorkflowRoute[] = [
   { role: "CLIENT_ADMIN", path: "/client/profile", heading: "Company Profile", area: "Client", workflow: "Company profile" },
   { role: "CLIENT_ADMIN", path: "/client/user-profile", heading: "User Profile", area: "Client", workflow: "User profile" },
   { role: "CLIENT_ADMIN", path: "/client/reports", heading: "Client Reports", area: "Client", workflow: "Reports" },
-  { role: "CLIENT_ADMIN", path: "/client/targets", heading: "Target Accounts", area: "Client", workflow: "Target accounts" },
+  { role: "CLIENT_ADMIN", path: "/client/live-conversations", heading: "Inbox", area: "Client", workflow: "Inbox" },
+  { role: "CLIENT_ADMIN", path: "/client/claims", heading: "Claims", area: "Client", workflow: "Claims" },
   { role: "CLIENT_ADMIN", path: "/client/opportunities/new", heading: "Opportunities", area: "Client", workflow: "Opportunity registration" },
-  { role: "CLIENT_ADMIN", path: "/client/bum-directory", heading: "Bum Directory", area: "Client", workflow: "Bum directory" },
   { role: "CLIENT_ADMIN", path: "/client/trainings", heading: "Training & Assets", area: "Client", workflow: "Training assets" },
   { role: "CLIENT_ADMIN", path: "/client/requests", heading: "Customer Leads", area: "Client", workflow: "Customer leads" },
   { role: "CLIENT_ADMIN", path: "/client/team", heading: "Team Management", area: "Client", workflow: "Team management" },
@@ -69,6 +69,8 @@ const routeInventory: WorkflowRoute[] = [
   { role: "CLIENT_FINANCE", path: "/client/profile", heading: "Company Profile", area: "Client Finance", workflow: "Company profile" },
   { role: "CLIENT_FINANCE", path: "/client/user-profile", heading: "User Profile", area: "Client Finance", workflow: "User profile" },
   { role: "CLIENT_FINANCE", path: "/client/reports", heading: "Client Reports", area: "Client Finance", workflow: "Reports" },
+  { role: "CLIENT_FINANCE", path: "/client/live-conversations", heading: "Inbox", area: "Client Finance", workflow: "Inbox" },
+  { role: "CLIENT_FINANCE", path: "/client/claims", heading: "Claims", area: "Client Finance", workflow: "Claims" },
   { role: "CLIENT_FINANCE", path: "/client/payments", heading: "Customer Payment Reports", area: "Client Finance", workflow: "Customer Payment Reports" },
   { role: "CLIENT_FINANCE", path: "/client/exports", heading: "Exports", area: "Client Finance", workflow: "Exports" },
   { role: "CLIENT_MEMBER", path: "/client/dashboard", heading: /Welcome back/i, area: "Client Member", workflow: "Dashboard" },
@@ -76,9 +78,9 @@ const routeInventory: WorkflowRoute[] = [
   { role: "CLIENT_MEMBER", path: "/client/profile", heading: "Company Profile", area: "Client Member", workflow: "Company profile" },
   { role: "CLIENT_MEMBER", path: "/client/user-profile", heading: "User Profile", area: "Client Member", workflow: "User profile" },
   { role: "CLIENT_MEMBER", path: "/client/reports", heading: "Client Reports", area: "Client Member", workflow: "Reports" },
-  { role: "CLIENT_MEMBER", path: "/client/targets", heading: "Target Accounts", area: "Client Member", workflow: "Target accounts" },
+  { role: "CLIENT_MEMBER", path: "/client/live-conversations", heading: "Inbox", area: "Client Member", workflow: "Inbox" },
+  { role: "CLIENT_MEMBER", path: "/client/claims", heading: "Claims", area: "Client Member", workflow: "Claims" },
   { role: "CLIENT_MEMBER", path: "/client/opportunities/new", heading: "Opportunities", area: "Client Member", workflow: "Opportunity registration" },
-  { role: "CLIENT_MEMBER", path: "/client/bum-directory", heading: "Bum Directory", area: "Client Member", workflow: "Bum directory" },
   { role: "CLIENT_MEMBER", path: "/client/trainings", heading: "Training & Assets", area: "Client Member", workflow: "Training assets" },
   { role: "CLIENT_MEMBER", path: "/client/requests", heading: "Customer Leads", area: "Client Member", workflow: "Customer leads" },
   { role: "BUM", path: "/bum/dashboard", heading: /Welcome back/i, area: "Bum", workflow: "Dashboard" },
@@ -175,25 +177,6 @@ async function exerciseTermsAcceptanceIfRequired(page: Page, account: QaAccount,
   }
 }
 
-async function createClientTarget(page: Page, runId: string, records: QaCreatedRecord[]) {
-  const name = `${runId} target`;
-  await page.goto("/client/targets");
-  await expect(page.getByRole("heading", { name: "Target Accounts" })).toBeVisible();
-  await page.getByRole("button", { name: "Add Target Account", exact: true }).click();
-  await page.getByLabel("Target account name", { exact: true }).fill(name);
-  await page.getByLabel("Company website", { exact: true }).fill("qa-deep.example");
-  await page.getByLabel("Business unit", { exact: true }).fill("QA");
-  await page.getByLabel("Key contact", { exact: true }).fill("QA Contact");
-  await page.getByLabel("Key contact email", { exact: true }).fill("qa-contact@example.com");
-  await page.getByLabel("Estimated deal value", { exact: true }).fill("25000");
-  await page.getByLabel("Expected product/service", { exact: true }).fill("Deep QA validation");
-  await page.getByLabel("Notes", { exact: true }).fill(`Created by ${runId}; safe to delete.`);
-  records.push({ table: "customer_targets", field: "target_account_name", value: name });
-  await page.getByRole("button", { name: "Save target account" }).click();
-  await expect(page.getByText("Target account saved", { exact: true })).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText(name)).toBeVisible({ timeout: 20_000 });
-}
-
 async function createClientOpportunity(page: Page, runId: string, records: QaCreatedRecord[]) {
   const name = `${runId} opportunity`;
   await page.goto("/client/opportunities/new");
@@ -208,8 +191,8 @@ async function createClientOpportunity(page: Page, runId: string, records: QaCre
   await page.getByLabel("Opportunity description", { exact: true }).fill(`Created by ${runId}; safe to delete.`);
   await page.getByLabel("Notes", { exact: true }).fill(`Created by ${runId}; safe to delete.`);
   records.push({ table: "opportunity_registrations", field: "target_account_name", value: name });
-  await page.getByRole("button", { name: /submit opportunity registration/i }).click();
-  await expect(page.getByText("Registration submitted")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: /publish opportunity to bums/i }).click();
+  await expect(page.getByText("Opportunity published to Bums")).toBeVisible({ timeout: 20_000 });
 }
 
 test.describe("deep workflow hotfix audit", () => {
@@ -340,8 +323,6 @@ test.describe("deep workflow hotfix audit", () => {
       const clientContext = await browser.newContext();
       const clientPage = await clientContext.newPage();
       installDeepQaMonitors(clientPage, issues, "Client");
-      await goToAuthedPath(clientPage, getRequiredAccount("CLIENT_ADMIN"), "/client/targets");
-      await createClientTarget(clientPage, runId, createdRecords);
       await createClientOpportunity(clientPage, runId, createdRecords);
       await clientContext.close();
     } finally {

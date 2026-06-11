@@ -395,8 +395,8 @@ const routeLinkNames: Record<string, RegExp> = {
   "/admin/opportunities": /^Opportunities$/,
   "/client/payments": /^(Payment Reports|Open Payment Reports|Go to Payment Reports|Import monthly Customer Payment Reports)$/,
   "/client/exports": /^Exports$/,
-  "/client/opportunities/new": /^Register Opportunity$/,
-  "/client/targets": /^Target Accounts$/,
+  "/client/opportunities/new": /^Opportunities$/,
+  "/client/targets": /^Opportunities$/,
 };
 
 interface GoToAuthedPathOptions {

@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 
 const floatingDockLayouts = [
   "src/layouts/AdminLayout.tsx",
-  "src/layouts/ClientLayout.tsx",
 ];
 const bumLayoutSource = readFileSync("src/layouts/BumLayout.tsx", "utf8");
+const clientLayoutSource = readFileSync("src/layouts/ClientLayout.tsx", "utf8");
 
 describe("conversation dock layout", () => {
   it("reserves bottom scroll space where fixed chat controls remain visible", () => {
@@ -21,5 +21,11 @@ describe("conversation dock layout", () => {
     expect(bumLayoutSource).toContain('{ title: "Inbox", url: "/bum/live-conversations"');
     expect(bumLayoutSource).toContain("<ConversationDock showLauncher={false} />");
     expect(bumLayoutSource).toContain("p-4 sm:p-6");
+  });
+
+  it("moves the Client chat launcher into Inbox while keeping programmatic conversation opens available", () => {
+    expect(clientLayoutSource).toContain('{ title: "Inbox", url: "/client/live-conversations"');
+    expect(clientLayoutSource).toContain("<ConversationDock showLauncher={false} />");
+    expect(clientLayoutSource).toContain("p-4 sm:p-6");
   });
 });

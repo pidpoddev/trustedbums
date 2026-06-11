@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
-import { CheckCircle, FileUp, MessageSquare, PlusCircle, Send, Sparkles, X } from "lucide-react";
+import { CheckCircle, FileUp, MessageSquare, PlusCircle, Send, Sparkles, Trash2, X } from "lucide-react";
 import { openConversationDock } from "@/lib/conversationDock";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +23,7 @@ import { getPageItems } from "@/lib/pagination";
 import {
   createClientPayProgramRequest,
   createOpportunityRegistration,
+  deleteOwnOpportunityRegistration,
   formalizeCustomerTargetResponse,
   listClientOpportunityQuestions,
   listCustomerTargetResponses,
@@ -267,6 +270,7 @@ export default function ClientOpportunityNew() {
   const [activeTab, setActiveTab] = useState(location.pathname.endsWith("/new") ? "register" : "pipeline");
   const [isRegisterOpen, setIsRegisterOpen] = useState(location.pathname.endsWith("/new"));
   const [isRequestPlanOpen, setIsRequestPlanOpen] = useState(false);
+  const [publishToBums, setPublishToBums] = useState(true);
   const [isRegistrationDraftDirty, setIsRegistrationDraftDirty] = useState(false);
   const [restoredRegistrationDraftAt, setRestoredRegistrationDraftAt] = useState<string | null>(null);
   const [localRegistrationDraftSavedAt, setLocalRegistrationDraftSavedAt] = useState<string | null>(null);
@@ -348,7 +352,7 @@ export default function ClientOpportunityNew() {
   });
   const claimsQuery = useQuery({
     queryKey: ["client-opportunity-claims", user?.clientId],
-    queryFn: () => listOpportunityClaims(),
+    queryFn: () => listOpportunityClaims(undefined, { includeDisabled: true }),
     enabled: Boolean(user?.clientId),
   });
   const targetResponsesQuery = useQuery({
@@ -458,6 +462,44 @@ export default function ClientOpportunityNew() {
     onError: (error) => {
       toast({
         title: "Unable to save response",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const publishOpportunityMutation = useMutation({
+    mutationFn: (opportunity: OpportunityRegistration) =>
+      updateOwnOpportunityRegistration(user!, opportunity.id, { status: "Accepted" }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
+      toast({
+        title: "Opportunity published to Bums",
+        description: "The opportunity is now available for Bum matching.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to publish opportunity",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteOpportunityMutation = useMutation({
+    mutationFn: (opportunity: OpportunityRegistration) => deleteOwnOpportunityRegistration(user!, opportunity.id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-claims", user?.clientId] });
+      toast({
+        title: "Opportunity deleted",
+        description: "The opportunity was removed from your pipeline.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to delete opportunity",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -621,7 +663,7 @@ export default function ClientOpportunityNew() {
         ...form,
         pay_program_id: form.pay_program_id || null,
         estimated_deal_value: form.estimated_deal_value ? Number(form.estimated_deal_value) : null,
-        status: "Accepted",
+        status: publishToBums ? "Accepted" : "Draft",
       });
       setSubmittedId(opportunity.id);
       clearClientOpportunityDraft(user?.clientId);
@@ -633,8 +675,10 @@ export default function ClientOpportunityNew() {
       setActiveTab("pipeline");
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       toast({
-        title: "Opportunity published",
-        description: "The opportunity is live for Bum matching.",
+        title: publishToBums ? "Opportunity published to Bums" : "Opportunity saved as draft",
+        description: publishToBums
+          ? "The opportunity is live for Bum matching."
+          : "The opportunity is private until you publish it to Bums.",
       });
     } catch (error) {
       toast({
@@ -709,12 +753,13 @@ export default function ClientOpportunityNew() {
   const openPipelineCount = opportunities.filter((opportunity) => !["Closed Won", "Closed Lost", "Rejected"].includes(opportunity.status)).length;
   const totalPipelineValue = opportunities.reduce((sum, opportunity) => sum + Number(opportunity.estimated_deal_value ?? 0), 0);
   const acceptedCount = opportunities.filter((opportunity) => opportunity.status === "Accepted").length;
+  const draftCount = opportunities.filter((opportunity) => opportunity.status === "Draft").length;
 
   return (
     <div>
       <PageHeader
         title="Opportunities"
-        description="Manage the client opportunity pipeline, registration status, Bum assignment, value, next step, and commission plan."
+        description="Add customer accounts as opportunities, keep private drafts, and publish ready opportunities to Bums for matching."
       >
         <Button
           type="button"
@@ -735,7 +780,7 @@ export default function ClientOpportunityNew() {
           }}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
-          Register New Opportunity
+          New Opportunity
         </Button>
       </PageHeader>
 
@@ -745,8 +790,10 @@ export default function ClientOpportunityNew() {
             <div className="flex items-center gap-3">
               <CheckCircle className="h-5 w-5 text-success" />
               <div>
-                <p className="font-medium">Opportunity published</p>
-                <p className="text-sm text-muted-foreground">The opportunity is live and available for Bum matching.</p>
+                <p className="font-medium">{publishToBums ? "Opportunity published to Bums" : "Opportunity saved as draft"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {publishToBums ? "The opportunity is live and available for Bum matching." : "Publish it from the pipeline when it is ready for Bum matching."}
+                </p>
               </div>
             </div>
             <Button asChild variant="outline">
@@ -761,7 +808,7 @@ export default function ClientOpportunityNew() {
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="responses">Bum Responses{pendingTargetResponseCount ? " (" + pendingTargetResponseCount + ")" : ""}</TabsTrigger>
           <TabsTrigger value="questions">Questions{openQuestionCount ? ` (${openQuestionCount})` : ""}</TabsTrigger>
-          <TabsTrigger value="register">Register Opportunity</TabsTrigger>
+          <TabsTrigger value="register">New Opportunity</TabsTrigger>
           <TabsTrigger value="commission-plan">Commission Plan</TabsTrigger>
         </TabsList>
 
@@ -849,7 +896,7 @@ export default function ClientOpportunityNew() {
 
               {!sortedTargetResponses.length ? (
                 <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  No Bums have submitted relationship responses for this company's target accounts yet.
+                  No Bums have submitted relationship responses for this company's opportunities yet.
                 </div>
               ) : null}
             </CardContent>
@@ -967,7 +1014,7 @@ export default function ClientOpportunityNew() {
 
               {!sortedQuestions.length && !sortedTargetQuestions.length ? (
                 <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  No Bum questions are waiting on this company’s opportunities or target accounts.
+                  No Bum questions are waiting on this company’s opportunities.
                 </div>
               ) : null}
             </CardContent>
@@ -986,8 +1033,8 @@ export default function ClientOpportunityNew() {
           <div className="rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
             <p className="font-medium text-foreground">How this works</p>
             <p className="mt-2">
-              Upload a CSV from your prospecting list and we’ll turn each valid row into a submitted opportunity
-              registration. Good header names include:
+              Upload a CSV from your prospecting list and we’ll turn each valid row into a published opportunity
+              for Bum matching. Good header names include:
             </p>
             <p className="mt-2 font-mono text-xs break-all">
               target_account_name, account_name, company_name, business_unit, expected_product_service,
@@ -1067,7 +1114,7 @@ export default function ClientOpportunityNew() {
             <div className="flex justify-end">
               <Button onClick={() => setIsRegisterOpen(true)}>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Start registration
+                New opportunity
               </Button>
             </div>
           ) : (
@@ -1075,8 +1122,8 @@ export default function ClientOpportunityNew() {
             <CardHeader>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle className="font-display">Register a new opportunity</CardTitle>
-                  <p className="mt-1 text-sm text-muted-foreground">Submit the customer deal you want Trusted Bums to review, assign, and track against the selected commission plan.</p>
+                  <CardTitle className="font-display">New opportunity</CardTitle>
+                  <p className="mt-1 text-sm text-muted-foreground">Add the customer account and deal context here. Publish when it is ready for Bums to review and match.</p>
                 </div>
                 <Button type="button" variant="secondary" onClick={() => setIsRegisterOpen(false)}>
                   <X className="mr-2 h-4 w-4" />
@@ -1200,10 +1247,24 @@ export default function ClientOpportunityNew() {
               <Textarea id="notes" rows={4} value={form.notes} onChange={(event) => updateField("notes", event.target.value)} />
             </div>
 
+            <label className="flex items-start gap-3 rounded-lg border bg-muted/20 p-4 text-sm">
+              <Checkbox
+                checked={publishToBums}
+                onCheckedChange={(checked) => setPublishToBums(checked === true)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block font-medium text-foreground">Publish to Bums now</span>
+                <span className="mt-1 block text-muted-foreground">
+                  Published opportunities are visible for Bum matching. Leave this unchecked to save a private draft in the pipeline.
+                </span>
+              </span>
+            </label>
+
             <div className="sticky bottom-3 z-10 flex justify-end rounded-lg border bg-background/95 p-3 shadow-sm backdrop-blur">
               <Button disabled={isSubmitting}>
                 <Send className="mr-2 h-4 w-4" />
-                Submit Opportunity Registration
+                {publishToBums ? "Publish Opportunity to Bums" : "Save Draft Opportunity"}
               </Button>
             </div>
           </form>
@@ -1412,7 +1473,7 @@ export default function ClientOpportunityNew() {
         </TabsContent>
 
         <TabsContent value="pipeline">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Card>
               <CardContent className="pt-6">
                 <p className="text-sm text-muted-foreground">Open pipeline</p>
@@ -1427,8 +1488,14 @@ export default function ClientOpportunityNew() {
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Accepted</p>
+                <p className="text-sm text-muted-foreground">Published to Bums</p>
                 <p className="font-display mt-1 text-3xl font-bold">{acceptedCount}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">Drafts</p>
+                <p className="font-display mt-1 text-3xl font-bold">{draftCount}</p>
               </CardContent>
             </Card>
           </div>
@@ -1457,6 +1524,7 @@ export default function ClientOpportunityNew() {
                   {visibleOpportunities.map((opportunity) => {
                     const opportunityClaims = claimsByOpportunity.get(opportunity.id) ?? [];
                     const assignedClaim = getAssignedClaim(opportunityClaims);
+                    const hasClaim = opportunityClaims.length > 0;
                     const isLinkedClaim = Boolean(linkedClaimId && opportunityClaims.some((claim) => claim.id === linkedClaimId));
                     const plan = opportunity.client_pay_programs;
 
@@ -1478,6 +1546,11 @@ export default function ClientOpportunityNew() {
                         </TableCell>
                         <TableCell>
                           <StatusBadge label={opportunity.status} variant={registrationVariant(opportunity.status)} />
+                          {opportunity.status === "Accepted" ? (
+                            <p className="mt-1 text-xs text-muted-foreground">Published to Bums</p>
+                          ) : opportunity.status === "Draft" ? (
+                            <p className="mt-1 text-xs text-muted-foreground">Private draft</p>
+                          ) : null}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-muted-foreground">
                           {formatDateForTimeZone(opportunity.updated_at ?? opportunity.created_at, timeZone)}
@@ -1505,6 +1578,42 @@ export default function ClientOpportunityNew() {
                             <Button type="button" variant="outline" size="sm" onClick={() => startEditing(opportunity)}>
                               Edit
                             </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex" tabIndex={hasClaim ? 0 : undefined}>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive disabled:text-muted-foreground"
+                                    disabled={hasClaim || deleteOpportunityMutation.isPending}
+                                    onClick={() => {
+                                      if (window.confirm(`Delete ${opportunity.target_account_name}? This cannot be undone.`)) {
+                                        deleteOpportunityMutation.mutate(opportunity);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </Button>
+                                </span>
+                              </TooltipTrigger>
+                              {hasClaim ? (
+                                <TooltipContent side="left" className="max-w-xs">
+                                  Cannot be deleted because Claim exists.
+                                </TooltipContent>
+                              ) : null}
+                            </Tooltip>
+                            {opportunity.status === "Draft" ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={publishOpportunityMutation.isPending}
+                                onClick={() => publishOpportunityMutation.mutate(opportunity)}
+                              >
+                                Publish to Bums
+                              </Button>
+                            ) : null}
                             {assignedClaim?.status === "PROPOSED" ? (
                               <div className={`grid w-64 gap-2 rounded-md border p-2 text-left ${isLinkedClaim ? "border-primary/50 bg-primary/10" : "bg-muted/20"}`}>
                                 <p className="text-xs font-medium">Claim decision</p>
@@ -1626,7 +1735,7 @@ export default function ClientOpportunityNew() {
 
               {!opportunities.length ? (
                 <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  No opportunities are registered yet. Use Register Opportunity when a target account becomes an active deal pursuit.
+                  No opportunities yet. Add a customer account here, then publish it to Bums when it is ready for matching.
                 </div>
               ) : null}
             </CardContent>

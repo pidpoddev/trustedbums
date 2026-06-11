@@ -37,7 +37,7 @@ export const claimStatusConfig: Record<ClaimStatus, { label: string; variant: St
   APPROVED: { label: "Approved", variant: "success" },
   DECLINED: { label: "Declined", variant: "destructive" },
   SCHEDULED: { label: "Scheduled", variant: "warning" },
-  MEETING_HELD: { label: "Meeting Held", variant: "success" },
+  MEETING_HELD: { label: "Introduction made", variant: "success" },
   EXPIRED: { label: "Expired", variant: "destructive" },
   DISPUTED: { label: "Disputed", variant: "destructive" },
   CLOSED: { label: "Closed", variant: "default" },

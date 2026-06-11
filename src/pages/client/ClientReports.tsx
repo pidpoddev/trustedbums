@@ -9,7 +9,6 @@ import {
   listCustomerPaymentReports,
   listCustomerTargets,
   listOwnOpportunityRegistrations,
-  listVisibleBumProfiles,
 } from "@/lib/portalApi";
 
 function money(value?: number | null) {
@@ -51,11 +50,6 @@ export default function ClientReports() {
     queryFn: () => listClientReverseOpportunities(user!),
     enabled: Boolean(user?.clientId) && canReadPipeline,
   });
-  const bumProfilesQuery = useQuery({
-    queryKey: ["client-reports-bum-profiles"],
-    queryFn: listVisibleBumProfiles,
-    enabled: canReadPipeline,
-  });
   const paymentsQuery = useQuery({
     queryKey: ["client-reports-payment-reports", user?.clientId],
     queryFn: () => listCustomerPaymentReports(user!),
@@ -71,7 +65,6 @@ export default function ClientReports() {
     const targets = targetsQuery.data ?? [];
     const opportunities = opportunitiesQuery.data ?? [];
     const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
-    const profiles = bumProfilesQuery.data ?? [];
     const payments = paymentsQuery.data ?? [];
     const invoices = invoicesQuery.data ?? [];
 
@@ -201,34 +194,6 @@ export default function ClientReports() {
         valueKey: "estimatedValue",
         valueLabel: "Estimated value",
       },
-      {
-        id: "bum-coverage",
-        title: "Bum coverage",
-        description: "Visible Bums by availability, region, industries, and buyer coverage.",
-        category: "Coverage",
-        dataLabel: "profile rows",
-        rows: profiles.map((profile) => ({
-          name: profile.profiles?.full_name ?? profile.profiles?.email ?? "Trusted Bum",
-          availability: profile.availability_status,
-          verification: profile.verification_status,
-          homeRegion: profile.home_region,
-          industries: profile.industries.join(", "),
-          buyerPersonas: profile.buyer_personas.join(", "),
-          updatedAt: profile.updated_at,
-        })),
-        columns: [
-          { key: "name", label: "Name" },
-          { key: "availability", label: "Availability" },
-          { key: "verification", label: "Verification" },
-          { key: "homeRegion", label: "Home region" },
-          { key: "industries", label: "Industries" },
-          { key: "buyerPersonas", label: "Buyer personas" },
-        ],
-        dateKey: "updatedAt",
-        groupByKey: "availability",
-        groupByLabel: "availability",
-        valueLabel: "Profiles",
-      },
     ];
 
     if (canReadFinance) {
@@ -252,7 +217,6 @@ export default function ClientReports() {
     return reports;
   }, [
     accessRole,
-    bumProfilesQuery.data,
     canReadFinance,
     invoicesQuery.data,
     opportunitiesQuery.data,
@@ -265,7 +229,6 @@ export default function ClientReports() {
     targetsQuery.isLoading ||
     opportunitiesQuery.isLoading ||
     reverseOpportunitiesQuery.isLoading ||
-    bumProfilesQuery.isLoading ||
     paymentsQuery.isLoading ||
     invoicesQuery.isLoading;
 

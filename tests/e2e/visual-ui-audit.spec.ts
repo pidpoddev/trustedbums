@@ -41,9 +41,9 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
   ],
   CLIENT_ADMIN: [
     { path: "/client/dashboard", heading: /Welcome back/i, name: "client-admin-dashboard" },
-    { path: "/client/targets", heading: "Target Accounts", name: "client-targets" },
+    { path: "/client/live-conversations", heading: "Inbox", name: "client-admin-inbox" },
     { path: "/client/opportunities/new", heading: "Opportunities", name: "client-register-opportunity" },
-    { path: "/client/bum-directory", heading: "Bum Directory", name: "client-bum-directory" },
+    { path: "/client/claims", heading: "Claims", name: "client-admin-claims" },
     { path: "/client/trainings", heading: "Training & Assets", name: "client-trainings" },
     { path: "/client/requests", heading: "Customer Leads", name: "client-requests" },
     { path: "/client/payments", heading: "Customer Payment Reports", name: "client-payments" },
@@ -54,6 +54,8 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
   ],
   CLIENT_FINANCE: [
     { path: "/client/dashboard", heading: /Welcome back/i, name: "client-finance-dashboard" },
+    { path: "/client/live-conversations", heading: "Inbox", name: "client-finance-inbox" },
+    { path: "/client/claims", heading: "Claims", name: "client-finance-claims" },
     { path: "/client/payments", heading: "Customer Payment Reports", name: "client-finance-payments" },
     { path: "/client/exports", heading: "Exports", name: "client-finance-exports" },
     { path: "/client/reports", heading: "Client Reports", name: "client-finance-reports" },
@@ -127,13 +129,12 @@ const interactionsByRole: Record<RoleKey, VisualInteraction[]> = {
   ],
   CLIENT_ADMIN: [
     {
-      path: "/client/targets",
-      heading: "Target Accounts",
-      name: "client-target-add-form-open",
+      path: "/client/opportunities/new",
+      heading: "Opportunities",
+      name: "client-opportunity-form-open",
       prepare: async (page) => {
-        await page.getByRole("button", { name: /Add target account/i }).first().click();
-        await expect(page.getByLabel("Target account name")).toBeVisible();
-        await expect(page.getByRole("button", { name: "Save target account" })).toBeVisible();
+        await expect(page.getByLabel("Customer account name")).toBeVisible();
+        await expect(page.getByRole("button", { name: /Publish Opportunity to Bums|Save Draft Opportunity/i })).toBeVisible();
       },
     },
     {

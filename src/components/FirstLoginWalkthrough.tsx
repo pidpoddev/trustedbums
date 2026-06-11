@@ -82,10 +82,10 @@ function getWalkthroughSteps(role?: string, clientAccessRole?: string): Walkthro
         routeLabel: "Open Dashboard",
       },
       {
-        title: "Add target accounts and opportunities",
-        body: "Target Accounts and Opportunities tell Trusted Bums where warm introductions can help your company most.",
-        route: "/client/targets",
-        routeLabel: "Open Target Accounts",
+        title: "Add opportunities",
+        body: "Opportunities are where you add customer accounts, keep private drafts, and publish ready deals to Bums for matching.",
+        route: "/client/opportunities",
+        routeLabel: "Open Opportunities",
       },
       {
         title: "Manage your team and agreement",
