@@ -30,7 +30,6 @@ import {
   Building2,
   ContactRound,
   GraduationCap,
-  PlusCircle,
   Sparkles,
   BarChart3,
   MessageSquare,
@@ -39,7 +38,6 @@ import {
 const navGroups = [
   { label: "Workspace", items: [
   { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
-  { title: "Prospects", url: "/bum/prospects", icon: PlusCircle },
   { title: "Customer Leads", url: "/bum/reverse-opportunities", icon: Sparkles },
   { title: "Clients", url: "/bum/clients", icon: Building2 },
   { title: "Contacts", url: "/bum/contacts", icon: ContactRound },

@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getPageItems } from "@/lib/pagination";
 import { listBumSavedItems, listCompanies, listCustomerTargets, listMarketplaceOpportunities, setBumSavedItem } from "@/lib/portalApi";
 import { cn } from "@/lib/utils";
-import { Search, Building2, ExternalLink, Briefcase, Target, Heart, DollarSign, Clock } from "lucide-react";
+import { Search, Building2, ExternalLink, Briefcase, Target, Heart, DollarSign, Clock, UserPlus } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CLIENTS_PAGE_SIZE = 8;
@@ -245,7 +245,14 @@ export default function BumClients() {
       <PageHeader
         title="Clients We Represent"
         description="Search live client companies, target-account pipelines, and formal marketplace opportunities."
-      />
+      >
+        <Button asChild>
+          <Link to="/bum/prospects">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Recommend New Client
+          </Link>
+        </Button>
+      </PageHeader>
 
       <FilterPanel summary={filterSummary}>
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto] xl:items-end">
