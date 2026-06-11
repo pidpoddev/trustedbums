@@ -1,4 +1,6 @@
 import { readFileSync } from "node:fs";
+import { footerLegalLinks, getLegalDocument } from "@/data/legalDocuments";
+import { PARTNER_FAQ_BODY, parseFaq } from "@/data/partnerTerms";
 import { describe, expect, it } from "vitest";
 
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
@@ -34,5 +36,21 @@ describe("terms contract rules", () => {
     expect(clientTermsSource).toContain("const canSkipThisLogin = canDeferCurrentTerms && Boolean(session?.id);");
     expect(clientTermsSource).toContain("if (!session?.id)");
     expect(clientTermsSource).toContain("await deferPartnerTerms(user, terms, navigator.userAgent ?? null, session.id);");
+  });
+
+  it("keeps the client agreement FAQ useful for legal review", () => {
+    const faqItems = parseFaq(PARTNER_FAQ_BODY);
+    const questions = faqItems.map((item) => item.question);
+    const publicFaq = getLegalDocument("client-agreement-faq");
+
+    expect(faqItems).toHaveLength(18);
+    expect(questions).toContain("What is the purpose of this Client Agreement?");
+    expect(questions).toContain("Why are opportunity registration rules broad?");
+    expect(questions).toContain("Why does the client keep responsibility for products, pricing, proposals, contracts, and delivery?");
+    expect(questions).toContain("Why is liability limited?");
+    expect(PARTNER_FAQ_BODY).toContain("legal reviewers");
+    expect(PARTNER_FAQ_BODY).toContain("more specific approved document controls");
+    expect(publicFaq?.sections).toHaveLength(faqItems.length);
+    expect(footerLegalLinks).toContainEqual({ to: "/legal/client-agreement-faq", label: "Client Agreement FAQ" });
   });
 });
