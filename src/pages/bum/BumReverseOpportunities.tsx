@@ -315,7 +315,7 @@ export default function BumReverseOpportunities() {
                   <p className="text-sm text-emerald-700">No existing Customer Opportunity found for this Client.</p>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Enter the customer domain first so we can prevent duplicate Customer Opportunities for this Client.
+                    Enter the customer domain first so we can catch duplicates, including associated domains already tied to the same company.
                   </p>
                 )}
               </div>
