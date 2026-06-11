@@ -1,16 +1,21 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Building2, ExternalLink, Mail, Phone, Search, UserRound } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, ExternalLink, Mail, Phone, Plus, Search, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { listBumRepresentedContacts, type BumRepresentedContactRecord, type BumRepresentedContactSource } from "@/lib/portalApi";
+import { createBumRepresentedContact, listBumRepresentedContacts, type BumRepresentedContactRecord, type BumRepresentedContactSource } from "@/lib/portalApi";
 
 const sourceLabels: Record<BumRepresentedContactSource, string> = {
   OPPORTUNITY_CLAIM: "Claim",
@@ -18,6 +23,17 @@ const sourceLabels: Record<BumRepresentedContactSource, string> = {
   TARGET_RESPONSE: "Target response",
   EXTENSION_CAPTURE: "LinkedIn capture",
   MANUAL: "Contact",
+};
+
+const emptyContactForm = {
+  name: "",
+  companyName: "",
+  title: "",
+  email: "",
+  phone: "",
+  linkedinUrl: "",
+  relationshipStrength: "",
+  note: "",
 };
 
 function formatDate(value: string, timeZone: string) {
@@ -47,8 +63,12 @@ function searchableText(contact: BumRepresentedContactRecord) {
 
 export default function BumContacts() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const timeZone = useUserTimeZone();
   const [query, setQuery] = useState("");
+  const [addContactOpen, setAddContactOpen] = useState(false);
+  const [contactForm, setContactForm] = useState(emptyContactForm);
   const contactsQuery = useQuery({
     queryKey: ["bum-represented-contacts", user?.id],
     queryFn: () => listBumRepresentedContacts(user!.id),
@@ -68,12 +88,51 @@ export default function BumContacts() {
     );
   }, [contacts]);
 
+  const addContactMutation = useMutation({
+    mutationFn: () => {
+      if (!contactForm.name.trim()) throw new Error("Contact name is required.");
+      return createBumRepresentedContact({
+        name: contactForm.name.trim(),
+        companyName: contactForm.companyName.trim(),
+        title: contactForm.title.trim(),
+        email: contactForm.email.trim(),
+        phoneNumbers: contactForm.phone.trim() ? [contactForm.phone.trim()] : [],
+        linkedinUrl: contactForm.linkedinUrl.trim(),
+        relationshipStrength: contactForm.relationshipStrength,
+        note: contactForm.note.trim(),
+      });
+    },
+    onSuccess: (result) => {
+      queryClient.setQueryData<BumRepresentedContactRecord[]>(["bum-represented-contacts", user?.id], (current) => {
+        if (!current?.length) return [result.contact];
+        return [result.contact, ...current.filter((contact) => contact.id !== result.contact.id)];
+      });
+      queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["portal-search", "bum-contacts", user?.id] });
+      setContactForm(emptyContactForm);
+      setAddContactOpen(false);
+      toast({ title: "Contact added", description: "The contact is now in your Bum Contacts." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to add contact", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  function updateContactForm(field: keyof typeof emptyContactForm, value: string) {
+    setContactForm((current) => ({ ...current, [field]: value }));
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Contacts"
         description="See the people you represent across claims, prospect recommendations, client target responses, and LinkedIn captures."
-      />
+      >
+        <Button onClick={() => setAddContactOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add contact
+        </Button>
+      </PageHeader>
 
       <div className="grid gap-3 md:grid-cols-5">
         <div className="rounded-lg border bg-card p-4">
@@ -130,9 +189,15 @@ export default function BumContacts() {
                 Add a prospect, respond to a client target, claim an opportunity, or send a LinkedIn profile from the extension to start building your contact list.
               </p>
             </div>
-            <Button variant="outline" asChild>
-              <Link to="/bum/opportunities">Browse opportunities</Link>
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button onClick={() => setAddContactOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add contact
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/bum/opportunities">Browse opportunities</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : null}
@@ -196,6 +261,117 @@ export default function BumContacts() {
           </Card>
         ))}
       </div>
+
+      <Dialog
+        open={addContactOpen}
+        onOpenChange={(open) => {
+          setAddContactOpen(open);
+          if (!open && !addContactMutation.isPending) {
+            setContactForm(emptyContactForm);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display">Add contact</DialogTitle>
+            <DialogDescription>Add someone you know so they are available when you claim or respond to opportunities.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="new-contact-name">Name</Label>
+                <Input
+                  id="new-contact-name"
+                  value={contactForm.name}
+                  onChange={(event) => updateContactForm("name", event.target.value)}
+                  placeholder="Jane Doe"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-contact-company">Company</Label>
+                <Input
+                  id="new-contact-company"
+                  value={contactForm.companyName}
+                  onChange={(event) => updateContactForm("companyName", event.target.value)}
+                  placeholder="Acme Corp"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-contact-title">Title</Label>
+                <Input
+                  id="new-contact-title"
+                  value={contactForm.title}
+                  onChange={(event) => updateContactForm("title", event.target.value)}
+                  placeholder="VP Operations"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-contact-email">Email</Label>
+                <Input
+                  id="new-contact-email"
+                  type="email"
+                  value={contactForm.email}
+                  onChange={(event) => updateContactForm("email", event.target.value)}
+                  placeholder="jane@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-contact-phone">Phone</Label>
+                <Input
+                  id="new-contact-phone"
+                  value={contactForm.phone}
+                  onChange={(event) => updateContactForm("phone", event.target.value)}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-contact-relationship">Relationship</Label>
+                <Select value={contactForm.relationshipStrength || "UNKNOWN"} onValueChange={(value) => updateContactForm("relationshipStrength", value === "UNKNOWN" ? "" : value)}>
+                  <SelectTrigger id="new-contact-relationship">
+                    <SelectValue placeholder="Select relationship" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNKNOWN">Not specified</SelectItem>
+                    <SelectItem value="STRONG">Strong</SelectItem>
+                    <SelectItem value="MODERATE">Moderate</SelectItem>
+                    <SelectItem value="WEAK">Weak</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-contact-linkedin">LinkedIn</Label>
+              <Input
+                id="new-contact-linkedin"
+                value={contactForm.linkedinUrl}
+                onChange={(event) => updateContactForm("linkedinUrl", event.target.value)}
+                placeholder="https://www.linkedin.com/in/jane-doe"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-contact-note">Notes</Label>
+              <Textarea
+                id="new-contact-note"
+                rows={4}
+                value={contactForm.note}
+                onChange={(event) => updateContactForm("note", event.target.value)}
+                placeholder="How you know them and when an introduction would make sense."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAddContactOpen(false)} disabled={addContactMutation.isPending}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={() => addContactMutation.mutate()} disabled={!contactForm.name.trim() || addContactMutation.isPending}>
+              Add contact
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
