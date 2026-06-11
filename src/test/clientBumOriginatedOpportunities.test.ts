@@ -5,6 +5,7 @@ const appSource = readFileSync("src/App.tsx", "utf8");
 const clientLayoutSource = readFileSync("src/layouts/ClientLayout.tsx", "utf8");
 const clientOpportunitiesSource = readFileSync("src/pages/client/ClientOpportunityNew.tsx", "utf8");
 const portalSearchSource = readFileSync("src/components/PortalGlobalSearch.tsx", "utf8");
+const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 
 describe("client Bum-Originated opportunities", () => {
   it("keeps Bum-originated demand inside Client Opportunities", () => {
@@ -13,6 +14,13 @@ describe("client Bum-Originated opportunities", () => {
     expect(clientOpportunitiesSource).toContain("Opportunity filter");
     expect(clientOpportunitiesSource).not.toContain("@/components/ui/tabs");
     expect(clientOpportunitiesSource).not.toContain("<Tabs");
+    expect(clientOpportunitiesSource).not.toContain('<SelectItem value="questions">');
+    expect(clientOpportunitiesSource).not.toContain("Opportunity questions");
+    expect(clientOpportunitiesSource).not.toContain("listClientOpportunityQuestions");
+    expect(clientOpportunitiesSource).not.toContain("respondToOpportunityQuestion");
+    expect(clientOpportunitiesSource).toContain('navigate("/client/live-conversations", { replace: true })');
+    expect(portalApiSource).not.toContain("/client/opportunities?tab=questions");
+    expect(portalApiSource).toContain("/client/live-conversations");
     expect(clientOpportunitiesSource).toContain("listClientReverseOpportunities");
     expect(clientOpportunitiesSource).toContain('opportunityOriginLabel("BUM_ORIGINATED")');
   });

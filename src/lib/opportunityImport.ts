@@ -1,10 +1,44 @@
 import { parseCsv, type CsvRow } from "@/lib/csv";
 import { DEFAULT_COMMISSION_DURATION } from "@/data/partnerTerms";
-import type { OpportunityInput } from "@/lib/portalApi";
+import type { OpportunityInput, RegistrationStatus } from "@/lib/portalApi";
+
+export const OPPORTUNITY_IMPORT_TEMPLATE_HEADERS = [
+  "opportunity_id",
+  "customer_name",
+  "status",
+  "commission_plan",
+  "business_unit",
+  "expected_product_service",
+  "estimated_deal_value",
+  "expected_timeline",
+  "client_contact",
+  "trusted_bums_contact",
+  "opportunity_description",
+  "notes",
+];
+
+export const OPPORTUNITY_IMPORT_TEMPLATE_EXAMPLE = [
+  "",
+  "Acme Corp",
+  "Published",
+  "Standard 10%",
+  "Enterprise IT",
+  "Security platform",
+  "75000",
+  "Q4 pilot",
+  "Jane Client",
+  "Trusted Bums team",
+  "Acme is evaluating vendors for the security renewal.",
+  "Use Draft instead of Published to keep the opportunity private.",
+];
 
 export interface OpportunityImportRow {
   rowNumber: number;
+  opportunity_id?: string;
   target_account_name: string;
+  status?: RegistrationStatus;
+  pay_program_id?: string;
+  commission_plan?: string;
   business_unit?: string;
   opportunity_description?: string;
   client_contact?: string;
@@ -60,9 +94,35 @@ function toNullableRate(value: string) {
   return parsed === null ? undefined : parsed;
 }
 
+function toOpportunityStatus(value: string): RegistrationStatus | undefined {
+  const normalized = value.trim().toLowerCase().replace(/[_-]+/g, " ");
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (["published", "publish", "accepted", "live", "public"].includes(normalized)) {
+    return "Accepted";
+  }
+
+  if (["draft", "private"].includes(normalized)) {
+    return "Draft";
+  }
+
+  if (normalized === "closed won") {
+    return "Closed Won";
+  }
+
+  if (normalized === "closed lost") {
+    return "Closed Lost";
+  }
+
+  return undefined;
+}
+
 function mapOpportunityRow(row: CsvRow, index: number): OpportunityImportRow | null {
   const normalized = normalizeRow(row);
   const targetAccountName = getValue(normalized, [
+    "customer_name",
     "target_account_name",
     "target_account",
     "account_name",
@@ -78,7 +138,11 @@ function mapOpportunityRow(row: CsvRow, index: number): OpportunityImportRow | n
 
   return {
     rowNumber: index + 2,
+    opportunity_id: toNullableString(getValue(normalized, ["opportunity_id", "id"])),
     target_account_name: targetAccountName.trim(),
+    status: toOpportunityStatus(getValue(normalized, ["status", "publish_status", "draft_or_published"])),
+    pay_program_id: toNullableString(getValue(normalized, ["pay_program_id", "commission_plan_id"])),
+    commission_plan: toNullableString(getValue(normalized, ["commission_plan", "commission_structure", "plan"])),
     business_unit: toNullableString(getValue(normalized, ["business_unit", "department", "team"])),
     opportunity_description: toNullableString(
       getValue(normalized, ["opportunity_description", "description", "use_case", "context"]),
@@ -129,6 +193,13 @@ export function toOpportunityInput(row: OpportunityImportRow): OpportunityInput 
     commission_rate: row.commission_rate,
     commission_duration: row.commission_duration,
     notes: row.notes,
-    status: "Accepted",
+    status: row.status ?? "Accepted",
   };
+}
+
+export function buildOpportunityImportTemplateCsv() {
+  return [
+    OPPORTUNITY_IMPORT_TEMPLATE_HEADERS.join(","),
+    OPPORTUNITY_IMPORT_TEMPLATE_EXAMPLE.map((value) => `"${value.replace(/"/g, "\"\"")}"`).join(","),
+  ].join("\n");
 }

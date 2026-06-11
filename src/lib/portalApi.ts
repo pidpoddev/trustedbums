@@ -2633,6 +2633,12 @@ export async function updateOwnOpportunityRegistration(
   user: AuthUser,
   opportunityId: string,
   updates: {
+    target_account_name?: string;
+    business_unit?: string;
+    opportunity_description?: string;
+    client_contact?: string;
+    trusted_bums_contact?: string;
+    expected_product_service?: string;
     estimated_deal_value?: number | null;
     expected_timeline?: string;
     notes?: string;
@@ -2663,6 +2669,35 @@ export async function updateOwnOpportunityRegistration(
     throw new Error("Clients can only save draft opportunities or publish opportunities to Bums.");
   }
 
+  if (updates.target_account_name !== undefined && !updates.target_account_name.trim()) {
+    throw new Error("Customer name is required.");
+  }
+
+  const lockedClaimFields = [
+    "target_account_name",
+    "business_unit",
+    "opportunity_description",
+    "expected_product_service",
+    "pay_program_id",
+    "status",
+  ] as const;
+  const updatesLockedClaimField = lockedClaimFields.some((field) => updates[field] !== undefined);
+
+  if (updatesLockedClaimField) {
+    const { count: claimCount, error: claimError } = await supabase
+      .from("opportunity_claims")
+      .select("id", { count: "exact", head: true })
+      .eq("opportunity_registration_id", opportunityId);
+
+    if (claimError) {
+      throw claimError;
+    }
+
+    if ((claimCount ?? 0) > 0) {
+      throw new Error("Claimed opportunities cannot change Customer, scope, publish status, or commission plan fields.");
+    }
+  }
+
   let commissionRate = opportunity.commission_rate;
   let commissionDuration = opportunity.commission_duration;
 
@@ -2689,6 +2724,30 @@ export async function updateOwnOpportunityRegistration(
   const { data, error } = await supabase
     .from("opportunity_registrations")
     .update({
+      target_account_name:
+        updates.target_account_name !== undefined
+          ? updates.target_account_name.trim()
+          : opportunity.target_account_name,
+      business_unit:
+        updates.business_unit !== undefined
+          ? toNullableString(updates.business_unit)
+          : opportunity.business_unit,
+      opportunity_description:
+        updates.opportunity_description !== undefined
+          ? toNullableString(updates.opportunity_description)
+          : opportunity.opportunity_description,
+      client_contact:
+        updates.client_contact !== undefined
+          ? toNullableString(updates.client_contact)
+          : opportunity.client_contact,
+      trusted_bums_contact:
+        updates.trusted_bums_contact !== undefined
+          ? toNullableString(updates.trusted_bums_contact)
+          : opportunity.trusted_bums_contact,
+      expected_product_service:
+        updates.expected_product_service !== undefined
+          ? toNullableString(updates.expected_product_service)
+          : opportunity.expected_product_service,
       estimated_deal_value:
         updates.estimated_deal_value !== undefined ? updates.estimated_deal_value : opportunity.estimated_deal_value,
       expected_timeline:
@@ -4568,7 +4627,7 @@ export async function createOpportunityQuestion(user: AuthUser, input: Opportuni
       console.error("Unable to create opportunity question conversation", error);
     });
 
-  const opportunityUrl = `${getPortalOrigin()}/client/opportunities?tab=questions&opportunityId=${encodeURIComponent(opportunity.id)}`;
+  const opportunityUrl = `${getPortalOrigin()}/client/live-conversations`;
   await sendAdminEmail({
     mode: "action",
     templateSlug: "opportunity_question_created_client",
@@ -6745,7 +6804,7 @@ export async function createCustomerTargetQuestion(user: AuthUser, input: Custom
       relationship_strength: "unknown",
       bum_name: user.name || user.email,
       response_note: question,
-      response_url: getPortalOrigin() + "/client/opportunities?tab=questions&targetResponseId=" + data.id,
+      response_url: getPortalOrigin() + "/client/live-conversations",
     },
     triggeredBy: "CUSTOMER_TARGET_RESPONSE_CREATED",
   }).catch((emailError) => {

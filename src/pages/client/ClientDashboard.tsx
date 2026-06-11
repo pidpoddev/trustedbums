@@ -303,102 +303,102 @@ export default function ClientDashboard() {
   }
 
   return (
-      <div>
-        <PageHeader
+    <div>
+      <PageHeader
         title={`Welcome back, ${user?.name ?? "Client"}`}
         description={`Manage opportunities, Bum matching, and account activity for ${user?.companyName ?? "your client workspace"}.`}
-        >
+      >
         <Button asChild>
           <Link to="/client/opportunities/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Opportunity
           </Link>
         </Button>
-        </PageHeader>
+      </PageHeader>
 
-        {deniedFrom ? (
-          <Card className="mb-6 border-warning/50 bg-warning/10">
-            <CardContent className="flex flex-col gap-3 pt-6 text-sm md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="font-medium text-foreground">{deniedAccessRecovery.title}</p>
-                <p className="mt-1 text-muted-foreground">{deniedAccessRecovery.description}</p>
-              </div>
-              <Button asChild variant="outline">
-                <Link to={deniedAccessRecovery.to}>{deniedAccessRecovery.cta}</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : null}
+      {deniedFrom ? (
+        <Card className="mb-6 border-warning/50 bg-warning/10">
+          <CardContent className="flex flex-col gap-3 pt-6 text-sm md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="font-medium text-foreground">{deniedAccessRecovery.title}</p>
+              <p className="mt-1 text-muted-foreground">{deniedAccessRecovery.description}</p>
+            </div>
+            <Button asChild variant="outline">
+              <Link to={deniedAccessRecovery.to}>{deniedAccessRecovery.cta}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <StatCard title="Draft Opportunities" value={draftCount} icon={Clock} to="/client/opportunities" />
-        <StatCard title="Bum Responses" value={pendingTargetResponses.length} icon={Handshake} to="/client/opportunities?tab=responses" />
-        <StatCard title="Bum-Originated" value={reverseOpportunities.length} icon={Clock} to="/client/opportunities?tab=bum-originated" />
-        <StatCard title="Active Opportunities" value={activeCount} icon={Target} to="/client/opportunities" />
-        <StatCard title="Published to Bums" value={acceptedCount} icon={FileCheck} to="/client/opportunities" />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
-          {pendingTargetResponses.length ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-display">Bum responses awaiting approval</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {pendingTargetResponses.slice(0, 4).map((response) => (
-                <div key={response.id} className="flex flex-col gap-3 border-b py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-medium">{response.customer_targets?.target_companies?.name ?? response.customer_targets?.target_account_name ?? "Target account"}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {response.profiles?.full_name ?? response.profiles?.email ?? "A Bum"} knows {response.contact_name} · {response.relationship_strength}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Submitted {formatDateTimeForTimeZone(response.created_at, timeZone)}</p>
-                  </div>
-                  <Button asChild size="sm">
-                    <Link to={`/client/opportunities?tab=responses&targetResponseId=${response.id}`}>Review</Link>
-                  </Button>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        ) : null}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard title="Active" value={activeCount} icon={Target} subtitle="In progress" to="/client/opportunities" />
+            <StatCard title="Published" value={acceptedCount} icon={FileCheck} subtitle="Visible to Bums" to="/client/opportunities" />
+            <StatCard title="Drafts" value={draftCount} icon={Clock} subtitle="Private" to="/client/opportunities" />
+            <StatCard title="Responses" value={pendingTargetResponses.length} icon={Handshake} subtitle="Awaiting review" to="/client/opportunities?tab=responses" />
+            <StatCard title="Bum-Originated" value={reverseOpportunities.length} icon={Clock} subtitle="From Bums" to="/client/opportunities?tab=bum-originated" />
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display">Opportunity Pipeline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {opportunities.length ? (
-              <div className="space-y-4">
-                {opportunities.slice(0, 6).map((opportunity) => (
-                  <div key={opportunity.id} className="flex items-center justify-between gap-4 border-b py-3 last:border-0">
+          {pendingTargetResponses.length ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-display">Bum responses awaiting approval</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {pendingTargetResponses.slice(0, 4).map((response) => (
+                  <div key={response.id} className="flex flex-col gap-3 border-b py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="font-medium">{opportunity.target_account_name}</p>
+                      <p className="font-medium">{response.customer_targets?.target_companies?.name ?? response.customer_targets?.target_account_name ?? "Target account"}</p>
                       <p className="text-sm text-muted-foreground">
-                        {opportunity.expected_product_service || opportunity.business_unit || "Opportunity"} · {opportunity.status === "Accepted" ? "published to Bums" : opportunity.status.toLowerCase()}
+                        {response.profiles?.full_name ?? response.profiles?.email ?? "A Bum"} knows {response.contact_name} · {response.relationship_strength}
                       </p>
+                      <p className="text-xs text-muted-foreground">Submitted {formatDateTimeForTimeZone(response.created_at, timeZone)}</p>
                     </div>
-                    <StatusBadge label={opportunity.status === "Accepted" ? "Published" : opportunity.status} variant={opportunity.status === "Accepted" ? "success" : "info"} />
+                    <Button asChild size="sm">
+                      <Link to={`/client/opportunities?tab=responses&targetResponseId=${response.id}`}>Review</Link>
+                    </Button>
                   </div>
                 ))}
-              </div>
-            ) : (
-              <div className="rounded-md border border-dashed p-6 text-center">
-                <p className="font-medium">No opportunities yet</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Add the customer companies you want to sell into, then publish ready opportunities to Bums.
-                </p>
-                <Button asChild className="mt-4">
-                  <Link to="/client/opportunities/new">Create Opportunity</Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display">Opportunity Pipeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {opportunities.length ? (
+                <div className="space-y-4">
+                  {opportunities.slice(0, 6).map((opportunity) => (
+                    <div key={opportunity.id} className="flex items-center justify-between gap-4 border-b py-3 last:border-0">
+                      <div>
+                        <p className="font-medium">{opportunity.target_account_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {opportunity.expected_product_service || opportunity.business_unit || "Opportunity"} · {opportunity.status === "Accepted" ? "published to Bums" : opportunity.status.toLowerCase()}
+                        </p>
+                      </div>
+                      <StatusBadge label={opportunity.status === "Accepted" ? "Published" : opportunity.status} variant={opportunity.status === "Accepted" ? "success" : "info"} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-md border border-dashed p-6 text-center">
+                  <p className="font-medium">No opportunities yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Add the customer companies you want to sell into, then publish ready opportunities to Bums.
+                  </p>
+                  <Button asChild className="mt-4">
+                    <Link to="/client/opportunities/new">Create Opportunity</Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 xl:sticky xl:top-20">
           <NextActionsCard actions={clientNextActions} />
 
           <Card>

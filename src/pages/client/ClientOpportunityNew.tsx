@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocation } from "react-router-dom";
-import { Building2, CheckCircle, FileUp, MessageSquare, PlusCircle, Search, Send, Sparkles, Trash2, Users, X } from "lucide-react";
-import { openConversationDock } from "@/lib/conversationDock";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Building2, CheckCircle, Download, FileUp, MessageSquare, PlusCircle, Search, Send, Sparkles, Trash2, Users, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
@@ -24,13 +23,11 @@ import {
   createOpportunityRegistration,
   deleteOwnOpportunityRegistration,
   formalizeCustomerTargetResponse,
-  listClientOpportunityQuestions,
   listCustomerTargetResponses,
   listClientReverseOpportunities,
   listOpportunityClaims,
   listOwnOpportunityRegistrations,
   listSelectableClientPayPrograms,
-  respondToOpportunityQuestion,
   updateCustomerTargetResponseStatus,
   updateOpportunityClaimStatus,
   updateOwnOpportunityRegistration,
@@ -38,19 +35,19 @@ import {
   type CustomerTargetResponseRecord,
   type OpportunityClaimDeclineReason,
   type OpportunityClaimRecord,
-  type OpportunityQuestionRecord,
-  type OpportunityQuestionVisibility,
   type OpportunityRegistration,
+  type RegistrationStatus,
   type ReverseOpportunityStatus,
 } from "@/lib/portalApi";
 import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromReverseOpportunityStatus, stageFromTargetResponseStatus } from "@/lib/opportunityModel";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { parseOpportunityImportFile, toOpportunityInput, type OpportunityImportRow } from "@/lib/opportunityImport";
+import { buildOpportunityImportTemplateCsv, parseOpportunityImportFile, toOpportunityInput, type OpportunityImportRow } from "@/lib/opportunityImport";
 import { claimDeclineReasonLabel, claimDeclineReasons } from "@/lib/claimConfig";
 
 const REGISTERED_OPPORTUNITIES_PAGE_SIZE = 6;
 
-type OpportunityViewFilter = "pipeline" | "bum-originated" | "responses" | "questions" | "import" | "register" | "commission-plan";
+type OpportunityViewFilter = "pipeline" | "bum-originated" | "responses" | "import" | "register" | "commission-plan";
+type OpportunityBulkMode = "create" | "update";
 
 type BumOriginatedTypeFilter = "ALL" | "NEW" | "ACTIVE" | "CONVERTED" | "CLOSED";
 
@@ -289,10 +286,37 @@ function nextStepForOpportunity(opportunity: OpportunityRegistration, assignedCl
   return opportunity.expected_timeline ?? "Set next step";
 }
 
+function csvEscape(value: string | number | null | undefined) {
+  const text = value === null || value === undefined ? "" : String(value);
+  return `"${text.replace(/"/g, "\"\"")}"`;
+}
+
+function downloadCsvFile(filename: string, csv: string) {
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function normalizePlanLookup(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function nullableTextChanged(nextValue: string | undefined, currentValue: string | null | undefined) {
+  return nextValue !== undefined && nextValue.trim() !== (currentValue ?? "");
+}
+
+function nullableNumberChanged(nextValue: number | null | undefined, currentValue: number | null | undefined) {
+  return nextValue !== undefined && Number(nextValue ?? 0) !== Number(currentValue ?? 0);
+}
+
 export default function ClientOpportunityNew() {
   const { user } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const linkedClaimId = useMemo(() => new URLSearchParams(location.search).get("claimId"), [location.search]);
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
@@ -300,16 +324,16 @@ export default function ClientOpportunityNew() {
   const [requestForm, setRequestForm] = useState(initialRequestForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
+  const [bulkMode, setBulkMode] = useState<OpportunityBulkMode>("create");
   const [importRows, setImportRows] = useState<OpportunityImportRow[]>([]);
   const [importFileName, setImportFileName] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ success: number; failures: string[] } | null>(null);
   const [editingOpportunityId, setEditingOpportunityId] = useState<string | null>(null);
   const [editEstimatedDealValue, setEditEstimatedDealValue] = useState("");
   const [editPayProgramId, setEditPayProgramId] = useState("");
   const [editExpectedTimeline, setEditExpectedTimeline] = useState("");
   const [editNotes, setEditNotes] = useState("");
-  const [questionResponses, setQuestionResponses] = useState<Record<string, string>>({});
-  const [questionVisibilities, setQuestionVisibilities] = useState<Record<string, OpportunityQuestionVisibility>>({});
   const [claimDeclineReasonById, setClaimDeclineReasonById] = useState<Record<string, OpportunityClaimDeclineReason>>({});
   const [claimDeclineNoteById, setClaimDeclineNoteById] = useState<Record<string, string>>({});
   const [responsePayProgramIds, setResponsePayProgramIds] = useState<Record<string, string>>({});
@@ -383,12 +407,14 @@ export default function ClientOpportunityNew() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get("tab");
-    if (tab === "questions" || tab === "responses" || tab === "bum-originated") {
+    if (tab === "questions") {
+      navigate("/client/live-conversations", { replace: true });
+    } else if (tab === "responses" || tab === "bum-originated") {
       setActiveView(tab);
     } else if (params.get("claimId")) {
       setActiveView("pipeline");
     }
-  }, [location.search]);
+  }, [location.search, navigate]);
 
   const importPreviewRows = useMemo(() => importRows.slice(0, 5), [importRows]);
   const payProgramsQuery = useQuery({
@@ -409,11 +435,6 @@ export default function ClientOpportunityNew() {
   const targetResponsesQuery = useQuery({
     queryKey: ["client-target-responses", user?.clientId],
     queryFn: () => listCustomerTargetResponses(user!),
-    enabled: Boolean(user?.clientId),
-  });
-  const questionsQuery = useQuery({
-    queryKey: ["client-opportunity-questions", user?.clientId],
-    queryFn: () => listClientOpportunityQuestions(user!),
     enabled: Boolean(user?.clientId),
   });
   const bumOriginatedQueryResult = useQuery({
@@ -494,36 +515,6 @@ export default function ClientOpportunityNew() {
     },
   });
 
-  const answerQuestionMutation = useMutation({
-    mutationFn: ({ question, response, visibility }: { question: OpportunityQuestionRecord; response: string; visibility: OpportunityQuestionVisibility }) =>
-      respondToOpportunityQuestion(user!, question.id, { response, visibility }),
-    onSuccess: (question) => {
-      queryClient.invalidateQueries({ queryKey: ["client-opportunity-questions", user?.clientId] });
-      queryClient.invalidateQueries({ queryKey: ["conversation-threads"] });
-      setQuestionResponses((current) => {
-        const next = { ...current };
-        delete next[question.id];
-        return next;
-      });
-      setQuestionVisibilities((current) => {
-        const next = { ...current };
-        delete next[question.id];
-        return next;
-      });
-      toast({
-        title: "Response saved",
-        description: question.response_visibility === "PUBLIC" ? "The answer is now part of the opportunity detail for all Bums." : "The answer is visible to the Bum who asked.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Unable to save response",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const publishOpportunityMutation = useMutation({
     mutationFn: (opportunity: OpportunityRegistration) =>
       updateOwnOpportunityRegistration(user!, opportunity.id, { status: "Accepted" }),
@@ -545,7 +536,11 @@ export default function ClientOpportunityNew() {
 
   const deleteOpportunityMutation = useMutation({
     mutationFn: (opportunity: OpportunityRegistration) => deleteOwnOpportunityRegistration(user!, opportunity.id),
-    onSuccess: async () => {
+    onSuccess: async (_deleted, opportunity) => {
+      queryClient.setQueryData<OpportunityRegistration[]>(
+        ["client-opportunity-registrations", user?.clientId],
+        (current) => current?.filter((item) => item.id !== opportunity.id) ?? [],
+      );
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-claims", user?.clientId] });
       toast({
@@ -566,6 +561,7 @@ export default function ClientOpportunityNew() {
     if (!file) {
       setImportRows([]);
       setImportFileName(null);
+      setBulkResult(null);
       return;
     }
 
@@ -573,6 +569,7 @@ export default function ClientOpportunityNew() {
       const rows = await parseOpportunityImportFile(file);
       setImportRows(rows);
       setImportFileName(file.name);
+      setBulkResult(null);
       toast({
         title: "Import file ready",
         description: `${rows.length} ${rows.length === 1 ? "opportunity" : "opportunities"} parsed for review.`,
@@ -594,21 +591,42 @@ export default function ClientOpportunityNew() {
     }
 
     setIsImporting(true);
+    const failures: string[] = [];
+    let success = 0;
 
     try {
       for (const row of importRows) {
-        await createOpportunityRegistration(user, toOpportunityInput(row));
+        try {
+          if (bulkMode === "create") {
+            const input = toOpportunityInput(row);
+            const payProgramId = resolveImportPayProgramId(row);
+            await createOpportunityRegistration(user, { ...input, pay_program_id: payProgramId ?? input.pay_program_id });
+          } else {
+            await updateOpportunityFromImportRow(row);
+          }
+          success += 1;
+        } catch (error) {
+          failures.push(`Row ${row.rowNumber}: ${error instanceof Error ? error.message : "Unable to process row."}`);
+        }
       }
 
+      setBulkResult({ success, failures });
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
+      await queryClient.invalidateQueries({ queryKey: ["client-opportunity-claims", user?.clientId] });
       toast({
-        title: "Opportunities imported",
-        description: `${importRows.length} ${importRows.length === 1 ? "opportunity was" : "opportunities were"} submitted from ${importFileName ?? "your CSV"}.`,
+        title: bulkMode === "create" ? "Opportunities imported" : "Opportunities updated",
+        description: failures.length
+          ? `${success} completed. ${failures[0]}`
+          : `${success} ${success === 1 ? "opportunity was" : "opportunities were"} ${bulkMode === "create" ? "created" : "updated"} from ${importFileName ?? "your CSV"}.`,
+        variant: failures.length ? "destructive" : undefined,
       });
-      setImportRows([]);
-      setImportFileName(null);
+      if (!failures.length) {
+        setImportRows([]);
+        setImportFileName(null);
+      }
     } catch (error) {
       toast({
-        title: "Unable to import opportunities",
+        title: bulkMode === "create" ? "Unable to import opportunities" : "Unable to update opportunities",
         description: error instanceof Error ? error.message : "Please fix the CSV and try again.",
         variant: "destructive",
       });
@@ -749,39 +767,11 @@ export default function ClientOpportunityNew() {
 
   const payPrograms = payProgramsQuery.data ?? [];
   const opportunities = opportunitiesQuery.data ?? [];
-  const questions = useMemo(() => questionsQuery.data ?? [], [questionsQuery.data]);
   const targetResponses = useMemo(() => targetResponsesQuery.data ?? [], [targetResponsesQuery.data]);
-  const linkedOpportunityId = new URLSearchParams(location.search).get("opportunityId");
   const linkedTargetResponseId = new URLSearchParams(location.search).get("targetResponseId");
-  const targetQuestionResponses = useMemo(() => {
-    return targetResponses.filter((response) => response.contact_name.toLowerCase().startsWith("question about "));
-  }, [targetResponses]);
   const relationshipTargetResponses = useMemo(() => {
     return targetResponses.filter((response) => !response.contact_name.toLowerCase().startsWith("question about "));
   }, [targetResponses]);
-  const sortedQuestions = useMemo(() => {
-    return [...questions].sort((a, b) => {
-      const aLinked = linkedOpportunityId && a.opportunity_registration_id === linkedOpportunityId ? 1 : 0;
-      const bLinked = linkedOpportunityId && b.opportunity_registration_id === linkedOpportunityId ? 1 : 0;
-      if (aLinked !== bLinked) return bLinked - aLinked;
-      const aOpen = a.status === "OPEN" ? 1 : 0;
-      const bOpen = b.status === "OPEN" ? 1 : 0;
-      if (aOpen !== bOpen) return bOpen - aOpen;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-  }, [linkedOpportunityId, questions]);
-  const sortedTargetQuestions = useMemo(() => {
-    return [...targetQuestionResponses].sort((a, b) => {
-      const aLinked = linkedTargetResponseId && a.id === linkedTargetResponseId ? 1 : 0;
-      const bLinked = linkedTargetResponseId && b.id === linkedTargetResponseId ? 1 : 0;
-      if (aLinked !== bLinked) return bLinked - aLinked;
-      const aOpen = a.status === "PROPOSED" ? 1 : 0;
-      const bOpen = b.status === "PROPOSED" ? 1 : 0;
-      if (aOpen !== bOpen) return bOpen - aOpen;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-  }, [linkedTargetResponseId, targetQuestionResponses]);
-  const openQuestionCount = questions.filter((question) => question.status === "OPEN").length + targetQuestionResponses.filter((response) => response.status === "PROPOSED").length;
   const pendingTargetResponseCount = relationshipTargetResponses.filter((response) => response.status === "PROPOSED").length;
   const bumOriginatedOpportunities = useMemo(() => {
     return (bumOriginatedQueryResult.data ?? []).filter((opportunity) => {
@@ -822,6 +812,151 @@ export default function ClientOpportunityNew() {
 
     return grouped;
   }, [claimsQuery.data]);
+  const resolveImportPayProgramId = (row: OpportunityImportRow) => {
+    if (row.pay_program_id) {
+      return row.pay_program_id;
+    }
+
+    if (!row.commission_plan) {
+      return undefined;
+    }
+
+    const normalizedPlanName = normalizePlanLookup(row.commission_plan);
+    const matchingPlan = payPrograms.find((plan) => normalizePlanLookup(plan.name) === normalizedPlanName);
+    if (!matchingPlan) {
+      throw new Error(`Commission plan "${row.commission_plan}" is not available for this company.`);
+    }
+
+    return matchingPlan.id;
+  };
+  const updateOpportunityFromImportRow = async (row: OpportunityImportRow) => {
+    if (!user) {
+      throw new Error("Sign in again before updating opportunities.");
+    }
+
+    if (!row.opportunity_id) {
+      throw new Error("Bulk update rows must include opportunity_id. Export current opportunities first, then edit that file.");
+    }
+
+    const opportunity = opportunities.find((item) => item.id === row.opportunity_id);
+    if (!opportunity) {
+      throw new Error("Opportunity ID was not found in your company pipeline.");
+    }
+
+    const hasClaim = (claimsByOpportunity.get(opportunity.id) ?? []).length > 0;
+    const updates: {
+      target_account_name?: string;
+      business_unit?: string;
+      opportunity_description?: string;
+      client_contact?: string;
+      trusted_bums_contact?: string;
+      expected_product_service?: string;
+      estimated_deal_value?: number | null;
+      expected_timeline?: string;
+      notes?: string;
+      pay_program_id?: string | null;
+      status?: RegistrationStatus;
+    } = {};
+    const lockedChanges: string[] = [];
+
+    if (row.target_account_name.trim() !== opportunity.target_account_name) {
+      updates.target_account_name = row.target_account_name;
+      lockedChanges.push("Customer name");
+    }
+    if (nullableTextChanged(row.business_unit, opportunity.business_unit)) {
+      updates.business_unit = row.business_unit;
+      lockedChanges.push("Business unit");
+    }
+    if (nullableTextChanged(row.opportunity_description, opportunity.opportunity_description)) {
+      updates.opportunity_description = row.opportunity_description;
+      lockedChanges.push("Opportunity description");
+    }
+    if (nullableTextChanged(row.expected_product_service, opportunity.expected_product_service)) {
+      updates.expected_product_service = row.expected_product_service;
+      lockedChanges.push("Product/service");
+    }
+    if (row.status && row.status !== opportunity.status) {
+      updates.status = row.status;
+      lockedChanges.push("Draft/Published status");
+    }
+
+    const payProgramId = resolveImportPayProgramId(row);
+    if (payProgramId !== undefined && payProgramId !== opportunity.pay_program_id) {
+      updates.pay_program_id = payProgramId;
+      lockedChanges.push("Commission plan");
+    }
+
+    if (nullableTextChanged(row.client_contact, opportunity.client_contact)) {
+      updates.client_contact = row.client_contact;
+    }
+    if (nullableTextChanged(row.trusted_bums_contact, opportunity.trusted_bums_contact)) {
+      updates.trusted_bums_contact = row.trusted_bums_contact;
+    }
+    if (nullableNumberChanged(row.estimated_deal_value, opportunity.estimated_deal_value)) {
+      updates.estimated_deal_value = row.estimated_deal_value ?? null;
+    }
+    if (nullableTextChanged(row.expected_timeline, opportunity.expected_timeline)) {
+      updates.expected_timeline = row.expected_timeline;
+    }
+    if (nullableTextChanged(row.notes, opportunity.notes)) {
+      updates.notes = row.notes;
+    }
+
+    if (hasClaim && lockedChanges.length) {
+      throw new Error(`Claim exists. Locked fields cannot change: ${lockedChanges.join(", ")}.`);
+    }
+
+    if (!Object.keys(updates).length) {
+      return;
+    }
+
+    await updateOwnOpportunityRegistration(user, opportunity.id, updates);
+  };
+  const exportOpportunityRows = () => {
+    const headers = [
+      "opportunity_id",
+      "customer_name",
+      "status",
+      "commission_plan_id",
+      "commission_plan",
+      "claimed",
+      "business_unit",
+      "expected_product_service",
+      "estimated_deal_value",
+      "expected_timeline",
+      "client_contact",
+      "trusted_bums_contact",
+      "opportunity_description",
+      "notes",
+    ];
+    const rows = opportunities.map((opportunity) => {
+      const hasClaim = (claimsByOpportunity.get(opportunity.id) ?? []).length > 0;
+      return [
+        opportunity.id,
+        opportunity.target_account_name,
+        opportunity.status === "Accepted" ? "Published" : opportunity.status,
+        opportunity.pay_program_id ?? "",
+        opportunity.client_pay_programs?.name ?? "",
+        hasClaim ? "yes" : "no",
+        opportunity.business_unit ?? "",
+        opportunity.expected_product_service ?? "",
+        opportunity.estimated_deal_value ?? "",
+        opportunity.expected_timeline ?? "",
+        opportunity.client_contact ?? "",
+        opportunity.trusted_bums_contact ?? "",
+        opportunity.opportunity_description ?? "",
+        opportunity.notes ?? "",
+      ];
+    });
+
+    downloadCsvFile(
+      "trustedbums-opportunities-bulk-update.csv",
+      [headers.map(csvEscape).join(","), ...rows.map((row) => row.map(csvEscape).join(","))].join("\n"),
+    );
+  };
+  const downloadOpportunityTemplate = () => {
+    downloadCsvFile("trustedbums-opportunity-template.csv", buildOpportunityImportTemplateCsv());
+  };
   const visibleOpportunities = getPageItems(opportunities, registeredPage, REGISTERED_OPPORTUNITIES_PAGE_SIZE);
   const openPipelineCount = opportunities.filter((opportunity) => !["Closed Won", "Closed Lost", "Rejected"].includes(opportunity.status)).length;
   const totalPipelineValue = opportunities.reduce((sum, opportunity) => sum + Number(opportunity.estimated_deal_value ?? 0), 0);
@@ -882,7 +1017,7 @@ export default function ClientOpportunityNew() {
             <div>
               <p className="text-sm font-medium">Opportunity filter</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Filter the workspace by pipeline, Bum-originated opportunities, responses, questions, or setup actions.
+                Filter the workspace by pipeline, Bum-originated opportunities, responses, or setup actions.
               </p>
             </div>
             <div className="space-y-2">
@@ -895,7 +1030,6 @@ export default function ClientOpportunityNew() {
                   <SelectItem value="pipeline">Pipeline</SelectItem>
                   <SelectItem value="bum-originated">Bum-Originated{bumOriginatedOpportunities.length ? ` (${bumOriginatedOpportunities.length})` : ""}</SelectItem>
                   <SelectItem value="responses">Bum Responses{pendingTargetResponseCount ? ` (${pendingTargetResponseCount})` : ""}</SelectItem>
-                  <SelectItem value="questions">Questions{openQuestionCount ? ` (${openQuestionCount})` : ""}</SelectItem>
                   <SelectItem value="import">Bulk Import</SelectItem>
                   <SelectItem value="register">New Opportunity</SelectItem>
                   <SelectItem value="commission-plan">Commission Plan</SelectItem>
@@ -1087,142 +1221,62 @@ export default function ClientOpportunityNew() {
           </Card>
         ) : null}
 
-        {activeView === "questions" ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-display flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                Opportunity questions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {sortedTargetQuestions.map((response) => {
-                const isLinked = linkedTargetResponseId === response.id;
-                const targetName = response.customer_targets?.target_companies?.name ?? response.customer_targets?.target_account_name ?? "Target account";
-
-                return (
-                  <div key={response.id} className={"rounded-md border p-4 " + (isLinked ? "border-primary/50 bg-primary/5" : "")}>
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <StatusBadge label={response.status === "PROPOSED" ? "Waiting on response" : response.status.replaceAll("_", " ")} variant={response.status === "PROPOSED" ? "warning" : response.status === "DECLINED" ? "destructive" : "info"} />
-                          <StatusBadge label="Target account" variant="secondary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{targetName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Asked by {response.profiles?.full_name ?? response.profiles?.email ?? "a Bum"} on {formatDateForTimeZone(response.created_at, timeZone)}
-                          </p>
-                        </div>
-                        {response.note ? <p className="text-sm">{response.note}</p> : null}
-                      </div>
-                      <Button type="button" variant="outline" size="sm" onClick={() => openConversationDock(response.conversation_thread_id ?? undefined)}>
-                        <MessageSquare className="mr-2 h-4 w-4" /> Open chat
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {sortedQuestions.map((question) => {
-                const responseValue = questionResponses[question.id] ?? question.response ?? "";
-                const visibilityValue = questionVisibilities[question.id] ?? question.response_visibility ?? "BUM_ONLY";
-                const isLinked = linkedOpportunityId === question.opportunity_registration_id;
-
-                return (
-                  <div
-                    key={question.id}
-                    className={`rounded-md border p-4 ${isLinked ? "border-primary/50 bg-primary/5" : ""}`}
-                  >
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <StatusBadge label={question.status === "ANSWERED" ? "Answered" : "Waiting on response"} variant={question.status === "ANSWERED" ? "success" : "warning"} />
-                          {question.response_visibility === "PUBLIC" ? <StatusBadge label="Published to opportunity" variant="info" /> : null}
-                          {question.response_visibility === "BUM_ONLY" ? <StatusBadge label="Bum only" variant="secondary" /> : null}
-                        </div>
-                        <div>
-                          <p className="font-medium">{question.opportunity_registrations?.target_account_name ?? "Opportunity"}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Asked by {question.profiles?.full_name ?? question.profiles?.email ?? "a Bum"} on {formatDateForTimeZone(question.created_at, timeZone)}
-                          </p>
-                        </div>
-                        <p className="text-sm">{question.question}</p>
-                      </div>
-                      {question.opportunity_registrations?.target_account_name ? (
-                        <Button type="button" variant="outline" size="sm" onClick={() => openConversationDock(question.conversation_thread_id ?? undefined)}>
-                          <MessageSquare className="mr-2 h-4 w-4" /> Open chat
-                        </Button>
-                      ) : null}
-                    </div>
-
-                    <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-end">
-                      <div className="space-y-2">
-                        <Label htmlFor={`question-response-${question.id}`}>Response</Label>
-                        <Textarea
-                          id={`question-response-${question.id}`}
-                          rows={3}
-                          value={responseValue}
-                          onChange={(event) => setQuestionResponses((current) => ({ ...current, [question.id]: event.target.value }))}
-                          placeholder="Answer the Bum’s question with enough detail to move the opportunity forward."
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Visibility</Label>
-                        <Select
-                          value={visibilityValue}
-                          onValueChange={(value: OpportunityQuestionVisibility) =>
-                            setQuestionVisibilities((current) => ({ ...current, [question.id]: value }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="BUM_ONLY">Only this Bum</SelectItem>
-                            <SelectItem value="PUBLIC">Add to opportunity</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button
-                        type="button"
-                        disabled={!responseValue.trim() || answerQuestionMutation.isPending}
-                        onClick={() => answerQuestionMutation.mutate({ question, response: responseValue, visibility: visibilityValue })}
-                      >
-                        {question.status === "ANSWERED" ? "Update answer" : "Send answer"}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {!sortedQuestions.length && !sortedTargetQuestions.length ? (
-                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  No Bum questions are waiting on this company’s opportunities.
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        ) : null}
-
         {activeView === "import" ? (
           <Card>
             <CardHeader>
               <CardTitle className="font-display flex items-center gap-2">
                 <FileUp className="h-5 w-5 text-primary" />
-                Import opportunity list
+                Bulk opportunity tools
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
             <p className="font-medium text-foreground">How this works</p>
             <p className="mt-2">
-              Upload a CSV from your prospecting list and we’ll turn each valid row into a published opportunity
-              for Bum matching. Good header names include:
+              Use one Customer column: <span className="font-mono text-xs">customer_name</span>. Set <span className="font-mono text-xs">status</span> to <span className="font-mono text-xs">Draft</span> for private rows or <span className="font-mono text-xs">Published</span> for rows Bums can see.
             </p>
             <p className="mt-2 font-mono text-xs break-all">
-              target_account_name, account_name, company_name, business_unit, expected_product_service,
-              estimated_deal_value, expected_timeline, client_contact, notes
+              customer_name, status, commission_plan, business_unit, expected_product_service, estimated_deal_value, expected_timeline, client_contact, trusted_bums_contact, opportunity_description, notes
+            </p>
+            <p className="mt-2">
+              For bulk updates, export current opportunities first. Claimed opportunities cannot change Customer name, scope, Published/Draft status, or commission plan.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={downloadOpportunityTemplate}>
+              <Download className="mr-2 h-4 w-4" />
+              Download Template
+            </Button>
+            <Button type="button" variant="outline" onClick={exportOpportunityRows} disabled={!opportunities.length}>
+              <Download className="mr-2 h-4 w-4" />
+              Export for Bulk Update
+            </Button>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-[240px_minmax(0,1fr)] md:items-end">
+            <div className="space-y-2">
+              <Label>Bulk action</Label>
+              <Select
+                value={bulkMode}
+                onValueChange={(value: OpportunityBulkMode) => {
+                  setBulkMode(value);
+                  setBulkResult(null);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="create">Create new opportunities</SelectItem>
+                  <SelectItem value="update">Bulk update existing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {bulkMode === "create"
+                ? "Rows without a status default to Published. Use Draft when the opportunity should stay private."
+                : "Update rows must include opportunity_id. Export current opportunities, edit allowed fields, then upload that file."}
             </p>
           </div>
 
@@ -1240,7 +1294,7 @@ export default function ClientOpportunityNew() {
             <div className="rounded-xl border p-4">
               <p className="font-medium">{importFileName}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {importRows.length} {importRows.length === 1 ? "row" : "rows"} ready to import
+                {importRows.length} {importRows.length === 1 ? "row" : "rows"} ready to {bulkMode === "create" ? "create" : "update"}
               </p>
             </div>
           ) : null}
@@ -1253,13 +1307,16 @@ export default function ClientOpportunityNew() {
               </div>
               <div className="divide-y">
                 {importPreviewRows.map((row) => (
-                  <div key={`${row.rowNumber}-${row.target_account_name}`} className="grid gap-1 px-4 py-3 md:grid-cols-[1.2fr_1fr_0.8fr]">
+                  <div key={`${row.rowNumber}-${row.target_account_name}`} className="grid gap-1 px-4 py-3 md:grid-cols-[1.1fr_0.8fr_0.8fr_0.8fr]">
                     <div>
                       <p className="font-medium">{row.target_account_name}</p>
-                      <p className="text-xs text-muted-foreground">CSV row {row.rowNumber}</p>
+                      <p className="text-xs text-muted-foreground">CSV row {row.rowNumber}{row.opportunity_id ? ` · ${row.opportunity_id}` : ""}</p>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {row.expected_product_service ?? row.business_unit ?? "No product or business unit provided"}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {row.status ?? "Published"}
                     </div>
                     <div className="text-sm text-muted-foreground md:text-right">
                       {row.estimated_deal_value !== null && row.estimated_deal_value !== undefined
@@ -1272,9 +1329,22 @@ export default function ClientOpportunityNew() {
             </div>
           ) : null}
 
+          {bulkResult ? (
+            <div className={`rounded-xl border p-4 text-sm ${bulkResult.failures.length ? "border-destructive/30 bg-destructive/10 text-destructive" : "border-success/30 bg-success/10 text-success"}`}>
+              <p className="font-medium">{bulkResult.success} completed</p>
+              {bulkResult.failures.length ? (
+                <div className="mt-2 space-y-1">
+                  {bulkResult.failures.slice(0, 5).map((failure) => (
+                    <p key={failure}>{failure}</p>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              Rows without a target account name are skipped automatically.
+              Rows without a Customer name are skipped automatically.
             </p>
             <Button
               type="button"
@@ -1284,8 +1354,8 @@ export default function ClientOpportunityNew() {
             >
               <FileUp className="mr-2 h-4 w-4" />
               {isImporting
-                ? "Importing..."
-                : `Import ${importRows.length} ${importRows.length === 1 ? "opportunity" : "opportunities"}`}
+                ? bulkMode === "create" ? "Importing..." : "Updating..."
+                : `${bulkMode === "create" ? "Import" : "Update"} ${importRows.length} ${importRows.length === 1 ? "opportunity" : "opportunities"}`}
             </Button>
           </div>
         </CardContent>

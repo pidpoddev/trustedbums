@@ -13,6 +13,8 @@ describe("client opportunity deletion", () => {
     expect(clientOpportunitySource).toContain("deleteOwnOpportunityRegistration");
     expect(clientOpportunitySource).toContain("deleteOpportunityMutation");
     expect(clientOpportunitySource).toContain("Delete");
+    expect(clientOpportunitySource).toContain("queryClient.setQueryData<OpportunityRegistration[]>");
+    expect(clientOpportunitySource).toContain("(item) => item.id !== opportunity.id");
     expect(portalApiSource).toContain("export async function deleteOwnOpportunityRegistration");
     expect(portalApiSource).toContain(".from(\"opportunity_registrations\")");
     expect(portalApiSource).toContain(".delete()");
