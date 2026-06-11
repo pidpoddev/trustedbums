@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, Building2, Calendar, DollarSign, Download, ExternalLink, FileText, Heart, Sparkles, Target } from "lucide-react";
+import { ArrowLeft, Briefcase, Download, ExternalLink, FileText, Heart, Sparkles, Target } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
