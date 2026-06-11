@@ -900,7 +900,7 @@ export default function BumOpportunities() {
                   </Button>
                   <Button
                     size="sm"
-                    variant={isHidden ? "outline" : "destructive"}
+                    variant="outline"
                     disabled={!user || hideMutation.isPending}
                     onClick={() => hideMutation.mutate({ itemType: "CUSTOMER_TARGET", itemId: targetAccount.id, hidden: !isHidden })}
                   >
@@ -1062,7 +1062,7 @@ export default function BumOpportunities() {
                     </Button>
                     <Button
                       size="sm"
-                      variant={isHidden ? "outline" : "destructive"}
+                      variant="outline"
                       disabled={!user || hideMutation.isPending}
                       onClick={() => hideMutation.mutate({ itemType: "OPPORTUNITY", itemId: opportunity.id, hidden: !isHidden })}
                     >
