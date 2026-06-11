@@ -37,11 +37,11 @@ import {
 const navGroups = [
   { label: "Workspace", items: [
   { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
-  { title: "Clients", url: "/bum/clients", icon: Building2 },
-  { title: "Contacts", url: "/bum/contacts", icon: ContactRound },
-  { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
-  { title: "Claims", url: "/bum/claims", icon: Handshake },
   { title: "Inbox", url: "/bum/live-conversations", icon: MessageSquare },
+  { title: "Clients", url: "/bum/clients", icon: Building2 },
+  { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
+  { title: "My Contacts", url: "/bum/contacts", icon: ContactRound },
+  { title: "Claims", url: "/bum/claims", icon: Handshake },
   { title: "Training & Assets", url: "/bum/trainings", icon: GraduationCap },
   ] },
   { label: "Finance", items: [
