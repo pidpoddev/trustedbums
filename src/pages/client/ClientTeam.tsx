@@ -27,7 +27,7 @@ import {
 const roleOptions: Array<{ value: ClientAccessRole; label: string; detail: string }> = [
   { value: "CLIENT_ADMIN", label: "Client Admin", detail: "Full client portal access and company team management." },
   { value: "CLIENT_FINANCE", label: "Client Finance", detail: "Customer Payment Reports, commission invoices, exports, and reports." },
-  { value: "CLIENT_MEMBER", label: "Client Member", detail: "Workspace, opportunities, training, Customer Leads, and reports." },
+  { value: "CLIENT_MEMBER", label: "Client Member", detail: "Workspace, opportunities, training, and reports." },
 ];
 
 function formatDate(value?: string | null) {

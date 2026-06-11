@@ -57,7 +57,6 @@ const roleAudits: RoleAuditConfig[] = [
       { path: "/client/opportunities", heading: "Opportunities", navName: "Opportunities" },
       { path: "/client/claims", heading: "Claims", navName: "Claims" },
       { path: "/client/trainings", heading: "Training & Assets", navName: "Training & Assets" },
-      { path: "/client/requests", heading: "Customer Leads", navName: "Customer Leads" },
       { path: "/client/payments", heading: "Customer Payment Reports", navName: "Payment Reports" },
       { path: "/client/exports", heading: "Exports", navName: "Exports" },
       { path: "/client/reports", heading: "Client Reports", navName: "Reports" },

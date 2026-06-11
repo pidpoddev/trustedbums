@@ -83,7 +83,7 @@ test.describe("go-live Client and Bum workflow gate", () => {
     await openClientPage(page, clientAdmin, "/client/opportunities/new", "Opportunities");
     await expect(page.getByRole("button", { name: /Publish Opportunity to Bums|Save Draft Opportunity/i })).toBeVisible();
 
-    await openClientPage(page, clientAdmin, "/client/requests", "Customer Leads");
+    await openClientPage(page, clientAdmin, "/client/opportunities?tab=bum-originated", "Opportunities");
     await openClientPage(page, clientAdmin, "/client/claims", "Claims");
     await openClientPage(page, clientAdmin, "/client/team", "Team Management");
     await openClientPage(page, clientAdmin, "/client/reports", "Client Reports");
@@ -110,7 +110,7 @@ test.describe("go-live Client and Bum workflow gate", () => {
 
     await openClientPage(page, member, "/client/dashboard", /Welcome back/i);
     await openClientPage(page, member, "/client/opportunities", "Opportunities");
-    await openClientPage(page, member, "/client/requests", "Customer Leads");
+    await openClientPage(page, member, "/client/opportunities?tab=bum-originated", "Opportunities");
     await openClientPage(page, member, "/client/claims", "Claims");
 
     await goToAuthedPathAllowingRedirect(page, member, "/client/payments", /\/client\/dashboard\/?$/);

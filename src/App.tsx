@@ -54,7 +54,6 @@ const ClientProfile = lazy(() => import("./pages/client/ClientProfile"));
 const ClientUserProfile = lazy(() => import("./pages/client/ClientUserProfile"));
 const ClientTeam = lazy(() => import("./pages/client/ClientTeam"));
 const ClientTrainings = lazy(() => import("./pages/client/ClientTrainings"));
-const ClientRequests = lazy(() => import("./pages/client/ClientRequests"));
 const ClientExports = lazy(() => import("./pages/client/ClientExports"));
 const ClientPayments = lazy(() => import("./pages/client/ClientPayments"));
 const ClientReports = lazy(() => import("./pages/client/ClientReports"));
@@ -162,7 +161,7 @@ const App = () => (
                         <Route path="opportunities/new" element={<ClientOpportunityNew />} />
                         <Route path="bum-directory" element={<Navigate to="/client/opportunities" replace />} />
                         <Route path="trainings" element={<ClientTrainings />} />
-                        <Route path="requests" element={<ClientRequests />} />
+                        <Route path="requests" element={<Navigate to="/client/opportunities?tab=bum-originated" replace />} />
                       </Route>
                       <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN", "CLIENT_FINANCE"]} />}>
                         <Route path="payments" element={<ClientPayments />} />

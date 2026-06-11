@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
-import { CheckCircle, FileUp, MessageSquare, PlusCircle, Send, Sparkles, Trash2, X } from "lucide-react";
+import { Building2, CheckCircle, FileUp, MessageSquare, PlusCircle, Search, Send, Sparkles, Trash2, Users, X } from "lucide-react";
 import { openConversationDock } from "@/lib/conversationDock";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +26,7 @@ import {
   formalizeCustomerTargetResponse,
   listClientOpportunityQuestions,
   listCustomerTargetResponses,
+  listClientReverseOpportunities,
   listOpportunityClaims,
   listOwnOpportunityRegistrations,
   listSelectableClientPayPrograms,
@@ -41,13 +41,26 @@ import {
   type OpportunityQuestionRecord,
   type OpportunityQuestionVisibility,
   type OpportunityRegistration,
+  type ReverseOpportunityStatus,
 } from "@/lib/portalApi";
-import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromTargetResponseStatus } from "@/lib/opportunityModel";
+import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromReverseOpportunityStatus, stageFromTargetResponseStatus } from "@/lib/opportunityModel";
 import { formatDateForTimeZone } from "@/lib/timezone";
 import { parseOpportunityImportFile, toOpportunityInput, type OpportunityImportRow } from "@/lib/opportunityImport";
 import { claimDeclineReasonLabel, claimDeclineReasons } from "@/lib/claimConfig";
 
 const REGISTERED_OPPORTUNITIES_PAGE_SIZE = 6;
+
+type OpportunityViewFilter = "pipeline" | "bum-originated" | "responses" | "questions" | "import" | "register" | "commission-plan";
+
+type BumOriginatedTypeFilter = "ALL" | "NEW" | "ACTIVE" | "CONVERTED" | "CLOSED";
+
+const bumOriginatedTypeFilters: { value: BumOriginatedTypeFilter; label: string }[] = [
+  { value: "ALL", label: "All Bum-Originated" },
+  { value: "NEW", label: "New" },
+  { value: "ACTIVE", label: "Active outreach" },
+  { value: "CONVERTED", label: "Converted" },
+  { value: "CLOSED", label: "Closed lost" },
+];
 
 const initialForm = {
   pay_program_id: "",
@@ -169,6 +182,42 @@ function registrationVariant(status: string) {
   return "info" as const;
 }
 
+function reverseOpportunityVariant(status: ReverseOpportunityStatus) {
+  if (status === "CLIENT_INTERESTED" || status === "CONVERTED") {
+    return "success" as const;
+  }
+
+  if (status === "CLOSED_LOST") {
+    return "destructive" as const;
+  }
+
+  if (status === "OUTREACH_READY" || status === "CLIENT_CONTACTED") {
+    return "info" as const;
+  }
+
+  return "warning" as const;
+}
+
+function matchesBumOriginatedTypeFilter(status: ReverseOpportunityStatus, typeFilter: BumOriginatedTypeFilter) {
+  if (typeFilter === "ALL") {
+    return true;
+  }
+
+  if (typeFilter === "NEW") {
+    return status === "SUBMITTED";
+  }
+
+  if (typeFilter === "ACTIVE") {
+    return status === "OUTREACH_READY" || status === "CLIENT_CONTACTED" || status === "CLIENT_INTERESTED";
+  }
+
+  if (typeFilter === "CONVERTED") {
+    return status === "CONVERTED";
+  }
+
+  return status === "CLOSED_LOST";
+}
+
 function formatMoney(value: number | null | undefined) {
   if (value === null || value === undefined) {
     return "TBD";
@@ -264,10 +313,12 @@ export default function ClientOpportunityNew() {
   const [claimDeclineReasonById, setClaimDeclineReasonById] = useState<Record<string, OpportunityClaimDeclineReason>>({});
   const [claimDeclineNoteById, setClaimDeclineNoteById] = useState<Record<string, string>>({});
   const [responsePayProgramIds, setResponsePayProgramIds] = useState<Record<string, string>>({});
+  const [bumOriginatedQuery, setBumOriginatedQuery] = useState("");
+  const [bumOriginatedTypeFilter, setBumOriginatedTypeFilter] = useState<BumOriginatedTypeFilter>("ALL");
   const [isRequestingPlan, setIsRequestingPlan] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [registeredPage, setRegisteredPage] = useState(1);
-  const [activeTab, setActiveTab] = useState(location.pathname.endsWith("/new") ? "register" : "pipeline");
+  const [activeView, setActiveView] = useState<OpportunityViewFilter>(location.pathname.endsWith("/new") ? "register" : "pipeline");
   const [isRegisterOpen, setIsRegisterOpen] = useState(location.pathname.endsWith("/new"));
   const [isRequestPlanOpen, setIsRequestPlanOpen] = useState(false);
   const [publishToBums, setPublishToBums] = useState(true);
@@ -294,7 +345,7 @@ export default function ClientOpportunityNew() {
     setIsRegistrationDraftDirty(true);
     setRestoredRegistrationDraftAt(draft.savedAt);
     setLocalRegistrationDraftSavedAt(draft.savedAt);
-    setActiveTab("register");
+    setActiveView("register");
     setIsRegisterOpen(true);
   }, [user?.clientId]);
 
@@ -324,7 +375,7 @@ export default function ClientOpportunityNew() {
 
   useEffect(() => {
     if (location.pathname.endsWith("/new")) {
-      setActiveTab("register");
+      setActiveView("register");
       setIsRegisterOpen(true);
     }
   }, [location.pathname]);
@@ -332,10 +383,10 @@ export default function ClientOpportunityNew() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get("tab");
-    if (tab === "questions" || tab === "responses") {
-      setActiveTab(tab);
+    if (tab === "questions" || tab === "responses" || tab === "bum-originated") {
+      setActiveView(tab);
     } else if (params.get("claimId")) {
-      setActiveTab("pipeline");
+      setActiveView("pipeline");
     }
   }, [location.search]);
 
@@ -363,6 +414,11 @@ export default function ClientOpportunityNew() {
   const questionsQuery = useQuery({
     queryKey: ["client-opportunity-questions", user?.clientId],
     queryFn: () => listClientOpportunityQuestions(user!),
+    enabled: Boolean(user?.clientId),
+  });
+  const bumOriginatedQueryResult = useQuery({
+    queryKey: ["client-reverse-opportunities", user?.clientId],
+    queryFn: () => listClientReverseOpportunities(user!),
     enabled: Boolean(user?.clientId),
   });
 
@@ -672,7 +728,7 @@ export default function ClientOpportunityNew() {
       setLocalRegistrationDraftSavedAt(null);
       setForm(initialForm);
       setIsRegisterOpen(false);
-      setActiveTab("pipeline");
+      setActiveView("pipeline");
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       toast({
         title: publishToBums ? "Opportunity published to Bums" : "Opportunity saved as draft",
@@ -727,6 +783,23 @@ export default function ClientOpportunityNew() {
   }, [linkedTargetResponseId, targetQuestionResponses]);
   const openQuestionCount = questions.filter((question) => question.status === "OPEN").length + targetQuestionResponses.filter((response) => response.status === "PROPOSED").length;
   const pendingTargetResponseCount = relationshipTargetResponses.filter((response) => response.status === "PROPOSED").length;
+  const bumOriginatedOpportunities = useMemo(() => {
+    return (bumOriginatedQueryResult.data ?? []).filter((opportunity) => {
+      const matchesQuery = [
+        opportunity.customer_company_name,
+        opportunity.customer_need_summary,
+        opportunity.expected_product_service,
+        opportunity.vendor_contact_name,
+        opportunity.customer_contact_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(bumOriginatedQuery.toLowerCase());
+
+      return matchesBumOriginatedTypeFilter(opportunity.status, bumOriginatedTypeFilter) && matchesQuery;
+    });
+  }, [bumOriginatedQuery, bumOriginatedQueryResult.data, bumOriginatedTypeFilter]);
   const sortedTargetResponses = useMemo(() => {
     return [...relationshipTargetResponses].sort((a, b) => {
       const aLinked = linkedTargetResponseId && a.id === linkedTargetResponseId ? 1 : 0;
@@ -765,7 +838,7 @@ export default function ClientOpportunityNew() {
           type="button"
           variant="outline"
           onClick={() => {
-            setActiveTab("import");
+            setActiveView("import");
             setIsRegisterOpen(false);
           }}
         >
@@ -775,7 +848,7 @@ export default function ClientOpportunityNew() {
         <Button
           type="button"
           onClick={() => {
-            setActiveTab("register");
+            setActiveView("register");
             setIsRegisterOpen(true);
           }}
         >
@@ -803,17 +876,128 @@ export default function ClientOpportunityNew() {
         </Card>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="flex h-auto flex-wrap justify-start">
-          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-          <TabsTrigger value="responses">Bum Responses{pendingTargetResponseCount ? " (" + pendingTargetResponseCount + ")" : ""}</TabsTrigger>
-          <TabsTrigger value="questions">Questions{openQuestionCount ? ` (${openQuestionCount})` : ""}</TabsTrigger>
-          <TabsTrigger value="register">New Opportunity</TabsTrigger>
-          <TabsTrigger value="commission-plan">Commission Plan</TabsTrigger>
-        </TabsList>
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="grid gap-3 pt-6 md:grid-cols-[minmax(0,1fr)_260px] md:items-end">
+            <div>
+              <p className="text-sm font-medium">Opportunity filter</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Filter the workspace by pipeline, Bum-originated opportunities, responses, questions, or setup actions.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Show</Label>
+              <Select value={activeView} onValueChange={(value: OpportunityViewFilter) => setActiveView(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pipeline">Pipeline</SelectItem>
+                  <SelectItem value="bum-originated">Bum-Originated{bumOriginatedOpportunities.length ? ` (${bumOriginatedOpportunities.length})` : ""}</SelectItem>
+                  <SelectItem value="responses">Bum Responses{pendingTargetResponseCount ? ` (${pendingTargetResponseCount})` : ""}</SelectItem>
+                  <SelectItem value="questions">Questions{openQuestionCount ? ` (${openQuestionCount})` : ""}</SelectItem>
+                  <SelectItem value="import">Bulk Import</SelectItem>
+                  <SelectItem value="register">New Opportunity</SelectItem>
+                  <SelectItem value="commission-plan">Commission Plan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
 
-        <TabsContent value="responses">
+        {activeView === "bum-originated" ? (
+          <>
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.8fr)] md:items-end">
+                <div className="relative min-w-0">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={bumOriginatedQuery}
+                    onChange={(event) => setBumOriginatedQuery(event.target.value)}
+                    placeholder="Search Bum-Originated opportunities, Customers, or needs"
+                    className="pl-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select value={bumOriginatedTypeFilter} onValueChange={(value: BumOriginatedTypeFilter) => setBumOriginatedTypeFilter(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bumOriginatedTypeFilters.map((filter) => (
+                        <SelectItem key={filter.value} value={filter.value}>
+                          {filter.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4">
+            {bumOriginatedOpportunities.map((opportunity) => (
+              <Card key={opportunity.id}>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-display text-lg font-bold">{opportunity.customer_company_name}</p>
+                        <StatusBadge label={opportunityOriginLabel("BUM_ORIGINATED")} variant="secondary" />
+                        <StatusBadge label={opportunityStageLabel(stageFromReverseOpportunityStatus(opportunity.status))} variant="info" />
+                        <StatusBadge label={opportunity.status.replaceAll("_", " ")} variant={reverseOpportunityVariant(opportunity.status)} />
+                        <StatusBadge
+                          label={opportunity.client_mode === "EXISTING_CLIENT" ? "Existing Client" : "Client Prospect"}
+                          variant="secondary"
+                        />
+                      </div>
+                      <p className="max-w-3xl text-sm text-muted-foreground">{opportunity.customer_need_summary}</p>
+                      <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+                        <p className="inline-flex items-center gap-2">
+                          <Sparkles className="h-4 w-4" />
+                          {opportunity.expected_product_service ?? "Solution fit pending"}
+                        </p>
+                        <p className="inline-flex items-center gap-2">
+                          <Building2 className="h-4 w-4" />
+                          {opportunity.estimated_deal_value ? `$${Number(opportunity.estimated_deal_value).toLocaleString()} expected` : "Value pending"}
+                        </p>
+                        <p className="inline-flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Decision-maker: {opportunity.vendor_contact_name ?? "Pending"}{opportunity.vendor_contact_title ? ` · ${opportunity.vendor_contact_title}` : ""}
+                        </p>
+                        <p className="inline-flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Customer contact: {opportunity.customer_contact_name ?? "Not provided"}
+                        </p>
+                      </div>
+                      {opportunity.notes ? <p className="text-sm">{opportunity.notes}</p> : null}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Submitted {formatDateForTimeZone(opportunity.created_at, timeZone)}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {!bumOriginatedOpportunities.length ? (
+              <Card>
+                <CardContent className="pt-6 text-sm text-muted-foreground">
+                  {bumOriginatedQueryResult.data?.length
+                    ? "No Bum-Originated opportunities match your current filters."
+                    : "No Bum-Originated opportunities are targeting your company yet."}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
+          </>
+        ) : null}
+
+        {activeView === "responses" ? (
           <Card>
             <CardHeader>
               <CardTitle className="font-display flex items-center gap-2">
@@ -901,9 +1085,9 @@ export default function ClientOpportunityNew() {
               ) : null}
             </CardContent>
           </Card>
-        </TabsContent>
+        ) : null}
 
-        <TabsContent value="questions">
+        {activeView === "questions" ? (
           <Card>
             <CardHeader>
               <CardTitle className="font-display flex items-center gap-2">
@@ -1019,9 +1203,9 @@ export default function ClientOpportunityNew() {
               ) : null}
             </CardContent>
           </Card>
-        </TabsContent>
+        ) : null}
 
-        <TabsContent value="import">
+        {activeView === "import" ? (
           <Card>
             <CardHeader>
               <CardTitle className="font-display flex items-center gap-2">
@@ -1107,10 +1291,10 @@ export default function ClientOpportunityNew() {
         </CardContent>
       </Card>
 
-        </TabsContent>
+        ) : null}
 
-        <TabsContent value="register">
-          {!isRegisterOpen ? (
+        {activeView === "register" ? (
+          !isRegisterOpen ? (
             <div className="flex justify-end">
               <Button onClick={() => setIsRegisterOpen(true)}>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -1270,12 +1454,12 @@ export default function ClientOpportunityNew() {
           </form>
         </CardContent>
       </Card>
-          )}
+          )
 
-        </TabsContent>
+        ) : null}
 
-        <TabsContent value="commission-plan">
-          {!isRequestPlanOpen ? (
+        {activeView === "commission-plan" ? (
+          !isRequestPlanOpen ? (
             <div className="flex justify-end">
               <Button variant="outline" onClick={() => setIsRequestPlanOpen(true)}>
                 <Sparkles className="mr-2 h-4 w-4" />
@@ -1468,11 +1652,12 @@ export default function ClientOpportunityNew() {
           </form>
         </CardContent>
       </Card>
-          )}
+          )
 
-        </TabsContent>
+        ) : null}
 
-        <TabsContent value="pipeline">
+        {activeView === "pipeline" ? (
+          <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Card>
               <CardContent className="pt-6">
@@ -1740,9 +1925,10 @@ export default function ClientOpportunityNew() {
               ) : null}
             </CardContent>
           </Card>
-        </TabsContent>
+          </>
+        ) : null}
 
-      </Tabs>
+      </div>
     </div>
   );
 }

@@ -45,7 +45,6 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/client/opportunities/new", heading: "Opportunities", name: "client-register-opportunity" },
     { path: "/client/claims", heading: "Claims", name: "client-admin-claims" },
     { path: "/client/trainings", heading: "Training & Assets", name: "client-trainings" },
-    { path: "/client/requests", heading: "Customer Leads", name: "client-requests" },
     { path: "/client/payments", heading: "Customer Payment Reports", name: "client-payments" },
     { path: "/client/exports", heading: "Exports", name: "client-exports" },
     { path: "/client/reports", heading: "Client Reports", name: "client-reports" },

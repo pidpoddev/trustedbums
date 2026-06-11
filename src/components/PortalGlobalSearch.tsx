@@ -24,6 +24,7 @@ import {
   listAdminProspectRecommendations,
   listAdminReverseOpportunities,
   listBumRepresentedContacts,
+  listClientReverseOpportunities,
   listCompanies,
   listConversationThreads,
   listCustomerTargets,
@@ -143,7 +144,6 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
       pages.push(
         result({ id: "page:client-opportunities", icon: "opportunity", category: "Page", title: "Opportunities", subtitle: "Customer accounts, drafts, and Bum matching", href: "/client/opportunities", terms: ["pipeline registrations accounts contacts customers publish bums"] }),
         result({ id: "page:client-trainings", icon: "training", category: "Page", title: "Training & Assets", subtitle: "Bum enablement content", href: "/client/trainings", terms: ["training assets materials"] }),
-        result({ id: "page:client-requests", icon: "conversation", category: "Page", title: "Customer Leads", subtitle: "Bum-submitted buyer demand", href: "/client/requests", terms: ["customer leads buyer demand conversations opportunities"] }),
       );
     }
 
@@ -248,6 +248,12 @@ export function PortalGlobalSearch() {
     queryKey: ["portal-search", "admin-reverse"],
     queryFn: listAdminReverseOpportunities,
     enabled: shouldFetchSearchData && user?.role === "ADMIN",
+    staleTime: 60_000,
+  });
+  const clientReverseQuery = useQuery({
+    queryKey: ["portal-search", "client-reverse", user?.clientId],
+    queryFn: () => listClientReverseOpportunities(user!),
+    enabled: shouldFetchSearchData && user?.role === "CLIENT",
     staleTime: 60_000,
   });
   const profilesQuery = useQuery({
@@ -367,13 +373,14 @@ export function PortalGlobalSearch() {
     const reverseOpportunities = [
       ...(ownReverseQuery.data ?? []),
       ...(adminReverseQuery.data ?? []),
+      ...(clientReverseQuery.data ?? []),
     ].map((reverseOpportunity) => result({
       id: "reverse:" + reverseOpportunity.id,
       icon: "opportunity",
-      category: "Customer lead",
+      category: "Bum-Originated Opportunity",
       title: reverseOpportunity.customer_company_name,
       subtitle: [reverseOpportunity.companies?.name, reverseOpportunity.status].filter(Boolean).join(" · "),
-      href: user.role === "ADMIN" ? "/admin/opportunities" : "/bum/reverse-opportunities",
+      href: user.role === "ADMIN" ? "/admin/opportunities" : user.role === "CLIENT" ? "/client/opportunities?tab=bum-originated" : "/bum/reverse-opportunities",
       terms: [reverseOpportunity.vendor_contact_name, reverseOpportunity.customer_contact_name, reverseOpportunity.customer_need_summary, reverseOpportunity.notes],
     }));
 
@@ -426,6 +433,7 @@ export function PortalGlobalSearch() {
     adminOpportunitiesQuery.data,
     adminProspectsQuery.data,
     adminReverseQuery.data,
+    clientReverseQuery.data,
     claimsQuery.data,
     clientOpportunitiesQuery.data,
     companiesQuery.data,
@@ -464,6 +472,7 @@ export function PortalGlobalSearch() {
     adminProspectsQuery,
     ownReverseQuery,
     adminReverseQuery,
+    clientReverseQuery,
     profilesQuery,
     conversationsQuery,
     trainingQuery,

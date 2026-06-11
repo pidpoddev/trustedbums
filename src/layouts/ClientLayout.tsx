@@ -30,7 +30,6 @@ import {
   GraduationCap,
   Handshake,
   MessageSquare,
-  MessageSquarePlus,
   Download,
   BarChart3,
   Briefcase,
@@ -52,7 +51,6 @@ const navGroups: Array<{
   { title: "Opportunities", url: "/client/opportunities", icon: Briefcase, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   { title: "Claims", url: "/client/claims", icon: Handshake },
   { title: "Training & Assets", url: "/client/trainings", icon: GraduationCap, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
-  { title: "Customer Leads", url: "/client/requests", icon: MessageSquarePlus, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   ] },
   { label: "Finance", items: [
   { title: "Payment Reports", url: "/client/payments", icon: CreditCard, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },

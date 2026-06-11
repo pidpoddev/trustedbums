@@ -189,7 +189,7 @@ export default function ClientDashboard() {
       ? { title: "Review Bum responses", description: `${pendingTargetResponses.length} Bum response${pendingTargetResponses.length === 1 ? "" : "s"} awaiting approval.`, to: "/client/opportunities?tab=responses", primary: true }
       : null,
     reverseOpportunities.length
-      ? { title: "Review Customer Leads", description: `${reverseOpportunities.length} Bum-submitted Customer Lead${reverseOpportunities.length === 1 ? "" : "s"} need review.`, to: "/client/requests" }
+      ? { title: "Review Bum-Originated Opportunities", description: `${reverseOpportunities.length} Bum-originated opportunit${reverseOpportunities.length === 1 ? "y needs" : "ies need"} review.`, to: "/client/opportunities?tab=bum-originated" }
       : null,
     activeCount
       ? { title: "Check active opportunities", description: `${activeCount} active opportunit${activeCount === 1 ? "y" : "ies"} need progress tracking.`, to: "/client/opportunities" }
@@ -333,7 +333,7 @@ export default function ClientDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Draft Opportunities" value={draftCount} icon={Clock} to="/client/opportunities" />
         <StatCard title="Bum Responses" value={pendingTargetResponses.length} icon={Handshake} to="/client/opportunities?tab=responses" />
-        <StatCard title="Customer Leads" value={reverseOpportunities.length} icon={Clock} to="/client/requests" />
+        <StatCard title="Bum-Originated" value={reverseOpportunities.length} icon={Clock} to="/client/opportunities?tab=bum-originated" />
         <StatCard title="Active Opportunities" value={activeCount} icon={Target} to="/client/opportunities" />
         <StatCard title="Published to Bums" value={acceptedCount} icon={FileCheck} to="/client/opportunities" />
       </div>
@@ -407,7 +407,7 @@ export default function ClientDashboard() {
             </CardHeader>
             <CardContent className="grid gap-2">
               <Button asChild variant="outline">
-                <Link to="/client/requests">Review Customer Leads</Link>
+                <Link to="/client/opportunities?tab=bum-originated">Review Bum-Originated</Link>
               </Button>
               <Button asChild>
                 <Link to="/client/opportunities/new">Create opportunity</Link>
