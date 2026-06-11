@@ -68,6 +68,7 @@ const BumLiveConversations = lazy(() => import("./pages/bum/BumLiveConversations
 const BumEarnings = lazy(() => import("./pages/bum/BumEarnings"));
 const BumProfile = lazy(() => import("./pages/bum/BumProfile"));
 const BumClients = lazy(() => import("./pages/bum/BumClients"));
+const BumClientDetail = lazy(() => import("./pages/bum/BumClientDetail"));
 const BumContacts = lazy(() => import("./pages/bum/BumContacts"));
 const BumContactDetail = lazy(() => import("./pages/bum/BumContactDetail"));
 const BumTrainings = lazy(() => import("./pages/bum/BumTrainings"));
@@ -179,6 +180,7 @@ const App = () => (
                       <Route path="prospects" element={<BumProspects />} />
                       <Route path="reverse-opportunities" element={<BumReverseOpportunities />} />
                       <Route path="clients" element={<BumClients />} />
+                      <Route path="clients/:id" element={<BumClientDetail />} />
                       <Route path="contacts" element={<BumContacts />} />
                       <Route path="contacts/:id" element={<BumContactDetail />} />
                       <Route path="opportunities" element={<BumOpportunities />} />

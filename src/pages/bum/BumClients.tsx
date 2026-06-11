@@ -409,6 +409,12 @@ export default function BumClients() {
                         </Link>
                       </Button>
                     )}
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to={`/bum/clients/${encodeURIComponent(client.id)}`}>
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Details
+                      </Link>
+                    </Button>
                     {client.canHeart ? (
                       <Button size="sm" asChild>
                         <Link to={`/bum/reverse-opportunities?clientId=${encodeURIComponent(client.id)}`}>
