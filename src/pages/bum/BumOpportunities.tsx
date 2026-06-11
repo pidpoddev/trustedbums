@@ -40,7 +40,7 @@ import {
 import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromTargetStatus } from "@/lib/opportunityModel";
 import type { RelationshipStrength } from "@/lib/claimConfig";
 import { cn } from "@/lib/utils";
-import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, MessageSquare, ExternalLink, UserPlus, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, ExternalLink, UserPlus, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 const MARKETPLACE_PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 50] as const;
@@ -907,19 +907,6 @@ export default function BumOpportunities() {
                     {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
                     {isHidden ? "Unhide" : "Skip/Hide"}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200"
-                    onClick={() => {
-                      setTargetDialogMode("question");
-                      setResponseForm(responseFormInitial);
-                      setSelectedTarget(targetAccount);
-                    }}
-                  >
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Maybe
-                  </Button>
                   <Button size="sm" variant="outline" asChild>
                     <Link to={customerLeadUrl(targetAccount.client_company_id, targetAccount.expected_product_service)}>
                       <Sparkles className="mr-2 h-4 w-4" />
@@ -1068,12 +1055,6 @@ export default function BumOpportunities() {
                     >
                       {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
                       {isHidden ? "Unhide" : "Skip/Hide"}
-                    </Button>
-                    <Button size="sm" variant="outline" className="border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200" asChild>
-                      <Link to={"/bum/opportunities/" + opportunity.id + "?ask=1"}>
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Maybe
-                      </Link>
                     </Button>
                     {opportunity.company_id ? (
                       <Button size="sm" variant="outline" asChild>
