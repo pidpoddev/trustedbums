@@ -28,9 +28,13 @@ describe("scrum implementation queue regression coverage", () => {
     expect(metadataSource).toContain("window.location.pathname");
     expect(metadataSource).toContain("getPublicRouteMetadata");
     expect(publicRouteMetadata).toContain('"maxTitleLength": 32');
+    expect(publicRouteMetadata).toContain('"title": "TrustedBums.com - Warm Intros"');
+    expect(publicRouteMetadata).toContain("TrustedBums.com is the official Trusted Bums website");
     expect(publicRouteMetadata).toContain('"path": "/privacy-policy"');
     expect(publicRouteMetadata).toContain('"title": "Privacy"');
     expect(publicRouteMetadata).toContain('"path": "/legal/terms-of-service"');
+    expect(htmlShell).toContain("<title>TrustedBums.com - Warm Intros</title>");
+    expect(htmlShell).toContain('"alternateName": "TrustedBums.com"');
     expect(metadataRenderer).toContain("distDir");
     expect(metadataRenderer).toContain("renderRouteHtml");
     expect(htmlShell).toContain('href="https://trustedbums.com/"');

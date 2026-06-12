@@ -13,6 +13,16 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-12 - Strengthen Bing exact-domain search signals for TrustedBums.com
+
+- Trigger: User reported that explicitly searching Bing for `trustedbums.com` did not show `TrustedBums.com` in the visible results.
+- Implementation branch: `main`, with unrelated Admin Inbox and shared-mailbox work already dirty in the local worktree.
+- What changed: Updated [src/data/publicRouteMetadata.json](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/data/publicRouteMetadata.json), [index.html](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/index.html), and [src/pages/Index.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/Index.tsx) so the initial homepage title, description, social metadata, JSON-LD Organization data, and visible hero copy explicitly identify `TrustedBums.com` as the official Trusted Bums site. Updated [public/sitemap.xml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/public/sitemap.xml) with fresh `2026-06-12` lastmod values and added the `/bums` public route.
+- Main surfaces changed: [index.html](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/index.html), [public/sitemap.xml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/public/sitemap.xml), [src/data/publicRouteMetadata.json](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/data/publicRouteMetadata.json), [src/pages/Index.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/Index.tsx), [src/test/scrumQueueRegression.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumQueueRegression.test.ts), and [docs/codex-edit-log.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/codex-edit-log.md).
+- Checks run: `corepack pnpm exec vitest run src/test/scrumQueueRegression.test.ts`; `corepack pnpm run build`; Bingbot `curl` checks for `https://trustedbums.com/`, `robots.txt`, and `sitemap.xml`.
+- Recheck agents: Trust/Reputation Specialist, Data Analytics Engineer, Content Copyeditor, Release Verification Agent, and Lead Developer.
+- Next run should verify: whether Bing shows `https://trustedbums.com/` for exact-domain queries after recrawl, whether Bing Webmaster URL Inspection reports a fresh indexed canonical, and whether more public backlinks or Bing Places setup are needed for brand authority.
+
 ### 2026-06-12 - Add Admin website tool dashboard directory
 
 - Trigger: User requested Admin backend links for website tooling dashboards, including Google Analytics, Bing Webmaster, performance tools, security tools, and any future tool adopted for the website.

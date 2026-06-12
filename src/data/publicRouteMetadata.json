@@ -5,8 +5,8 @@
   "routes": [
     {
       "path": "/",
-      "title": "Trusted Bums",
-      "description": "Warm introduction strategy for hard-to-reach target accounts."
+      "title": "TrustedBums.com - Warm Intros",
+      "description": "TrustedBums.com is the official Trusted Bums website for B2B warm introductions into hard-to-reach target accounts."
     },
     {
       "path": "/bums",

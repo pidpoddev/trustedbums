@@ -329,6 +329,9 @@ const Index = () => {
                 Trusted Bums turns hard-to-reach decision makers into warm conversations through credible human
                 introductions. The name is playful. The access is not.
               </p>
+              <p className="mt-4 max-w-2xl text-sm font-semibold uppercase tracking-[0.18em] text-orange-100/70">
+                TrustedBums.com is the official site for Trusted Bums.
+              </p>
 
               <div className="mt-9 flex flex-wrap items-center gap-4">
                 {showSignedOutActions ? (
