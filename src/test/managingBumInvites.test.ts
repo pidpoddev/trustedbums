@@ -6,6 +6,7 @@ const profileBootstrapSource = readFileSync("supabase/functions/profile-bootstra
 const dashboardSource = readFileSync("src/pages/bum/BumDashboard.tsx", "utf8");
 const teamManagementSource = readFileSync("src/pages/bum/BumTeamManagement.tsx", "utf8");
 const inviteMigrationSource = readFileSync("supabase/migrations/20260612170000_add_managing_bum_invite_attachment.sql", "utf8");
+const emailTemplatesMigrationSource = readFileSync("supabase/migrations/20260612181500_add_managing_bum_email_templates.sql", "utf8");
 
 describe("Managing Bum invites", () => {
   it("allows only Admins or Managing Bums to invite Bums", () => {
@@ -29,6 +30,16 @@ describe("Managing Bum invites", () => {
     expect(profileBootstrapSource).toContain("member_bum_user_id: userId");
     expect(profileBootstrapSource).toContain("status: \"ACTIVE\"");
     expect(profileBootstrapSource).toContain("managing_bum_invite_attached");
+  });
+
+  it("notifies the Managing Bum through the Microsoft-backed email function when an invite attaches", () => {
+    expect(emailTemplatesMigrationSource).toContain("managing_bum_welcome");
+    expect(emailTemplatesMigrationSource).toContain("managing_bum_team_signup");
+    expect(emailTemplatesMigrationSource).toContain("MANAGING_BUM_TEAM_MEMBER_SIGNED_UP");
+    expect(profileBootstrapSource).toContain("async function sendManagingBumTeamSignupNotice");
+    expect(profileBootstrapSource).toContain("templateSlug: \"managing_bum_team_signup\"");
+    expect(profileBootstrapSource).toContain("triggeredBy: \"MANAGING_BUM_TEAM_MEMBER_SIGNED_UP\"");
+    expect(profileBootstrapSource).toContain("x-internal-email");
   });
 
   it("surfaces the invite action only in Managing Bum Team Management", () => {

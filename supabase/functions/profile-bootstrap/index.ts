@@ -322,6 +322,64 @@ async function attachPendingManagingBumInvite(userId: string, email: string) {
   return pendingInvite;
 }
 
+async function sendManagingBumTeamSignupNotice(input: {
+  managerUserId: string;
+  memberUserId: string;
+  memberEmail: string;
+}) {
+  if (!supabasePublishableKey || !supabaseServiceRoleKey) return;
+
+  const [{ data: manager, error: managerError }, { data: member, error: memberError }] = await Promise.all([
+    supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", input.managerUserId)
+      .maybeSingle<Pick<ProfileRow, "id" | "full_name" | "email">>(),
+    supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", input.memberUserId)
+      .maybeSingle<Pick<ProfileRow, "id" | "full_name" | "email">>(),
+  ]);
+
+  if (managerError) throw managerError;
+  if (memberError) throw memberError;
+
+  const managerEmail = manager?.email?.trim().toLowerCase();
+  if (!managerEmail) return;
+
+  const managerName = cleanString(manager?.full_name) ?? managerEmail;
+  const memberEmail = member?.email?.trim().toLowerCase() || input.memberEmail;
+  const memberName = cleanString(member?.full_name) ?? memberEmail;
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/send-admin-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "x-internal-email": "trustedbums-edge",
+    },
+    body: JSON.stringify({
+      mode: "action",
+      templateSlug: "managing_bum_team_signup",
+      recipientEmails: [managerEmail],
+      metadata: {
+        manager_name: managerName,
+        team_member_name: memberName,
+        team_member_email: memberEmail,
+        team_management_url: `${portalBaseUrl}/bum/team`,
+      },
+      triggeredBy: "MANAGING_BUM_TEAM_MEMBER_SIGNED_UP",
+    }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(payload.error || "Unable to send Managing Bum team signup notice.");
+  }
+}
+
 async function sendBumSignupAdminNotice(input: {
   requestId: string;
   name: string;
@@ -392,7 +450,14 @@ Deno.serve(async (request: Request) => {
         .single<ProfileRow>();
       if (error) throw error;
       if (data.role === "BUM") {
-        await attachPendingManagingBumInvite(userId, email);
+        const attachedInvite = await attachPendingManagingBumInvite(userId, email);
+        if (attachedInvite) {
+          await sendManagingBumTeamSignupNotice({
+            managerUserId: attachedInvite.managing_bum_user_id,
+            memberUserId: userId,
+            memberEmail: email,
+          }).catch((error) => console.warn("Unable to send Managing Bum team signup notice", error));
+        }
       }
       return json(200, { profile: data, request: null });
     }
@@ -469,7 +534,14 @@ Deno.serve(async (request: Request) => {
     }
 
     if (role === "BUM") {
-      await attachPendingManagingBumInvite(userId, email);
+      const attachedInvite = await attachPendingManagingBumInvite(userId, email);
+      if (attachedInvite) {
+        await sendManagingBumTeamSignupNotice({
+          managerUserId: attachedInvite.managing_bum_user_id,
+          memberUserId: userId,
+          memberEmail: email,
+        }).catch((error) => console.warn("Unable to send Managing Bum team signup notice", error));
+      }
       const accessRequest = await upsertPendingRequest({
         requesterProfileId: userId,
         email,
