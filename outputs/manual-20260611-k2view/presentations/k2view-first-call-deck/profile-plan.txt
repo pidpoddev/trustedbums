@@ -1,0 +1,8 @@
+task mode: create
+primary deck-profile: gtm-growth
+secondary profile gates: engineering-platform accuracy for K2view data/AI language; strategy-leadership discipline for first-call executive narrative
+required proof objects: K2view public positioning, K2view enterprise proof, buyer access friction, Trusted Bums workflow controls, pilot mutual action plan
+source/asset requirements: use public K2view website/PDF/press-release facts only; no unverified logo extraction; no customer-logo reproduction; no unsupported ROI claims
+brand authenticity constraints: use typed K2view and Trusted Bums names, not fabricated logos; visual system may borrow broad color cues but not create unofficial marks
+profile-specific QA gates: deck must show a visible growth/access loop, prospect-specific route hypothesis, proof-safe source notes, and a clear next step
+known missing inputs: Ryan has not provided buyer name, K2view contact role, target-account shortlist, existing relationship routes, objections, approved proof, or desired call date

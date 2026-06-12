@@ -17,6 +17,7 @@ import {
   updateOpportunityClaimStatus,
   type OpportunityClaimRecord,
   type OpportunityClaimStatus,
+  type OpportunityClaimContactBuyingRole,
 } from "@/lib/portalApi";
 import { opportunityOriginLabel, opportunityStageLabel, stageFromClaimStatus } from "@/lib/opportunityModel";
 import { formatDateForTimeZone } from "@/lib/timezone";
@@ -51,6 +52,16 @@ function termEndLabel(claim: OpportunityClaimRecord, timeZone: string) {
 
   return formatDate(addMonths(termStart, termMonths), timeZone);
 }
+
+const buyingRoleLabels: Record<OpportunityClaimContactBuyingRole, string> = {
+  DECISION_MAKER: "Decision Maker",
+  PURCHASING_LEADER: "Purchasing Leader",
+  TECHNICAL_LEADER: "Technical / Development Leader",
+  CHAMPION: "Champion",
+  BLOCKER: "Blocker",
+  INFLUENCER: "Influencer",
+  OTHER: "Other stakeholder",
+};
 
 export default function ClientClaims() {
   const { user } = useAuth();
@@ -200,6 +211,32 @@ export default function ClientClaims() {
                     </p>
                   </div>
                 </div>
+
+                {claim.opportunity_claim_contacts?.length ? (
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="text-sm font-medium text-foreground">Stakeholders included in this claim</p>
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      {claim.opportunity_claim_contacts
+                        .slice()
+                        .sort((left, right) => left.sort_order - right.sort_order)
+                        .map((claimContact) => (
+                          <div key={claimContact.id} className="rounded-lg border bg-background p-3 text-sm">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-medium text-foreground">{claimContact.contact_name}</span>
+                              <StatusBadge
+                                label={buyingRoleLabels[claimContact.buying_role]}
+                                variant={claimContact.buying_role === "BLOCKER" ? "warning" : "secondary"}
+                              />
+                            </div>
+                            <p className="mt-1 text-muted-foreground">
+                              {[claimContact.contact_title, claimContact.contact_company].filter(Boolean).join(" · ")}
+                            </p>
+                            {claimContact.note ? <p className="mt-2 text-muted-foreground">{claimContact.note}</p> : null}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 {isLocked ? (
                   <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-sm">

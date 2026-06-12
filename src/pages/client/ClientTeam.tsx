@@ -27,6 +27,8 @@ import {
 const roleOptions: Array<{ value: ClientAccessRole; label: string; detail: string }> = [
   { value: "CLIENT_ADMIN", label: "Client Admin", detail: "Full client portal access and company team management." },
   { value: "CLIENT_FINANCE", label: "Client Finance", detail: "Customer Payment Reports, commission invoices, exports, and reports." },
+  { value: "CLIENT_LEGAL", label: "Client Legal", detail: "Client Agreement review, redline requests, amendments, and legal records." },
+  { value: "CLIENT_IT", label: "Client IT", detail: "Company profile, deal registration API beta setup, and future SSO coordination." },
   { value: "CLIENT_MEMBER", label: "Client Member", detail: "Workspace, opportunities, training, and reports." },
 ];
 

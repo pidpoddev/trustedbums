@@ -473,12 +473,11 @@ const Index = () => {
               </div>
             </div>
 
-            <div className="relative min-h-[420px]">
-              <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-primary/25 to-accent/20" />
+            <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary/25 to-accent/20 p-3 sm:p-4 lg:min-h-[420px]">
               <img
                 src="/brand-revenue-loop.svg"
                 alt="Customer revenue comes first, then Trusted Bums gets paid"
-                className="relative z-10 h-full w-full rounded-[2rem] object-cover shadow-2xl"
+                className="relative z-10 h-auto max-h-full w-full rounded-[1.5rem] object-contain shadow-2xl"
               />
             </div>
           </div>

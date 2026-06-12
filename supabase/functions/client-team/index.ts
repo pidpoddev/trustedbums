@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import * as jose from "jsr:@panva/jose@6";
 import { normalizeInvitationRedirectUrl } from "../_shared/invitationRedirect.ts";
 
-type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_MEMBER";
+type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_LEGAL" | "CLIENT_IT" | "CLIENT_MEMBER";
 type Action = "list" | "invite" | "update_role" | "disable_member" | "request_domain" | "approve_request" | "deny_request";
 
 interface ClaimsResponse { sub?: string }
@@ -103,6 +103,8 @@ function readClientAccessRole(value: unknown): ClientAccessRole | null {
   const normalized = value.trim().toUpperCase().replace(/[^A-Z]+/g, "_");
   if (normalized === "CLIENT_ADMIN" || normalized === "ADMIN") return "CLIENT_ADMIN";
   if (normalized === "CLIENT_FINANCE" || normalized === "FINANCE") return "CLIENT_FINANCE";
+  if (normalized === "CLIENT_LEGAL" || normalized === "LEGAL") return "CLIENT_LEGAL";
+  if (normalized === "CLIENT_IT" || normalized === "IT") return "CLIENT_IT";
   if (normalized === "CLIENT_MEMBER" || normalized === "MEMBER") return "CLIENT_MEMBER";
   return null;
 }

@@ -1,6 +1,6 @@
 # Trusted Bums Consultant Team Rules
 
-_Last updated: 2026-06-07 by Codex._
+_Last updated: 2026-06-11 by Codex._
 
 ## Global Rules
 
@@ -15,6 +15,7 @@ _Last updated: 2026-06-07 by Codex._
 - Before preserving active backlog items, read `docs/codex-edit-log.md` when it exists. If the latest handoff names your role, recheck the shipped change and downgrade, remove, or narrow stale recommendations instead of asking for already implemented work.
 - Before carrying forward an active recommendation, reconcile it against the current route map, recent commits, and source files. If code already shipped part of the recommendation, downgrade it to the remaining gap and update acceptance criteria instead of repeating stale implementation work.
 - Use every relevant available capability before downgrading to source-only review: local repo inspection, browser/Playwright, package/security tooling, Supabase MCP, screenshots, logs, and current external guidance.
+- If a needed connector or MCP tool does not appear callable at first, use tool discovery or the project-scoped fallback and retry the blocked check before publishing. Do not leave a handoff claiming a capability was unavailable if it becomes callable later in the same session.
 - For Trusted Bums live Supabase checks, use the authenticated project-scoped MCP server `mcp__supabase_trustedbums` for project `vaoqvtxqvbptyxddpoju`. Confirm the project URL resolves to `https://vaoqvtxqvbptyxddpoju.supabase.co` before treating live Supabase evidence as current. If the project-scoped server is unavailable, use the generic Supabase app connector for the same project id and record the fallback in Agent Inputs.
 - Google Analytics is now an approved website analytics evidence source for `https://trustedbums.com`. When a role's task needs traffic, funnel, source, campaign, conversion, engagement, or content-performance evidence, use GA aggregates when available, cite the property/stream/date range in Agent Inputs, and keep raw visitor-level or private data out of repo markdown. Treat GA collection as pending until `TB-0066` is closed with production data-received proof.
 - Bing Webmaster Tools is now a verified and approved search and domain-reputation evidence source for `https://trustedbums.com`. When a role's task needs Bing crawl, indexing, sitemap, SEO/GEO, backlink, keyword, or Microsoft-side reputation evidence, use Bing Webmaster aggregate/report data when available, cite the site/report/date range in Agent Inputs, and keep private exports or credentials out of repo markdown. The production sitemap was submitted on 2026-06-09 and may show `Processing` while Bing builds reports.
@@ -169,6 +170,18 @@ _Last updated: 2026-06-07 by Codex._
 - Own the business-language side of shared mailbox intake. For legal documents, questions, complaints, privacy requests, abuse reports, and support messages, define category, owner, visibility, response SLA, retention expectation, and whether the app should store metadata only, parsed facts, body text, or attachments.
 - When a new workflow object or status exists, verify that the product also exposes queue, ownership, history, or aging surfaces where operators need them.
 - Request support queue evidence, CRM pipeline data, finance exception examples, admin logs, SOPs, and narrated walkthroughs when repo evidence cannot prove operational reality.
+
+## Technology Architect Rules
+
+- Run on demand when Ryan wants a platform architecture review, system map, technical debt synthesis, architecture decision record, or recommendation about how Trusted Bums has been built.
+- Maintain `docs/technology-architecture-backlog.md` as the source of truth for durable platform architecture recommendations, architecture decision record gaps, and cross-cutting technical risks.
+- Keep the Admin Portal Architecture page at `src/pages/admin/AdminArchitecture.tsx` current whenever platform architecture changes. If current/proposed drawings, platform summary metrics, active `TB-` recommendation cards, or ADR needs change in the backlog, update the portal page in the same run.
+- Focus on frontend/backend boundaries, Supabase schema/RLS/RPC/edge-function design, Clerk/auth integration, route guards, portal APIs, data-fetching patterns, delivery pipelines, QA/release gates, observability, performance telemetry, dependency posture, integration boundaries, and maintainability.
+- Confirm the exact repo, branch, HEAD, deploy target, and Supabase project before treating architecture evidence as current. Use project `vaoqvtxqvbptyxddpoju` only after confirming it is the Trusted Bums Supabase project.
+- Separate architecture risks from ordinary product defects, performance findings, security findings, and UX polish. Architecture recommendations should explain the structural pattern, affected systems, validation plan, and migration or rollback considerations.
+- Coordinate with Security, QA, QA Harness, Release Verification, Performance, Data, Product Ops, Trust, UX/UI, Accessibility, Legal/Compliance, Code Review, Lead Developer, and Agent Operations when a recommendation crosses ownership boundaries.
+- Prefer incremental, evidence-backed platform improvements over rewrites. Do not recommend removing release gates, RLS/business-access checks, auditability, privacy controls, or trust controls in the name of simplicity.
+- Request deploy topology, environment contract, observability, logs, Supabase advisor/catalog, GitHub Actions, and authenticated route evidence when source review alone cannot prove architecture risk or readiness.
 
 ## Code Review Agent Rules
 

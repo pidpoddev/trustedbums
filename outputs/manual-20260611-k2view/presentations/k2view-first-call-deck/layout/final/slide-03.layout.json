@@ -1,0 +1,1161 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/kbjvzy",
+    "id": "kbjvzy",
+    "slide": 3,
+    "layoutId": "362e51c9-2396-4fcd-b875-3d70c60e737f",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display",
+      "Aptos Mono"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "362e51c9-2396-4fcd-b875-3d70c60e737f",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u9knih4b",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#0B1220",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1032lszq",
+      "id": "2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#0B1220",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cfa9w3m9",
+      "id": "3",
+      "bbox": [
+        0,
+        0,
+        14,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F97316",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jm1cfa9w",
+      "id": "4",
+      "bbox": [
+        42,
+        30,
+        210,
+        24
+      ],
+      "geometry": "rect",
+      "text": "TRUSTED BUMS",
+      "textPreview": "TRUSTED BUMS",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Aptos Display",
+        "color": "#F97316",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TRUSTED BUMS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TRUSTED BUMS",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Aptos Display",
+            "color": "#F97316",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "TRUSTED BUMS",
+              "fontSize": 18,
+              "typeface": "Aptos Display",
+              "color": "#F97316",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u18jqh0f",
+      "id": "5",
+      "bbox": [
+        980,
+        32,
+        245,
+        20
+      ],
+      "geometry": "rect",
+      "text": "BUYER FRICTION",
+      "textPreview": "BUYER FRICTION",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos Mono",
+        "color": "#A8B3C7",
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "BUYER FRICTION"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "BUYER FRICTION",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos Mono",
+            "color": "#A8B3C7",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "BUYER FRICTION",
+              "fontSize": 13,
+              "typeface": "Aptos Mono",
+              "color": "#A8B3C7"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1orytsvu",
+      "id": "6",
+      "bbox": [
+        72,
+        84,
+        760,
+        94
+      ],
+      "geometry": "rect",
+      "text": "The problem is not awareness. It is trusted context.",
+      "textPreview": "The problem is not awareness. It is trusted context.",
+      "resolvedFontSize": 39,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 39,
+        "typeface": "Aptos Display",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The problem is not awareness. It is"
+          },
+          {
+            "index": 2,
+            "text": "trusted context."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The problem is not awareness. It is trusted context.",
+          "resolvedTextStyle": {
+            "fontSize": 39,
+            "typeface": "Aptos Display",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The problem is not awareness. It is trusted context.",
+              "fontSize": 39,
+              "typeface": "Aptos Display",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/c7u54zid",
+      "id": "7",
+      "bbox": [
+        74,
+        178,
+        790,
+        54
+      ],
+      "geometry": "rect",
+      "text": "Enterprise data buyers need to believe the platform can survive scale, security, governance, legacy integration, and internal politics.",
+      "textPreview": "Enterprise data buyers need to believe the platform can survive scale, security, governance, legacy integration, and internal politics.",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 19,
+        "typeface": "Aptos",
+        "color": "#A8B3C7",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Enterprise data buyers need to believe the platform can survive scale, security, governance,"
+          },
+          {
+            "index": 2,
+            "text": "legacy integration, and internal politics."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Enterprise data buyers need to believe the platform can survive scale, security, governance, legacy integration, and internal politics.",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "typeface": "Aptos",
+            "color": "#A8B3C7",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Enterprise data buyers need to believe the platform can survive scale, security, governance, legacy integration, and internal politics.",
+              "fontSize": 19,
+              "typeface": "Aptos",
+              "color": "#A8B3C7"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nap4r65w",
+      "id": "8",
+      "bbox": [
+        82,
+        330,
+        160,
+        34
+      ],
+      "geometry": "roundRect",
+      "fillColor": "rgba(57, 217, 138, 0.13333)",
+      "lineColor": "#39D98A",
+      "lineWidth": 1
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/upwb2hwf",
+      "id": "9",
+      "bbox": [
+        94,
+        338,
+        136,
+        18
+      ],
+      "geometry": "rect",
+      "text": "AI mandate",
+      "textPreview": "AI mandate",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "AI mandate"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "AI mandate",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AI mandate",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/orytsvu9",
+      "id": "10",
+      "bbox": [
+        310,
+        330,
+        160,
+        34
+      ],
+      "geometry": "roundRect",
+      "fillColor": "rgba(57, 217, 138, 0.13333)",
+      "lineColor": "#39D98A",
+      "lineWidth": 1
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcrmhk3q",
+      "id": "11",
+      "bbox": [
+        322,
+        338,
+        136,
+        18
+      ],
+      "geometry": "rect",
+      "text": "Data is fragmented",
+      "textPreview": "Data is fragmented",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Data is fragmented"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Data is fragmented",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Data is fragmented",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/al87ed8b",
+      "id": "12",
+      "bbox": [
+        538,
+        330,
+        160,
+        34
+      ],
+      "geometry": "roundRect",
+      "fillColor": "rgba(253, 186, 116, 0.13333)",
+      "lineColor": "#FDBA74",
+      "lineWidth": 1
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/z61032ls",
+      "id": "13",
+      "bbox": [
+        550,
+        338,
+        136,
+        18
+      ],
+      "geometry": "rect",
+      "text": "Risk slows approval",
+      "textPreview": "Risk slows approval",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Risk slows approval"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Risk slows approval",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Risk slows approval",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sfil0rqd",
+      "id": "14",
+      "bbox": [
+        766,
+        330,
+        160,
+        34
+      ],
+      "geometry": "roundRect",
+      "fillColor": "rgba(253, 186, 116, 0.13333)",
+      "lineColor": "#FDBA74",
+      "lineWidth": 1
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/h0fepkzu",
+      "id": "15",
+      "bbox": [
+        778,
+        338,
+        136,
+        18
+      ],
+      "geometry": "rect",
+      "text": "Committees form",
+      "textPreview": "Committees form",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Committees form"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Committees form",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Committees form",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a9w3m94f",
+      "id": "16",
+      "bbox": [
+        994,
+        330,
+        160,
+        34
+      ],
+      "geometry": "roundRect",
+      "fillColor": "rgba(249, 115, 22, 0.13333)",
+      "lineColor": "#F97316",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zupwb2hw",
+      "id": "17",
+      "bbox": [
+        1006,
+        338,
+        136,
+        18
+      ],
+      "geometry": "rect",
+      "text": "Access stalls",
+      "textPreview": "Access stalls",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Access stalls"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Access stalls",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Access stalls",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/obm58z25",
+      "id": "18",
+      "bbox": [
+        244,
+        345,
+        56,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#64748B",
+      "lineColor": "#64748B",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hwfyxobm",
+      "id": "19",
+      "bbox": [
+        293,
+        340,
+        14,
+        14
+      ],
+      "geometry": "triangle",
+      "fillColor": "#64748B",
+      "lineColor": "#64748B",
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/18jqh0fe",
+      "id": "20",
+      "bbox": [
+        472,
+        345,
+        56,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#64748B",
+      "lineColor": "#64748B",
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8nqxs72x",
+      "id": "21",
+      "bbox": [
+        521,
+        340,
+        14,
+        14
+      ],
+      "geometry": "triangle",
+      "fillColor": "#64748B",
+      "lineColor": "#64748B",
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/j2t83itg",
+      "id": "22",
+      "bbox": [
+        700,
+        345,
+        56,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#64748B",
+      "lineColor": "#64748B",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qh0fepkz",
+      "id": "23",
+      "bbox": [
+        749,
+        340,
+        14,
+        14
+      ],
+      "geometry": "triangle",
+      "fillColor": "#64748B",
+      "lineColor": "#64748B",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1w7mp0bi",
+      "id": "24",
+      "bbox": [
+        928,
+        345,
+        56,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#64748B",
+      "lineColor": "#64748B",
+      "lineWidth": 0
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8bat47y1",
+      "id": "25",
+      "bbox": [
+        977,
+        340,
+        14,
+        14
+      ],
+      "geometry": "triangle",
+      "fillColor": "#64748B",
+      "lineColor": "#64748B",
+      "lineWidth": 0
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jqh0fepk",
+      "id": "26",
+      "bbox": [
+        88,
+        450,
+        300,
+        28
+      ],
+      "geometry": "rect",
+      "text": "Trusted Bums hypothesis",
+      "textPreview": "Trusted Bums hypothesis",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 16,
+        "typeface": "Aptos Mono",
+        "color": "#F97316",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Trusted Bums hypothesis"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Trusted Bums hypothesis",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "typeface": "Aptos Mono",
+            "color": "#F97316",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Trusted Bums hypothesis",
+              "fontSize": 16,
+              "typeface": "Aptos Mono",
+              "color": "#F97316",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q5o7qpg3",
+      "id": "27",
+      "bbox": [
+        88,
+        486,
+        1010,
+        70
+      ],
+      "geometry": "rect",
+      "text": "K2view does not need generic lead volume. It needs credible routes into accounts where a data or AI initiative is already visible, underfunded, risky, late, or politically stuck.",
+      "textPreview": "K2view does not need generic lead volume. It needs credible routes into accounts where a data or AI initiative is already visible, underf...",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos Display",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "K2view does not need generic lead volume. It needs credible routes into accounts"
+          },
+          {
+            "index": 2,
+            "text": "where a data or AI initiative is already visible, underfunded, risky, late, or politically"
+          },
+          {
+            "index": 3,
+            "text": "stuck."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "K2view does not need generic lead volume. It needs credible routes into accounts where a data or AI initiative is already visible, underfunded, risky, late, or politically stuck.",
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "typeface": "Aptos Display",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "K2view does not need generic lead volume. It needs credible routes into accounts where a data or AI initiative is already visible, underfunded, risky, late, or politically stuck.",
+              "fontSize": 24,
+              "typeface": "Aptos Display",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1kre1w7m",
+      "id": "28",
+      "bbox": [
+        72,
+        672,
+        1090,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Buyer-stage hypothesis based on K2view public solution set and Trusted Bums operating model. Needs validation with Ryan/K2view.",
+      "textPreview": "Buyer-stage hypothesis based on K2view public solution set and Trusted Bums operating model. Needs validation with Ryan/K2view.",
+      "resolvedFontSize": 9.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 9.51,
+        "typeface": "Aptos",
+        "color": "#7F8EA6",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Buyer-stage hypothesis based on K2view public solution set and Trusted Bums operating model. Needs validation with Ryan/K2view."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Buyer-stage hypothesis based on K2view public solution set and Trusted Bums operating model. Needs validation with Ryan/K2view.",
+          "resolvedTextStyle": {
+            "fontSize": 9.51,
+            "typeface": "Aptos",
+            "color": "#7F8EA6",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Buyer-stage hypothesis based on K2view public solution set and Trusted Bums operating model. Needs validation with Ryan/K2view.",
+              "fontSize": 9.51,
+              "typeface": "Aptos",
+              "color": "#7F8EA6"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

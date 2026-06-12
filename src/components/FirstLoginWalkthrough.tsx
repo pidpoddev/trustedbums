@@ -37,6 +37,10 @@ function getRoleLabel(role?: string, clientAccessRole?: string) {
   if (role === "CLIENT") {
     return clientAccessRole === "CLIENT_FINANCE"
       ? "Client Finance"
+      : clientAccessRole === "CLIENT_LEGAL"
+        ? "Client Legal"
+        : clientAccessRole === "CLIENT_IT"
+          ? "Client IT"
       : clientAccessRole === "CLIENT_MEMBER"
         ? "Client Member"
         : "Client Admin";
@@ -70,6 +74,52 @@ function getWalkthroughSteps(role?: string, clientAccessRole?: string): Walkthro
           body: "Your User Profile controls personal settings, while Company Profile and agreements explain the workspace context.",
           route: "/client/user-profile",
           routeLabel: "Open User Profile",
+        },
+      ];
+    }
+
+    if (clientAccessRole === "CLIENT_LEGAL") {
+      return [
+        {
+          title: "Start with Client Agreement",
+          body: "Review the current agreement, download the PDF, and submit redline or amendment requests from the agreement workspace.",
+          route: "/client/agreements",
+          routeLabel: "Open Agreement",
+        },
+        {
+          title: "Use Inbox for legal follow-up",
+          body: "Legal questions and amendment discussions stay in Inbox so the client team and Trusted Bums can track decisions.",
+          route: "/client/live-conversations",
+          routeLabel: "Open Inbox",
+        },
+        {
+          title: "Keep your profile current",
+          body: "Your User Profile controls personal settings for legal review work.",
+          route: "/client/user-profile",
+          routeLabel: "Open User Profile",
+        },
+      ];
+    }
+
+    if (clientAccessRole === "CLIENT_IT") {
+      return [
+        {
+          title: "Start with Company Profile",
+          body: "Company Profile includes the beta deal registration API setup and future integration coordination fields.",
+          route: "/client/profile",
+          routeLabel: "Open Company Profile",
+        },
+        {
+          title: "Coordinate through Inbox",
+          body: "Use Inbox to track API, portal, and future SSO setup questions with Trusted Bums.",
+          route: "/client/live-conversations",
+          routeLabel: "Open Inbox",
+        },
+        {
+          title: "Review agreement context",
+          body: "Client Agreement records explain the legal and operational context for integrations.",
+          route: "/client/agreements",
+          routeLabel: "Open Agreement",
         },
       ];
     }

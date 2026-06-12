@@ -1,0 +1,1180 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/xlihu6",
+    "id": "xlihu6",
+    "slide": 8,
+    "layoutId": "362e51c9-2396-4fcd-b875-3d70c60e737f",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display",
+      "Aptos Mono"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "362e51c9-2396-4fcd-b875-3d70c60e737f",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/c3ylc7u5",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#0B1220",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ji5snelo",
+      "id": "2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#0B1220",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/uxc3ylc7",
+      "id": "3",
+      "bbox": [
+        0,
+        0,
+        14,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F97316",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1cfa9w3m",
+      "id": "4",
+      "bbox": [
+        42,
+        30,
+        210,
+        24
+      ],
+      "geometry": "rect",
+      "text": "TRUSTED BUMS",
+      "textPreview": "TRUSTED BUMS",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Aptos Display",
+        "color": "#F97316",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TRUSTED BUMS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TRUSTED BUMS",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Aptos Display",
+            "color": "#F97316",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "TRUSTED BUMS",
+              "fontSize": 18,
+              "typeface": "Aptos Display",
+              "color": "#F97316",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/crmhk3q5",
+      "id": "5",
+      "bbox": [
+        980,
+        32,
+        245,
+        20
+      ],
+      "geometry": "rect",
+      "text": "PROOF TO USE",
+      "textPreview": "PROOF TO USE",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos Mono",
+        "color": "#A8B3C7",
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PROOF TO USE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PROOF TO USE",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos Mono",
+            "color": "#A8B3C7",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PROOF TO USE",
+              "fontSize": 13,
+              "typeface": "Aptos Mono",
+              "color": "#A8B3C7"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/j6tovaho",
+      "id": "6",
+      "bbox": [
+        72,
+        84,
+        760,
+        94
+      ],
+      "geometry": "rect",
+      "text": "K2view already has enterprise credibility. Trusted Bums should use it carefully.",
+      "textPreview": "K2view already has enterprise credibility. Trusted Bums should use it carefully.",
+      "resolvedFontSize": 39,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 39,
+        "typeface": "Aptos Display",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "K2view already has enterprise credibility."
+          },
+          {
+            "index": 2,
+            "text": "Trusted Bums should use it carefully."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "K2view already has enterprise credibility. Trusted Bums should use it carefully.",
+          "resolvedTextStyle": {
+            "fontSize": 39,
+            "typeface": "Aptos Display",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "K2view already has enterprise credibility. Trusted Bums should use it carefully.",
+              "fontSize": 39,
+              "typeface": "Aptos Display",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ulwval87",
+      "id": "7",
+      "bbox": [
+        74,
+        178,
+        790,
+        54
+      ],
+      "geometry": "rect",
+      "text": "The first-call asset should borrow only public, supportable proof and avoid turning customer names into implied endorsements.",
+      "textPreview": "The first-call asset should borrow only public, supportable proof and avoid turning customer names into implied endorsements.",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 19,
+        "typeface": "Aptos",
+        "color": "#A8B3C7",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The first-call asset should borrow only public, supportable proof and avoid turning customer"
+          },
+          {
+            "index": 2,
+            "text": "names into implied endorsements."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The first-call asset should borrow only public, supportable proof and avoid turning customer names into implied endorsements.",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "typeface": "Aptos",
+            "color": "#A8B3C7",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The first-call asset should borrow only public, supportable proof and avoid turning customer names into implied endorsements.",
+              "fontSize": 19,
+              "typeface": "Aptos",
+              "color": "#A8B3C7"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/18jqh0fe",
+      "id": "8",
+      "bbox": [
+        82,
+        268,
+        250,
+        220
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8nqxs72x",
+      "id": "9",
+      "bbox": [
+        82,
+        268,
+        5,
+        220
+      ],
+      "geometry": "rect",
+      "fillColor": "#39D98A",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/al87ed8b",
+      "id": "10",
+      "bbox": [
+        104,
+        286,
+        206,
+        24
+      ],
+      "geometry": "rect",
+      "text": "PUBLIC SCALE",
+      "textPreview": "PUBLIC SCALE",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#39D98A",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PUBLIC SCALE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PUBLIC SCALE",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#39D98A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PUBLIC SCALE",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#39D98A",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/z61032ls",
+      "id": "11",
+      "bbox": [
+        104,
+        318,
+        206,
+        158
+      ],
+      "geometry": "rect",
+      "text": "7+ billion daily data product requests, 4+ billion Micro-Databases, 190 ms average query response.",
+      "textPreview": "7+ billion daily data product requests, 4+ billion Micro-Databases, 190 ms average query response.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "7+ billion daily data"
+          },
+          {
+            "index": 2,
+            "text": "product requests, 4+"
+          },
+          {
+            "index": 3,
+            "text": "billion Micro-Databases,"
+          },
+          {
+            "index": 4,
+            "text": "190 ms average query"
+          },
+          {
+            "index": 5,
+            "text": "response."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "7+ billion daily data product requests, 4+ billion Micro-Databases, 190 ms average query response.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "7+ billion daily data product requests, 4+ billion Micro-Databases, 190 ms average query response.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/orytsvu9",
+      "id": "12",
+      "bbox": [
+        362,
+        268,
+        250,
+        220
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcrmhk3q",
+      "id": "13",
+      "bbox": [
+        362,
+        268,
+        5,
+        220
+      ],
+      "geometry": "rect",
+      "fillColor": "#74F2CE",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a9w3m94f",
+      "id": "14",
+      "bbox": [
+        384,
+        286,
+        206,
+        24
+      ],
+      "geometry": "rect",
+      "text": "PUBLIC CUSTOMERS",
+      "textPreview": "PUBLIC CUSTOMERS",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#74F2CE",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PUBLIC CUSTOMERS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PUBLIC CUSTOMERS",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#74F2CE",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PUBLIC CUSTOMERS",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#74F2CE",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zupwb2hw",
+      "id": "15",
+      "bbox": [
+        384,
+        318,
+        206,
+        158
+      ],
+      "geometry": "rect",
+      "text": "K2view lists enterprise names including AT&T, Regions Bank, Sun Life, BBVA, Hapag-Lloyd, Vodafone, and Verizon.",
+      "textPreview": "K2view lists enterprise names including AT&T, Regions Bank, Sun Life, BBVA, Hapag-Lloyd, Vodafone, and Verizon.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "K2view lists enterprise"
+          },
+          {
+            "index": 2,
+            "text": "names including AT&T,"
+          },
+          {
+            "index": 3,
+            "text": "Regions Bank, Sun Life,"
+          },
+          {
+            "index": 4,
+            "text": "BBVA, Hapag-Lloyd,"
+          },
+          {
+            "index": 5,
+            "text": "Vodafone, and Verizon."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "K2view lists enterprise names including AT&T, Regions Bank, Sun Life, BBVA, Hapag-Lloyd, Vodafone, and Verizon.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "K2view lists enterprise names including AT&T, Regions Bank, Sun Life, BBVA, Hapag-Lloyd, Vodafone, and Verizon.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sfil0rqd",
+      "id": "16",
+      "bbox": [
+        642,
+        268,
+        250,
+        220
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/h0fepkzu",
+      "id": "17",
+      "bbox": [
+        642,
+        268,
+        5,
+        220
+      ],
+      "geometry": "rect",
+      "fillColor": "#FDBA74",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/65wjudg7",
+      "id": "18",
+      "bbox": [
+        664,
+        286,
+        206,
+        24
+      ],
+      "geometry": "rect",
+      "text": "ANALYST SIGNAL",
+      "textPreview": "ANALYST SIGNAL",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#FDBA74",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "ANALYST SIGNAL"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "ANALYST SIGNAL",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#FDBA74",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "ANALYST SIGNAL",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#FDBA74",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zqtcj6to",
+      "id": "19",
+      "bbox": [
+        664,
+        318,
+        206,
+        158
+      ],
+      "geometry": "rect",
+      "text": "K2view says it was named a Visionary in the 2025 Gartner Magic Quadrant for Data Integration Tools.",
+      "textPreview": "K2view says it was named a Visionary in the 2025 Gartner Magic Quadrant for Data Integration Tools.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "K2view says it was named"
+          },
+          {
+            "index": 2,
+            "text": "a Visionary in the 2025"
+          },
+          {
+            "index": 3,
+            "text": "Gartner Magic Quadrant"
+          },
+          {
+            "index": 4,
+            "text": "for Data Integration Tools."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "K2view says it was named a Visionary in the 2025 Gartner Magic Quadrant for Data Integration Tools.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "K2view says it was named a Visionary in the 2025 Gartner Magic Quadrant for Data Integration Tools.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/byhgn29g",
+      "id": "20",
+      "bbox": [
+        922,
+        268,
+        250,
+        220
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/idonyd0z",
+      "id": "21",
+      "bbox": [
+        922,
+        268,
+        5,
+        220
+      ],
+      "geometry": "rect",
+      "fillColor": "#F97316",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t47y1kre",
+      "id": "22",
+      "bbox": [
+        944,
+        286,
+        206,
+        24
+      ],
+      "geometry": "rect",
+      "text": "RECENT FUNDING",
+      "textPreview": "RECENT FUNDING",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#F97316",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "RECENT FUNDING"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "RECENT FUNDING",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#F97316",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "RECENT FUNDING",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#F97316",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0je9cvix",
+      "id": "23",
+      "bbox": [
+        944,
+        318,
+        206,
+        158
+      ],
+      "geometry": "rect",
+      "text": "Trinity announced $15M to support demand for agentic AI data infrastructure.",
+      "textPreview": "Trinity announced $15M to support demand for agentic AI data infrastructure.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Trinity announced $15M to"
+          },
+          {
+            "index": 2,
+            "text": "support demand for"
+          },
+          {
+            "index": 3,
+            "text": "agentic AI data"
+          },
+          {
+            "index": 4,
+            "text": "infrastructure."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Trinity announced $15M to support demand for agentic AI data infrastructure.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Trinity announced $15M to support demand for agentic AI data infrastructure.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/b6xkf6dc",
+      "id": "24",
+      "bbox": [
+        72,
+        672,
+        1090,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Sources: K2view homepage; Trinity Capital press release. Use customer/analyst claims exactly as sourced and review before sending.",
+      "textPreview": "Sources: K2view homepage; Trinity Capital press release. Use customer/analyst claims exactly as sourced and review before sending.",
+      "resolvedFontSize": 9.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 9.51,
+        "typeface": "Aptos",
+        "color": "#7F8EA6",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Sources: K2view homepage; Trinity Capital press release. Use customer/analyst claims exactly as sourced and review before sending."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Sources: K2view homepage; Trinity Capital press release. Use customer/analyst claims exactly as sourced and review before sending.",
+          "resolvedTextStyle": {
+            "fontSize": 9.51,
+            "typeface": "Aptos",
+            "color": "#7F8EA6",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Sources: K2view homepage; Trinity Capital press release. Use customer/analyst claims exactly as sourced and review before sending.",
+              "fontSize": 9.51,
+              "typeface": "Aptos",
+              "color": "#7F8EA6"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

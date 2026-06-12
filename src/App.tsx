@@ -40,6 +40,7 @@ const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminScrumTracker = lazy(() => import("./pages/admin/AdminScrumTracker"));
 const AdminPerformanceMetrics = lazy(() => import("./pages/admin/AdminPerformanceMetrics"));
+const AdminArchitecture = lazy(() => import("./pages/admin/AdminArchitecture"));
 const AdminHandoffs = lazy(() => import("./pages/admin/AdminHandoffs"));
 const AdminTrainingAssets = lazy(() => import("./pages/admin/AdminTrainingAssets"));
 const AdminTroubleshooting = lazy(() => import("./pages/admin/AdminTroubleshooting"));
@@ -56,6 +57,7 @@ const ClientTeam = lazy(() => import("./pages/client/ClientTeam"));
 const ClientTrainings = lazy(() => import("./pages/client/ClientTrainings"));
 const ClientExports = lazy(() => import("./pages/client/ClientExports"));
 const ClientPayments = lazy(() => import("./pages/client/ClientPayments"));
+const ClientCommissionPlans = lazy(() => import("./pages/client/ClientCommissionPlans"));
 const ClientReports = lazy(() => import("./pages/client/ClientReports"));
 const BumLayout = lazy(() => import("./layouts/BumLayout"));
 const BumDashboard = lazy(() => import("./pages/bum/BumDashboard"));
@@ -132,6 +134,7 @@ const App = () => (
                       <Route path="reports" element={<AdminReports />} />
                       <Route path="scrum" element={<AdminScrumTracker />} />
                       <Route path="performance" element={<AdminPerformanceMetrics />} />
+                      <Route path="architecture" element={<AdminArchitecture />} />
                       <Route path="troubleshooting" element={<AdminTroubleshooting />} />
                       <Route path="legal" element={<AdminLegal />} />
                       <Route path="profile" element={<AdminProfile />} />
@@ -164,6 +167,7 @@ const App = () => (
                         <Route path="requests" element={<Navigate to="/client/opportunities?tab=bum-originated" replace />} />
                       </Route>
                       <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_ADMIN", "CLIENT_FINANCE"]} />}>
+                        <Route path="commission-plans" element={<ClientCommissionPlans />} />
                         <Route path="payments" element={<ClientPayments />} />
                         <Route path="exports" element={<ClientExports />} />
                       </Route>

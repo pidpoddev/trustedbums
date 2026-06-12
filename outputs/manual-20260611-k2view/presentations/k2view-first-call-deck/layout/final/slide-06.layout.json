@@ -1,0 +1,1244 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/aqvhll",
+    "id": "aqvhll",
+    "slide": 6,
+    "layoutId": "362e51c9-2396-4fcd-b875-3d70c60e737f",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display",
+      "Aptos Mono"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "362e51c9-2396-4fcd-b875-3d70c60e737f",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6hcrmhk3",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#0B1220",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d8v6psfi",
+      "id": "2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#0B1220",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/onyd0z61",
+      "id": "3",
+      "bbox": [
+        0,
+        0,
+        14,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F97316",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vahoza1g",
+      "id": "4",
+      "bbox": [
+        42,
+        30,
+        210,
+        24
+      ],
+      "geometry": "rect",
+      "text": "TRUSTED BUMS",
+      "textPreview": "TRUSTED BUMS",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Aptos Display",
+        "color": "#F97316",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TRUSTED BUMS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TRUSTED BUMS",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Aptos Display",
+            "color": "#F97316",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "TRUSTED BUMS",
+              "fontSize": 18,
+              "typeface": "Aptos Display",
+              "color": "#F97316",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6tovahoz",
+      "id": "5",
+      "bbox": [
+        980,
+        32,
+        245,
+        20
+      ],
+      "geometry": "rect",
+      "text": "HOW IT WORKS",
+      "textPreview": "HOW IT WORKS",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos Mono",
+        "color": "#A8B3C7",
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "HOW IT WORKS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "HOW IT WORKS",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos Mono",
+            "color": "#A8B3C7",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "HOW IT WORKS",
+              "fontSize": 13,
+              "typeface": "Aptos Mono",
+              "color": "#A8B3C7"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dg7adsji",
+      "id": "6",
+      "bbox": [
+        72,
+        84,
+        760,
+        94
+      ],
+      "geometry": "rect",
+      "text": "Trusted Bums turns relationship access into a controlled workflow.",
+      "textPreview": "Trusted Bums turns relationship access into a controlled workflow.",
+      "resolvedFontSize": 39,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 39,
+        "typeface": "Aptos Display",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Trusted Bums turns relationship access"
+          },
+          {
+            "index": 2,
+            "text": "into a controlled workflow."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Trusted Bums turns relationship access into a controlled workflow.",
+          "resolvedTextStyle": {
+            "fontSize": 39,
+            "typeface": "Aptos Display",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Trusted Bums turns relationship access into a controlled workflow.",
+              "fontSize": 39,
+              "typeface": "Aptos Display",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ovahoza1",
+      "id": "7",
+      "bbox": [
+        74,
+        178,
+        790,
+        54
+      ],
+      "geometry": "rect",
+      "text": "The point is not to buy introductions. The point is to find credible access, add context, and keep every step reviewed.",
+      "textPreview": "The point is not to buy introductions. The point is to find credible access, add context, and keep every step reviewed.",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 19,
+        "typeface": "Aptos",
+        "color": "#A8B3C7",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The point is not to buy introductions. The point is to find credible access, add context, and"
+          },
+          {
+            "index": 2,
+            "text": "keep every step reviewed."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The point is not to buy introductions. The point is to find credible access, add context, and keep every step reviewed.",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "typeface": "Aptos",
+            "color": "#A8B3C7",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The point is not to buy introductions. The point is to find credible access, add context, and keep every step reviewed.",
+              "fontSize": 19,
+              "typeface": "Aptos",
+              "color": "#A8B3C7"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vmtwra5g",
+      "id": "8",
+      "bbox": [
+        92,
+        262,
+        240,
+        210
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/61032lsz",
+      "id": "9",
+      "bbox": [
+        92,
+        262,
+        5,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#39D98A",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wval87ed",
+      "id": "10",
+      "bbox": [
+        114,
+        280,
+        196,
+        24
+      ],
+      "geometry": "rect",
+      "text": "1. DEFINE",
+      "textPreview": "1. DEFINE",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#39D98A",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1. DEFINE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1. DEFINE",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#39D98A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1. DEFINE",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#39D98A",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pg3ex0nu",
+      "id": "11",
+      "bbox": [
+        114,
+        312,
+        196,
+        148
+      ],
+      "geometry": "rect",
+      "text": "K2view supplies target accounts, buyer problem, proof, and disqualifiers.",
+      "textPreview": "K2view supplies target accounts, buyer problem, proof, and disqualifiers.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "K2view supplies target"
+          },
+          {
+            "index": 2,
+            "text": "accounts, buyer problem,"
+          },
+          {
+            "index": 3,
+            "text": "proof, and disqualifiers."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "K2view supplies target accounts, buyer problem, proof, and disqualifiers.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "K2view supplies target accounts, buyer problem, proof, and disqualifiers.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/epkzupwb",
+      "id": "12",
+      "bbox": [
+        370,
+        262,
+        240,
+        210
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7adsji5s",
+      "id": "13",
+      "bbox": [
+        370,
+        262,
+        5,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#74F2CE",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w7mp0bi9",
+      "id": "14",
+      "bbox": [
+        392,
+        280,
+        196,
+        24
+      ],
+      "geometry": "rect",
+      "text": "2. MATCH",
+      "textPreview": "2. MATCH",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#74F2CE",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2. MATCH"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2. MATCH",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#74F2CE",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2. MATCH",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#74F2CE",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/psfil0rq",
+      "id": "15",
+      "bbox": [
+        392,
+        312,
+        196,
+        148
+      ],
+      "geometry": "rect",
+      "text": "Bums surface credible routes through prior colleagues, operators, partners, customers, or advisors.",
+      "textPreview": "Bums surface credible routes through prior colleagues, operators, partners, customers, or advisors.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Bums surface credible"
+          },
+          {
+            "index": 2,
+            "text": "routes through prior"
+          },
+          {
+            "index": 3,
+            "text": "colleagues, operators,"
+          },
+          {
+            "index": 4,
+            "text": "partners, customers, or"
+          },
+          {
+            "index": 5,
+            "text": "advisors."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Bums surface credible routes through prior colleagues, operators, partners, customers, or advisors.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Bums surface credible routes through prior colleagues, operators, partners, customers, or advisors.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e1w7mp0b",
+      "id": "16",
+      "bbox": [
+        648,
+        262,
+        240,
+        210
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7mp0bi9s",
+      "id": "17",
+      "bbox": [
+        648,
+        262,
+        5,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#FDBA74",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wfyxobm5",
+      "id": "18",
+      "bbox": [
+        670,
+        280,
+        196,
+        24
+      ],
+      "geometry": "rect",
+      "text": "3. REVIEW",
+      "textPreview": "3. REVIEW",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#FDBA74",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "3. REVIEW"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "3. REVIEW",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#FDBA74",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "3. REVIEW",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#FDBA74",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0rqd4vm",
+      "id": "19",
+      "bbox": [
+        670,
+        312,
+        196,
+        148
+      ],
+      "geometry": "rect",
+      "text": "Trusted Bums checks fit, claim quality, relationship basis, and next-step risk before action.",
+      "textPreview": "Trusted Bums checks fit, claim quality, relationship basis, and next-step risk before action.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Trusted Bums checks fit,"
+          },
+          {
+            "index": 2,
+            "text": "claim quality, relationship"
+          },
+          {
+            "index": 3,
+            "text": "basis, and next-step risk"
+          },
+          {
+            "index": 4,
+            "text": "before action."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Trusted Bums checks fit, claim quality, relationship basis, and next-step risk before action.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Trusted Bums checks fit, claim quality, relationship basis, and next-step risk before action.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pwb2hwfy",
+      "id": "20",
+      "bbox": [
+        926,
+        262,
+        240,
+        210
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0bi9s36h",
+      "id": "21",
+      "bbox": [
+        926,
+        262,
+        5,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#F97316",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7qpg3ex0",
+      "id": "22",
+      "bbox": [
+        948,
+        280,
+        196,
+        24
+      ],
+      "geometry": "rect",
+      "text": "4. ACT",
+      "textPreview": "4. ACT",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#F97316",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "4. ACT"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "4. ACT",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#F97316",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "4. ACT",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#F97316",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/i5sneloj",
+      "id": "23",
+      "bbox": [
+        948,
+        312,
+        196,
+        148
+      ],
+      "geometry": "rect",
+      "text": "Only credible routes move to a warm ask, meeting, intro support, and tracked opportunity.",
+      "textPreview": "Only credible routes move to a warm ask, meeting, intro support, and tracked opportunity.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Only credible routes"
+          },
+          {
+            "index": 2,
+            "text": "move to a warm ask,"
+          },
+          {
+            "index": 3,
+            "text": "meeting, intro support,"
+          },
+          {
+            "index": 4,
+            "text": "and tracked opportunity."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Only credible routes move to a warm ask, meeting, intro support, and tracked opportunity.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Only credible routes move to a warm ask, meeting, intro support, and tracked opportunity.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/p4r65wju",
+      "id": "24",
+      "bbox": [
+        100,
+        540,
+        980,
+        42
+      ],
+      "geometry": "rect",
+      "text": "Control matters because K2view sells into sensitive data, AI, governance, and regulated-enterprise environments.",
+      "textPreview": "Control matters because K2view sells into sensitive data, AI, governance, and regulated-enterprise environments.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos Display",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Control matters because K2view sells into sensitive data, AI, governance, and"
+          },
+          {
+            "index": 2,
+            "text": "regulated-enterprise environments."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Control matters because K2view sells into sensitive data, AI, governance, and regulated-enterprise environments.",
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "typeface": "Aptos Display",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Control matters because K2view sells into sensitive data, AI, governance, and regulated-enterprise environments.",
+              "fontSize": 24,
+              "typeface": "Aptos Display",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wjudg7ad",
+      "id": "25",
+      "bbox": [
+        72,
+        672,
+        1090,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Source: Trusted Bums operating model and product workflow docs.",
+      "textPreview": "Source: Trusted Bums operating model and product workflow docs.",
+      "resolvedFontSize": 9.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 9.51,
+        "typeface": "Aptos",
+        "color": "#7F8EA6",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Source: Trusted Bums operating model and product workflow docs."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Source: Trusted Bums operating model and product workflow docs.",
+          "resolvedTextStyle": {
+            "fontSize": 9.51,
+            "typeface": "Aptos",
+            "color": "#7F8EA6",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Source: Trusted Bums operating model and product workflow docs.",
+              "fontSize": 9.51,
+              "typeface": "Aptos",
+              "color": "#7F8EA6"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

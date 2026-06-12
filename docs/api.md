@@ -2,14 +2,48 @@
 
 Trusted Bums exposes a small, versioned API layer for integrations that should not call Supabase tables directly. The first supported integration surface is the Chrome extension workflow.
 
+The broader API-boundary decision is recorded in [`docs/architecture-decisions/0001-api-boundary-and-headless-workflows.md`](architecture-decisions/0001-api-boundary-and-headless-workflows.md). Trusted Bums is headless at the Supabase data-platform level, but only documented API lanes are stable product contracts for callers outside the React portal.
+
 ## Source of truth
 
 - OpenAPI contract: [`docs/openapi.yaml`](openapi.yaml)
 - Supabase Edge Function: `supabase/functions/extension-api-v1/index.ts`
 - Database storage: `public.extension_page_captures`
 - Migration: `supabase/migrations/20260525160000_add_extension_api_page_captures.sql`
+- API boundary ADR: [`docs/architecture-decisions/0001-api-boundary-and-headless-workflows.md`](architecture-decisions/0001-api-boundary-and-headless-workflows.md)
 
 The OpenAPI file is the public contract. Update it in the same pull request as any endpoint, request, or response change.
+
+## API lanes
+
+Every new Trusted Bums data workflow must choose one lane before implementation.
+
+| Lane | Use for | Headless status | Contract |
+| --- | --- | --- | --- |
+| Public Intake API | Anonymous or semi-anonymous public submissions, telemetry, feedback, and abuse-controlled first-touch workflows. | Stable only for the documented public submission shape. | Edge Function contract with origin/CORS, bot/abuse controls, rate limits, validation, and audit/log expectations. |
+| Direct Data API | Low-risk portal reads and simple single-owner writes already protected by Supabase RLS and explicit grants. | First-party portal or approved internal tooling only. Not a partner contract. | TypeScript helper plus RLS allow/deny coverage. |
+| Portal Domain API | Privileged, multi-table, auditable, role-sensitive, or workflow-orchestrating portal actions. | Stable for first-party authenticated clients when documented. | Supabase Edge Function request/response shape plus role tests. |
+| Internal Operations API | Cron, mailbox sync, admin maintenance, Microsoft Graph, Clerk, Teams, and service-role jobs. | Stable only for internal services/operators. | Function runbook, caller credential, audit/log expectations. |
+| Partner API | Chrome extension, future client/vendor integrations, CRM connectors, or any external non-portal consumer. | Stable for approved external consumers. | OpenAPI, versioning, scoped auth, rate limits, idempotency, audit, and deprecation policy. |
+| UI-Only Helper | Local presentation transforms, filters, component state, and non-persistent calculations. | Not headless. | Component/helper tests only. |
+
+Raw Supabase table endpoints are not a partner API. A workflow that must be usable outside the React UI needs a documented lane and a stable contract before another client depends on it.
+
+## Current headless workflow status
+
+| Workflow area | Current state | Lane |
+| --- | --- | --- |
+| Chrome extension page capture | Stable and documented through `extension-api-v1`. | Partner API |
+| Public contact form | `submit-contact` accepts public submissions; admin triage still uses portal helpers. | Public Intake API, then Portal Domain API for queue operations when migrated |
+| Profile bootstrap, client team, access requests, Clerk tools | Edge Functions support first-party authenticated/admin callers. | Portal Domain API / Internal Operations API |
+| Client opportunities and marketplace reads | Mostly direct `portalApi.ts` Supabase Data API calls. | Direct Data API until high-risk mutations migrate |
+| Bum saved items, hidden state, represented contacts, customer leads | Mixed direct Data API and `portal-contacts`. | Direct Data API for simple owner state; Portal Domain API for multi-table orchestration |
+| Conversations and opportunity questions | Direct Data API multi-table writes. | Portal Domain API candidate |
+| Finance, commissions, invoices, and payouts | Direct Data API writes and role checks. | Portal Domain API candidate before real volume |
+| Admin email, mailbox, Teams, DMARC, scheduled sync | Edge Functions and cron jobs. | Internal Operations API |
+| Admin Scrum Tracker | Direct Data API for admin users. | Direct Data API for admins; Portal Domain API candidate if external automation grows |
+| Training materials and attachments | Direct Data API and storage signed URLs. | Direct Data API now; Portal Domain API candidate for privileged lifecycle changes |
+| Performance beacon and admin telemetry | Public Edge Function writes and admin portal reads. | Public Intake API plus Direct Data API |
 
 ## Versioning rules
 
@@ -170,10 +204,12 @@ That verifies anonymous requests are rejected with the stable v1 error envelope.
 
 When changing the API layer:
 
-1. Update `docs/openapi.yaml` first or in the same commit.
-2. Update this page if behavior, auth, versioning, or workflow changes.
-3. Add/update the Edge Function implementation.
-4. Add a migration for any schema changes.
-5. Run `npm test`, `npm run lint`, and `npm run build`.
-6. Deploy the Edge Function and apply migrations through the normal Supabase release process.
-7. Keep v1 backward-compatible; create v2 for breaking changes.
+1. Choose and document the API lane for the workflow.
+2. Update `docs/openapi.yaml` first or in the same commit for partner API changes.
+3. Update this page if behavior, auth, versioning, workflow status, or lane classification changes.
+4. Add/update the Edge Function implementation when the workflow belongs in a Portal Domain, Internal Operations, Public Intake, or Partner API lane.
+5. Add a migration for any schema changes.
+6. Add role allow/deny, contract, or helper tests that match the lane.
+7. Run `npm test`, `npm run lint`, and `npm run build`.
+8. Deploy the Edge Function and apply migrations through the normal Supabase release process.
+9. Keep v1 backward-compatible; create v2 for breaking changes.

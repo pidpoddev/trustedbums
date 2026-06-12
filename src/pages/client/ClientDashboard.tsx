@@ -111,13 +111,16 @@ export default function ClientDashboard() {
   const timeZone = useUserTimeZone();
   const clientAccessRole = user?.role === "CLIENT" ? user.clientAccessRole ?? "CLIENT_ADMIN" : undefined;
   const isFinanceUser = clientAccessRole === "CLIENT_FINANCE";
+  const isLegalUser = clientAccessRole === "CLIENT_LEGAL";
+  const isItUser = clientAccessRole === "CLIENT_IT";
+  const isWorkspaceUser = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_MEMBER";
   const deniedAccessRecovery = getDeniedAccessRecovery(deniedFrom, isFinanceUser);
   const canManagePayments = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_FINANCE";
   const { hasAcceptedCurrentTerms } = useCurrentTermsState();
   const opportunitiesQuery = useQuery({
     queryKey: ["client-opportunity-registrations", user?.id],
     queryFn: () => listOpportunityRegistrations(),
-    enabled: Boolean(user?.id) && !isFinanceUser,
+    enabled: Boolean(user?.id) && isWorkspaceUser,
   });
   const reportsQuery = useQuery({
     queryKey: ["customer-payment-reports", user?.clientId],
@@ -132,12 +135,12 @@ export default function ClientDashboard() {
   const reverseOpportunitiesQuery = useQuery({
     queryKey: ["client-reverse-opportunities", user?.clientId],
     queryFn: () => listClientReverseOpportunities(user!),
-    enabled: Boolean(user?.clientId) && !isFinanceUser,
+    enabled: Boolean(user?.clientId) && isWorkspaceUser,
   });
   const targetResponsesQuery = useQuery({
     queryKey: ["client-target-responses", user?.clientId],
     queryFn: () => listCustomerTargetResponses(user!),
-    enabled: Boolean(user?.clientId) && !isFinanceUser,
+    enabled: Boolean(user?.clientId) && isWorkspaceUser,
   });
   const opportunities = opportunitiesQuery.data ?? [];
   const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
@@ -198,6 +201,98 @@ export default function ClientDashboard() {
       ? { title: "Record Customer Payment Report", description: "Calculate a Trusted Bums commission invoice from Client-reported Customer revenue.", to: "/client/payments" }
       : null,
   ].filter(Boolean) as DashboardAction[];
+
+  if (isLegalUser) {
+    const legalActions: DashboardAction[] = [
+      { title: "Review Client Agreement", description: "Open the legal workspace to review terms, download the PDF, and submit redline or amendment requests.", to: "/client/agreements", primary: !hasAcceptedCurrentTerms },
+      { title: "Open Inbox", description: "Track legal questions, amendments, and Trusted Bums follow-up in one place.", to: "/client/live-conversations" },
+      { title: "Review company profile", description: "Check the company details tied to agreement records and legal notices.", to: "/client/profile" },
+    ];
+
+    return (
+      <div>
+        <PageHeader
+          title={`Welcome back, ${user?.name ?? "Legal"}`}
+          description={`Review agreements, redlines, and amendment requests for ${user?.companyName ?? "your client workspace"}.`}
+        >
+          <Button asChild>
+            <Link to="/client/agreements">
+              <FileCheck className="mr-2 h-4 w-4" />
+              Open Client Agreement
+            </Link>
+          </Button>
+        </PageHeader>
+        {deniedFrom ? (
+          <Card className="mb-6 border-warning/40 bg-warning/5">
+            <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-medium">{deniedAccessRecovery.title}</p>
+                <p className="text-sm text-muted-foreground">{deniedAccessRecovery.description}</p>
+              </div>
+              <Button asChild variant="outline"><Link to={deniedAccessRecovery.to}>{deniedAccessRecovery.cta}</Link></Button>
+            </CardContent>
+          </Card>
+        ) : null}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="font-display text-2xl font-bold">Legal workspace</p>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                Client Legal can review current terms, submit redline/amendment requests, and continue discussion through Inbox before the company signs or updates terms over time.
+              </p>
+            </CardContent>
+          </Card>
+          <NextActionsCard actions={legalActions} />
+        </div>
+      </div>
+    );
+  }
+
+  if (isItUser) {
+    const itActions: DashboardAction[] = [
+      { title: "Configure Deal Registration Beta", description: "Set API provider, auth method, required fields, approval tracking, and fallback workflow.", to: "/client/profile", primary: true },
+      { title: "Open Inbox", description: "Coordinate portal API, security, and future SSO setup questions with Trusted Bums.", to: "/client/live-conversations" },
+      { title: "Review Client Agreement", description: "Check integration-related legal context and agreement records.", to: "/client/agreements" },
+    ];
+
+    return (
+      <div>
+        <PageHeader
+          title={`Welcome back, ${user?.name ?? "IT"}`}
+          description={`Manage integration setup and technical coordination for ${user?.companyName ?? "your client workspace"}.`}
+        >
+          <Button asChild>
+            <Link to="/client/profile">
+              <FileCheck className="mr-2 h-4 w-4" />
+              Open Company Profile
+            </Link>
+          </Button>
+        </PageHeader>
+        {deniedFrom ? (
+          <Card className="mb-6 border-warning/40 bg-warning/5">
+            <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-medium">{deniedAccessRecovery.title}</p>
+                <p className="text-sm text-muted-foreground">{deniedAccessRecovery.description}</p>
+              </div>
+              <Button asChild variant="outline"><Link to={deniedAccessRecovery.to}>{deniedAccessRecovery.cta}</Link></Button>
+            </CardContent>
+          </Card>
+        ) : null}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="font-display text-2xl font-bold">Integration workspace</p>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                Client IT can manage beta deal registration API setup now. SSO is not enabled yet, but this role gives us a clean owner for that workflow when we add it.
+              </p>
+            </CardContent>
+          </Card>
+          <NextActionsCard actions={itActions} />
+        </div>
+      </div>
+    );
+  }
 
   if (isFinanceUser) {
     return (

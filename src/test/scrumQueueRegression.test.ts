@@ -40,6 +40,9 @@ describe("scrum implementation queue regression coverage", () => {
     expect(htaccess).toContain("frame-ancestors 'none'");
     expect(htaccess).toContain("https://vaoqvtxqvbptyxddpoju.supabase.co");
     expect(htaccess).toContain("https://challenges.cloudflare.com");
+    expect(htaccess).toContain("https://fonts.googleapis.com");
+    expect(htaccess).toContain("https://static.cloudflareinsights.com");
+    expect(htaccess).toContain("worker-src 'self' blob:");
     expect(htaccess).toContain("Serve generated public-route metadata snapshots");
     expect(htaccess).toContain("privacy-policy");
     expect(htaccess).toContain("terms-of-service");
@@ -70,8 +73,8 @@ describe("scrum implementation queue regression coverage", () => {
 
   it("keeps the seeded live allow/deny proof lane explicit until fixtures exist", () => {
     expect(qaBacklog).toContain("Business Access Coverage");
-    expect(qaBacklog).toContain("Extension API destinations and page captures");
+    expect(qaBacklog).toContain("extension API still lacks the negative-path and abuse-control contract proof");
     expect(qaBacklog).toContain("Bum represented contacts");
-    expect(qaBacklog).toContain("Client team, domain approval, and access-role assignment");
+    expect(qaBacklog).toContain("Client opportunity publish, delete, and claim-status workflows");
   });
 });

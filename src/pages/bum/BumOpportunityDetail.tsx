@@ -33,11 +33,12 @@ import {
   listPotentialDecisionMakerMatchesForOpportunity,
   listOpportunityClaims,
   listOpportunityQuestionsForBum,
+  type OpportunityClaimContactBuyingRole,
   type PotentialDecisionMakerMatchRecord,
   updateOpportunityClaimStatus,
 } from "@/lib/portalApi";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { ArrowLeft, Plus, Activity, MessageSquare, ExternalLink, UserPlus } from "lucide-react";
+import { ArrowLeft, Plus, Activity, MessageSquare, ExternalLink, UserPlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ActivityEntry {
@@ -49,6 +50,53 @@ interface ActivityEntry {
 }
 
 const bumClaimUpdateStatuses: ClaimStatus[] = ["SCHEDULED", "MEETING_HELD", "EXPIRED", "DISPUTED", "CLOSED"];
+
+interface ClaimContactDraft {
+  id: string;
+  contactName: string;
+  contactCompany: string;
+  contactTitle: string;
+  contactEmail: string;
+  linkedinUrl: string;
+  buyingRole: OpportunityClaimContactBuyingRole;
+  relationshipStrength: RelationshipStrength;
+  note: string;
+}
+
+const buyingRoleOptions: Array<{ value: OpportunityClaimContactBuyingRole; label: string }> = [
+  { value: "DECISION_MAKER", label: "Decision Maker" },
+  { value: "PURCHASING_LEADER", label: "Purchasing Leader" },
+  { value: "TECHNICAL_LEADER", label: "Technical / Development Leader" },
+  { value: "CHAMPION", label: "Champion" },
+  { value: "BLOCKER", label: "Blocker" },
+  { value: "INFLUENCER", label: "Influencer" },
+  { value: "OTHER", label: "Other stakeholder" },
+];
+
+const relationshipStrengthOptions: Array<{ value: RelationshipStrength; label: string }> = [
+  { value: "STRONG", label: "Trusted friend or direct relationship" },
+  { value: "MODERATE", label: "Trusted business associate" },
+  { value: "WEAK", label: "Acquaintance" },
+];
+
+function makeClaimContactDraft(overrides: Partial<ClaimContactDraft> = {}): ClaimContactDraft {
+  return {
+    id: globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random()),
+    contactName: "",
+    contactCompany: "",
+    contactTitle: "",
+    contactEmail: "",
+    linkedinUrl: "",
+    buyingRole: "DECISION_MAKER",
+    relationshipStrength: "MODERATE",
+    note: "",
+    ...overrides,
+  };
+}
+
+function buyingRoleLabel(value: OpportunityClaimContactBuyingRole) {
+  return buyingRoleOptions.find((option) => option.value === value)?.label ?? value.replaceAll("_", " ");
+}
 
 export default function BumOpportunityDetail() {
   const { id } = useParams();
@@ -89,10 +137,7 @@ export default function BumOpportunityDetail() {
     deriveDefaultBumSharePercent(2),
   );
 
-  const [contact, setContact] = useState("");
-  const [company, setCompany] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [strength, setStrength] = useState<RelationshipStrength>("MODERATE");
+  const [claimContacts, setClaimContacts] = useState<ClaimContactDraft[]>(() => [makeClaimContactDraft()]);
   const [note, setNote] = useState("");
   const [questionText, setQuestionText] = useState("");
   const [decisionMakerMatchForClaim, setDecisionMakerMatchForClaim] = useState<PotentialDecisionMakerMatchRecord | null>(null);
@@ -104,15 +149,40 @@ export default function BumOpportunityDetail() {
   const [updateNote, setUpdateNote] = useState("");
 
   const createClaimMutation = useMutation({
-    mutationFn: () =>
-      createOpportunityClaim(user!, {
+    mutationFn: () => {
+      const normalizedContacts = claimContacts
+        .map((claimContact) => ({
+          ...claimContact,
+          contactName: claimContact.contactName.trim(),
+          contactCompany: claimContact.contactCompany.trim() || opp!.target_account_name,
+          contactTitle: claimContact.contactTitle.trim(),
+          contactEmail: claimContact.contactEmail.trim(),
+          linkedinUrl: claimContact.linkedinUrl.trim(),
+          note: claimContact.note.trim(),
+        }))
+        .filter((claimContact) => claimContact.contactName);
+      const primaryContact = normalizedContacts[0];
+
+      return createOpportunityClaim(user!, {
         opportunityId: opp!.id,
-        contactName: contact,
-        contactCompany: company,
-        contactEmail,
-        relationshipStrength: strength,
+        contactName: primaryContact.contactName,
+        contactCompany: primaryContact.contactCompany,
+        contactEmail: primaryContact.contactEmail,
+        relationshipStrength: primaryContact.relationshipStrength,
         note,
-      }),
+        contacts: normalizedContacts.map((claimContact, index) => ({
+          contactName: claimContact.contactName,
+          contactCompany: claimContact.contactCompany,
+          contactTitle: claimContact.contactTitle,
+          contactEmail: claimContact.contactEmail,
+          linkedinUrl: claimContact.linkedinUrl,
+          buyingRole: claimContact.buyingRole,
+          relationshipStrength: claimContact.relationshipStrength,
+          note: claimContact.note,
+          isPrimary: index === 0,
+        })),
+      });
+    },
     onSuccess: async (claim) => {
       if (decisionMakerMatchForClaim) {
         try {
@@ -120,7 +190,7 @@ export default function BumOpportunityDetail() {
             name: decisionMakerMatchForClaim.person_name,
             title: decisionMakerMatchForClaim.title,
             companyName: decisionMakerMatchForClaim.company || opp!.target_account_name,
-            email: contactEmail,
+            email: claimContacts[0]?.contactEmail,
             linkedinUrl: decisionMakerMatchForClaim.linkedin_url_candidate,
             relationshipStrength: "unknown",
             note: [
@@ -139,10 +209,12 @@ export default function BumOpportunityDetail() {
         }
       }
       queryClient.invalidateQueries({ queryKey: ["opportunity-claims", id] });
-      toast.success(`Claim requested for ${claim.contact_name} at ${claim.contact_company}`);
-      setContact("");
-      setCompany("");
-      setContactEmail("");
+      toast.success(
+        (claim.opportunity_claim_contacts?.length ?? 0) > 1
+          ? `Claim requested with ${claim.opportunity_claim_contacts?.length} stakeholders`
+          : `Claim requested for ${claim.contact_name} at ${claim.contact_company}`,
+      );
+      setClaimContacts([makeClaimContactDraft()]);
       setNote("");
       setDecisionMakerMatchForClaim(null);
     },
@@ -208,24 +280,56 @@ export default function BumOpportunityDetail() {
   }));
 
   const submitRecommendation = () => {
-    if (!contact.trim() || !company.trim()) {
-      toast.error("Contact name and company are required");
+    if (!claimContacts.some((claimContact) => claimContact.contactName.trim())) {
+      toast.error("Add at least one person you can introduce");
       return;
     }
     createClaimMutation.mutate();
   };
 
   const startClaimFromDecisionMakerMatch = (match: PotentialDecisionMakerMatchRecord) => {
-    setContact(match.person_name);
-    setCompany(match.company || opp!.target_account_name);
-    setContactEmail("");
-    setStrength(match.rating === "Priority A" ? "STRONG" : "MODERATE");
+    setClaimContacts([
+      makeClaimContactDraft({
+        contactName: match.person_name,
+        contactCompany: match.company || opp!.target_account_name,
+        contactTitle: match.title ?? "",
+        linkedinUrl: match.linkedin_url_candidate ?? "",
+        buyingRole: "DECISION_MAKER",
+        relationshipStrength: match.rating === "Priority A" ? "STRONG" : "MODERATE",
+        note: [
+          match.recommended_bum_ask ? `Warm-path ask: ${match.recommended_bum_ask}` : null,
+          match.evidence_summary ? `Research context: ${match.evidence_summary}` : null,
+        ].filter(Boolean).join("\n\n"),
+      }),
+    ]);
     setNote([
-      match.recommended_bum_ask ? `I know this person and can help with this warm-path ask: ${match.recommended_bum_ask}` : "I know this person and can recommend a path into this opportunity.",
+      match.recommended_bum_ask ? "I know this person and can help with the warm-path ask." : "I know this person and can recommend a path into this opportunity.",
       match.evidence_summary ? `Research context: ${match.evidence_summary}` : null,
     ].filter(Boolean).join("\n\n"));
     setDecisionMakerMatchForClaim(match);
     requestAnimationFrame(() => claimFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  const updateClaimContact = (draftId: string, patch: Partial<ClaimContactDraft>) => {
+    setClaimContacts((current) =>
+      current.map((claimContact) => (claimContact.id === draftId ? { ...claimContact, ...patch } : claimContact)),
+    );
+  };
+
+  const addClaimContact = () => {
+    setClaimContacts((current) => [
+      ...current,
+      makeClaimContactDraft({
+        contactCompany: opp?.target_account_name ?? "",
+        buyingRole: current.length === 0 ? "DECISION_MAKER" : "INFLUENCER",
+      }),
+    ]);
+  };
+
+  const removeClaimContact = (draftId: string) => {
+    setClaimContacts((current) =>
+      current.length === 1 ? current : current.filter((claimContact) => claimContact.id !== draftId),
+    );
   };
 
   const submitQuestion = () => {
@@ -486,6 +590,26 @@ export default function BumOpportunityDetail() {
                       ? shareSchedule.map((item) => `${item.label}: ${item.topLinePercent}% top line`).join(" · ")
                       : `Current top-line equivalent: ${fallbackTopLine}%`}
                   </p>
+                  {claim.opportunity_claim_contacts?.length ? (
+                    <div className="mt-4 space-y-2 rounded-lg bg-muted/30 p-3">
+                      <p className="text-sm font-medium">Introductions included</p>
+                      {claim.opportunity_claim_contacts
+                        .slice()
+                        .sort((left, right) => left.sort_order - right.sort_order)
+                        .map((claimContact) => (
+                          <div key={claimContact.id} className="rounded-md border bg-background p-3 text-sm">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-medium">{claimContact.contact_name}</span>
+                              <StatusBadge label={buyingRoleLabel(claimContact.buying_role)} variant={claimContact.buying_role === "BLOCKER" ? "warning" : "secondary"} />
+                            </div>
+                            <p className="mt-1 text-muted-foreground">
+                              {[claimContact.contact_title, claimContact.contact_company].filter(Boolean).join(" · ")}
+                            </p>
+                            {claimContact.note ? <p className="mt-2 text-muted-foreground">{claimContact.note}</p> : null}
+                          </div>
+                        ))}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
@@ -510,41 +634,128 @@ export default function BumOpportunityDetail() {
                 </p>
               </div>
             ) : null}
-            <div className="grid gap-2">
-              <Label>Contact name</Label>
-              <Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Jane Doe" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">People you can introduce</p>
+                  <p className="text-xs text-muted-foreground">
+                    Add every important stakeholder you know: decision makers, purchasing leaders, champions, and blockers.
+                  </p>
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={addClaimContact}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add person
+                </Button>
+              </div>
+              {claimContacts.map((claimContact, index) => (
+                <div key={claimContact.id} className="space-y-4 rounded-xl border p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">Stakeholder {index + 1}</p>
+                    {claimContacts.length > 1 ? (
+                      <Button type="button" size="icon" variant="ghost" aria-label="Remove stakeholder" onClick={() => removeClaimContact(claimContact.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label>Name</Label>
+                      <Input
+                        value={claimContact.contactName}
+                        onChange={(event) => updateClaimContact(claimContact.id, { contactName: event.target.value })}
+                        placeholder={index === 0 ? "Craig Cotton" : "Chris Palmer"}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Stakeholder role</Label>
+                      <Select
+                        value={claimContact.buyingRole}
+                        onValueChange={(value: OpportunityClaimContactBuyingRole) => updateClaimContact(claimContact.id, { buyingRole: value })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {buyingRoleOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Title</Label>
+                      <Input
+                        value={claimContact.contactTitle}
+                        onChange={(event) => updateClaimContact(claimContact.id, { contactTitle: event.target.value })}
+                        placeholder={claimContact.buyingRole === "PURCHASING_LEADER" ? "VP of Purchasing" : "Decision maker, VP, executive sponsor"}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Company</Label>
+                      <Input
+                        value={claimContact.contactCompany}
+                        onChange={(event) => updateClaimContact(claimContact.id, { contactCompany: event.target.value })}
+                        placeholder={opp.target_account_name}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Email if known</Label>
+                      <Input
+                        value={claimContact.contactEmail}
+                        onChange={(event) => updateClaimContact(claimContact.id, { contactEmail: event.target.value })}
+                        placeholder="name@example.com"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>LinkedIn if known</Label>
+                      <Input
+                        value={claimContact.linkedinUrl}
+                        onChange={(event) => updateClaimContact(claimContact.id, { linkedinUrl: event.target.value })}
+                        placeholder="https://www.linkedin.com/in/..."
+                      />
+                    </div>
+                    <div className="grid gap-2 md:col-span-2">
+                      <Label>Relationship strength</Label>
+                      <Select
+                        value={claimContact.relationshipStrength}
+                        onValueChange={(value) => {
+                          if (isRelationshipStrength(value)) {
+                            updateClaimContact(claimContact.id, { relationshipStrength: value });
+                          }
+                        }}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {relationshipStrengthOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Why this person matters</Label>
+                    <Textarea
+                      value={claimContact.note}
+                      onChange={(event) => updateClaimContact(claimContact.id, { note: event.target.value })}
+                      placeholder={
+                        claimContact.buyingRole === "BLOCKER"
+                          ? "Example: Neil leads development and may prefer to self-develop instead of buying."
+                          : "Example: Chris owns purchasing sign-off and would need to negotiate the agreement."
+                      }
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="grid gap-2">
-              <Label>Company</Label>
-              <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Target company" />
+              <Label>Overall claim context</Label>
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="How you would introduce the buying group and what the client should know before engaging them." rows={3} />
             </div>
-            <div className="grid gap-2">
-              <Label>{decisionMakerMatchForClaim ? "Email if you know it" : "Email if known"}</Label>
-              <Input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="jane@example.com" />
-            </div>
-            <div className="grid gap-2">
-              <Label>Relationship strength</Label>
-              <Select
-                value={strength}
-                onValueChange={(value) => {
-                  if (isRelationshipStrength(value)) {
-                    setStrength(value);
-                  }
-                }}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="STRONG">Strong</SelectItem>
-                  <SelectItem value="MODERATE">Moderate</SelectItem>
-                  <SelectItem value="WEAK">Weak</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Why they're a fit</Label>
-              <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Context the client should know..." rows={3} />
-            </div>
-            <Button onClick={submitRecommendation} className="w-full" disabled={createClaimMutation.isPending}>
+            <Button onClick={submitRecommendation} className="w-full" disabled={createClaimMutation.isPending || !claimContacts.some((claimContact) => claimContact.contactName.trim())}>
               {createClaimMutation.isPending ? "Requesting..." : decisionMakerMatchForClaim ? "Claim this opportunity" : "Request claim"}
             </Button>
           </CardContent>

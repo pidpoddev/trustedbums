@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Edit3, Link2, Plus, Power, PowerOff, ScrollText, Search, ShieldQuestion, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
+import { DealRegistrationBetaSettings } from "@/components/DealRegistrationBetaSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -33,6 +34,12 @@ import {
   type ClientCompanyAccessRequestRecord,
   type TermsAcceptance,
 } from "@/lib/portalApi";
+import {
+  dealRegistrationBetaStatusLabel,
+  dealRegistrationMethodLabel,
+  dealRegistrationProviderLabel,
+  normalizeDealRegistrationConfig,
+} from "@/lib/dealRegistration";
 import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -168,6 +175,7 @@ function AdminClientEditButton({ company }: { company: CompanyRecord }) {
     website: company.website ?? "",
     linkedinCompanyUrl: company.linkedin_company_url ?? "",
     relationshipStage: company.relationship_stage as CompanyRelationshipStage,
+    dealRegistrationConfig: normalizeDealRegistrationConfig(company.deal_registration_config),
   });
 
   function openEditor() {
@@ -176,6 +184,7 @@ function AdminClientEditButton({ company }: { company: CompanyRecord }) {
       website: company.website ?? "",
       linkedinCompanyUrl: company.linkedin_company_url ?? "",
       relationshipStage: company.relationship_stage as CompanyRelationshipStage,
+      dealRegistrationConfig: normalizeDealRegistrationConfig(company.deal_registration_config),
     });
     setOpen(true);
   }
@@ -187,6 +196,7 @@ function AdminClientEditButton({ company }: { company: CompanyRecord }) {
         website: form.website,
         linkedin_company_url: form.linkedinCompanyUrl,
         relationship_stage: form.relationshipStage,
+        deal_registration_config: form.dealRegistrationConfig,
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
@@ -208,36 +218,43 @@ function AdminClientEditButton({ company }: { company: CompanyRecord }) {
         <Edit3 className="mr-2 h-4 w-4" /> Edit data
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle className="font-display">Edit client data</DialogTitle>
             <DialogDescription>Update the company profile and lifecycle stage admins use across the portal.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Company name</Label>
-              <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+          <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-1">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Company name</Label>
+                <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Website</Label>
+                <Input value={form.website} onChange={(event) => setForm((current) => ({ ...current, website: event.target.value }))} placeholder="https://company.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>LinkedIn company URL</Label>
+                <Input value={form.linkedinCompanyUrl} onChange={(event) => setForm((current) => ({ ...current, linkedinCompanyUrl: event.target.value }))} placeholder="https://linkedin.com/company/..." />
+              </div>
+              <div className="space-y-2">
+                <Label>Relationship stage</Label>
+                <Select value={form.relationshipStage} onValueChange={(value) => setForm((current) => ({ ...current, relationshipStage: value as CompanyRelationshipStage }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PROSPECT">Prospect</SelectItem>
+                    <SelectItem value="INVITED">Invited</SelectItem>
+                    <SelectItem value="CLIENT">Client</SelectItem>
+                    <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Website</Label>
-              <Input value={form.website} onChange={(event) => setForm((current) => ({ ...current, website: event.target.value }))} placeholder="https://company.com" />
-            </div>
-            <div className="space-y-2">
-              <Label>LinkedIn company URL</Label>
-              <Input value={form.linkedinCompanyUrl} onChange={(event) => setForm((current) => ({ ...current, linkedinCompanyUrl: event.target.value }))} placeholder="https://linkedin.com/company/..." />
-            </div>
-            <div className="space-y-2">
-              <Label>Relationship stage</Label>
-              <Select value={form.relationshipStage} onValueChange={(value) => setForm((current) => ({ ...current, relationshipStage: value as CompanyRelationshipStage }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PROSPECT">Prospect</SelectItem>
-                  <SelectItem value="INVITED">Invited</SelectItem>
-                  <SelectItem value="CLIENT">Client</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <DealRegistrationBetaSettings
+              value={form.dealRegistrationConfig}
+              onChange={(dealRegistrationConfig) => setForm((current) => ({ ...current, dealRegistrationConfig }))}
+              disabled={updateMutation.isPending}
+            />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={updateMutation.isPending}>Cancel</Button>
@@ -519,6 +536,9 @@ export default function AdminClients() {
         company.primaryEmail,
         company.description,
         company.ideal_customer_profile,
+        dealRegistrationMethodLabel(normalizeDealRegistrationConfig(company.deal_registration_config).method),
+        dealRegistrationProviderLabel(normalizeDealRegistrationConfig(company.deal_registration_config).provider),
+        dealRegistrationBetaStatusLabel(normalizeDealRegistrationConfig(company.deal_registration_config).beta_status),
         formatList(company.target_industries),
         formatList(company.target_regions),
         company.recommenderNames.join(" "),
@@ -758,6 +778,7 @@ export default function AdminClients() {
         ) : null}
 
         {!isLoading && !hasError ? filteredCompanies.map((company) => {
+          const dealRegistrationConfig = normalizeDealRegistrationConfig(company.deal_registration_config);
           return (
             <Card key={company.id} className={`transition-shadow hover:shadow-md ${company.relationship_stage === "INACTIVE" ? "border-destructive/30 bg-destructive/5" : ""}`}>
               <CardContent className="pt-6">
@@ -772,6 +793,9 @@ export default function AdminClients() {
                           <p className="font-medium">{company.name}</p>
                           <StatusBadge label={company.relationship_stage} variant={stageVariant(company.relationship_stage)} />
                           {company.relationship_stage === "INACTIVE" ? <Badge variant="destructive">Disabled</Badge> : null}
+                          <Badge variant={dealRegistrationConfig.is_beta_enabled ? "secondary" : "outline"}>
+                            Deal Reg {dealRegistrationConfig.is_beta_enabled ? "Beta" : dealRegistrationMethodLabel(dealRegistrationConfig.method)}
+                          </Badge>
                           {company.linkedin_company_url ? (
                             <Badge variant="outline" className="inline-flex items-center gap-1">
                               <Link2 className="h-3 w-3" /> LinkedIn keyed
@@ -800,6 +824,13 @@ export default function AdminClients() {
                         {!company.target_industries?.length && !company.target_regions?.length ? <Badge variant="outline">No matching tags yet</Badge> : null}
                       </div>
                       {company.ideal_customer_profile ? <p className="max-w-3xl text-sm text-muted-foreground">ICP: {company.ideal_customer_profile}</p> : null}
+                      <p className="max-w-3xl text-sm text-muted-foreground">
+                        Deal registration: {dealRegistrationMethodLabel(dealRegistrationConfig.method)}
+                        {dealRegistrationConfig.method === "API" ? ` via ${dealRegistrationProviderLabel(dealRegistrationConfig.provider)}` : ""}
+                        {" · "}
+                        {dealRegistrationBetaStatusLabel(dealRegistrationConfig.beta_status)}
+                        {dealRegistrationConfig.approval_mode ? ` · ${dealRegistrationConfig.approval_mode.toLowerCase()} approval tracking` : ""}
+                      </p>
 
                       <div className="grid gap-2 text-sm text-muted-foreground">
                         <p className="inline-flex items-center gap-2">

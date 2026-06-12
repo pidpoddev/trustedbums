@@ -125,6 +125,7 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
       result({ id: "page:admin-opportunities", icon: "opportunity", category: "Page", title: "Opportunities", subtitle: "Pipeline and target accounts", href: "/admin/opportunities", terms: ["targets reverse pipeline"] }),
       result({ id: "page:admin-emails", icon: "email", category: "Page", title: "Emails", subtitle: "Campaigns and deliveries", href: "/admin/emails", terms: ["communications templates"] }),
       result({ id: "page:admin-reports", icon: "report", category: "Page", title: "Reports", subtitle: "Admin reporting", href: "/admin/reports", terms: ["analytics exports"] }),
+      result({ id: "page:admin-architecture", icon: "page", category: "Page", title: "Architecture", subtitle: "Current and proposed platform drawings", href: "/admin/architecture", terms: ["architecture platform supabase auth api microservices partners"] }),
     ];
   }
 
@@ -135,9 +136,9 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
       result({ id: "page:client-inbox", icon: "conversation", category: "Page", title: "Inbox", subtitle: "Messages and opportunity conversations", href: "/client/live-conversations", terms: ["messages chat conversations inbox"] }),
       result({ id: "page:client-claims", icon: "claim", category: "Page", title: "Claims", subtitle: "Accepted Claims and introduction status", href: "/client/claims", terms: ["claims introductions status commission term"] }),
       result({ id: "page:client-reports", icon: "report", category: "Page", title: "Reports", subtitle: "Client reporting", href: "/client/reports", terms: ["analytics reports"] }),
-      result({ id: "page:client-profile", icon: "profile", category: "Page", title: "Company Profile", subtitle: "Company settings", href: "/client/profile", terms: ["company settings"] }),
+      result({ id: "page:client-profile", icon: "profile", category: "Page", title: "Company Profile", subtitle: "Company settings", href: "/client/profile", terms: ["company settings deal registration api integration sso client it"] }),
       result({ id: "page:client-user-profile", icon: "profile", category: "Page", title: "User Profile", subtitle: "Personal settings", href: "/client/user-profile", terms: ["account settings"] }),
-      result({ id: "page:client-agreements", icon: "page", category: "Page", title: "Client Agreement", subtitle: "Agreement records and current terms", href: "/client/agreements", terms: ["contracts terms legal agreement records"] }),
+      result({ id: "page:client-agreements", icon: "page", category: "Page", title: "Client Agreement", subtitle: "Agreement records and current terms", href: "/client/agreements", terms: ["contracts terms legal agreement records redlines amendments client legal"] }),
     ];
 
     if (accessRole === "CLIENT_ADMIN" || accessRole === "CLIENT_MEMBER") {
@@ -149,6 +150,7 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
 
     if (accessRole === "CLIENT_ADMIN" || accessRole === "CLIENT_FINANCE") {
       pages.push(
+        result({ id: "page:client-commission-plans", icon: "report", category: "Page", title: "Commission Plans", subtitle: "Finance commission structures", href: "/client/commission-plans", terms: ["finance commission plans rates terms"] }),
         result({ id: "page:client-payments", icon: "report", category: "Page", title: "Payment Reports", subtitle: "Customer Payment Reports and commission invoices", href: "/client/payments", terms: ["finance invoices customer payment reports commission"] }),
         result({ id: "page:client-exports", icon: "report", category: "Page", title: "Exports", subtitle: "CSV downloads", href: "/client/exports", terms: ["downloads csv exports"] }),
       );

@@ -1,27 +1,61 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { CheckCircle, Download, FileText } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle, Download, FileText, MessageSquare } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PartnerTermsContent } from "@/components/PartnerTermsContent";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { downloadPartnerTermsPdf } from "@/lib/pdf";
-import { listCompanyAgreements } from "@/lib/portalApi";
+import { createConversationThread, listCompanyAgreements } from "@/lib/portalApi";
 import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 
 export default function ClientAgreements() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const timeZone = useUserTimeZone();
   const { terms, acceptance, hasAcceptedCurrentTerms, isLoading } = useCurrentTermsState();
+  const [amendmentRequest, setAmendmentRequest] = useState("");
+  const canSubmitLegalRequest = user?.role === "CLIENT" && (user.clientAccessRole === "CLIENT_ADMIN" || user.clientAccessRole === "CLIENT_LEGAL");
   const customAgreementsQuery = useQuery({
     queryKey: ["company-agreements", user?.clientId],
     queryFn: () => listCompanyAgreements(user!.clientId!),
     enabled: Boolean(user?.clientId),
   });
   const customAgreements = customAgreementsQuery.data ?? [];
+  const legalRequestMutation = useMutation({
+    mutationFn: () =>
+      createConversationThread(user!, {
+        subject: `Legal review request: ${terms?.version ?? "Client Agreement"}`,
+        contextType: "GENERAL",
+        message: [
+          `Legal review request for ${terms?.title ?? "Client Agreement"}${terms?.version ? ` (${terms.version})` : ""}.`,
+          "",
+          amendmentRequest.trim(),
+        ].join("\n"),
+      }),
+    onSuccess: async () => {
+      setAmendmentRequest("");
+      await queryClient.invalidateQueries({ queryKey: ["conversation-threads"] });
+      toast({
+        title: "Legal request sent",
+        description: "A tracked Inbox thread was opened for the redline or amendment request.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to send legal request",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (isLoading || !terms) {
     return <div className="text-sm text-muted-foreground">Loading agreement records...</div>;
@@ -96,6 +130,38 @@ export default function ClientAgreements() {
               </CardContent>
             </Card>
           ) : null}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Legal redlines and amendments
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Client Legal can submit redline notes, proposed amendments, or outside-document links. The request opens an Inbox thread so Trusted Bums and your team can track the review before signature or over time.
+              </p>
+              <Textarea
+                rows={5}
+                value={amendmentRequest}
+                onChange={(event) => setAmendmentRequest(event.target.value)}
+                disabled={!canSubmitLegalRequest || legalRequestMutation.isPending}
+                placeholder="Paste redline notes, requested amendment language, affected section numbers, or a secure document link."
+              />
+              {!canSubmitLegalRequest ? (
+                <p className="text-xs text-muted-foreground">Only Client Admin and Client Legal users can submit legal redline or amendment requests.</p>
+              ) : null}
+              <Button
+                type="button"
+                className="w-full"
+                disabled={!canSubmitLegalRequest || !amendmentRequest.trim() || legalRequestMutation.isPending}
+                onClick={() => legalRequestMutation.mutate()}
+              >
+                {legalRequestMutation.isPending ? "Sending..." : "Send legal request to Inbox"}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>

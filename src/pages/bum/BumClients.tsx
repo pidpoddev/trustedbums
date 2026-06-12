@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getPageItems } from "@/lib/pagination";
-import { listBumSavedItems, listCompanies, listCustomerTargets, listMarketplaceOpportunities, setBumSavedItem } from "@/lib/portalApi";
+import { listBumSavedItems, listCompanies, listCustomerTargets, listMarketplaceOpportunities, setBumHiddenItem, setBumSavedItem } from "@/lib/portalApi";
 import { cn } from "@/lib/utils";
-import { Search, Building2, ExternalLink, Briefcase, Target, Heart, DollarSign, Clock, UserPlus, Sparkles } from "lucide-react";
+import { Search, Building2, ExternalLink, Briefcase, Target, Heart, DollarSign, Clock, UserPlus, Sparkles, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CLIENTS_PAGE_SIZE = 8;
@@ -87,6 +87,7 @@ export default function BumClients() {
   const [typeFilter, setTypeFilter] = useState<ClientTypeFilter>("ALL");
   const [valueFilter, setValueFilter] = useState<ValueFilter>("ALL");
   const [termFilter, setTermFilter] = useState<TermFilter>("ALL");
+  const [showHidden, setShowHidden] = useState(false);
   const [clientPage, setClientPage] = useState(1);
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
@@ -110,6 +111,10 @@ export default function BumClients() {
     () => new Set((savedItemsQuery.data ?? []).filter((item) => item.item_type === "CLIENT" && item.is_saved).map((item) => item.client_company_id).filter(Boolean)),
     [savedItemsQuery.data],
   );
+  const hiddenClientIds = useMemo(
+    () => new Set((savedItemsQuery.data ?? []).filter((item) => item.item_type === "CLIENT" && item.is_hidden).map((item) => item.client_company_id).filter(Boolean)),
+    [savedItemsQuery.data],
+  );
 
   const saveMutation = useMutation({
     mutationFn: ({ itemId, saved }: { itemId: string; saved: boolean }) =>
@@ -120,6 +125,24 @@ export default function BumClients() {
     onError: (error) => {
       toast({
         title: "Unable to update heart",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  const hideMutation = useMutation({
+    mutationFn: ({ itemId, hidden }: { itemId: string; hidden: boolean }) =>
+      setBumHiddenItem(user!, { itemType: "CLIENT", itemId }, hidden, "skip"),
+    onSuccess: (_result, input) => {
+      queryClient.invalidateQueries({ queryKey: ["bum-saved-items", user?.id] });
+      toast({
+        title: input.hidden ? "Client hidden" : "Client restored",
+        description: input.hidden ? "Hidden clients stay out of your default list." : "This client is visible in your default list again.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update hidden clients",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -226,9 +249,10 @@ export default function BumClients() {
       .includes(query.toLowerCase());
     const matchesIndustry = industry === "ALL" || client.industries.includes(industry);
     const matchesHeart = !heartedOnly || savedClientIds.has(client.id);
+    const matchesHidden = showHidden || !hiddenClientIds.has(client.id);
     const matchesValue = valueMatchesFilter(client.maxDealValue, valueFilter);
     const matchesTerm = termMatchesFilter(client.termHints, termFilter);
-    return matchesType && matchesQuery && matchesIndustry && matchesHeart && matchesValue && matchesTerm;
+    return matchesType && matchesQuery && matchesIndustry && matchesHeart && matchesHidden && matchesValue && matchesTerm;
   });
 
   const visibleClients = getPageItems(filtered, clientPage, CLIENTS_PAGE_SIZE);
@@ -238,7 +262,9 @@ export default function BumClients() {
     valueFilter !== "ALL" ? valueFilters.find((filter) => filter.value === valueFilter)?.label : null,
     termFilter !== "ALL" ? termFilters.find((filter) => filter.value === termFilter)?.label : null,
     heartedOnly ? "Hearted" : null,
+    showHidden ? "Hidden visible" : null,
   ].filter(Boolean).join(" · ") || "All clients";
+  const hiddenCount = hiddenClientIds.size;
 
   return (
     <div className="space-y-6">
@@ -255,7 +281,7 @@ export default function BumClients() {
       </PageHeader>
 
       <FilterPanel summary={filterSummary}>
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto] xl:items-end">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_repeat(2,auto)] xl:items-end">
         <div className="relative min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -336,12 +362,23 @@ export default function BumClients() {
             Hearted
           </Button>
         </div>
+        <div className="flex items-end">
+          <Button
+            variant={showHidden ? "default" : "outline"}
+            className="w-full xl:w-auto"
+            onClick={() => setShowHidden((current) => !current)}
+          >
+            {showHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+            Hidden{hiddenCount ? ` (${hiddenCount})` : ""}
+          </Button>
+        </div>
       </div>
       </FilterPanel>
 
       <div className="grid gap-4">
         {visibleClients.map((client) => {
           const isHearted = savedClientIds.has(client.id);
+          const isHidden = hiddenClientIds.has(client.id);
 
           return (
             <Card key={client.id} className="hover:shadow-md transition-shadow">
@@ -396,6 +433,16 @@ export default function BumClients() {
                     ) : (
                       <Badge variant="secondary">{client.targetCount} targets</Badge>
                     )}
+                    {isHidden ? <Badge variant="outline">Skipped</Badge> : null}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!user || !client.canHeart || hideMutation.isPending}
+                      onClick={() => hideMutation.mutate({ itemId: client.id, hidden: !isHidden })}
+                    >
+                      {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+                      {isHidden ? "Unhide" : "Hide"}
+                    </Button>
                     {client.openCount ? (
                       <Button size="sm" variant="outline" asChild>
                         <Link to="/bum/opportunities">

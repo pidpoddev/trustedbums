@@ -9,11 +9,13 @@ const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 
 describe("client Bum-Originated opportunities", () => {
   it("keeps Bum-originated demand inside Client Opportunities", () => {
-    expect(clientOpportunitiesSource).toContain('value="bum-originated"');
+    expect(clientOpportunitiesSource).toContain('value: "bum-originated"');
     expect(clientOpportunitiesSource).toContain("Bum-Originated");
-    expect(clientOpportunitiesSource).toContain("Opportunity filter");
+    expect(clientOpportunitiesSource).toContain("Show opportunities");
+    expect(clientOpportunitiesSource).not.toContain("Opportunity filter");
     expect(clientOpportunitiesSource).not.toContain("@/components/ui/tabs");
     expect(clientOpportunitiesSource).not.toContain("<Tabs");
+    expect(clientOpportunitiesSource).not.toContain('<SelectItem value="commission-plan">');
     expect(clientOpportunitiesSource).not.toContain('<SelectItem value="questions">');
     expect(clientOpportunitiesSource).not.toContain("Opportunity questions");
     expect(clientOpportunitiesSource).not.toContain("listClientOpportunityQuestions");

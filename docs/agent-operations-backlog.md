@@ -23,6 +23,7 @@ Agent Operations Steward has been added as a weekly role to keep active Codex au
 - Daily Lead Developer Scrum: 5:00 AM local.
 - Weekly Agent Operations Steward: Sunday 6:00 AM local.
 - On-demand Code Review Agent: exact-commit pre-main review.
+- On-demand Technology Architect Agent: platform architecture review and cross-cutting technical recommendations.
 - On-demand Legal/Compliance Reviewer: legal, finance, privacy, consent, agreement, commission, endorsement, and claims-sensitive review.
 
 ## Source-Of-Truth Drift

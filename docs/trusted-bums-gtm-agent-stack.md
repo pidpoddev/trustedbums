@@ -2,11 +2,11 @@
 
 _Last updated: 2026-06-04 by Codex._
 
-This is a practical six-agent go-to-market stack for Trusted Bums. It adapts a fractional CMO-style agent library to a two-sided warm-introduction marketplace.
+This is a practical go-to-market stack for Trusted Bums. It adapts a fractional CMO-style agent library to a two-sided warm-introduction marketplace.
 
 The system is designed to discover missing strategy inputs as it runs. Do not wait for perfect ICP, competitor, proof, or channel definitions before starting. Agent 1 and Agent 6 are responsible for finding and refreshing those inputs.
 
-This six-agent GTM stack sits inside the broader Trusted Bums consultant operating pack in `docs/agents/`. The daily specialist agents can support GTM work, but this file is the operating guide for the focused GTM loop.
+This GTM stack sits inside the broader Trusted Bums consultant operating pack in `docs/agents/`. The daily specialist agents can support GTM work, but this file is the operating guide for the focused GTM loop. The on-demand Chief Marketing Officer Agent owns buyer-led strategy, self-service sales influence, and customized First Call Decks.
 
 ## Current Product Read
 
@@ -64,12 +64,13 @@ Adjacent non-platform alternatives to monitor:
 
 Run this as a weekly loop:
 
-1. Agent 1 refreshes positioning, ICP, proof gaps, and category map.
-2. Agent 2 converts that into a two-sided content and sales enablement plan.
-3. Agent 3 writes the actual assets.
-4. Agent 4 schedules distribution and outreach.
-5. Agent 5 turns the strongest idea into a lead magnet or conversion asset.
-6. Agent 6 monitors competitors and category movement, then feeds back into Agents 1 and 2.
+1. The Chief Marketing Officer Agent sets the buyer-led growth thesis, decides what should be self-service versus human-reviewed, and owns the First Call Deck system.
+2. Agent 1 refreshes positioning, ICP, proof gaps, and category map.
+3. Agent 2 converts that into a two-sided content and sales enablement plan.
+4. Agent 3 writes the actual assets.
+5. Agent 4 schedules distribution and outreach.
+6. Agent 5 turns the strongest idea into a lead magnet or conversion asset.
+7. Agent 6 monitors competitors and category movement, then feeds back into the CMO and Agents 1 and 2.
 
 Do not optimize for content volume first. Optimize for signal quality:
 
@@ -80,6 +81,24 @@ Do not optimize for content volume first. Optimize for signal quality:
 - Meetings sourced from trusted routes.
 - Commissionable revenue and payout events.
 - Objections repeated by clients or Bums.
+
+## Chief Marketing Officer Agent: Buyer-Led Growth And First Call Decks
+
+### Purpose
+
+Set the marketing strategy for influencing qualified Client demand without relying on traditional salesperson explanation. The CMO Agent owns self-service buyer enablement, internal-share assets, proof-safe narrative, and customized First Call Decks for named prospects.
+
+### When To Run
+
+Run on demand when Ryan wants a prospect-specific First Call Deck, a buyer journey review, a strategic marketing decision, or a synthesis across Growth, Content, Marketing Graphics, Trust, Product Ops, Data, and Legal/Compliance.
+
+### Operating Principles
+
+- Design for rep-free evaluation first, then human trust validation.
+- Make buying confidence easier for the prospect's internal team, not just the person on the first call.
+- Personalize around business context, target-account pressure, relationship-route hypothesis, risk controls, and the next operational step.
+- Keep unsupported proof, customer logos, revenue claims, referral economics, security claims, and legal-sensitive statements out of decks until approved.
+- Use `docs/first-call-deck-playbook.md` as the source of truth for the deck input schema, slide structure, output contract, and review checklist.
 
 ## Agent 1: Trusted Bums Positioning And Discovery Researcher
 

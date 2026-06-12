@@ -25,6 +25,22 @@ const sourceLabels: Record<BumRepresentedContactSource, string> = {
   MANUAL: "Contact",
 };
 
+const relationshipOptions = [
+  { value: "ACQUAINTANCE", label: "Acquaintance" },
+  { value: "TRUSTED_BUSINESS_ASSOCIATE", label: "Trusted business associate" },
+  { value: "TRUSTED_FRIEND", label: "Trusted friend" },
+] as const;
+
+const relationshipLabels: Record<string, string> = {
+  ACQUAINTANCE: "Acquaintance",
+  TRUSTED_BUSINESS_ASSOCIATE: "Trusted business associate",
+  TRUSTED_FRIEND: "Trusted friend",
+  STRONG: "Trusted business associate",
+  MODERATE: "Acquaintance",
+  WEAK: "Acquaintance",
+  unknown: "Not specified",
+};
+
 const emptyContactForm = {
   name: "",
   companyName: "",
@@ -59,6 +75,11 @@ function searchableText(contact: BumRepresentedContactRecord) {
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
+}
+
+function relationshipLabel(value: string | null | undefined) {
+  if (!value) return "";
+  return relationshipLabels[value] ?? value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export default function BumContacts() {
@@ -238,7 +259,7 @@ export default function BumContacts() {
                     <p>{contact.contextLabel}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    {contact.relationshipStrength ? <Badge variant="outline">{contact.relationshipStrength.replaceAll("_", " ")}</Badge> : null}
+                    {contact.relationshipStrength ? <Badge variant="outline">{relationshipLabel(contact.relationshipStrength)}</Badge> : null}
                     <span>Added {formatDate(contact.created_at, timeZone)}</span>
                   </div>
                   {contact.note ? <p className="max-w-3xl text-sm text-muted-foreground line-clamp-2">{contact.note}</p> : null}
@@ -333,9 +354,11 @@ export default function BumContacts() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="UNKNOWN">Not specified</SelectItem>
-                    <SelectItem value="STRONG">Strong</SelectItem>
-                    <SelectItem value="MODERATE">Moderate</SelectItem>
-                    <SelectItem value="WEAK">Weak</SelectItem>
+                    {relationshipOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

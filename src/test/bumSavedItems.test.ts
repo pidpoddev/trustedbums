@@ -14,4 +14,12 @@ describe("Bum saved item state", () => {
   it("only treats explicitly saved client rows as hearted", () => {
     expect(bumClientsSource).toContain('item.item_type === "CLIENT" && item.is_saved');
   });
+
+  it("keeps hidden client rows out of the default Clients We Represent list", () => {
+    expect(bumClientsSource).toContain('item.item_type === "CLIENT" && item.is_hidden');
+    expect(bumClientsSource).toContain('setBumHiddenItem(user!, { itemType: "CLIENT", itemId }, hidden, "skip")');
+    expect(bumClientsSource).toContain("const matchesHidden = showHidden || !hiddenClientIds.has(client.id);");
+    expect(bumClientsSource).toContain("Hidden{hiddenCount ? ` (${hiddenCount})` : \"\"}");
+    expect(bumClientsSource).toContain('{isHidden ? "Unhide" : "Hide"}');
+  });
 });

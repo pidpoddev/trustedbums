@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
+import { DealRegistrationBetaSettings } from "@/components/DealRegistrationBetaSettings";
 import { ArrowRight, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { getOwnClientCompany, updateOwnClientCompanyProfile } from "@/lib/portalApi";
+import { getOwnClientCompany, updateOwnClientCompanyProfile, updateOwnClientDealRegistrationConfig } from "@/lib/portalApi";
+import { defaultDealRegistrationConfig, normalizeDealRegistrationConfig } from "@/lib/dealRegistration";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
 function listToText(values?: string[] | null) {
@@ -104,6 +106,7 @@ export default function ClientProfile() {
   const [targetIndustries, setTargetIndustries] = useState("");
   const [targetRegions, setTargetRegions] = useState("");
   const [idealCustomerProfile, setIdealCustomerProfile] = useState("");
+  const [dealRegistrationConfig, setDealRegistrationConfig] = useState(defaultDealRegistrationConfig);
   const [hasHydratedForm, setHasHydratedForm] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [restoredDraftAt, setRestoredDraftAt] = useState<string | null>(null);
@@ -155,6 +158,8 @@ export default function ClientProfile() {
         setTargetRegions(listToText(companyQuery.data?.target_regions));
         setIdealCustomerProfile(companyQuery.data?.ideal_customer_profile ?? "");
       }
+
+      setDealRegistrationConfig(normalizeDealRegistrationConfig(companyQuery.data?.deal_registration_config));
     }
 
     setHasHydratedForm(true);
@@ -258,7 +263,34 @@ export default function ClientProfile() {
     },
   });
 
+  const saveDealRegistrationMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) {
+        throw new Error("Sign in before updating deal registration setup.");
+      }
+
+      return updateOwnClientDealRegistrationConfig(user, dealRegistrationConfig);
+    },
+    onSuccess: async (company) => {
+      setDealRegistrationConfig(normalizeDealRegistrationConfig(company.deal_registration_config));
+      await queryClient.invalidateQueries({ queryKey: ["own-client-company", user?.clientId] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
+      toast({
+        title: "Deal registration beta saved",
+        description: "The client deal registration process was updated.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to save deal registration setup",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const isLoading = companyQuery.isLoading;
+  const canManageDealRegistration = user?.clientAccessRole === "CLIENT_ADMIN" || user?.clientAccessRole === "CLIENT_IT";
 
   return (
     <div className="space-y-6">
@@ -378,6 +410,41 @@ export default function ClientProfile() {
                   <StatusBadge label={item.complete ? "Done" : "Missing"} variant={item.complete ? "success" : "outline"} />
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle className="font-display">Deal Registration Process</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Beta setup for submitting Bum claims and Bum-originated opportunities into an external client registration portal.
+                </p>
+              </div>
+              <StatusBadge label="Beta" variant="warning" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {!canManageDealRegistration ? (
+              <div className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Only Client Admins and Client IT users can edit this setup. Other client roles can review the current beta process.
+              </div>
+            ) : null}
+            <DealRegistrationBetaSettings
+              value={dealRegistrationConfig}
+              onChange={setDealRegistrationConfig}
+              disabled={isLoading || !canManageDealRegistration || saveDealRegistrationMutation.isPending}
+            />
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={() => saveDealRegistrationMutation.mutate()}
+                disabled={isLoading || !canManageDealRegistration || saveDealRegistrationMutation.isPending}
+              >
+                {saveDealRegistrationMutation.isPending ? "Saving..." : "Save Deal Registration Beta"}
+              </Button>
             </div>
           </CardContent>
         </Card>

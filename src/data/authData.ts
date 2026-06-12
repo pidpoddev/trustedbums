@@ -1,5 +1,5 @@
 export type UserRole = "ADMIN" | "CLIENT" | "BUM";
-export type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_MEMBER";
+export type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_LEGAL" | "CLIENT_IT" | "CLIENT_MEMBER";
 
 export interface AuthUser {
   id: string;
@@ -117,6 +117,14 @@ export function readClientAccessRole(value: unknown): ClientAccessRole | undefin
     return "CLIENT_FINANCE";
   }
 
+  if (normalized === "CLIENT_LEGAL" || normalized === "LEGAL") {
+    return "CLIENT_LEGAL";
+  }
+
+  if (normalized === "CLIENT_IT" || normalized === "IT") {
+    return "CLIENT_IT";
+  }
+
   if (normalized === "CLIENT_MEMBER" || normalized === "MEMBER") {
     return "CLIENT_MEMBER";
   }
@@ -127,6 +135,14 @@ export function readClientAccessRole(value: unknown): ClientAccessRole | undefin
 export function getClientAccessLabel(role?: ClientAccessRole) {
   if (role === "CLIENT_FINANCE") {
     return "Client Finance";
+  }
+
+  if (role === "CLIENT_LEGAL") {
+    return "Client Legal";
+  }
+
+  if (role === "CLIENT_IT") {
+    return "Client IT";
   }
 
   if (role === "CLIENT_MEMBER") {

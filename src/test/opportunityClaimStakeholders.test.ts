@@ -1,0 +1,48 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const migrationSource = readFileSync("supabase/migrations/20260612103000_add_opportunity_claim_contacts.sql", "utf8");
+const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
+const bumOpportunityDetailSource = readFileSync("src/pages/bum/BumOpportunityDetail.tsx", "utf8");
+const bumClaimsSource = readFileSync("src/pages/bum/BumClaims.tsx", "utf8");
+const clientClaimsSource = readFileSync("src/pages/client/ClientClaims.tsx", "utf8");
+
+describe("opportunity claim stakeholders", () => {
+  it("adds a first-class claim contact table with Data API grants and RLS", () => {
+    expect(migrationSource).toContain("create table if not exists public.opportunity_claim_contacts");
+    expect(migrationSource).toContain("buying_role text not null default 'OTHER'");
+    expect(migrationSource).toContain("'DECISION_MAKER', 'PURCHASING_LEADER', 'TECHNICAL_LEADER', 'CHAMPION', 'BLOCKER', 'INFLUENCER', 'OTHER'");
+    expect(migrationSource).toContain("grant select, insert, update on public.opportunity_claim_contacts to anon, authenticated");
+    expect(migrationSource).toContain("alter table public.opportunity_claim_contacts enable row level security");
+    expect(migrationSource).toContain('"Users can read relevant opportunity claim contacts"');
+    expect(migrationSource).toContain('"Bums can create own opportunity claim contacts"');
+  });
+
+  it("keeps the legacy claim contact while inserting the stakeholder bundle", () => {
+    expect(portalApiSource).toContain("export type OpportunityClaimContactBuyingRole");
+    expect(portalApiSource).toContain("opportunity_claim_contacts?: OpportunityClaimContactRecord[]");
+    expect(portalApiSource).toContain("contacts?: Array<{");
+    expect(portalApiSource).toContain("function normalizedClaimContacts");
+    expect(portalApiSource).toContain('.from("opportunity_claim_contacts")');
+    expect(portalApiSource).toContain("data.opportunity_claim_contacts = contactRows ?? []");
+    expect(portalApiSource).toContain("introduced_contacts");
+  });
+
+  it("lets a Bum submit multiple named buying stakeholders on one claim", () => {
+    expect(bumOpportunityDetailSource).toContain("People you can introduce");
+    expect(bumOpportunityDetailSource).toContain("Add every important stakeholder you know");
+    expect(bumOpportunityDetailSource).toContain('value: "DECISION_MAKER", label: "Decision Maker"');
+    expect(bumOpportunityDetailSource).toContain('value: "PURCHASING_LEADER", label: "Purchasing Leader"');
+    expect(bumOpportunityDetailSource).toContain('value: "TECHNICAL_LEADER", label: "Technical / Development Leader"');
+    expect(bumOpportunityDetailSource).toContain('value: "BLOCKER", label: "Blocker"');
+    expect(bumOpportunityDetailSource).toContain("Neil leads development and may prefer to self-develop instead of buying.");
+    expect(bumOpportunityDetailSource).toContain("contacts: normalizedContacts.map");
+  });
+
+  it("shows stakeholder bundles back to Bums and Clients after submission", () => {
+    expect(bumOpportunityDetailSource).toContain("Introductions included");
+    expect(bumClaimsSource).toContain("Introductions included");
+    expect(clientClaimsSource).toContain("Stakeholders included in this claim");
+    expect(clientClaimsSource).toContain("buyingRoleLabels[claimContact.buying_role]");
+  });
+});

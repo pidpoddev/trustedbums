@@ -34,6 +34,7 @@ import {
   Gauge,
   Handshake,
   ClipboardList,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 
@@ -77,6 +78,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { title: "Scrum", url: "/admin/scrum", icon: ClipboardList },
       { title: "Performance", url: "/admin/performance", icon: Gauge },
+      { title: "Architecture", url: "/admin/architecture", icon: Network },
       { title: "Tools", url: "/admin/troubleshooting", icon: Wrench },
       { title: "Legal", url: "/admin/legal", icon: FileSignature },
     ],

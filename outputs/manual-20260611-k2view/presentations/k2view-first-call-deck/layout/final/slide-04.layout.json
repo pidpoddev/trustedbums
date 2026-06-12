@@ -1,0 +1,1172 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/ivmapb",
+    "id": "ivmapb",
+    "slide": 4,
+    "layoutId": "362e51c9-2396-4fcd-b875-3d70c60e737f",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display",
+      "Aptos Mono"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "362e51c9-2396-4fcd-b875-3d70c60e737f",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "301ffdf4-af9d-43b4-bf48-83f18b7f35a9",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/je9cvixc",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#0B1220",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8z25kb6x",
+      "id": "2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#0B1220",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1gvy90je",
+      "id": "3",
+      "bbox": [
+        0,
+        0,
+        14,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F97316",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q1orytsv",
+      "id": "4",
+      "bbox": [
+        42,
+        30,
+        210,
+        24
+      ],
+      "geometry": "rect",
+      "text": "TRUSTED BUMS",
+      "textPreview": "TRUSTED BUMS",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Aptos Display",
+        "color": "#F97316",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TRUSTED BUMS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TRUSTED BUMS",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Aptos Display",
+            "color": "#F97316",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "TRUSTED BUMS",
+              "fontSize": 18,
+              "typeface": "Aptos Display",
+              "color": "#F97316",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fmlkjm1c",
+      "id": "5",
+      "bbox": [
+        980,
+        32,
+        245,
+        20
+      ],
+      "geometry": "rect",
+      "text": "K2VIEW SIGNALS",
+      "textPreview": "K2VIEW SIGNALS",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos Mono",
+        "color": "#A8B3C7",
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "K2VIEW SIGNALS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "K2VIEW SIGNALS",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos Mono",
+            "color": "#A8B3C7",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "K2VIEW SIGNALS",
+              "fontSize": 13,
+              "typeface": "Aptos Mono",
+              "color": "#A8B3C7"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/87ed8bat",
+      "id": "6",
+      "bbox": [
+        72,
+        84,
+        760,
+        94
+      ],
+      "geometry": "rect",
+      "text": "The strongest entry points are tied to urgent enterprise workloads.",
+      "textPreview": "The strongest entry points are tied to urgent enterprise workloads.",
+      "resolvedFontSize": 39,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 39,
+        "typeface": "Aptos Display",
+        "color": "#F8FAFC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The strongest entry points are tied to"
+          },
+          {
+            "index": 2,
+            "text": "urgent enterprise workloads."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The strongest entry points are tied to urgent enterprise workloads.",
+          "resolvedTextStyle": {
+            "fontSize": 39,
+            "typeface": "Aptos Display",
+            "color": "#F8FAFC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The strongest entry points are tied to urgent enterprise workloads.",
+              "fontSize": 39,
+              "typeface": "Aptos Display",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xs72x4na",
+      "id": "7",
+      "bbox": [
+        74,
+        178,
+        790,
+        54
+      ],
+      "geometry": "rect",
+      "text": "K2view's public materials point to several buyer conversations where warm access can matter more than top-of-funnel volume.",
+      "textPreview": "K2view's public materials point to several buyer conversations where warm access can matter more than top-of-funnel volume.",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 19,
+        "typeface": "Aptos",
+        "color": "#A8B3C7",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "K2view's public materials point to several buyer conversations where warm access can"
+          },
+          {
+            "index": 2,
+            "text": "matter more than top-of-funnel volume."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "K2view's public materials point to several buyer conversations where warm access can matter more than top-of-funnel volume.",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "typeface": "Aptos",
+            "color": "#A8B3C7",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "K2view's public materials point to several buyer conversations where warm access can matter more than top-of-funnel volume.",
+              "fontSize": 19,
+              "typeface": "Aptos",
+              "color": "#A8B3C7"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qd4vmtwr",
+      "id": "8",
+      "bbox": [
+        80,
+        260,
+        260,
+        230
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fyxobm58",
+      "id": "9",
+      "bbox": [
+        80,
+        260,
+        5,
+        230
+      ],
+      "geometry": "rect",
+      "fillColor": "#39D98A",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7mp0bi9s",
+      "id": "10",
+      "bbox": [
+        102,
+        278,
+        216,
+        24
+      ],
+      "geometry": "rect",
+      "text": "AGENTIC AI",
+      "textPreview": "AGENTIC AI",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#39D98A",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "AGENTIC AI"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "AGENTIC AI",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#39D98A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AGENTIC AI",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#39D98A",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e1w7mp0b",
+      "id": "11",
+      "bbox": [
+        102,
+        310,
+        216,
+        168
+      ],
+      "geometry": "rect",
+      "text": "AI-ready data, enterprise RAG, data-grounded chatbots, MCP integration, and governed context.",
+      "textPreview": "AI-ready data, enterprise RAG, data-grounded chatbots, MCP integration, and governed context.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "AI-ready data, enterprise"
+          },
+          {
+            "index": 2,
+            "text": "RAG, data-grounded"
+          },
+          {
+            "index": 3,
+            "text": "chatbots, MCP integration,"
+          },
+          {
+            "index": 4,
+            "text": "and governed context."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "AI-ready data, enterprise RAG, data-grounded chatbots, MCP integration, and governed context.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AI-ready data, enterprise RAG, data-grounded chatbots, MCP integration, and governed context.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/psfil0rq",
+      "id": "12",
+      "bbox": [
+        366,
+        260,
+        260,
+        230
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w7mp0bi9",
+      "id": "13",
+      "bbox": [
+        366,
+        260,
+        5,
+        230
+      ],
+      "geometry": "rect",
+      "fillColor": "#74F2CE",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7adsji5s",
+      "id": "14",
+      "bbox": [
+        388,
+        278,
+        216,
+        24
+      ],
+      "geometry": "rect",
+      "text": "CUSTOMER 360",
+      "textPreview": "CUSTOMER 360",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#74F2CE",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "CUSTOMER 360"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "CUSTOMER 360",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#74F2CE",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "CUSTOMER 360",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#74F2CE",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/epkzupwb",
+      "id": "15",
+      "bbox": [
+        388,
+        310,
+        216,
+        168
+      ],
+      "geometry": "rect",
+      "text": "Real-time customer views, golden records, 100s of connectors, and built-in governance.",
+      "textPreview": "Real-time customer views, golden records, 100s of connectors, and built-in governance.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Real-time customer views,"
+          },
+          {
+            "index": 2,
+            "text": "golden records, 100s of"
+          },
+          {
+            "index": 3,
+            "text": "connectors, and built-in"
+          },
+          {
+            "index": 4,
+            "text": "governance."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Real-time customer views, golden records, 100s of connectors, and built-in governance.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Real-time customer views, golden records, 100s of connectors, and built-in governance.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pg3ex0nu",
+      "id": "16",
+      "bbox": [
+        652,
+        260,
+        260,
+        230
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wval87ed",
+      "id": "17",
+      "bbox": [
+        652,
+        260,
+        5,
+        230
+      ],
+      "geometry": "rect",
+      "fillColor": "#FDBA74",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/36hcrmhk",
+      "id": "18",
+      "bbox": [
+        674,
+        278,
+        216,
+        24
+      ],
+      "geometry": "rect",
+      "text": "TEST DATA",
+      "textPreview": "TEST DATA",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#FDBA74",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TEST DATA"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TEST DATA",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#FDBA74",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "TEST DATA",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#FDBA74",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/eloj2t83",
+      "id": "19",
+      "bbox": [
+        674,
+        310,
+        216,
+        168
+      ],
+      "geometry": "rect",
+      "text": "Synthetic data, masking, tokenization, test data management, and safer development.",
+      "textPreview": "Synthetic data, masking, tokenization, test data management, and safer development.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Synthetic data, masking,"
+          },
+          {
+            "index": 2,
+            "text": "tokenization, test data"
+          },
+          {
+            "index": 3,
+            "text": "management, and safer"
+          },
+          {
+            "index": 4,
+            "text": "development."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Synthetic data, masking, tokenization, test data management, and safer development.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Synthetic data, masking, tokenization, test data management, and safer development.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mp0bi9s3",
+      "id": "20",
+      "bbox": [
+        938,
+        260,
+        260,
+        230
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#162238",
+      "lineColor": "#26364F",
+      "lineWidth": 1
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bat47y1k",
+      "id": "21",
+      "bbox": [
+        938,
+        260,
+        5,
+        230
+      ],
+      "geometry": "rect",
+      "fillColor": "#F97316",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4vmtwra5",
+      "id": "22",
+      "bbox": [
+        960,
+        278,
+        216,
+        24
+      ],
+      "geometry": "rect",
+      "text": "MODERNIZATION",
+      "textPreview": "MODERNIZATION",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos Mono",
+        "color": "#F97316",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "MODERNIZATION"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "MODERNIZATION",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos Mono",
+            "color": "#F97316",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "MODERNIZATION",
+              "fontSize": 14,
+              "typeface": "Aptos Mono",
+              "color": "#F97316",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tgfmlkjm",
+      "id": "23",
+      "bbox": [
+        960,
+        310,
+        216,
+        168
+      ],
+      "geometry": "rect",
+      "text": "Cloud migration, legacy integration, data fabric, data mesh, and mainframe modernization.",
+      "textPreview": "Cloud migration, legacy integration, data fabric, data mesh, and mainframe modernization.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#D7DEE9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Cloud migration, legacy"
+          },
+          {
+            "index": 2,
+            "text": "integration, data fabric, data"
+          },
+          {
+            "index": 3,
+            "text": "mesh, and mainframe"
+          },
+          {
+            "index": 4,
+            "text": "modernization."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Cloud migration, legacy integration, data fabric, data mesh, and mainframe modernization.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#D7DEE9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Cloud migration, legacy integration, data fabric, data mesh, and mainframe modernization.",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#D7DEE9"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m1cfa9w3",
+      "id": "24",
+      "bbox": [
+        72,
+        672,
+        1090,
+        24
+      ],
+      "geometry": "rect",
+      "text": "Sources: K2view homepage navigation and solution pages; K2view Company Overview PDF.",
+      "textPreview": "Sources: K2view homepage navigation and solution pages; K2view Company Overview PDF.",
+      "resolvedFontSize": 9.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 9.51,
+        "typeface": "Aptos",
+        "color": "#7F8EA6",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Sources: K2view homepage navigation and solution pages; K2view Company Overview PDF."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Sources: K2view homepage navigation and solution pages; K2view Company Overview PDF.",
+          "resolvedTextStyle": {
+            "fontSize": 9.51,
+            "typeface": "Aptos",
+            "color": "#7F8EA6",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Sources: K2view homepage navigation and solution pages; K2view Company Overview PDF.",
+              "fontSize": 9.51,
+              "typeface": "Aptos",
+              "color": "#7F8EA6"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

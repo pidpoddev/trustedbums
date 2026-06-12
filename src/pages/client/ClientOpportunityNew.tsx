@@ -17,9 +17,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
+import { cn } from "@/lib/utils";
 import { getPageItems } from "@/lib/pagination";
 import {
-  createClientPayProgramRequest,
   createOpportunityRegistration,
   deleteOwnOpportunityRegistration,
   formalizeCustomerTargetResponse,
@@ -46,7 +46,7 @@ import { claimDeclineReasonLabel, claimDeclineReasons } from "@/lib/claimConfig"
 
 const REGISTERED_OPPORTUNITIES_PAGE_SIZE = 6;
 
-type OpportunityViewFilter = "pipeline" | "bum-originated" | "responses" | "import" | "register" | "commission-plan";
+type OpportunityViewFilter = "pipeline" | "bum-originated" | "responses" | "import" | "register";
 type OpportunityBulkMode = "create" | "update";
 
 type BumOriginatedTypeFilter = "ALL" | "NEW" | "ACTIVE" | "CONVERTED" | "CLOSED";
@@ -125,22 +125,6 @@ function clearClientOpportunityDraft(clientId?: string | null) {
 
   window.localStorage.removeItem(clientOpportunityDraftKey(clientId));
 }
-
-const initialRequestForm = {
-  name: "",
-  year_1_rate: "",
-  year_2_rate: "",
-  year_3_rate: "",
-  year_4_rate: "",
-  year_5_rate: "",
-  year_6_plus_rate: "",
-  commission_period_months: "",
-  commission_basis: "",
-  payment_terms: "",
-  exclusions: "",
-  notes: "",
-  request_reason: "",
-};
 
 function approvalVariant(status: ClientPayProgramApprovalStatus) {
   if (status === "APPROVED") {
@@ -321,7 +305,6 @@ export default function ClientOpportunityNew() {
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initialForm);
-  const [requestForm, setRequestForm] = useState(initialRequestForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [bulkMode, setBulkMode] = useState<OpportunityBulkMode>("create");
@@ -339,12 +322,10 @@ export default function ClientOpportunityNew() {
   const [responsePayProgramIds, setResponsePayProgramIds] = useState<Record<string, string>>({});
   const [bumOriginatedQuery, setBumOriginatedQuery] = useState("");
   const [bumOriginatedTypeFilter, setBumOriginatedTypeFilter] = useState<BumOriginatedTypeFilter>("ALL");
-  const [isRequestingPlan, setIsRequestingPlan] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [registeredPage, setRegisteredPage] = useState(1);
   const [activeView, setActiveView] = useState<OpportunityViewFilter>(location.pathname.endsWith("/new") ? "register" : "pipeline");
   const [isRegisterOpen, setIsRegisterOpen] = useState(location.pathname.endsWith("/new"));
-  const [isRequestPlanOpen, setIsRequestPlanOpen] = useState(false);
   const [publishToBums, setPublishToBums] = useState(true);
   const [isRegistrationDraftDirty, setIsRegistrationDraftDirty] = useState(false);
   const [restoredRegistrationDraftAt, setRestoredRegistrationDraftAt] = useState<string | null>(null);
@@ -354,9 +335,6 @@ export default function ClientOpportunityNew() {
     setIsRegistrationDraftDirty(true);
     setRestoredRegistrationDraftAt(null);
     setForm((current) => ({ ...current, [field]: value }));
-  };
-  const updateRequestField = (field: keyof typeof initialRequestForm, value: string) => {
-    setRequestForm((current) => ({ ...current, [field]: value }));
   };
 
   useEffect(() => {
@@ -632,54 +610,6 @@ export default function ClientOpportunityNew() {
       });
     } finally {
       setIsImporting(false);
-    }
-  };
-
-  const requestCommissionPlan = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!user) {
-      return;
-    }
-
-    setIsRequestingPlan(true);
-    try {
-      const plan = await createClientPayProgramRequest(user, {
-        name: requestForm.name,
-        commission_rate: Number(requestForm.year_1_rate || 0),
-        year_1_rate: Number(requestForm.year_1_rate || 0),
-        year_2_rate: Number(requestForm.year_2_rate || 0),
-        year_3_rate: Number(requestForm.year_3_rate || 0),
-        year_4_rate: Number(requestForm.year_4_rate || 0),
-        year_5_rate: Number(requestForm.year_5_rate || 0),
-        year_6_plus_rate: Number(requestForm.year_6_plus_rate || 0),
-        commission_period_months: requestForm.commission_period_months
-          ? Number(requestForm.commission_period_months)
-          : null,
-        commission_basis: requestForm.commission_basis,
-        payment_terms: requestForm.payment_terms,
-        exclusions: requestForm.exclusions,
-        notes: requestForm.notes,
-        request_reason: requestForm.request_reason,
-      });
-
-      await queryClient.invalidateQueries({ queryKey: ["client-pay-programs", user?.clientId] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-commission-plans"] });
-      setRequestForm(initialRequestForm);
-      setIsRegistrationDraftDirty(true);
-      setForm((current) => ({ ...current, pay_program_id: plan.id }));
-      setIsRequestPlanOpen(false);
-      toast({
-        title: "Commission plan request submitted",
-        description: "The requested plan is now pending admin approval and has been attached to this opportunity draft.",
-      });
-    } catch (error) {
-      toast({
-        title: "Unable to request commission plan",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRequestingPlan(false);
     }
   };
 
@@ -1013,28 +943,56 @@ export default function ClientOpportunityNew() {
 
       <div className="space-y-6">
         <Card>
-          <CardContent className="grid gap-3 pt-6 md:grid-cols-[minmax(0,1fr)_260px] md:items-end">
-            <div>
-              <p className="text-sm font-medium">Opportunity filter</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Filter the workspace by pipeline, Bum-originated opportunities, responses, or setup actions.
-              </p>
+          <CardContent className="grid gap-4 pt-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium">Show opportunities</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Switch between pipeline, Bum-originated opportunities, and Bum responses.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { value: "pipeline", label: "Pipeline", count: opportunities.length },
+                  { value: "bum-originated", label: "Bum-Originated", count: bumOriginatedOpportunities.length },
+                  { value: "responses", label: "Bum Responses", count: pendingTargetResponseCount },
+                ] satisfies Array<{ value: OpportunityViewFilter; label: string; count: number }>).map((filter) => (
+                  <Button
+                    key={filter.value}
+                    type="button"
+                    variant={activeView === filter.value ? "default" : "outline"}
+                    className={cn("justify-start gap-2", activeView === filter.value ? "" : "bg-background")}
+                    onClick={() => setActiveView(filter.value)}
+                  >
+                    <span>{filter.label}</span>
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-xs",
+                        activeView === filter.value ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {filter.count}
+                    </span>
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Show</Label>
-              <Select value={activeView} onValueChange={(value: OpportunityViewFilter) => setActiveView(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pipeline">Pipeline</SelectItem>
-                  <SelectItem value="bum-originated">Bum-Originated{bumOriginatedOpportunities.length ? ` (${bumOriginatedOpportunities.length})` : ""}</SelectItem>
-                  <SelectItem value="responses">Bum Responses{pendingTargetResponseCount ? ` (${pendingTargetResponseCount})` : ""}</SelectItem>
-                  <SelectItem value="import">Bulk Import</SelectItem>
-                  <SelectItem value="register">New Opportunity</SelectItem>
-                  <SelectItem value="commission-plan">Commission Plan</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              <Button type="button" variant={activeView === "import" ? "default" : "outline"} onClick={() => setActiveView("import")}>
+                <FileUp className="mr-2 h-4 w-4" />
+                Bulk Import
+              </Button>
+              <Button
+                type="button"
+                variant={activeView === "register" ? "default" : "outline"}
+                onClick={() => {
+                  setActiveView("register");
+                  setIsRegisterOpen(true);
+                }}
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Opportunity
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1479,7 +1437,11 @@ export default function ClientOpportunityNew() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Clients only see commission plans assigned to their own company. Pending requests can be attached now and approved by Admin afterward.
+                  Clients only see commission plans assigned to their own company. Need a new structure? Request it under{" "}
+                  <Link to="/client/commission-plans" className="font-medium text-primary hover:underline">
+                    Finance &gt; Commission Plans
+                  </Link>
+                  .
                 </p>
                 <p className="text-xs text-muted-foreground">
                   The commission schedule starts when the first commission is paid to Trusted Bums. Until then, the system treats payments as Year 1.
@@ -1519,204 +1481,6 @@ export default function ClientOpportunityNew() {
               <Button disabled={isSubmitting}>
                 <Send className="mr-2 h-4 w-4" />
                 {publishToBums ? "Publish Opportunity to Bums" : "Save Draft Opportunity"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-          )
-
-        ) : null}
-
-        {activeView === "commission-plan" ? (
-          !isRequestPlanOpen ? (
-            <div className="flex justify-end">
-              <Button variant="outline" onClick={() => setIsRequestPlanOpen(true)}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Request commission plan
-              </Button>
-            </div>
-          ) : (
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <CardTitle className="font-display flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  Request a new commission plan
-                </CardTitle>
-                <Button type="button" variant="secondary" onClick={() => setIsRequestPlanOpen(false)}>
-                  <X className="mr-2 h-4 w-4" />
-                  Close
-                </Button>
-              </div>
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-5" onSubmit={requestCommissionPlan}>
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="request-name">Plan name</Label>
-                <Input
-                  id="request-name"
-                  required
-                  value={requestForm.name}
-                  onChange={(event) => updateRequestField("name", event.target.value)}
-                  placeholder="Dell Enterprise Program - 1%"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="request-year-1-rate">Year 1 commission %</Label>
-                <Input
-                  id="request-year-1-rate"
-                  required
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={requestForm.year_1_rate}
-                  onChange={(event) => updateRequestField("year_1_rate", event.target.value)}
-                  placeholder="25"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="request-year-2-rate">Year 2 commission %</Label>
-                <Input
-                  id="request-year-2-rate"
-                  required
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={requestForm.year_2_rate}
-                  onChange={(event) => updateRequestField("year_2_rate", event.target.value)}
-                  placeholder="20"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="request-year-3-rate">Year 3 commission %</Label>
-                <Input
-                  id="request-year-3-rate"
-                  required
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={requestForm.year_3_rate}
-                  onChange={(event) => updateRequestField("year_3_rate", event.target.value)}
-                  placeholder="10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="request-year-4-rate">Year 4 commission %</Label>
-                <Input
-                  id="request-year-4-rate"
-                  required
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={requestForm.year_4_rate}
-                  onChange={(event) => updateRequestField("year_4_rate", event.target.value)}
-                  placeholder="10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="request-year-5-rate">Year 5 commission %</Label>
-                <Input
-                  id="request-year-5-rate"
-                  required
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={requestForm.year_5_rate}
-                  onChange={(event) => updateRequestField("year_5_rate", event.target.value)}
-                  placeholder="10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="request-year-6-plus-rate">Year 6+ commission %</Label>
-                <Input
-                  id="request-year-6-plus-rate"
-                  required
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={requestForm.year_6_plus_rate}
-                  onChange={(event) => updateRequestField("year_6_plus_rate", event.target.value)}
-                  placeholder="1"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="request-period">Commission period (months)</Label>
-                <Input
-                  id="request-period"
-                  type="number"
-                  min="1"
-                  value={requestForm.commission_period_months}
-                  onChange={(event) => updateRequestField("commission_period_months", event.target.value)}
-                  placeholder="36"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="request-basis">Commission basis</Label>
-                <Input
-                  id="request-basis"
-                  value={requestForm.commission_basis}
-                  onChange={(event) => updateRequestField("commission_basis", event.target.value)}
-                  placeholder="1% of collected license revenue"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="request-why">Why do you need this plan?</Label>
-              <Textarea
-                id="request-why"
-                required
-                rows={3}
-                value={requestForm.request_reason}
-                onChange={(event) => updateRequestField("request_reason", event.target.value)}
-                placeholder="Dell-sized account, lower blended rate, but a much larger expected deal value."
-              />
-            </div>
-
-            <div className="rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
-              The commission schedule start date is the date the first commission is paid to Trusted Bums. That first paid commission locks the Year 1 start, and later payouts roll into Years 2, 3, 4, 5, and 6+ automatically from that date.
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="request-payment-terms">Payment terms</Label>
-                <Textarea
-                  id="request-payment-terms"
-                  rows={3}
-                  value={requestForm.payment_terms}
-                  onChange={(event) => updateRequestField("payment_terms", event.target.value)}
-                  placeholder="Payable within 30 days after collection."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="request-exclusions">Exclusions</Label>
-                <Textarea
-                  id="request-exclusions"
-                  rows={3}
-                  value={requestForm.exclusions}
-                  onChange={(event) => updateRequestField("exclusions", event.target.value)}
-                  placeholder="Taxes, refunds, pass-through cloud costs."
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="request-notes">Internal notes</Label>
-              <Textarea
-                id="request-notes"
-                rows={3}
-                value={requestForm.notes}
-                onChange={(event) => updateRequestField("notes", event.target.value)}
-                placeholder="Anything Admin should know before approving or denying this plan."
-              />
-            </div>
-
-            <div className="flex justify-end">
-              <Button type="submit" variant="outline" disabled={isRequestingPlan}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                {isRequestingPlan ? "Submitting request..." : "Request new plan"}
               </Button>
             </div>
           </form>

@@ -1,157 +1,155 @@
 # Trusted Bums QA And Test Backlog
 
-_Last updated: 2026-06-09 by Codex daily QA/test engineer automation._
+_Last updated: 2026-06-12 by Codex daily QA/test engineer automation._
 
 ## Executive Read
 
-Current `main` head `ff59d2c` is green on the authoritative hosted QA lanes:
+Current `main` head `d360570` has fresh exact-head hosted release-QA proof on the lanes that already completed:
 
-- GitHub `QA` run `27244531408` on `ff59d2c`: passed.
-- GitHub `Deploy TrustedBums to DreamHost` run `27244531370` on `ff59d2c`: passed.
-- GitHub `E2E Smoke` run `27244546687` on `ff59d2c`: passed `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
+- GitHub `QA` run `27371736190` on `d360570`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27371736211` on `d360570`: passed.
+- GitHub `E2E Smoke` run `27371773276` on `d360570`: passed `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
 
-Current-session local preflight is also green once `.env.qa` is sourced:
+Current-session local preflight is green once `.env.qa` is sourced:
 
+- Raw `corepack pnpm run qa:env`: fails in a fresh shell because the QA variables are not exported by default.
 - Sourced `corepack pnpm run qa:env`: passed.
-- Sourced `corepack pnpm run qa:target-preflight`: passed against `https://trustedbums.com` with DNS, HTTPS, app shell, Clerk, and extension API checks green.
-- Targeted regressions passed: `src/test/potentialDecisionMakerMatches.test.ts`, `src/test/adminScrumTracker.test.ts`, `src/test/scrumQueueRegression.test.ts`, and `src/test/e2eSmokeRegression.test.ts` (`21` tests total).
+- Sourced `corepack pnpm run qa:target-preflight`: passed against `https://trustedbums.com` with DNS, HTTPS, app shell, and Clerk checks green. Extension API stayed intentionally skipped through `QA_EXTENSION_API_EXPECTATION=skip`.
+- Targeted exact-head client workflow regressions passed: `src/test/clientBumOriginatedOpportunities.test.ts`, `src/test/clientClaimsWorkflow.test.ts`, `src/test/clientOpportunityDelete.test.ts`, `src/test/clientOpportunityBulkTools.test.ts`, and `src/test/clientDashboardLayout.test.ts` (`10` tests total).
 
-The last red-QA story from `9f42bf4` is no longer the current release truth. QA risk has narrowed to coverage quality, not an observed release outage. The active gaps are:
+Current release truth is still incomplete. `.codex-review-decision.json` still records `GO` for `26fbdc7`, not current head `d360570`, and the exact-head standard `Visual UI Audit` run `27395701277` is currently red only because QA Harness Reliability reproduced a false-positive `404` body-text match on `/admin/scrum` and opened `TB-0092`. The clean exact-head product QA risk is therefore stale release proof plus the focused mutation and API-contract gaps below, not a newly confirmed admin product regression. The live open QA items from this run are:
 
-- deployed proof for `[TB-0072]` Potential DM matches plus Source and LinkedIn candidate buttons on a real Bum session;
-- mutating browser QA still skipping cleanup-sensitive lanes because the automated cleanup credential is not yet a working Supabase `service_role` JWT path;
-- exact-head visual evidence is still behind the current UI-bearing commit range. The latest successful `Visual UI Audit` run is `27200213766` on `fffe28c`, which fixed the hosted target issue, but it is not an exact-head artifact for the later UI changes now on `ff59d2c`.
+- `[TB-0019]` stale exact-head Code Review remains the release-process gate.
+- `[TB-0054]` hosted smoke artifacts still drop `qa-target-preflight` summaries on current head.
+- `[TB-0086]` the manual Bum contact mutation still has no focused authenticated mutation proof or cleanup-backed regression.
+- `[TB-0091]` the extension API still lacks the negative-path and abuse-control contract proof future partner or native clients would need.
 
 ## Active Recommendations
 
-### P1 - [TB-0072] Verify Potential DM matches and outbound buttons on a deployed Bum session
-- Evidence: GitHub `QA` and `E2E Smoke` are green on `ff59d2c`, but current automated coverage for the new Potential DM surface is still source-backed rather than workflow-backed. [src/test/potentialDecisionMakerMatches.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/potentialDecisionMakerMatches.test.ts) only asserts the migration contract, while [src/pages/bum/BumOpportunityDetail.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumOpportunityDetail.tsx) now renders `Where this came from: Research Bot`, public Source buttons, and LinkedIn candidate buttons for accepted-opportunity matches.
-- Why it matters: This is a new accepted-opportunity-only RLS surface plus a new outbound-link workflow. Source assertions do not prove that the right Bum can see the card, that unrelated Bums cannot, or that the links behave safely on the deployed product.
-- Recommendation: On a deployed authenticated Bum session, open an accepted BlackCurrant opportunity that has seeded Potential DM matches. Confirm the card renders, at least one Source button opens a public source in a new tab/window, at least one LinkedIn candidate button opens a candidate profile URL in a new tab/window, and the UI still frames LinkedIn as manual `not checked` verification rather than scraped truth.
-- Acceptance criteria: QA records the opportunity tested, confirms the `Where this came from: Research Bot` badge and `LinkedIn check: not checked` text are visible, confirms at least one Source and one LinkedIn candidate button opened in a new tab/window, and either closes `TB-0072` with evidence or updates it with the blocker.
+### P1 - [TB-0019] Refresh exact-head Code Review and re-establish a clean standard visual signal
+- Evidence: Current `main` is `d360570`, but [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still points to `26fbdc7dc3493e87ffd309ccbfbe2416f44dfc5a` from `2026-06-11T17:21:43Z`. Hosted `QA` `27371736190`, deploy `27371736211`, and `E2E Smoke` `27371773276` all passed on `d360570`. QA Harness Reliability reproduced that exact-head `Visual UI Audit` run `27395701277` failed because [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts) treats any body text containing `404` as an error page, and `/admin/scrum` now contains legitimate tracker descriptions with `404`; that harness defect is tracked separately as `TB-0092`.
+- Why it matters: Release proof for the clean head is still incomplete, but the missing exact-head standard visual pass should be routed to QA Harness Reliability, not misclassified as a new admin product bug.
+- Recommendation: Refresh Code Review for `d360570`, let QA Harness Reliability clear `TB-0092`, and rerun standard exact-head visual QA after the harness fix.
+- Acceptance criteria: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) matches `d360570`, and a successor exact-head standard visual run completes cleanly after the `TB-0092` harness fix.
 
-### P1 - Keep mutating browser QA blocked until automated cleanup authority is real
-- Evidence: [tests/e2e/helpers/deepQa.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/deepQa.ts) now guards mutation lanes after the earlier cleanup failure, and commit `8028280` kept that guard in place. Current hosted smoke and deep shards are green, but there is still no current-head run proving that mutating go-live/deep workflow coverage can create and then automatically clean synthetic rows without manual recovery.
-- Why it matters: Non-mutating smoke and deep coverage can stay green while the highest-risk create/update/delete workflows remain unproven as a repeatable release gate.
-- Recommendation: Provide a cleanup path that the automated Playwright mutation helpers can actually use in-session: either a valid Supabase `service_role` JWT accepted by the REST cleanup helper, or an approved scoped cleanup endpoint or RPC for `qa-go-live-*` and `qa-deep-*` data. Keep the current guard so mutation lanes skip instead of leaving residue until that authority exists.
-- Acceptance criteria: A current-head or successor-hosted mutation run executes the mutating lanes instead of skipping them, and cleanup verification reports zero remaining synthetic rows for companies, target accounts, opportunities, and related domains.
+### P1 - [TB-0054] Move `qa-target-preflight` artifacts out of Playwright's `test-results/` root
+- Evidence: The downloaded success artifact tree for exact-head `E2E Smoke` run `27371773276` on `d360570` still contains only the smoke Playwright report plus the three deep Playwright report folders for the admin, client, and bum shards. It does not retain `summary.json` or `summary.txt` from `qa-target-preflight`, even though sourced local preflight passed in this session.
+- Why it matters: QA and Release Verification still lose the exact DNS, HTTPS, app-shell, and Clerk preflight evidence on successful runs and on later route failures, which makes env-drift triage slower and less specific than it should be.
+- Recommendation: Keep `TB-0054` open until [`scripts/qa-target-preflight.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/qa-target-preflight.mjs) writes outside Playwright's managed output tree and both smoke and deep workflows upload that directory explicitly.
+- Acceptance criteria: a passing smoke run and a later-failing smoke or deep run both preserve downloadable `summary.json` and `summary.txt`.
 
-### P2 - Pair exact-head visual evidence with the current UI-bearing commit range and keep retained route coverage healthy
-- Evidence: The latest successful GitHub `Visual UI Audit` run is `27200213766` on `fffe28c`. Current exact-head run `27247209520` on `ff59d2c` failed in the public marketing/privacy test while waiting for the `Accessibility settings` button after the signup dialog closes. The checked-in [tests/e2e/visual-ui-audit.spec.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts) already retains `/bums` and `/admin/scrum`.
-- Why it matters: Hosted `E2E Smoke` proves the deployed app is routable and interactive, but it does not replace current screenshots for the active public and authenticated visual surfaces on the exact release head.
-- Recommendation: Inspect the `27247209520` trace and artifact, fix or rebaseline the public `Accessibility settings` step, rerun `Visual UI Audit` on `ff59d2c` or the next candidate head, and keep `/bums` plus `/admin/scrum` in the retained hosted visual set.
-- Acceptance criteria: A completed current-head visual artifact exists for the candidate release head, and the artifact still includes `/bums` plus `/admin/scrum`.
+### P1 - [TB-0086] Add focused regression coverage for manual Bum contact creation
+- Evidence: [`src/pages/bum/BumContacts.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumContacts.tsx) still exposes the real `Add contact` mutation flow with `createBumRepresentedContact`, optimistic cache updates, and the `MANUAL` source bucket introduced in `09aa045`. Exact-head hosted `QA` and `E2E Smoke` on `d360570` prove the route still loads, but this run still found no focused Vitest or Playwright proof that opens the dialog, validates required-name handling, creates a tagged manual contact, verifies the page update, and cleans the row back out.
+- Why it matters: Route-load coverage is not mutation coverage. A new Bum-visible write path is still missing the focused proof that would catch validation, optimistic cache, cleanup, or visibility regressions before they reach Bums.
+- Recommendation: Add one focused source or component contract for required-name handling plus optimistic cache behavior, and one authenticated browser mutation proof that creates a tagged manual contact, verifies it appears on the page, and removes it cleanly.
+- Acceptance criteria: exact-head or successor QA proves `Add contact` opens and validates correctly, a tagged manual contact can be created and observed on the page, cleanup returns the fixture state to zero residue, and the row remains invisible to unrelated roles in the approved allow/deny matrix.
+
+### P1 - [TB-0091] Add extension API negative-path and abuse-control contract coverage
+- Evidence: Current extension API source and tests still prove basic versioning and some anonymous or authenticated smoke behavior, but this run did not add executable proof for invalid destination combinations, mismatched destination types, forged or wrong-issuer JWTs, cross-company denial, CORS allow/deny, idempotent retry, or direct Data API denial for `extension_page_captures`.
+- Why it matters: The extension API is still the only current partner-style API contract. Native/mobile or future partner work should not depend on it until its error, auth, idempotency, and abuse-control behavior is proven by tests instead of only documented or source-reviewed.
+- Recommendation: Add focused unit or source tests and hosted smoke coverage for invalid request combinations, stable error envelope, idempotent retry, CORS allow/deny, forged or wrong-issuer token rejection, cross-company denial, and direct table allow/deny behavior. Pair the QA work with Security's rate-limit or equivalent abuse-control implementation.
+- Acceptance criteria: the extension API has passing negative-path contract tests, at least one hosted authenticated allow path, stable deny proof for unauthenticated, invalid, or cross-scope calls, and direct `extension_page_captures` table mutation denial proof for exposed roles.
 
 ## Business Access Coverage
 
-### Customer target create/read boundaries
-- Roles: Admin allow; Client Admin and Client Member allow within intended company workflows; Client Finance deny for target management; assigned Bum read allow; unassigned Bum and Public Visitor deny.
-- Current proof: No new regression reopened this lane on `ff59d2c`. Current smoke/deep workflows stayed green, and the earlier direct allow/deny customer-target proof remains the active source-backed baseline.
-- Missing allow/deny proof: none newly introduced by the current head.
-
-### Potential decision maker matches
-- Roles: Admin manage; same-company client users read own company matches; Bum read allow only when the linked opportunity is accepted; unrelated Bum, unrelated client company, and Public Visitor deny.
-- Current proof: [supabase/migrations/20260609153000_add_potential_decision_maker_matches.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260609153000_add_potential_decision_maker_matches.sql) enables admin-all, same-company client read, and accepted-opportunity Bum read policies. [src/test/potentialDecisionMakerMatches.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/potentialDecisionMakerMatches.test.ts) asserts the accepted-opportunity RLS policy and the manual LinkedIn-verification contract.
-- Missing allow/deny proof: deployed accepted-Bum allow, unrelated-Bum deny, same-company client allow, and foreign-company client deny on the seeded BlackCurrant data.
-- Seed data needed: one Bum with an accepted BlackCurrant opportunity that has matches, one Bum without an accepted relationship, one same-company client user, and one foreign-company client user.
-
-### Extension API destinations and page captures
-- Roles: Bum allow only for owned or explicitly assigned destination and capture records; unrelated Bum and unrelated client-company users deny; Admin rescue only when intended.
-- Current proof: sourced `qa:target-preflight` still verifies the anonymous extension API `401` shape, [src/test/serviceRoleAuthorization.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/serviceRoleAuthorization.test.ts) still expects deny behavior for unauthorized extension requests, and [supabase/migrations/20260608141000_limit_raw_extension_capture_reads.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260608141000_limit_raw_extension_capture_reads.sql) keeps raw page captures creator-or-admin scoped.
-- Missing allow/deny proof: live seeded destination create/read checks for one allowed Bum capture, one denied foreign-target capture, one denied unrelated-capture read, and any intended admin rescue path.
-- Seed data needed: one Bum with an allowed destination, one denied destination, replay-safe capture fixtures, and one admin observer.
+### Client opportunity publish, delete, and claim-status workflows
+- Roles: Client Admin and Client Member allow for the intended company-scoped claim review or status updates; Client Admin allow for company-owned unclaimed opportunity delete and publish or draft updates; Client Finance deny for these management actions; unrelated client companies, unrelated Bums, Public Visitor, and direct cross-company access deny; Admin may troubleshoot or override where business rules allow.
+- Current proof: current source contracts in [`src/test/clientClaimsWorkflow.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/clientClaimsWorkflow.test.ts), [`src/test/clientOpportunityDelete.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/clientOpportunityDelete.test.ts), and [`src/test/clientOpportunityBulkTools.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/clientOpportunityBulkTools.test.ts) still match the exact-head code and migrations in [`supabase/migrations/20260611162000_allow_client_delete_unclaimed_opportunities.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260611162000_allow_client_delete_unclaimed_opportunities.sql) and [`supabase/migrations/20260611163500_allow_client_claim_status_updates.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260611163500_allow_client_claim_status_updates.sql). Exact-head hosted `E2E Smoke` `27371773276` also passed the `Deep QA (client)` shard on `d360570`.
+- Missing allow/deny proof: this run still did not execute a direct Client Finance deny, cross-company deny, or claimed-opportunity delete denial against seeded data on the exact head. Current proof is source-backed plus hosted route execution, not a fresh seeded data-path matrix.
+- Seed data needed: at least two client companies, one Client Admin, one Client Member, one Client Finance account, one unclaimed opportunity, one claimed opportunity, one approved claim, and one unrelated company record for deny checks.
 
 ### Bum represented contacts
 - Roles: Bum allow only for their own represented-contact records or explicitly entitled records; unrelated Bums and client-company users deny unless a documented business rule grants visibility; Admin may troubleshoot.
-- Current proof: the current business rule still lives in [docs/business-access-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md), and the seeded allow/deny requirement remains explicit in [src/test/scrumQueueRegression.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumQueueRegression.test.ts).
-- Missing allow/deny proof: one allowed own-contact case, one denied foreign-Bum case, one denied client-company case where visibility is not intended, and any approved admin rescue proof.
-- Seed data needed: at least two Bums, represented contacts from each relevant source type, and one denied cross-Bum case.
-
-### Client team, domain approval, and access-role assignment
-- Roles: Admin and existing Client Admin approve access; pending users remain unassigned; Client Finance and Client Member do not self-assign company authority.
-- Current proof: the business rule and role matrix remain documented in [docs/business-access-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md), and the required seeded fixture contract remains documented in [docs/qa-authorization-fixtures.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-authorization-fixtures.md).
-- Missing allow/deny proof: seeded first-domain claim, public-email manual review, same-domain approval, related-domain gating, cross-company denial, and denied direct auth-field mutation cases with real QA identities.
-- Seed data needed: one unclaimed business domain, one claimed business domain, one public-email claimant, one related-domain request, at least two companies, and one stale-admin override scenario.
+- Current proof: the route itself is still present in current hosted coverage through exact-head `E2E Smoke` `27371773276`, and the business rule still lives in [`docs/business-access-rules.md`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md).
+- Missing allow/deny proof: one allowed own-manual-contact create or read case, one denied foreign-Bum read, one denied client-company read where visibility is not intended, and any approved Admin rescue proof.
+- Seed data needed: at least two Bums, one tagged manual contact, one denied cross-Bum read case, and one explicit visibility decision for whether any client-facing route should ever surface manual represented contacts.
 
 ## Cross-Agent Follow-Ups
 
-### Release Verification / Lead Developer - rebaseline release truth away from the stale `9f42bf4` QA failure
-- Evidence: current `main` head `ff59d2c` has green GitHub `QA` (`27244531408`), deploy (`27244531370`), and `E2E Smoke` (`27244546687`) evidence. The old `9f42bf4` red-QA story is no longer the active release state.
-- Requested action: update release and lead handoffs so they stop carrying forward the stale `HOTFIX-FORWARD because QA is red` narrative. The remaining release caveats are exact-head visual proof and exact-head Code Review state, not a current red QA workflow.
+### Release Verification / Lead Developer / Code Review Agent - exact-head hosted QA is green, and the red standard visual signal is harness-only
+- Evidence: exact-head `QA` `27371736190`, deploy `27371736211`, and `E2E Smoke` `27371773276` are green on `d360570`. [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still records `GO` for `26fbdc7`, and QA Harness Reliability reproduced that exact-head `Visual UI Audit` `27395701277` failed because `/admin/scrum` tracker text matched the harness's broad `404` error-page regex, not because the admin route itself broke.
+- Requested action: keep `TB-0019` open until Code Review is refreshed for `d360570`, and route `27395701277` through QA Harness Reliability item `TB-0092` instead of opening a new product regression.
 
-### QA Harness Reliability / UI / Accessibility - move from base-target triage to exact-head visual retention and the current public interaction failure
-- Evidence: `Visual UI Audit` run `27181180658` failed on the wrong base target, but the later run `27200213766` succeeded on `https://trustedbums.com`. The remaining gap is now the exact-head `27247209520` failure waiting for `Accessibility settings`, not missing `/bums` or `/admin/scrum` coverage in source.
-- Requested action: keep `https://trustedbums.com` as the hosted visual default, dispatch current-head visual runs when UI-bearing commits land, and focus the next fix on the public `Accessibility settings` interaction while preserving the existing `/bums` and `/admin/scrum` coverage.
+### QA Harness Reliability - keep `TB-0054` on current-head artifact durability, and narrow the dirty-worktree source assertion before new role branches ship
+- Evidence: exact-head `E2E Smoke` `27371773276` is green on `d360570`, but the downloaded success artifacts still omit the `qa-target-preflight` summaries. Separately, a dirty-worktree-only local run of `src/test/e2eSmokeRegression.test.ts` failed because its source assertion still bans any `to: "/client/profile", primary: true` string anywhere in [`src/pages/client/ClientDashboard.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientDashboard.tsx), and current uncommitted Client Legal or Client IT dashboard branches now add that string outside the recovery-path logic. GitHub `QA` already passed on clean head `d360570`, so this is in-flight harness drift, not an exact-head release regression.
+- Requested action: keep `TB-0054` open until preflight summaries survive artifact upload on a current-head success run, and tighten the broad file-global `e2eSmokeRegression` assertion before the uncommitted Client Legal or Client IT dashboard changes ship.
 
-### Decision-Maker Researcher / Product Ops / Lead Developer - keep Potential DM matches framed as manual-candidate workflow data until deployed QA closes `TB-0072`
-- Evidence: the current seeded Potential DM data and UI contract are in place, but this run did not yet produce deployed Bum-session proof for the visible card and outbound buttons.
-- Requested action: do not treat the new match rows as fully QA-validated outreach-ready workflow data until deployed QA records accepted-opportunity visibility plus safe outbound-link behavior.
-
-### QA Harness Reliability / Lead Developer - keep the mutation cleanup guard in place
-- Evidence: current hosted smoke and deep evidence are green without needing mutation cleanup, but there is still no current-head proof that mutation lanes can clean up their own writes automatically.
-- Requested action: keep the current mutation guard active and treat the cleanup credential or cleanup-endpoint work as a prerequisite for elevating mutation QA into a required release gate.
+### Product Ops / Security / Lead Developer - prove the new client claim and delete boundaries with a seeded allow/deny matrix
+- Evidence: exact-head `d79f604` and `d360570` added client-side claim status updates, opportunity publish or draft controls, and unclaimed opportunity delete behavior across [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [`src/pages/client/ClientClaims.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientClaims.tsx), and [`src/pages/client/ClientOpportunityNew.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientOpportunityNew.tsx). Current tests prove the intended source contract, but this run did not execute seeded Client Finance deny or cross-company deny checks on the live data path.
+- Requested action: preserve the company-scoped claim and opportunity rules in [`docs/business-access-rules.md`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md), then add cleanup-safe QA fixtures so the new delete and claim-status paths have positive and negative proof beyond string assertions.
 
 ## Coverage Map
 
-- Current hosted green on exact head `ff59d2c`:
-  - GitHub `QA` run `27244531408`
-  - GitHub `Deploy TrustedBums to DreamHost` run `27244531370`
-  - GitHub `E2E Smoke` run `27244546687`
-  - `27244546687` shards: `smoke`, `Deep QA (admin)`, `Deep QA (client)`, `Deep QA (bum)`
+- Current exact-head hosted evidence on `d360570`:
+  - GitHub `QA` run `27371736190`
+  - GitHub `Deploy TrustedBums to DreamHost` run `27371736211`
+  - GitHub `E2E Smoke` run `27371773276`
+  - `27371773276` shards: `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`
+  - GitHub `Visual UI Audit` run `27395701277` failed on 2026-06-12 because the harness misread legitimate `/admin/scrum` tracker text containing `404` as an error page; see `TB-0092`
 - Current local green in this run:
   - sourced `corepack pnpm run qa:env`
   - sourced `corepack pnpm run qa:target-preflight`
-  - `corepack pnpm exec vitest run src/test/potentialDecisionMakerMatches.test.ts src/test/adminScrumTracker.test.ts src/test/scrumQueueRegression.test.ts src/test/e2eSmokeRegression.test.ts`
-- Latest successful hosted visual evidence:
-  - GitHub `Visual UI Audit` run `27200213766` on `fffe28c`
-- Latest standalone `Deep QA Hotfix Audit` workflow:
-  - GitHub run `27092527987` on `850e507`
-  - current deploy-triggered deep shards are fresher than the standalone workflow
+  - `corepack pnpm exec vitest run src/test/clientBumOriginatedOpportunities.test.ts src/test/clientClaimsWorkflow.test.ts src/test/clientOpportunityDelete.test.ts src/test/clientOpportunityBulkTools.test.ts src/test/clientDashboardLayout.test.ts`
+  - `corepack pnpm exec vitest run src/test/googleAnalyticsConsent.test.tsx src/test/termsContractRules.test.ts src/test/clientCommissionPlans.test.ts src/test/clientLegalItRoles.test.ts`
+- Current local caveat:
+  - raw `corepack pnpm run qa:env` fails in a fresh shell because required QA variables are not exported by default
+  - `corepack pnpm exec vitest run src/test/e2eSmokeRegression.test.ts src/test/deepQaTriage.test.ts src/test/qaTargetPreflight.test.ts` fails only on the dirty worktree because uncommitted Client Legal or Client IT dashboard branches now trip a broad source assertion in `src/test/e2eSmokeRegression.test.ts`; treat that as in-flight harness drift, not clean-head release evidence
+- Current exact-head artifact check:
+  - downloaded `27371773276` artifacts do not retain `qa-target-preflight` summaries
 
 ## Watchlist
 
-- Do not close `[TB-0072]` from source or migration assertions alone; it still needs deployed Bum-session proof.
-- Do not treat mutating browser QA as green while the cleanup-sensitive lanes skip instead of executing.
-- Do not silently reuse `fffe28c` visual evidence for later UI-bearing heads without either a new artifact or an explicit no-visual-delta decision.
-- Keep the seeded live allow/deny proof lanes explicit for extension captures, represented contacts, and client-team approval until real fixtures exist and the current regression contract is intentionally relaxed.
+- Do not call `d360570` a full release `GO` until exact-head Code Review is refreshed and QA Harness Reliability reruns standard visual QA after clearing `TB-0092`.
+- Do not treat current source-string tests for client claim-status or delete paths as sufficient direct RLS or authorization proof.
+- Do not treat `/bum/contacts` route presence as proof that the manual `Add contact` mutation is regression-covered.
 
 ## Current Standards And Time-Sensitive Notes
 
-- Playwright’s current best-practices guidance says tests should prioritize user-visible behavior, avoid relying on implementation details, and keep each test isolated. That supports keeping the Potential DM verification focused on real deployed Bum actions and visible link behavior instead of only schema assertions. Source: [Playwright Best Practices](https://playwright.dev/docs/best-practices).
-- Playwright’s current locator guidance says `getByText()` can match exact text, while locator strictness and auto-waiting remain core to resilient tests. That matches the current direction of using tighter user-facing locators when duplicate live-region wrappers or toasts make broad text matches ambiguous. Sources: [Playwright Locators](https://playwright.dev/docs/locators), [Playwright Auto-waiting](https://playwright.dev/docs/actionability).
-- Playwright’s current authentication guidance recommends reusing stored authenticated browser state carefully and keeping auth artifacts out of version control. That reinforces keeping deployed-role QA deterministic and scoped rather than rebuilding fragile ad hoc login flows inside every spec. Source: [Playwright Authentication](https://playwright.dev/docs/auth).
-- Vitest’s current guidance emphasizes cleanup or restoration of mocks between tests and explicit fixture isolation. That supports keeping the current regression suite narrow and deterministic instead of hiding cross-test state when QA uses source-backed regression files as release contracts. Sources: [Vitest Mocking Guide](https://vitest.dev/guide/mocking.html), [Vitest Test Context](https://vitest.dev/guide/test-context).
+- Playwright's current best-practices guidance still centers tests on user-visible behavior, resilient locators, and isolated test state. That supports keeping the manual-contact coverage gap focused on one real authenticated mutation proof instead of hiding it inside broad smoke. Sources: [Playwright Best Practices](https://playwright.dev/docs/best-practices), [Playwright Isolation](https://playwright.dev/docs/best-practices#make-tests-as-isolated-as-possible), [Playwright Locators](https://playwright.dev/docs/locators).
+- Playwright's current actionability guidance still says enabled controls should be checked through real actionability and click behavior rather than source inspection alone. That supports keeping the exact-head visual run and deep client shard separate from source-only contract tests. Source: [Playwright Actionability](https://playwright.dev/docs/actionability).
+- Vitest's current guidance still emphasizes explicit mocking and controlled test context. That supports adding narrow source or component contracts for new client workflow branches and manual-contact validation instead of relying on brittle file-global string checks. Sources: [Vitest Mocking Guide](https://vitest.dev/guide/mocking.html), [Vitest Test Context](https://vitest.dev/guide/test-context).
+- GitHub's current artifact guidance still expects workflows to upload exactly the files they need to preserve. That keeps `TB-0054` pointed at an explicit preflight artifact directory instead of Playwright-managed `test-results/`. Source: [Store and share data with workflow artifacts](https://docs.github.com/en/actions/tutorials/store-and-share-data).
 
 ## Access Requests And Evidence Gaps
 
-- Provide a working mutation-cleanup authority for Playwright QA: a Supabase `service_role` JWT accepted by the REST cleanup helper, or an approved scoped cleanup RPC/endpoint.
-- Provide or preserve seeded role fixtures for extension captures, represented contacts, and client-team approval flows so the remaining allow/deny lanes can move from source-backed to live-backed.
-- Keep a current-head hosted `Visual UI Audit` artifact available for release candidates, with `/bums` and `/admin/scrum` included once the spec expands.
-- This run did not have a callable Admin Scrum Tracker or Supabase write path in-session for live tracker mutation. Historical repo evidence says `TB-0017`, `TB-0018`, and `TB-0019` were previously closed live, but this automation did not re-read or rewrite tracker rows directly in the current session.
+- Provide cleanup-safe QA authority for mutating browser coverage when a test must create and remove tagged rows.
+- Provide seeded represented-contact fixtures for one allowed own-Bum case, one denied foreign-Bum case, and one denied client-company case.
+- Provide seeded multi-company client fixtures for one allowed claim-status update, one denied Client Finance update, one allowed unclaimed opportunity delete, one denied claimed-opportunity delete, and one denied cross-company attempt.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-09.
-- Files, docs, workflows, and commands reviewed:
+- Date of run: 2026-06-12.
+- Files, docs, workflows, artifacts, and commands reviewed:
   - current role prompt and shared rules in `docs/agents/automation-prompts/trusted-bums-daily-qa-test-engineer.toml`, `docs/agents/consultant-team-rules.md`, `docs/agents/company-wide-rules.md`, `docs/agents/consultant-access-needs.md`, and `docs/agents/business-access-rules.md`
-  - current QA, release, lead, harness, and edit-log docs
-  - `git log -6 --oneline --decorate`
-  - `git show --stat --summary --name-only ff59d2c`
-  - `git show --stat --summary --name-only 8a9e2d7`
-  - `git show --stat --summary --name-only fffe28c`
-  - GitHub workflow lists plus run views for `27244531408`, `27244531370`, `27244546687`, and `27200213766`
+  - current QA, harness, release, lead, edit-log, security, and business-access docs
+  - `git status --short`
+  - `git rev-parse HEAD`
+  - `git log --since='2026-06-10' --oneline --decorate -- docs src supabase .github`
+  - `git show --stat --summary --name-only d360570 --`
+  - `git show --stat --summary --name-only ea5a710 --`
+  - `git show --stat --summary --name-only d79f604 --`
+  - `git show --stat --summary --name-only 26fbdc7 --`
+  - `git show --stat --summary --name-only 43db9c7 --`
+  - `git diff 349bbe0..d360570 -- ...` against current client workflow, portal API, and E2E coverage files
+  - GitHub workflow lists and run views for `27371736190`, `27371736211`, `27371773276`, and `27395701277`
+  - downloaded artifact tree for `27371773276`
+  - raw `corepack pnpm run qa:env`
   - sourced `corepack pnpm run qa:env`
   - sourced `corepack pnpm run qa:target-preflight`
-  - `corepack pnpm exec vitest run src/test/potentialDecisionMakerMatches.test.ts src/test/adminScrumTracker.test.ts src/test/scrumQueueRegression.test.ts src/test/e2eSmokeRegression.test.ts`
-  - source review of [src/pages/bum/BumOpportunityDetail.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumOpportunityDetail.tsx), [src/test/potentialDecisionMakerMatches.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/potentialDecisionMakerMatches.test.ts), [src/test/adminScrumTracker.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/adminScrumTracker.test.ts), [src/test/scrumQueueRegression.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumQueueRegression.test.ts), [tests/e2e/helpers/auth.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/auth.ts), [tests/e2e/go-live-client-bum-workflow.spec.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/go-live-client-bum-workflow.spec.ts), and [supabase/migrations/20260609153000_add_potential_decision_maker_matches.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260609153000_add_potential_decision_maker_matches.sql)
-  - current official testing guidance reviewed:
+  - `corepack pnpm exec vitest run src/test/clientBumOriginatedOpportunities.test.ts src/test/clientClaimsWorkflow.test.ts src/test/clientOpportunityDelete.test.ts src/test/clientOpportunityBulkTools.test.ts src/test/clientDashboardLayout.test.ts`
+  - `corepack pnpm exec vitest run src/test/googleAnalyticsConsent.test.tsx src/test/termsContractRules.test.ts src/test/clientCommissionPlans.test.ts src/test/clientLegalItRoles.test.ts`
+  - `corepack pnpm exec vitest run src/test/e2eSmokeRegression.test.ts src/test/deepQaTriage.test.ts src/test/qaTargetPreflight.test.ts`
+  - `curl -I -L --max-time 20 https://trustedbums.com`
+  - `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`
+  - source review of [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [`src/pages/client/ClientClaims.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientClaims.tsx), [`src/pages/client/ClientDashboard.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientDashboard.tsx), [`src/pages/client/ClientOpportunityNew.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientOpportunityNew.tsx), [`src/pages/bum/BumContacts.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumContacts.tsx), [`src/test/e2eSmokeRegression.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/e2eSmokeRegression.test.ts), and the two current RLS migrations
+  - live tracker reads for `TB-0019`, `TB-0054`, `TB-0055`, and `TB-0086` through `mcp__codex_apps__supabase._execute_sql`
+  - current official testing and artifact guidance reviewed:
     - [Playwright Best Practices](https://playwright.dev/docs/best-practices)
+    - [Playwright Actionability](https://playwright.dev/docs/actionability)
     - [Playwright Locators](https://playwright.dev/docs/locators)
-    - [Playwright Authentication](https://playwright.dev/docs/auth)
-    - [Playwright Auto-waiting](https://playwright.dev/docs/actionability)
     - [Vitest Mocking Guide](https://vitest.dev/guide/mocking.html)
     - [Vitest Test Context](https://vitest.dev/guide/test-context)
-- Checks that could not run and why:
-  - no deployed authenticated Bum-session proof for `[TB-0072]` yet; this run stayed at hosted smoke/deep plus source/regression review because there is no dedicated existing spec for the Potential DM workflow
-  - no current-head hosted visual artifact for `ff59d2c`; the latest successful visual run is still `27200213766` on `fffe28c`
-  - no live tracker-row mutation in `/admin/scrum` or `public.admin_scrum_items` because that write path was not callable from this session
+    - [Store and share data with workflow artifacts](https://docs.github.com/en/actions/tutorials/store-and-share-data)
+-- Checks that could not fully close and why:
+  - no seeded direct allow/deny proof was executed for the new client claim-status and unclaimed-opportunity delete paths in this session
+  - no authenticated browser mutation run created and cleaned a manual represented contact in this session

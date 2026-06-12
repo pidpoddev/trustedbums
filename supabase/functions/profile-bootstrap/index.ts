@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import * as jose from "jsr:@panva/jose@6";
 
 type PortalRole = "CLIENT" | "BUM";
-type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_MEMBER";
+type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_LEGAL" | "CLIENT_IT" | "CLIENT_MEMBER";
 type RequestType = "SAME_DOMAIN_ACCESS" | "PUBLIC_EMAIL_COMPANY" | "BUM_SIGNUP";
 
 interface ClaimsResponse { sub?: string }

@@ -632,7 +632,14 @@ export default function BumOpportunities() {
       <PageHeader
         title="Opportunities"
         description="Browse live client opportunities, add people you know, and try to claim the opportunity."
-      />
+      >
+        <Button asChild>
+          <Link to={customerLeadUrl()}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Recommend Customer Opportunity
+          </Link>
+        </Button>
+      </PageHeader>
 
       <FilterPanel summary={filterSummary}>
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_repeat(4,minmax(0,1fr))_auto_auto] xl:items-end">
@@ -907,11 +914,24 @@ export default function BumOpportunities() {
                     {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
                     {isHidden ? "Unhide" : "Skip/Hide"}
                   </Button>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link to={customerLeadUrl(targetAccount.client_company_id, targetAccount.expected_product_service)}>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Recommend customer
-                    </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    aria-expanded={isExpanded}
+                    onClick={() =>
+                      setExpandedTargetIds((current) => {
+                        const next = new Set(current);
+                        if (next.has(targetAccount.id)) {
+                          next.delete(targetAccount.id);
+                        } else {
+                          next.add(targetAccount.id);
+                        }
+                        return next;
+                      })
+                    }
+                  >
+                    {isExpanded ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+                    {isExpanded ? "Close details" : "Open details"}
                   </Button>
                   <Button
                     size="sm"
@@ -1056,14 +1076,6 @@ export default function BumOpportunities() {
                       {isHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
                       {isHidden ? "Unhide" : "Skip/Hide"}
                     </Button>
-                    {opportunity.company_id ? (
-                      <Button size="sm" variant="outline" asChild>
-                        <Link to={customerLeadUrl(opportunity.company_id, opportunity.expected_product_service)}>
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          Recommend customer
-                        </Link>
-                      </Button>
-                    ) : null}
                     <Button
                       size="sm"
                       className="bg-emerald-600 text-white hover:bg-emerald-700"
@@ -1076,7 +1088,7 @@ export default function BumOpportunities() {
                   <Button size="sm" variant="outline" className="self-start lg:self-auto" asChild>
                     <Link to={"/bum/opportunities/" + opportunity.id}>
                       {researchMatchCount ? <UserPlus className="mr-2 h-4 w-4" /> : <Briefcase className="mr-2 h-4 w-4" />}
-                      Details
+                      Open details
                     </Link>
                   </Button>
                 </div>

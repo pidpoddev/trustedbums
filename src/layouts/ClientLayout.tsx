@@ -34,6 +34,7 @@ import {
   BarChart3,
   Briefcase,
   CreditCard,
+  FileText,
 } from "lucide-react";
 
 const navGroups: Array<{
@@ -53,6 +54,7 @@ const navGroups: Array<{
   { title: "Training & Assets", url: "/client/trainings", icon: GraduationCap, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_MEMBER"] },
   ] },
   { label: "Finance", items: [
+  { title: "Commission Plans", url: "/client/commission-plans", icon: FileText, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
   { title: "Payment Reports", url: "/client/payments", icon: CreditCard, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
   { title: "Exports", url: "/client/exports", icon: Download, allowedAccessRoles: ["CLIENT_ADMIN", "CLIENT_FINANCE"] },
   { title: "Reports", url: "/client/reports", icon: BarChart3 },

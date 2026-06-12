@@ -6,12 +6,13 @@ This folder is the repo-shared source for Trusted Bums consultant agents, operat
 
 ## Contents
 
-- `automation-prompts/`: snapshots of the Trusted Bums Codex automation prompts. These are reference definitions for daily UX, UI, content, B2B growth marketing, marketing graphics, accessibility, QA, QA harness reliability, release verification, security, performance, data, product ops, trust/reputation, lead developer, weekly agent operations, and on-demand legal/compliance and decision-maker researcher agents.
+- `automation-prompts/`: snapshots of the Trusted Bums Codex automation prompts. These are reference definitions for daily UX, UI, content, B2B growth marketing, marketing graphics, accessibility, QA, QA harness reliability, release verification, security, performance, data, product ops, trust/reputation, lead developer, weekly agent operations, and on-demand Chief Marketing Officer, Technology Architect, legal/compliance, and decision-maker researcher agents.
 - `consultant-team-rules.md`: shared behavioral rules and handoff expectations for every specialist.
 - `company-wide-rules.md`: durable company, product, website, workflow, terminology, trust, and operating rules Ryan has clarified.
 - `../codex-edit-log.md`: running implementation log and next-run recheck queue that specialists should consult before preserving stale recommendations.
 - `../trusted-bums-gtm-agent-stack.md`: GTM agent stack map linking growth, creative, trust, data, product ops, QA, and implementation handoffs.
 - `../decision-maker-researcher.md`: public-web decision-maker research playbook, scoring model, LinkedIn boundary, and import-ready output schema.
+- `../first-call-deck-playbook.md`: Chief Marketing Officer-owned workflow for customized prospect-specific First Call Decks.
 - `consultant-access-needs.md`: durable list of access, dashboard, connector, QA, and evidence gaps that limit consultant quality.
 - `business-access-rules.md`: role and data access expectations used by Security, QA, Data, Product Ops, Lead Developer, and Code Review.
 - `code-review-agent.md`: pre-main Code Review Agent contract, GO/NO-GO output format, and Lead Developer handoff rules.
@@ -19,6 +20,7 @@ This folder is the repo-shared source for Trusted Bums consultant agents, operat
 - `../release-verification-backlog.md`: release evidence, GO/NO-GO/HOLD/HOTFIX/ROLLBACK status, and cross-agent release follow-ups.
 - `../qa-harness-reliability-backlog.md`: QA workflow, Playwright, env-contract, artifact, and Deep QA reliability backlog.
 - `../agent-operations-backlog.md`: weekly automation, prompt, schedule, and source-of-truth synchronization audit.
+- `../technology-architecture-backlog.md`: on-demand platform architecture review backlog for frontend, backend, data, integrations, delivery, observability, maintainability, and architecture decision gaps.
 
 ## Scrum Tracker Contract
 
@@ -54,6 +56,8 @@ The Code Review Agent remains on-demand and commit-bound. It should not be repla
 - Daily specialist agents: UX, UI, Content, Marketing Graphics, B2B Growth, Accessibility, Security, Performance, Data, Product Ops, Trust & Reputation.
 - Daily Lead Developer Scrum: synthesis, engineering priority, cross-specialist tradeoff classification, and implementation sequencing.
 - Weekly Agent Operations Steward: prompt/schedule/source-of-truth synchronization.
+- On-demand Chief Marketing Officer Agent: buyer-led marketing strategy, self-service sales influence, First Call Deck strategy, and prospect-specific deck generation.
+- On-demand Technology Architect Agent: platform architecture review, system map, cross-cutting technical recommendations, architecture decision records, and maintainability/release-safety risk analysis.
 - On-demand Code Review Agent: exact-commit pre-main GO/NO-GO review.
 - On-demand Legal/Compliance Reviewer: legal, finance, privacy, consent, agreement, commission, endorsement, and claims-sensitive review.
 - On-demand Decision-Maker Researcher: public-web target-account contact mapping, decision-maker scoring, and human-only LinkedIn verification tasks.

@@ -13,11 +13,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
+  createBumRepresentedContact,
   createReverseOpportunity,
   findCustomerLeadDuplicate,
+  listBumRepresentedContacts,
   listCompanies,
   listOwnReverseOpportunities,
   normalizeCustomerDomain,
+  type BumRepresentedContactRecord,
   type CustomerLeadDuplicateRecord,
   type ReverseOpportunityClientMode,
   type ReverseOpportunityStatus,
@@ -48,6 +51,25 @@ const initialForm = {
   notes: "",
 };
 
+const emptyKnownContactForm = {
+  name: "",
+  title: "",
+  email: "",
+  linkedinUrl: "",
+  note: "",
+};
+
+interface LeadContactDraft {
+  id: string;
+  source: "existing" | "new";
+  contactId?: string;
+  name: string;
+  title: string;
+  email: string;
+  linkedinUrl: string;
+  note: string;
+}
+
 function statusVariant(status: ReverseOpportunityStatus) {
   if (status === "CLIENT_INTERESTED" || status === "CONVERTED") {
     return "success" as const;
@@ -68,6 +90,21 @@ function statusLabel(status: ReverseOpportunityStatus) {
   return status.replaceAll("_", " ");
 }
 
+function contactSearchText(contact: BumRepresentedContactRecord) {
+  return [contact.name, contact.title, contact.email, contact.companyName, contact.note]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function makeDraftId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `contact-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export default function BumReverseOpportunities() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -81,6 +118,10 @@ export default function BumReverseOpportunities() {
   }));
   const [duplicate, setDuplicate] = useState<CustomerLeadDuplicateRecord | null>(null);
   const [domainChecked, setDomainChecked] = useState(false);
+  const [contactSearch, setContactSearch] = useState("");
+  const [selectedExistingContactId, setSelectedExistingContactId] = useState("none");
+  const [knownContactForm, setKnownContactForm] = useState(emptyKnownContactForm);
+  const [leadContacts, setLeadContacts] = useState<LeadContactDraft[]>([]);
 
   const companiesQuery = useQuery({
     queryKey: ["companies"],
@@ -91,11 +132,25 @@ export default function BumReverseOpportunities() {
     queryFn: () => listOwnReverseOpportunities(user!.id),
     enabled: Boolean(user?.id),
   });
+  const contactsQuery = useQuery({
+    queryKey: ["bum-represented-contacts", user?.id],
+    queryFn: () => listBumRepresentedContacts(user!.id),
+    enabled: Boolean(user?.id),
+  });
 
   const clientCompanies = useMemo(
     () => (companiesQuery.data ?? []).filter((company) => company.relationship_stage === "CLIENT"),
     [companiesQuery.data],
   );
+  const availableContacts = useMemo(() => {
+    const contacts = contactsQuery.data ?? [];
+    const alreadySelected = new Set(leadContacts.map((contact) => contact.contactId).filter(Boolean));
+    const normalizedSearch = contactSearch.trim().toLowerCase();
+    return contacts
+      .filter((contact) => !alreadySelected.has(contact.id))
+      .filter((contact) => !normalizedSearch || contactSearchText(contact).includes(normalizedSearch))
+      .slice(0, 20);
+  }, [contactSearch, contactsQuery.data, leadContacts]);
   const normalizedCustomerDomain = normalizeCustomerDomain(form.customer_company_website);
   const canCheckDomain = form.client_mode === "EXISTING_CLIENT" && Boolean(form.vendor_company_id && normalizedCustomerDomain);
 
@@ -139,9 +194,94 @@ export default function BumReverseOpportunities() {
     },
   });
 
+  function updatePrimaryCustomerContact(contact: LeadContactDraft) {
+    setForm((current) => ({
+      ...current,
+      customer_contact_name: current.customer_contact_name || contact.name,
+      customer_contact_title: current.customer_contact_title || contact.title,
+      customer_contact_email: current.customer_contact_email || contact.email,
+    }));
+  }
+
+  function addExistingContact(contactId: string) {
+    const contact = (contactsQuery.data ?? []).find((item) => item.id === contactId);
+    if (!contact) return;
+    const draft: LeadContactDraft = {
+      id: `existing-${contact.id}`,
+      source: "existing",
+      contactId: contact.id,
+      name: contact.name,
+      title: contact.title ?? "",
+      email: contact.email ?? "",
+      linkedinUrl: contact.linkedinUrl ?? "",
+      note: contact.note ?? "",
+    };
+    setLeadContacts((current) => [...current, draft]);
+    setSelectedExistingContactId("none");
+    setContactSearch("");
+    updatePrimaryCustomerContact(draft);
+  }
+
+  function addNewKnownContact() {
+    const name = knownContactForm.name.trim();
+    if (!name) {
+      toast({ title: "Contact name required", description: "Add a name before adding this contact.", variant: "destructive" });
+      return;
+    }
+
+    const draft: LeadContactDraft = {
+      id: makeDraftId(),
+      source: "new",
+      name,
+      title: knownContactForm.title.trim(),
+      email: knownContactForm.email.trim(),
+      linkedinUrl: knownContactForm.linkedinUrl.trim(),
+      note: knownContactForm.note.trim(),
+    };
+    setLeadContacts((current) => [...current, draft]);
+    setKnownContactForm(emptyKnownContactForm);
+    updatePrimaryCustomerContact(draft);
+  }
+
+  function removeLeadContact(contactId: string) {
+    setLeadContacts((current) => current.filter((contact) => contact.id !== contactId));
+  }
+
+  function primaryCustomerContactDraft(): LeadContactDraft | null {
+    if (!form.customer_contact_name.trim()) return null;
+    return {
+      id: "primary-customer-contact",
+      source: "new",
+      name: form.customer_contact_name.trim(),
+      title: form.customer_contact_title.trim(),
+      email: form.customer_contact_email.trim(),
+      linkedinUrl: "",
+      note: "",
+    };
+  }
+
+  function dedupeContactsForMyContacts() {
+    const existingKeys = new Set(
+      leadContacts
+        .filter((contact) => contact.source === "existing")
+        .map((contact) => (contact.email || contact.name).trim().toLowerCase()),
+    );
+    const newContacts = [...leadContacts.filter((contact) => contact.source === "new")];
+    const primary = primaryCustomerContactDraft();
+    if (primary) newContacts.unshift(primary);
+
+    const seen = new Set(existingKeys);
+    return newContacts.filter((contact) => {
+      const key = (contact.email || contact.name).trim().toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   const createMutation = useMutation({
-    mutationFn: () =>
-      createReverseOpportunity(user!, {
+    mutationFn: async () => {
+      const record = await createReverseOpportunity(user!, {
         client_mode: form.client_mode,
         vendor_company_id: form.client_mode === "EXISTING_CLIENT" ? form.vendor_company_id : undefined,
         prospect_client_name: form.client_mode === "PROSPECT_CLIENT" ? form.prospect_client_name : undefined,
@@ -162,20 +302,57 @@ export default function BumReverseOpportunities() {
         estimated_deal_value: form.estimated_deal_value.trim() ? Number(form.estimated_deal_value) : null,
         expected_timeline: form.expected_timeline,
         notes: form.notes,
-      }),
-    onSuccess: async (record) => {
+      });
+
+      const contactsToCreate = dedupeContactsForMyContacts();
+      const contactResults = await Promise.allSettled(
+        contactsToCreate.map((contact) =>
+          createBumRepresentedContact({
+            name: contact.name,
+            companyName: form.customer_company_name,
+            title: contact.title,
+            email: contact.email,
+            linkedinUrl: contact.linkedinUrl,
+            relationshipStrength: "unknown",
+            note: [
+              contact.note,
+              `Added from Customer Lead for ${form.customer_company_name}.`,
+              form.expected_product_service ? `Suggested fit: ${form.expected_product_service}.` : null,
+            ].filter(Boolean).join("\n\n"),
+          }),
+        ),
+      );
+
+      return {
+        record,
+        contactsAdded: contactResults.filter((result) => result.status === "fulfilled").length,
+        contactsFailed: contactResults.filter((result) => result.status === "rejected").length,
+      };
+    },
+    onSuccess: async ({ record, contactsAdded, contactsFailed }) => {
       await queryClient.invalidateQueries({ queryKey: ["bum-reverse-opportunities", user?.id] });
       await queryClient.invalidateQueries({ queryKey: ["admin-reverse-opportunities"] });
       await queryClient.invalidateQueries({ queryKey: ["client-reverse-opportunities"] });
       await queryClient.invalidateQueries({ queryKey: ["companies"] });
+      await queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["portal-search", "bum-contacts", user?.id] });
       toast({
         title: "Customer lead saved",
         description:
-          record.client_mode === "EXISTING_CLIENT"
-            ? "We logged this Customer Lead against the existing Client for review and outreach."
-            : "We created the Client Prospect record and queued the Customer Lead for review and outreach.",
+          contactsFailed > 0
+            ? "The lead was saved, but at least one contact could not be added to My Contacts."
+            : contactsAdded > 0
+              ? `The lead was saved and ${contactsAdded} contact${contactsAdded === 1 ? " was" : "s were"} added to My Contacts.`
+              : record.client_mode === "EXISTING_CLIENT"
+                ? "We logged this Customer Lead against the existing Client for review and outreach."
+                : "We created the Client Prospect record and queued the Customer Lead for review and outreach.",
+        variant: contactsFailed > 0 ? "destructive" : "default",
       });
       setForm(initialForm);
+      setLeadContacts([]);
+      setKnownContactForm(emptyKnownContactForm);
+      setSelectedExistingContactId("none");
+      setContactSearch("");
       setDuplicate(null);
       setDomainChecked(false);
     },
@@ -409,6 +586,113 @@ export default function BumReverseOpportunities() {
                   placeholder="150000"
                 />
               </div>
+            </div>
+
+            <div className="rounded-lg border bg-muted/20 p-4">
+              <div className="flex flex-col gap-1">
+                <h3 className="font-medium">Known contacts at the Customer</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add everyone you know at this Customer. New contacts are saved to My Contacts when the lead is saved.
+                </p>
+              </div>
+
+              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="existing-contact-search">Pull from My Contacts</Label>
+                    <Input
+                      id="existing-contact-search"
+                      value={contactSearch}
+                      onChange={(event) => setContactSearch(event.target.value)}
+                      placeholder="Search contacts"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Select value={selectedExistingContactId} onValueChange={setSelectedExistingContactId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose an existing contact" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Choose an existing contact</SelectItem>
+                        {availableContacts.map((contact) => (
+                          <SelectItem key={contact.id} value={contact.id}>
+                            {contact.name} · {contact.companyName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={selectedExistingContactId === "none"}
+                      onClick={() => addExistingContact(selectedExistingContactId)}
+                    >
+                      Add existing
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="known-contact-name">Add new contact</Label>
+                    <Input
+                      id="known-contact-name"
+                      value={knownContactForm.name}
+                      onChange={(event) => setKnownContactForm((current) => ({ ...current, name: event.target.value }))}
+                      placeholder="Customer contact name"
+                    />
+                  </div>
+                  <Input
+                    value={knownContactForm.title}
+                    onChange={(event) => setKnownContactForm((current) => ({ ...current, title: event.target.value }))}
+                    placeholder="Title"
+                    aria-label="New customer contact title"
+                  />
+                  <Input
+                    type="email"
+                    value={knownContactForm.email}
+                    onChange={(event) => setKnownContactForm((current) => ({ ...current, email: event.target.value }))}
+                    placeholder="Email"
+                    aria-label="New customer contact email"
+                  />
+                  <Input
+                    value={knownContactForm.linkedinUrl}
+                    onChange={(event) => setKnownContactForm((current) => ({ ...current, linkedinUrl: event.target.value }))}
+                    placeholder="LinkedIn URL"
+                    aria-label="New customer contact LinkedIn URL"
+                  />
+                  <Input
+                    value={knownContactForm.note}
+                    onChange={(event) => setKnownContactForm((current) => ({ ...current, note: event.target.value }))}
+                    placeholder="Relationship note"
+                    aria-label="New customer contact relationship note"
+                  />
+                  <div className="sm:col-span-2">
+                    <Button type="button" variant="outline" onClick={addNewKnownContact}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add contact to lead
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {leadContacts.length ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {leadContacts.map((contact) => (
+                    <div key={contact.id} className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>
+                        {contact.name}
+                        {contact.title ? ` · ${contact.title}` : ""}
+                        {contact.source === "existing" ? " · My Contacts" : ""}
+                      </span>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeLeadContact(contact.id)}>
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">

@@ -1,6 +1,6 @@
 # Trusted Bums Business Access Rules
 
-_Last updated: 2026-05-31 by Codex daily lead developer automation._
+_Last updated: 2026-06-12 by Codex daily product ops workflow analyst automation._
 
 ## Purpose
 
@@ -41,6 +41,8 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
 | Public Visitor | Evaluate Trusted Bums, submit contact/signup interest, read legal and marketing pages. | No portal data. Public content and intentional public forms only. |
 | Client Admin | Manage the client company relationship, targets, opportunities, Bum intro requests, trainings, reports, payments, and team access. | Company-scoped access, with admin-level visibility inside their own company. |
 | Client Finance | Review payment reports, invoices, exports, and finance dashboards. | Company-scoped finance/report access; no unrelated workflow management access unless explicitly granted. |
+| Client Legal | Review agreements, legal records, redline requests, and amendment discussions for the client company. | Company-scoped legal and agreement access; no general workflow-management or finance authority by default. |
+| Client IT | Coordinate company technical setup such as profile-level integration details, beta deal registration configuration, and future SSO readiness. | Company-scoped technical-setup access only; no default authority over targets, finance, or unrelated opportunity workflows. |
 | Client Member | Participate in assigned client workflows such as trainings, target review, intro requests, or reporting as granted. | Least-privilege company-scoped access based on team role and workflow involvement. |
 | Bum | Manage their own profile, prospects, contacts, opportunities, intro requests, trainings, earnings, customer leads, and relevant conversations. | Own or explicitly assigned marketplace work only; no broad client target browsing by default. |
 | Admin | Operate and troubleshoot the marketplace across clients, Bums, finance, training, support, and reports. | Full operational access with auditability, support tooling, and elevated-action controls. |
@@ -187,6 +189,44 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
 - Open questions:
   - Which proof categories are mandatory versus optional for public-email company approvals and related-domain approvals?
   - Should `BUM_SIGNUP` approval be manual-only at launch or delegated to an approved recruitment/onboarding workflow later?
+
+### Client Team, Company Profile, And Beta Deal Registration
+- Roles: Client Admin, Client IT, Client Legal, Client Finance, Client Member, Admin.
+- Data needed: Client team roster, client access role, access status, approved company domains, related-domain request status, company profile fields, company matching fields, agreement status, beta deal-registration configuration, audit trail, and any readiness or proof notes tied to role or integration approval.
+- Allowed actions:
+  - Client Admins may invite same-domain client users, assign or change company-scoped client roles, disable same-company users, approve same-domain access requests for their company, and request additional related domains for Admin review.
+  - Client IT may manage only the approved technical setup fields for the client company, including beta deal-registration provider metadata, auth method, field-mapping notes, webhook or polling configuration, fallback workflow, and future SSO-readiness notes.
+  - Client Legal may review agreement records and submit legal redline or amendment requests, but does not gain general company-profile, finance, or opportunity-management authority by default.
+  - Client Finance may review finance-safe company outputs such as payment reports, invoices, exports, and finance summaries, but does not gain company-profile, legal, or team-management write authority by default.
+  - Client Members may read only the company-profile context needed for their assigned workflow and may not mutate team roles, company identity, or beta integration settings by default.
+  - Admins may approve related domains, repair or override client-role assignments, disable or restore client access, and decide when a beta deal-registration setup is operationally approved versus merely configured.
+- Allowed when:
+  - A Client Admin invitation or role change stays inside the same approved client company and domain boundary and the resulting role is one of `CLIENT_ADMIN`, `CLIENT_FINANCE`, `CLIENT_LEGAL`, `CLIENT_IT`, or `CLIENT_MEMBER`.
+  - A same-domain client access request is reviewed by a Client Admin from that same company.
+  - A related-domain request remains pending until Admin verifies the domain belongs to, aliases, or is contractually controlled by the client company.
+  - Company-profile edits are limited to the fields and roles explicitly approved for that field set. Client-wide identity, matching, domain, and integration fields must not stay broadly editable just because the user is a generic `CLIENT`.
+  - Beta deal-registration configuration stores provider metadata and secret references only; raw API secrets remain server-side; and the workflow is labeled beta until Admin or Product Ops confirms the client-specific connector is repeatable and operationally owned.
+  - Any approval, denial, role reassignment, disablement, related-domain approval, or beta-state change creates an audit event with actor, target user or company, old value, new value, and reason or readiness category.
+- Denied when:
+  - Client Legal, Client Finance, or Client Member users try to manage team roles, approve access requests, disable users, or change related-domain authority.
+  - Any client user stores raw API keys, passwords, or tokens in company profile or deal-registration fields.
+  - A generic client user without the approved role tries to change company identity, company matching fields, domain ownership, or beta integration readiness.
+  - A beta deal-registration setup is described as live automation before the connector path, fallback path, owner, and auditability are all explicitly approved.
+  - A Client Admin approves a related-domain request, cross-company request, or other Admin-only access exception.
+- Sensitive fields: Company identity and matching fields, approved company domains, domain-proof notes, client role assignments, disabled status, deal-registration provider metadata, auth method, credential references, webhook or polling settings, fallback contact path, legal-review notes, and audit events.
+- Source of truth: `profiles`, `client_team_invitations`, `client_company_access_requests`, `company_domains`, `companies`, `client-team`, `admin-access-requests`, agreement workspaces, and audit events.
+- RLS/authorization owner: Security Engineer plus Product Ops and Lead Developer.
+- QA proof:
+  - Client Admin can invite or update same-company users into `CLIENT_FINANCE`, `CLIENT_LEGAL`, `CLIENT_IT`, or `CLIENT_MEMBER`, while preserving at least one `CLIENT_ADMIN`.
+  - Client IT can update only the approved beta deal-registration fields and cannot grant broader access or self-approve domains.
+  - Client Legal can submit legal requests but cannot mutate team-management, finance, or company-profile ownership fields outside the approved legal scope.
+  - Client Finance and Client Member cannot mutate company-profile ownership fields, team roles, related-domain requests, or beta integration settings.
+  - Related-domain requests remain Admin-only until approval, and same-domain access stays company-scoped.
+  - Production-safe QA proves that users without the approved role cannot update company-profile fields simply by navigating to `/client/profile` or calling the underlying data path directly.
+- Open questions:
+  - Which company-profile fields should remain editable by all client roles, if any, versus only `CLIENT_ADMIN` and `CLIENT_IT`?
+  - What exact readiness evidence must Admin or Product Ops record before a beta deal-registration setup can move from configured to operationally enabled?
+  - Should Client Legal have read-only access to integration notes that affect agreement obligations, or should those stay Admin plus Client IT only?
 
 ### Customer Targets
 - Roles: Admin, Client Admin, Client Member where assigned, Bum where explicitly entitled.
@@ -392,6 +432,53 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
 - Open questions:
   - Which non-production origins should remain authorized for QA and preview telemetry?
   - How long should raw telemetry be retained before rollup or deletion?
+
+### Client Finance Payment And Invoice Reporting
+- Roles: Admin, Client Admin, Client Finance.
+- Data needed: Company-scoped payment reports, invoice status, payout-relevant totals, finance dates, finance exception state, and finance-safe export rows.
+- Allowed actions:
+  - Admin may read and troubleshoot raw finance rows plus operational context.
+  - Client Admin may read richer company-scoped finance and operational joins when the workflow needs them.
+  - Client Finance may read company-scoped finance-safe summaries, tables, and exports that omit unrelated operational relationship context.
+- Allowed when:
+  - The user belongs to the same client company as the report or invoice.
+  - The route or export is intentionally presenting a finance-safe read model for Client Finance.
+  - Richer operational joins are limited to Admin or Client Admin flows that actually need them.
+- Denied when:
+  - Client Finance tries to read target-contact identity, Bum IDs, unrelated reporter identity, or other operational relationship fields that are not needed for finance review.
+  - Client users from another company, Bums, or Public Visitors try to read payment or invoice rows.
+- Sensitive fields: Contact names, contact companies, Bum IDs, reporter profile fields, operational notes, and any non-finance workflow context embedded in payment or invoice joins.
+- Source of truth: `customer_payment_reports`, `claim_invoices`, finance-safe projections or role-aware RPCs/views, and the Client payments, reports, and exports routes.
+- RLS/authorization owner: Security Engineer plus Data/Analytics and Lead Developer.
+- QA proof:
+  - Client Finance can read company-scoped finance-safe payment and invoice data.
+  - Client Finance payloads omit operational relationship fields such as contact names, contact companies, Bum IDs, and unrelated reporter identity.
+  - Client Admin and Admin retain richer fields only where the workflow requires them.
+  - Other companies, Bums, and Public Visitors are denied on both route and direct data paths.
+- Open questions:
+  - Which limited operational fields, if any, should Client Finance receive for dispute resolution without opening broader workflow context?
+
+### Admin Email Operations And Reporting
+- Roles: Admin and approved internal automation.
+- Data needed: Templates, campaigns, deliveries, suppressions, engagement events, aggregate KPI summaries, and troubleshooting context for admin-run marketplace email.
+- Allowed actions:
+  - Admins and approved internal workflows may create, send, review, troubleshoot, and export raw admin-email operational data.
+  - Future shared leadership reporting may use a separate aggregate-only surface that strips recipient identity, body snapshots, click URLs, and suppression details.
+- Allowed when:
+  - The user is an Admin or an approved internal automation path operating on behalf of Admin.
+  - The surface is an explicit aggregate-only summary approved for non-recipient-level reporting.
+- Denied when:
+  - Client Admins, Client Finance, Client Members, Bums, or Public Visitors try to read raw templates, deliveries, recipient-level engagement, suppressions, message snapshots, or click URLs.
+  - Non-admin reporting surfaces reuse the raw admin-email tables or recipient-level summary views.
+- Sensitive fields: Recipient email, full name, company name, subject and body snapshots, clicked URLs, suppression state, user-agent metadata, IP-hash-derived event metadata, and delivery or campaign metadata that reveals private outreach behavior.
+- Source of truth: `admin_email_templates`, `admin_email_campaigns`, `admin_email_deliveries`, `admin_email_events`, `admin_email_suppressions`, and any explicit aggregate-only admin-email summary view or RPC.
+- RLS/authorization owner: Security Engineer plus Data/Analytics and Lead Developer.
+- QA proof:
+  - Admin can read and operate raw admin-email reporting rows and send workflows.
+  - Non-admin roles are denied on route, API, RPC, and direct data paths for raw admin-email rows.
+  - Any shared KPI surface returns aggregate-only data and omits recipient identity, body snapshots, click URLs, and suppression details.
+- Open questions:
+  - If leadership or client-facing reporting is needed later, which aggregate KPIs are safe enough to expose without recipient-level detail?
 
 ### Trainings And Legal Documents
 - Roles: Admin, Client Admin, Client Member, Bum.

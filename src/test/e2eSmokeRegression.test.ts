@@ -9,6 +9,8 @@ const fieldHelpSource = readFileSync("src/components/FieldHelp.tsx", "utf8");
 const publicIndexSource = readFileSync("src/pages/Index.tsx", "utf8");
 const clientDashboardSource = readFileSync("src/pages/client/ClientDashboard.tsx", "utf8");
 const clientTermsSource = readFileSync("src/pages/client/ClientTerms.tsx", "utf8");
+const deniedAccessRecoverySource =
+  clientDashboardSource.match(/function getDeniedAccessRecovery[\s\S]*?\n}\n\nfunction NextActionsCard/)?.[0] ?? "";
 
 describe("E2E smoke regression coverage", () => {
   it("asserts the current signup validation copy", () => {
@@ -61,8 +63,8 @@ describe("E2E smoke regression coverage", () => {
     expect(clientDashboardSource).toContain("That workspace area is not available for this account.");
     expect(clientDashboardSource).toContain("Client Agreement needs attention.");
     expect(clientDashboardSource).toContain("Open Client Agreement");
-    expect(clientDashboardSource).toContain('to: "/client/agreements"');
-    expect(clientDashboardSource).not.toContain('to: "/client/profile", primary: true');
+    expect(deniedAccessRecoverySource).toContain('to: "/client/agreements"');
+    expect(deniedAccessRecoverySource).not.toContain('to: "/client/profile"');
     expect(clientTermsSource).toContain("Continue This Session");
     expect(clientTermsSource).not.toContain("Skip This Login");
   });

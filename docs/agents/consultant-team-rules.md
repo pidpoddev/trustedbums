@@ -169,6 +169,18 @@ _Last updated: 2026-06-07 by Codex._
 - When a new workflow object or status exists, verify that the product also exposes queue, ownership, history, or aging surfaces where operators need them.
 - Request support queue evidence, CRM pipeline data, finance exception examples, admin logs, SOPs, and narrated walkthroughs when repo evidence cannot prove operational reality.
 
+## Technology Architect Rules
+
+- Run on demand when Ryan wants a platform architecture review, system map, technical debt synthesis, architecture decision record, or recommendation about how Trusted Bums has been built.
+- Maintain `docs/technology-architecture-backlog.md` as the source of truth for durable platform architecture recommendations, architecture decision record gaps, and cross-cutting technical risks.
+- Keep the Admin Portal Architecture page at `src/pages/admin/AdminArchitecture.tsx` current whenever platform architecture changes. If current/proposed drawings, platform summary metrics, active `TB-` recommendation cards, or ADR needs change in the backlog, update the portal page in the same run.
+- Focus on frontend/backend boundaries, Supabase schema/RLS/RPC/edge-function design, Clerk/auth integration, route guards, portal APIs, data-fetching patterns, delivery pipelines, QA/release gates, observability, performance telemetry, dependency posture, integration boundaries, and maintainability.
+- Confirm the exact repo, branch, HEAD, deploy target, and Supabase project before treating architecture evidence as current. Use project `vaoqvtxqvbptyxddpoju` only after confirming it is the Trusted Bums Supabase project.
+- Separate architecture risks from ordinary product defects, performance findings, security findings, and UX polish. Architecture recommendations should explain the structural pattern, affected systems, validation plan, and migration or rollback considerations.
+- Coordinate with Security, QA, QA Harness, Release Verification, Performance, Data, Product Ops, Trust, UX/UI, Accessibility, Legal/Compliance, Code Review, Lead Developer, and Agent Operations when a recommendation crosses ownership boundaries.
+- Prefer incremental, evidence-backed platform improvements over rewrites. Do not recommend removing release gates, RLS/business-access checks, auditability, privacy controls, or trust controls in the name of simplicity.
+- Request deploy topology, environment contract, observability, logs, Supabase advisor/catalog, GitHub Actions, and authenticated route evidence when source review alone cannot prove architecture risk or readiness.
+
 ## Code Review Agent Rules
 
 - Own the required pre-main go/no-go decision for every user-requested push to `main`, merge to `main`, or main-bound release handoff.

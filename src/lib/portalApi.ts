@@ -2,6 +2,7 @@ import { BUM_FALLBACK_TERMS_VERSION, FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_
 import { getSupabaseAccessToken, supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import { DEFAULT_CLIENT_ACCESS_ROLE, type AuthUser, type ClientAccessRole } from "@/data/authData";
 import { normalizeDateFormat, normalizeTimeZone } from "@/lib/timezone";
+import { normalizeDealRegistrationConfig, type DealRegistrationConfig } from "@/lib/dealRegistration";
 
 export type RegistrationStatus =
   | "Draft"
@@ -48,6 +49,7 @@ export interface CompanyRecord {
   ideal_customer_profile: string | null;
   relationship_stage: CompanyRelationshipStage;
   linkedin_company_url: string | null;
+  deal_registration_config: DealRegistrationConfig;
   created_at: string;
 }
 
@@ -1154,6 +1156,27 @@ export interface ClientPayProgramRequestInput {
 export type OpportunityClaimStatus = "PROPOSED" | "APPROVED" | "DECLINED" | "SCHEDULED" | "MEETING_HELD" | "EXPIRED" | "DISPUTED" | "CLOSED";
 export type OpportunityClaimStrength = "STRONG" | "MODERATE" | "WEAK";
 export type OpportunityClaimDeclineReason = "ALREADY_CONNECTED" | "NO_LONGER_OPPORTUNITY" | "WRONG_CONTACT_LEVEL" | "NOT_RELEVANT" | "DUPLICATE" | "OTHER";
+export type OpportunityClaimContactBuyingRole = "DECISION_MAKER" | "PURCHASING_LEADER" | "TECHNICAL_LEADER" | "CHAMPION" | "BLOCKER" | "INFLUENCER" | "OTHER";
+
+export interface OpportunityClaimContactRecord {
+  id: string;
+  opportunity_claim_id: string;
+  opportunity_registration_id: string;
+  company_id: string | null;
+  bum_user_id: string;
+  contact_name: string;
+  contact_company: string;
+  contact_title: string | null;
+  contact_email: string | null;
+  linkedin_url: string | null;
+  buying_role: OpportunityClaimContactBuyingRole;
+  relationship_strength: OpportunityClaimStrength;
+  note: string | null;
+  is_primary: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface OpportunityClaimRecord {
   id: string;
@@ -1179,6 +1202,7 @@ export interface OpportunityClaimRecord {
   created_at: string;
   updated_at: string;
   meeting_locked?: boolean;
+  opportunity_claim_contacts?: OpportunityClaimContactRecord[];
   opportunity_registrations?: Pick<
     OpportunityRegistration,
     "id" | "target_account_name" | "commission_rate" | "company_id" | "pay_program_id" | "commission_schedule_start_at"
@@ -1196,6 +1220,17 @@ export interface OpportunityClaimInput {
   contactEmail?: string;
   relationshipStrength: OpportunityClaimStrength;
   note?: string;
+  contacts?: Array<{
+    contactName: string;
+    contactCompany?: string;
+    contactTitle?: string;
+    contactEmail?: string;
+    linkedinUrl?: string;
+    buyingRole: OpportunityClaimContactBuyingRole;
+    relationshipStrength: OpportunityClaimStrength;
+    note?: string;
+    isPrimary?: boolean;
+  }>;
 }
 
 export type OpportunityQuestionStatus = "OPEN" | "ANSWERED" | "CLOSED";
@@ -3460,7 +3495,7 @@ export async function reviewClientPayProgram(
 export async function listOpportunityClaims(opportunityId?: string, options: { includeDisabled?: boolean } = {}) {
   let query = supabase
     .from("opportunity_claims")
-    .select("*, opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, companies(id, name, relationship_stage), client_pay_programs(*)), profiles(id, full_name, email, access_status, disabled_at)")
+    .select("*, opportunity_claim_contacts(*), opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, companies(id, name, relationship_stage), client_pay_programs(*)), profiles(id, full_name, email, access_status, disabled_at)")
     .order("created_at", { ascending: false });
 
   if (opportunityId) {
@@ -4052,6 +4087,46 @@ async function notifyClaimAccepted(user: AuthUser, claim: OpportunityClaimRecord
   });
 }
 
+function normalizedClaimContacts(input: OpportunityClaimInput, fallbackCompany: string) {
+  const rawContacts = input.contacts?.length
+    ? input.contacts
+    : [
+        {
+          contactName: input.contactName,
+          contactCompany: input.contactCompany,
+          contactEmail: input.contactEmail,
+          buyingRole: "DECISION_MAKER" as OpportunityClaimContactBuyingRole,
+          relationshipStrength: input.relationshipStrength,
+          note: input.note,
+          isPrimary: true,
+        },
+      ];
+
+  const contacts = rawContacts
+    .map((contact, index) => ({
+      contactName: contact.contactName.trim(),
+      contactCompany: contact.contactCompany?.trim() || fallbackCompany,
+      contactTitle: contact.contactTitle?.trim() ?? "",
+      contactEmail: contact.contactEmail?.trim() ?? "",
+      linkedinUrl: contact.linkedinUrl?.trim() ?? "",
+      buyingRole: contact.buyingRole,
+      relationshipStrength: contact.relationshipStrength,
+      note: contact.note?.trim() ?? "",
+      isPrimary: Boolean(contact.isPrimary) || index === 0,
+      sortOrder: index,
+    }))
+    .filter((contact) => contact.contactName);
+
+  if (!contacts.length) {
+    throw new Error("Add at least one person you can introduce.");
+  }
+
+  return contacts.map((contact, index) => ({
+    ...contact,
+    isPrimary: index === 0 ? true : contact.isPrimary,
+  }));
+}
+
 export async function updateAdminOpportunityClaim(
   user: AuthUser,
   claimId: string,
@@ -4180,6 +4255,15 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
     throw new Error("That opportunity already has an accepted intro request.");
   }
 
+  const claimContacts = normalizedClaimContacts(input, opportunity.target_account_name);
+  const primaryContact = claimContacts.find((contact) => contact.isPrimary) ?? claimContacts[0];
+  const claimNote = [
+    toNullableString(input.note),
+    claimContacts.length > 1
+      ? `Stakeholders included: ${claimContacts.map((contact) => `${contact.contactName} (${contact.buyingRole.replaceAll("_", " ").toLowerCase()})`).join("; ")}`
+      : null,
+  ].filter(Boolean).join("\n\n");
+
   const { data, error } = await supabase
     .from("opportunity_claims")
     .insert({
@@ -4188,11 +4272,11 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
       bum_user_id: user.id,
       bum_share_percent: DEFAULT_BUM_COMMISSION_POOL_PERCENT,
       share_manually_set: false,
-      contact_name: input.contactName.trim(),
-      contact_company: input.contactCompany.trim(),
-      contact_email: toNullableString(input.contactEmail),
-      relationship_strength: input.relationshipStrength,
-      note: toNullableString(input.note),
+      contact_name: primaryContact.contactName,
+      contact_company: primaryContact.contactCompany,
+      contact_email: toNullableString(primaryContact.contactEmail),
+      relationship_strength: primaryContact.relationshipStrength,
+      note: toNullableString(claimNote),
       status: "PROPOSED",
     })
     .select("*")
@@ -4202,6 +4286,35 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
     throw error;
   }
 
+  const { data: contactRows, error: contactsError } = await supabase
+    .from("opportunity_claim_contacts")
+    .insert(
+      claimContacts.map((contact, index) => ({
+        opportunity_claim_id: data.id,
+        opportunity_registration_id: opportunity.id,
+        company_id: opportunity.company_id,
+        bum_user_id: user.id,
+        contact_name: contact.contactName,
+        contact_company: contact.contactCompany,
+        contact_title: toNullableString(contact.contactTitle),
+        contact_email: toNullableString(contact.contactEmail),
+        linkedin_url: toNullableString(contact.linkedinUrl),
+        buying_role: contact.buyingRole,
+        relationship_strength: contact.relationshipStrength,
+        note: toNullableString(contact.note),
+        is_primary: index === 0,
+        sort_order: index,
+      })),
+    )
+    .select("*")
+    .returns<OpportunityClaimContactRecord[]>();
+
+  if (contactsError) {
+    throw contactsError;
+  }
+
+  data.opportunity_claim_contacts = contactRows ?? [];
+
   await rebalanceOpportunityClaimShares(opportunity.id);
   await upsertOpportunityClaimPublicSummary(data, user.name || user.email);
 
@@ -4210,6 +4323,7 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
     contact_name: data.contact_name,
     contact_company: data.contact_company,
     relationship_strength: data.relationship_strength,
+    contact_count: data.opportunity_claim_contacts.length,
   });
 
   await sendAdminEmail({
@@ -4223,6 +4337,9 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
       contact_company: data.contact_company,
       contact_email: data.contact_email ?? "",
       relationship_strength: data.relationship_strength,
+      introduced_contacts: (data.opportunity_claim_contacts ?? [])
+        .map((contact) => `${contact.contact_name} - ${contact.buying_role.replaceAll("_", " ").toLowerCase()}`)
+        .join("; "),
       bum_name: user.name || user.email,
       admin_note: data.note ?? "",
       claim_id: data.id,
@@ -5334,6 +5451,38 @@ export async function updateOwnClientCompanyProfile(
   return data;
 }
 
+export async function updateOwnClientDealRegistrationConfig(user: AuthUser, input: DealRegistrationConfig) {
+  if (
+    user.role !== "CLIENT" ||
+    !user.clientId ||
+    (user.clientAccessRole !== "CLIENT_ADMIN" && user.clientAccessRole !== "CLIENT_IT")
+  ) {
+    throw new Error("Only client admins and client IT users can update deal registration setup.");
+  }
+
+  const dealRegistrationConfig = normalizeDealRegistrationConfig(input);
+  const { data, error } = await supabase
+    .from("companies")
+    .update({ deal_registration_config: dealRegistrationConfig })
+    .eq("id", user.clientId)
+    .select("*")
+    .single<CompanyRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "client_deal_registration_config_updated", "companies", data.id, {
+    method: data.deal_registration_config.method,
+    provider: data.deal_registration_config.provider,
+    beta_status: data.deal_registration_config.beta_status,
+    is_beta_enabled: data.deal_registration_config.is_beta_enabled,
+    approval_mode: data.deal_registration_config.approval_mode,
+  });
+
+  return data;
+}
+
 export async function createClientCompany(
   user: AuthUser,
   input: { name: string; website?: string },
@@ -5376,6 +5525,7 @@ export async function updateAdminClientCompany(
     website?: string | null;
     linkedin_company_url?: string | null;
     relationship_stage: CompanyRelationshipStage;
+    deal_registration_config?: DealRegistrationConfig;
   },
 ) {
   if (user.role !== "ADMIN") {
@@ -5393,6 +5543,9 @@ export async function updateAdminClientCompany(
       website: toNullableString(input.website ?? undefined),
       linkedin_company_url: normalizeLinkedInCompanyUrl(input.linkedin_company_url),
       relationship_stage: input.relationship_stage,
+      ...(input.deal_registration_config
+        ? { deal_registration_config: normalizeDealRegistrationConfig(input.deal_registration_config) }
+        : {}),
     })
     .eq("id", companyId)
     .select("*")
@@ -5407,6 +5560,13 @@ export async function updateAdminClientCompany(
     website: data.website,
     linkedin_company_url: data.linkedin_company_url,
     relationship_stage: data.relationship_stage,
+    deal_registration_config: {
+      method: data.deal_registration_config.method,
+      provider: data.deal_registration_config.provider,
+      beta_status: data.deal_registration_config.beta_status,
+      is_beta_enabled: data.deal_registration_config.is_beta_enabled,
+      approval_mode: data.deal_registration_config.approval_mode,
+    },
   });
 
   return data;
