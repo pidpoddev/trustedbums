@@ -27,6 +27,8 @@ describe("admin shared mailbox inbox", () => {
     expect(functionSource).toContain("https://login.microsoftonline.com");
     expect(functionSource).toContain("https://graph.microsoft.com/v1.0/users/");
     expect(functionSource).toContain("Only the approved shared mailbox can be opened here.");
+    expect(functionSource).toContain("resolveAllowedClerkIssuer");
+    expect(functionSource).toContain("This Clerk session was issued by an unapproved tenant.");
     expect(functionSource).toContain("admin_shared_mailbox_synced");
     expect(functionSource).toContain("admin_shared_mailbox_message_sent");
   });
