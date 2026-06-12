@@ -49,6 +49,38 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
 
 ## Candidate Rules To Validate First
 
+### Client API Access Keys
+- Roles: Client Admin, Client IT, Admin, future approved client API consumers.
+- Data needed: API key metadata, owning profile, owning company, scopes, claims, token prefix, status, expiration, creator, refresh lineage, revocation reason, and audit events. The raw token secret is never stored by Trusted Bums and should only be shown once immediately after Clerk creates or refreshes it.
+- Allowed actions:
+  - Client Admin and Client IT may list, create, refresh, and revoke API keys for their own eligible profile and company.
+  - Admin may list, create, refresh, and revoke API keys for eligible Client Admin or Client IT profiles.
+  - Approved client API consumers may use active tokens only through documented API surfaces and scopes.
+- Allowed when:
+  - The caller has a verified Clerk session issued by the approved Clerk tenant.
+  - The profile belongs to the intended client company and has `client_access_role` of `CLIENT_ADMIN` or `CLIENT_IT`.
+  - Key creation stores only metadata in `public.api_access_keys`; Clerk remains the token issuer and revocation authority.
+  - Refresh revokes the prior active key lineage before issuing the replacement.
+  - Create, refresh, and revoke actions write audit events with actor, subject, company, scopes, and reason.
+- Denied when:
+  - Client Finance, Client Legal, Client Member, Bum, Public Visitor, pending users, disabled users, or unauthenticated callers try to manage API keys.
+  - A client user tries to create or revoke a key for another company or another profile outside their own allowed self-service path.
+  - A caller presents a Clerk token from an unapproved issuer.
+  - A request asks for scopes outside the approved Trusted Bums scope list.
+  - A direct Supabase Data API caller attempts to insert, update, or delete API key metadata outside the approved Edge Function workflow.
+- Sensitive fields: Clerk API key ID, token prefix, raw one-time token secret, scopes, claims, owning company/profile, revocation reason, audit events, and any future partner/client API usage logs.
+- Source of truth: `public.api_access_keys`, Clerk API key records, `supabase/functions/api-access-keys`, `src/pages/client/ClientProfile.tsx`, `src/pages/admin/AdminApiAccess.tsx`, `docs/api.md`, and future partner API docs.
+- RLS/authorization owner: Security Engineer plus Technology Architect and Product Ops.
+- QA proof:
+  - Client Admin and Client IT can create, refresh, list, and revoke only their own company/profile keys.
+  - Admin can manage eligible client API keys and cannot issue keys to ineligible non-client or non-technical profiles.
+  - Client Finance, Client Legal, Client Member, Bum, Public Visitor, disabled, pending, and wrong-company users are denied through route guards, Edge Function calls, and direct Data API attempts.
+  - Raw secrets do not persist in Postgres, logs, docs, or UI state after the one-time display.
+  - Revocation and refresh update Clerk and local metadata and write audit events.
+- Open questions:
+  - Which first external client API, if any, should be enabled beyond the current extension API contract?
+  - What rate-limit, rotation, expiration, and partner-support policy should be approved before broad client API rollout?
+
 ### Admin Scrum Tracker
 - Roles: Admin, specialist agents acting through approved Admin tooling or Supabase MCP, Lead Developer, Code Review, Release Verification.
 - Data needed: Tracker ID, title, description, status, priority, item type, source, adding agent, owner, source key, evidence links, GitHub commit or run ID, closeout note, created/updated/closed timestamps, and actor fields.

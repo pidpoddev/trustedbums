@@ -38,7 +38,7 @@ flowchart TB
     Pg["Postgres 17 - public schema"]
     RLS["RLS Policies On 55 Public Tables"]
     PrivateHelpers["private/public helper functions"]
-    Edge["24 Active Edge Functions"]
+    Edge["22 Configured Edge Functions"]
     Cron["pg_cron + pg_net Jobs"]
     Vault["Vault Secrets"]
     Logs["Supabase Logs / Advisors"]
@@ -114,8 +114,9 @@ flowchart TB
     IdentitySvc["Identity And Team Service"]
     MarketplaceSvc["Marketplace Opportunity Service"]
     PartnerSvc["Partner Capture / Import Service"]
+    ApiAccessSvc["API Access Key Service"]
     FinanceSvc["Finance And Commission Service"]
-    CommsSvc["Email / Teams / Mailbox Service"]
+    CommsSvc["Email / Teams / Shared Mailbox Service"]
     ObservabilitySvc["Telemetry / Admin Metrics Service"]
   end
 
@@ -186,7 +187,7 @@ flowchart TB
 - Live catalog: `55` public tables, `1` public view, `23` auth tables, `8` storage tables.
 - RLS: all `55` public tables have RLS enabled.
 - Grants: live catalog still shows broad `anon` and `authenticated` table privileges across nearly all public objects. RLS is doing the real filtering, but grants keep the Data API object surface broad.
-- Functions: `24` active Edge Functions are deployed. Most source config entries use `verify_jwt = false` because the app verifies Clerk sessions or internal secrets inside handlers.
+- Functions: `22` Edge Functions are configured in `supabase/config.toml`; `23` function folders exist under `supabase/functions` excluding `_shared`, including one dormant/non-configured `clerk-impersonation` folder. Most source config entries use `verify_jwt = false` because the app verifies Clerk sessions or internal secrets inside handlers.
 - Scheduled work: `pg_cron`, `pg_net`, `pg_stat_statements`, `supabase_vault`, `pgcrypto`, `uuid-ossp`, and `plpgsql` are enabled. Three active cron jobs call Edge Functions for Teams transcripts, Teams attendees, and claim-decision replies using Vault-backed project URL/key/secret values.
 - Advisors: live security advisors flag `normalize_customer_domain` missing an explicit search path, public/signed-in executable `SECURITY DEFINER` helpers, and Supabase Auth leaked-password protection disabled. Performance advisors still flag unindexed foreign keys and multiple permissive RLS policies on route-adjacent tables.
 
@@ -202,16 +203,16 @@ flowchart TB
 
 - The strongest API boundary today is the Chrome extension: `docs/openapi.yaml`, `docs/api.md`, and `supabase/functions/extension-api-v1/index.ts` define a versioned contract using Clerk bearer tokens.
 - Portal code still uses `src/lib/portalApi.ts` as a broad client-side API helper over direct Supabase tables, RPCs, and Edge Functions.
-- Public intake and trusted workflows are implemented as individual Edge Functions such as `submit-contact`, `send-website-email`, `profile-bootstrap`, `client-team`, `portal-contacts`, `send-admin-email`, and `admin-access-requests`.
+- Public intake and trusted workflows are implemented as individual Edge Functions such as `submit-contact`, `send-website-email`, `profile-bootstrap`, `client-team`, `portal-contacts`, `send-admin-email`, `admin-access-requests`, `admin-shared-mailbox`, and `api-access-keys`.
 - There is not yet a written rule that decides when a new workflow should be direct Data API, a role-scoped RPC/view, a portal BFF/domain Edge Function, an internal operations function, or a partner-facing OpenAPI endpoint.
 
 ### Microservices Architecture
 
 - Trusted Bums does not need separate independently hosted microservices yet. Supabase Edge Functions already act as modular service boundaries.
 - Current function inventory naturally groups into services:
-  - Identity/team: `profile-bootstrap`, `client-team`, `admin-access-requests`, `sync-clerk-users`, `clerk-user-tools`, `clerk-impersonation`.
-  - Marketplace/partner capture: `extension-api-v1`, `portal-contacts`, `invite-bum`, `bum-extension-download`.
-  - Communications/operations: `send-admin-email`, `send-website-email`, `email-track`, `submit-feedback`.
+  - Identity/team: `profile-bootstrap`, `client-team`, `admin-access-requests`, `sync-clerk-users`, `clerk-user-tools`.
+  - API access and partner capture: `api-access-keys`, `extension-api-v1`, `portal-contacts`, `invite-bum`, `bum-extension-download`.
+  - Communications/operations: `admin-shared-mailbox`, `send-admin-email`, `send-website-email`, `email-track`, `submit-feedback`.
   - Microsoft workflow sync: `schedule-teams-meeting`, `sync-teams-attendees`, `sync-teams-transcripts`, `sync-claim-decision-replies`, `dmarc-reports`.
   - Observability: `performance-beacon`.
 - The missing layer is service governance: shared auth helpers, service catalog, owner/runbook, contract tests, deployment provenance, and per-service allow/deny test coverage.
@@ -238,7 +239,7 @@ flowchart TB
 ### P1 - [TB-0089] Catalog Edge Functions as domain services with shared auth controls
 - Affected systems: Supabase Edge Functions, `supabase/config.toml`, service-role secrets, Clerk verification logic, cron jobs, deployment process, logs.
 - Affected roles or workflows: Admin access review, client team management, extension capture, contact intake, email sending/tracking, Teams sync, claim decision replies, DMARC review, performance telemetry.
-- Evidence: Live inventory shows `24` active Edge Functions. Source config sets most functions to `verify_jwt = false`; live inventory has a mixed posture with a few `verify_jwt = true` one-off/admin functions still active. Function source repeats Clerk bearer parsing, profile lookups, CORS, and service-role client creation across handlers. Cron jobs invoke internal sync functions using Vault-backed secrets.
+- Evidence: Source inventory at `dc9bd01` shows `22` configured Edge Functions in `supabase/config.toml` and `23` function folders excluding `_shared`. The current merge added `admin-shared-mailbox` and `api-access-keys`, both service-role functions with in-handler Clerk issuer verification and role checks. Source config sets most functions to `verify_jwt = false`; live inventory must be refreshed to prove deployed config matches source. Function source repeats Clerk bearer parsing, profile lookups, CORS, and service-role client creation across handlers. Cron jobs invoke internal sync functions using Vault-backed secrets.
 - Architecture risk: The Edge Function set is already acting as microservices, but the auth and operations model is implicit. Repeated verification code and mixed live/source function inventory make it harder to prove every function has the intended caller model and deployment provenance.
 - Recommendation: Treat Edge Functions as the microservice layer for now, but formalize it: create a service catalog with owner, purpose, caller type, `verify_jwt` posture, auth method, secret dependencies, tables touched, external APIs touched, audit events, tests, deployment version, and rollback notes. Extract or standardize shared Clerk/internal auth helpers and CORS/rate-limit handling. Shared Clerk verification must pin the allowed issuer/audience instead of deriving JWKS from an untrusted token issuer.
 - Cross-specialist handoffs: Lead Developer, Security, QA Harness, Release Verification, Product Ops, Trust.
@@ -315,7 +316,7 @@ flowchart TB
 ## Agent Inputs
 
 - Date of review: 2026-06-12.
-- Branch and HEAD: `main`, `d36057032de1d354fe925d48ecfaf0e238e6efd3`.
+- Branch and HEAD: `main`, `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2`.
 - Supabase project evidence: project `Trusted Bums`, ref `vaoqvtxqvbptyxddpoju`, URL `https://vaoqvtxqvbptyxddpoju.supabase.co`, status `ACTIVE_HEALTHY`, Postgres `17.6.1.111`.
 - Files reviewed: `docs/agents/automation-prompts/trusted-bums-on-demand-technology-architect.toml`, `docs/technology-architecture-backlog.md`, `docs/business-access-rules.md`, `docs/consultant-access-needs.md`, `docs/api.md`, `docs/openapi.yaml`, `docs/chrome-extension.md`, `docs/shared-mailbox-operations.md`, `docs/performance-engineering-backlog.md`, `docs/security-review-backlog.md`, `docs/product-ops-workflow-backlog.md`, `src/lib/supabase.ts`, `src/contexts/AuthContext.tsx`, `src/components/ProtectedRoute.tsx`, `src/components/ClientAccessRoute.tsx`, `src/lib/portalApi.ts`, `src/App.tsx`, `supabase/config.toml`, `supabase/functions/*/index.ts`, `package.json`, `.github/workflows/qa.yml`, `.github/workflows/e2e-smoke.yml`, and `.github/workflows/deploy_dreamhost.yaml`.
 - Live checks run: Supabase project lookup, project URL lookup, Edge Function inventory, security advisors, performance advisors, edge-function logs, auth logs, public table/RLS catalog query, function privilege query, table grant query, extension query, cron job query, and Admin Scrum Tracker reads/writes.

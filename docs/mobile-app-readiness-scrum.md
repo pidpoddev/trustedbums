@@ -59,6 +59,7 @@ Heavy admin configuration, long legal review, large reports, bulk exports, deep 
 
 - Keep Clerk as the identity provider, but prove the mobile SDK path before implementation. Clerk's Expo guidance supports native components, JS + native sign-in, and browser-based flows; the choice affects deep links, dev builds, and app-store QA.
 - Keep Supabase as the data platform, but do not expose raw tables as the mobile app contract. Mobile should use the same lane model as `ADR 0001`: Direct Data API only for low-risk first-party reads, Portal Domain APIs for privileged/multi-table workflows, Internal Operations APIs for service jobs, and Partner APIs for external consumers.
+- Treat the merged API access key surface as a client/partner integration dependency, not a shortcut for normal mobile auth. Mobile users should authenticate with Clerk sessions and mobile-safe Portal Domain APIs unless a separate approved client API use case is documented.
 - Treat Edge Functions as the mobile service layer for privileged workflows. `TB-0089` should land before native app development so Clerk issuer/audience checks, CORS, rate limits, audit, owner, and rollback expectations are consistent.
 - Decide whether the app needs push notifications, app links/universal links, offline drafts, local secure storage, file upload/camera access, or background sync. Each one changes scope, privacy review, and QA.
 

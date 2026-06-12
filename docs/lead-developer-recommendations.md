@@ -1,39 +1,39 @@
 # Trusted Bums Lead Developer Recommendations
 
-_Last updated: 2026-06-12 by Codex daily lead developer automation._
+_Last updated: 2026-06-12 by Codex agent rebaseline._
 
 ## Executive Read
 
-Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
+Current release status stays `HOLD-DEPLOY` for exact `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2`.
 
 - Completed work:
-  - Overnight specialists refreshed the active backlogs to exact head `d360570` and corrected several stale carry-forwards, especially `TB-0066` and `TB-0092`.
-  - This lead pass revalidated the current release gate, live Supabase project health, live public helper grants, and the deployed `sync-claim-decision-replies` configuration.
-  - Exact-head hosted evidence is still green where the lane is healthy: GitHub `QA` run `27371736190`, DreamHost deploy run `27371736211`, and `E2E Smoke` run `27371773276` all passed on `d360570`.
-  - Exact-head Google Analytics consent gating is now shipped in commit `795ebd2`; `TB-0066` is no longer an active implementation defect on `main`.
+  - The merged `main` head is clean and includes shared mailbox inbox, Clerk issuer hardening, API access key management, and API access key portal UI.
+  - Code Review was refreshed locally for exact head `dc9bd01` after source/security review of `api-access-keys`, `admin-shared-mailbox`, issuer pinning, role checks, metadata-only API key storage, and focused tests.
+  - Exact-head hosted evidence is green where the lane is healthy: GitHub `QA` run `27413665159`, DreamHost deploy run `27413665134`, and `E2E Smoke` run `27413702607` all passed on `dc9bd01`.
+  - Local validation passed: focused API/mailbox/role tests, then full `corepack pnpm run qa` with lint, Vitest 190/190 tests, and production build.
 - Current priorities:
-  - refresh Code Review for exact head `d360570`;
-  - close the three live privileged-path Supabase exposures behind `TB-0081`, `TB-0085`, and `TB-0087`;
+  - rerun or explicitly waive exact-head standard Visual UI Audit for `dc9bd01`;
+  - complete live Supabase/security proof for the newly merged privileged functions `api-access-keys` and `admin-shared-mailbox`;
   - fix QA harness items `TB-0092` and `TB-0054` so release evidence stops losing the standard visual lane and preflight artifacts;
-  - block merge of the current Client Legal or Client IT or beta deal-registration branch until `TB-0097` and `TB-0096` are resolved;
-  - after the gate and security work, take the route-shape and access-contract stack `TB-0047`, `TB-0051`, `TB-0044`, and `TB-0045`.
+  - refresh stale specialist backlogs that still point at `d360570` or source-only Client Legal/IT/deal-registration wording;
+  - after release evidence and security proof settle, take the route-shape and access-contract stack `TB-0047`, `TB-0051`, `TB-0044`, and `TB-0045`.
 - Current blockers:
-  - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still records `GO` for `26fbdc7`, not `d360570`.
-  - Standard exact-head `Visual UI Audit` is still red only because `TB-0092` treats legitimate `/admin/scrum` text containing `404` as an error page.
-  - The worktree contains large in-progress product and doc changes, including source-only Client Legal or Client IT and beta deal-registration work that is not yet deployed and still needs governance hardening before merge.
+  - Standard exact-head Visual UI Audit is not current for `dc9bd01`; older `d360570` red visual evidence remains tracked through `TB-0092`.
+  - The new service-role Edge Functions are source-reviewed but still need live deployed Supabase/security proof.
+  - Several specialist backlogs remain stale after the merge and need rebase before their recommendations are treated as current release blockers.
   - Google Analytics property access, CRM truth, support queue exports, mailbox recheck access, and reputation dashboards are still missing, so several growth, content, and analytics conclusions remain evidence-limited.
 - Recommended next actions:
-  1. Refresh Code Review for `d360570`, then rerun standard visual QA after the `TB-0092` fix.
-  2. Land one scoped Supabase hardening batch for `TB-0081`, `TB-0085`, and `TB-0087`, then rerun hosted QA and post-fix live privilege checks.
+  1. Rerun standard Visual UI Audit on `dc9bd01` after the `TB-0092` fix or document an explicit waiver.
+  2. Run Security/Release Verification live checks for `api-access-keys` and `admin-shared-mailbox`, including Clerk issuer, role allow/deny, secrets, audit events, and RLS posture.
   3. Land `TB-0092` and `TB-0054` together so release evidence regains both clean standard visuals and downloadable preflight summaries.
-  4. Do not merge the current Client Legal or Client IT or beta deal-registration branch until `TB-0097` and `TB-0096` are fixed with role-accurate tests.
-  5. After the gate and security batch settles, take the route-shape and access-contract stack: `TB-0047`, `TB-0051`, `TB-0044`, and `TB-0045`.
+  4. Refresh Product Ops, UX, Content, Trust, Data, Performance, and Architecture backlogs so they cite `dc9bd01` and the merged API access/shared mailbox state.
+  5. After release evidence and security proof settle, take the route-shape and access-contract stack: `TB-0047`, `TB-0051`, `TB-0044`, and `TB-0045`.
 
 ## Recommendation Classification
 
 - `TB-0019 Refresh exact-head release gate`: `BLOCKED BY ANOTHER SPECIALIST`.
-  - Reason: hosted exact-head release evidence is green, but only Code Review can refresh [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) for `d360570`.
-  - Next owner: Code Review Agent, then Lead Developer.
+  - Reason: hosted exact-head release evidence and local Code Review are green for `dc9bd01`, but exact-head standard visual QA and live privileged-function security proof remain with QA Harness, Security, and Release Verification.
+  - Next owner: QA Harness Reliability, Security, Release Verification, then Lead Developer.
   - Implementation queue: no.
 - `TB-0092 Narrow the standard visual audit 404 check`: `READY`.
   - Reason: QA Harness Reliability proved the current failure is a harness false positive, not a product failure.
@@ -56,19 +56,19 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
   - Next owner: Lead Developer with Security and Product Ops review.
   - Implementation queue: yes.
 - `TB-0066 Confirm GA production collection after shipped consent fix`: `NEEDS QA PROOF`.
-  - Reason: commit `795ebd2` already shipped the consent-gated GA path on `d360570`; the remaining gap is live GA property proof, not code.
+  - Reason: the consent-gated GA path is already included in current head `dc9bd01`; the remaining gap is live GA property proof, not code.
   - Next owner: Data Analytics Engineer plus whoever owns GA property access.
   - Implementation queue: no.
 - `TB-0086 Add focused manual Bum contact mutation proof`: `READY`.
   - Reason: exact-head route coverage is green, but the new `Add contact` path still lacks focused create/read/cleanup proof.
   - Next owner: Lead Developer with QA review.
   - Implementation queue: yes.
-- `TB-0097 Gate company-profile ownership and beta role launch before merge`: `READY`.
-  - Reason: the current dirty branch adds Client Legal, Client IT, and beta deal-registration flows, but company-profile ownership and operational enablement are still too broad and not yet merge-safe.
+- `TB-0097 Gate company-profile ownership and beta role launch after merge`: `NEEDS QA PROOF`.
+  - Reason: Client Legal, Client IT, and beta deal-registration work has now been merged; the remaining issue is role-accurate live proof, operational enablement, and specialist backlog refresh rather than a dirty-branch merge block.
   - Next owner: Lead Developer with Product Ops, Security, QA, and Content review.
   - Implementation queue: yes.
-- `TB-0096 Remove the Client Member commission-plan dead-end before merge`: `READY`.
-  - Reason: current dirty worktree helper copy sends a valid Client Member workflow to an inaccessible route.
+- `TB-0096 Remove the Client Member commission-plan dead-end`: `READY`.
+  - Reason: the merged helper copy still needs role-accurate proof that Client Member workflows do not send users to inaccessible commission-plan routes.
   - Next owner: Lead Developer with UX and QA review.
   - Implementation queue: yes.
 - `TB-0047 Move client routes off whole-list hydration`: `READY`.
@@ -83,8 +83,8 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
   - Reason: exact head still hydrates operational relationship fields into Client Finance-facing reads.
   - Next owner: Lead Developer with Data and Security review.
   - Implementation queue: yes, after release and security.
-- `TB-0045 Commit and enforce an admin-email reporting rule`: `READY`.
-  - Reason: the rule is now drafted in the dirty worktree, but exact head still lacks committed admin-email reporting governance.
+- `TB-0045 Enforce admin-email reporting rule`: `NEEDS QA PROOF`.
+  - Reason: the admin-email reporting rule is now present in the merged docs; the remaining gap is source/test/live enforcement proof.
   - Next owner: Lead Developer with Data and Security review.
   - Implementation queue: yes, after release and security.
 - `TB-0024 Repair or retire rcdl.tplinkdns.com`: `READY`.
@@ -101,12 +101,12 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
 ### P0 - Refresh the exact-head release gate
 - Classification: `BLOCKED BY ANOTHER SPECIALIST`.
 - Source: [docs/release-verification-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/release-verification-backlog.md), [docs/qa-test-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-test-backlog.md), and [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json).
-- Why now: production looks healthy on exact head, but the release cannot move past `HOLD-DEPLOY` while Code Review is still pinned to `26fbdc7`.
-- Recommended fix: run Code Review Agent on `d360570`, then rerun standard `Visual UI Audit` after `TB-0092` lands.
+- Why now: production looks healthy on exact head and Code Review is current, but the release cannot move past `HOLD-DEPLOY` until exact-head standard visual and live privileged-function proof are complete.
+- Recommended fix: rerun standard `Visual UI Audit` on `dc9bd01` after `TB-0092` lands or is waived, then run live checks for `api-access-keys` and `admin-shared-mailbox`.
 - Likely files/routes: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json), [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts), and the visual QA workflow files.
 - Dependencies/risks: any new merge or push after the review restarts the gate; the standard visual rerun is still blocked on the harness regex.
-- Acceptance criteria: Code Review marker matches `d360570`, and a successor standard visual run passes after `TB-0092`.
-- Validation: GitHub `QA` `27371736190`, DreamHost deploy `27371736211`, `E2E Smoke` `27371773276`, refreshed Code Review, and a clean rerun of standard exact-head visual QA.
+- Acceptance criteria: Code Review marker matches `dc9bd01`, a successor standard visual run passes or is explicitly waived, and live checks prove the new privileged functions.
+- Validation: GitHub `QA` `27413665159`, DreamHost deploy `27413665134`, `E2E Smoke` `27413702607`, refreshed Code Review, and a clean rerun or waiver of standard exact-head visual QA.
 
 ### P0 - Close the live exposed Supabase helper and fail-open function batch
 - Classification: `READY`.
@@ -128,10 +128,10 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
 - Acceptance criteria: standard visual rerun no longer fails on legitimate tracker text, and both success and failure smoke or deep artifacts include `summary.json` and `summary.txt`.
 - Validation: one rerun of standard visual QA on the same head plus one smoke or deep artifact download after the workflow change.
 
-### P1 - Block the current Client Legal or Client IT or beta deal-registration branch from merge until ownership and role paths are fixed
-- Classification: `READY`.
-- Source: [docs/product-ops-workflow-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/product-ops-workflow-backlog.md), [docs/ux-optimization-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/ux-optimization-backlog.md), [docs/content-copyeditor-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/content-copyeditor-backlog.md), and current dirty worktree source.
-- Why now: these risks are not live on `d360570`, but they are current merge risks in the active worktree and already touch access, product truth, UX, and copy.
+### P1 - Prove merged Client Legal, Client IT, and beta deal-registration ownership paths
+- Classification: `NEEDS QA PROOF`.
+- Source: [docs/product-ops-workflow-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/product-ops-workflow-backlog.md), [docs/ux-optimization-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/ux-optimization-backlog.md), [docs/content-copyeditor-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/content-copyeditor-backlog.md), and current merged source.
+- Why now: these risks are now part of current `dc9bd01` and still touch access, product truth, UX, and copy.
 - Recommended fix: narrow company-profile write authority, keep beta deal registration clearly beta and admin-reviewed before any “enabled” state, restore a Client Member-safe commission-plan help path, and align the visible role and workflow nouns enough that QA and product owners can test what the feature actually is.
 - Likely files/routes: [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [`src/pages/client/ClientProfile.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [`src/pages/client/ClientTeam.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientTeam.tsx), [`src/pages/client/ClientOpportunityNew.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientOpportunityNew.tsx), [`src/pages/client/ClientCommissionPlans.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientCommissionPlans.tsx), [`src/pages/client/ClientDashboard.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientDashboard.tsx), [`src/components/DealRegistrationBetaSettings.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/DealRegistrationBetaSettings.tsx), [`supabase/functions/client-team/index.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/client-team/index.ts), and the two untracked client-role or deal-registration migrations.
 - Dependencies/risks: Product Ops and Security must agree on field ownership; QA must cover allow and deny role cases; Content must reduce the live noun drift enough for repeatable QA and support.
@@ -154,7 +154,7 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
 - Why now: the same client-shell data shape is driving performance pressure, queue-operability debt, and least-privilege reporting debt.
 - Recommended fix: sequence the work as `TB-0051` queue-aging parity, `TB-0044` finance-safe Client Finance projections, `TB-0045` committed admin-email reporting rule, then `TB-0047` route-scoped reads and bounded summaries on the current hot client routes.
 - Likely files/routes: [`src/pages/admin/AdminHandoffs.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminHandoffs.tsx), [`src/components/admin/ContactSubmissionsPanel.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/admin/ContactSubmissionsPanel.tsx), [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [`src/pages/client/ClientDashboard.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientDashboard.tsx), [`src/pages/client/ClientReports.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientReports.tsx), [`src/pages/client/ClientExports.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientExports.tsx), [`src/pages/client/ClientPayments.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientPayments.tsx), and [`src/pages/admin/AdminEmails.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminEmails.tsx).
-- Dependencies/risks: the finance-safe and admin-email rule text already exists in the dirty worktree but is not yet exact-head truth; do not performance-optimize the wrong access model.
+- Dependencies/risks: the finance-safe and admin-email rule text is now merged, but enforcement proof remains open; do not performance-optimize the wrong access model.
 - Acceptance criteria: queue stale logic reflects actual operator action, Client Finance reads are finance-safe, admin-email raw reporting stays admin-only, and the current hot client routes stop depending on broad whole-list hydration for first render.
 - Validation: direct data-path role tests, targeted route tests, live SQL shape checks, and telemetry follow-up on the affected client routes.
 
@@ -162,9 +162,9 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
 
 ### Release Gate Playbook
 
-- Keep release truth anchored to exact head `d360570`.
+- Keep release truth anchored to exact head `dc9bd01`.
 - Treat `TB-0092` as harness work, not product work.
-- Do not move beyond `HOLD-DEPLOY` until Code Review is refreshed and standard exact-head visual QA reruns cleanly.
+- Do not move beyond `HOLD-DEPLOY` until standard exact-head visual QA reruns cleanly or is waived and live privileged-function proof is complete.
 
 ### Security Hardening Playbook
 
@@ -172,32 +172,32 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
 - Validate with both source tests and live privilege checks after deploy.
 - Use [Supabase API security guidance](https://supabase.com/docs/guides/api/securing-your-api) and [Supabase function configuration guidance](https://supabase.com/docs/guides/functions/function-configuration) as the current contract for grants, exposed helpers, and `verify_jwt`.
 
-### Dirty Branch Merge Playbook
+### Merged Role/Deal-Registration Proof Playbook
 
-- Separate deployed truth from source-only branch risk.
-- Resolve `TB-0097` and `TB-0096` before any code-review request for the current client-role or beta branch.
+- Separate deployed truth from stale source-only backlog language.
+- Resolve or downgrade `TB-0097` and `TB-0096` with role-accurate proof on current `dc9bd01`.
 - Do not treat “beta configured” as “operationally enabled” without admin-reviewed proof and role-boundary tests.
 
 ## Cross-Backlog Dependencies
 
 - `TB-0081`, `TB-0085`, and `TB-0087` touch Security, Product Ops, QA, Data, and Trust because they change admin, customer-lead, and mailbox-backed trust boundaries.
 - `TB-0092` and `TB-0054` now sit in front of Release Verification, QA, UI, and Lead Developer because they determine whether exact-head evidence is clean and downloadable.
-- `TB-0097`, `TB-0096`, and the related content seams around `Client Agreement`, `Commission Plans`, and beta deal registration all touch Product Ops, Security, QA, Content, UX, and Code Review before merge.
+- `TB-0097`, `TB-0096`, and the related content seams around `Client Agreement`, `Commission Plans`, and beta deal registration all touch Product Ops, Security, QA, Content, UX, and Release Verification after merge.
 - `TB-0047` depends on the same payload and role-boundary decisions as `TB-0044` and `TB-0045`; do not optimize the wrong data shape.
 - `TB-0066` is fixed in code but still blocked from “trusted specialist evidence” status until live GA property access proves collection on production.
 - `TB-0024` remains trust debt, but primary-host release health is currently good; do not let fallback-host noise override the healthy `trustedbums.com` evidence chain.
 
 ## Release Verification Handoff
 
-- Current exact-head release evidence on `d360570`:
-  - GitHub `QA` `27371736190`: passed.
-  - DreamHost deploy `27371736211`: passed.
-  - GitHub `E2E Smoke` `27371773276`: passed `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
-  - Standard `Visual UI Audit` `27395701277`: failed only because `TB-0092` still treats tracker body text containing `404` as an error page.
+- Current exact-head release evidence on `dc9bd01`:
+  - GitHub `QA` `27413665159`: passed.
+  - DreamHost deploy `27413665134`: passed.
+  - GitHub `E2E Smoke` `27413702607`: passed `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
+  - Standard `Visual UI Audit`: not current for `dc9bd01`; older `d360570` evidence remains tied to `TB-0092`.
 - Current decision: `HOLD-DEPLOY`.
 - Why still holding:
-  - stale exact-head Code Review marker on `26fbdc7`;
-  - harness-only standard visual failure still needs the fix and rerun.
+  - standard visual evidence is not current for `dc9bd01`;
+  - `api-access-keys` and `admin-shared-mailbox` need live privileged-function proof.
 - No rollback or hotfix-forward is indicated today.
 - Fallback-host note: current runner evidence is inconsistent between shells, with one same-day release note seeing `curl: (6) Could not resolve host` and the trust pass seeing `curl: (60) SSL certificate problem`. Either way, `rcdl.tplinkdns.com` remains unusable fallback evidence and should stay open under `TB-0024`.
 
@@ -215,9 +215,9 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
 
 ## Team Rule Updates
 
-- No new shared-rule documents were edited in this lead pass.
-- Reviewed current dirty specialist edits in [docs/business-access-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md) and [docs/consultant-access-needs.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/consultant-access-needs.md). Those drafts are directionally correct for Client Legal or Client IT governance, finance-safe reporting, and admin-email reporting, but they remain local because the worktree already contains unrelated product, doc, migration, and test changes.
-- Publication status: no commit or push attempted from this lead pass.
+- Shared-rule updates from this rebaseline: [docs/business-access-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md) now includes the merged Client API Access Keys rule.
+- Remaining shared-rule work: Agent Operations should sync root shared-rule files with the matching `docs/agents/*` copies and refresh [docs/consultant-access-needs.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/consultant-access-needs.md) if live Supabase, GA, CRM, support, mailbox, or reputation access changes.
+- Publication status: this rebaseline is intended to be committed and pushed after local gate and QA pass.
 
 ## Agent Inputs
 
@@ -228,8 +228,8 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `d360570`.
   - `git rev-parse HEAD`
   - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json)
   - `git show 795ebd2 --stat --name-only --`
-  - `git diff --stat 349bbe0..d360570 -- src supabase docs .github`
-  - current dirty diffs for `docs/business-access-rules.md`, `docs/consultant-access-needs.md`, `docs/consultant-team-rules.md`, `docs/lead-developer-recommendations.md`, and `docs/codex-edit-log.md`
+  - `git diff --stat da1688c..dc9bd01 -- src supabase docs .github`
+  - current exact-head diffs for the merged API access, shared mailbox, Client Legal/IT, and beta deal-registration work
   - targeted repo scans for `find_customer_lead_duplicate`, `verify_jwt = false`, `Client Legal`, `Client IT`, `Commission Plans`, `GoogleAnalytics`, `Privacy choices`, and `404`
 - Live Supabase checks reviewed for project `vaoqvtxqvbptyxddpoju`:
   - project health and version

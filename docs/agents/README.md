@@ -1,6 +1,6 @@
 # Trusted Bums Agent Operating Pack
 
-_Last updated: 2026-06-07 by Codex._
+_Last updated: 2026-06-12 by Codex agent rebaseline._
 
 This folder is the repo-shared source for Trusted Bums consultant agents, operating rules, and review gates. It exists so every developer can inspect the same expected behaviors instead of relying on one person's local Codex automation registry.
 
@@ -47,6 +47,20 @@ pnpm run install:hooks
 The hook blocks direct pushes to `main` unless `.codex-review-decision.json` exists locally with a fresh GO decision for the exact commit. That file is ignored by git because it is local review state.
 
 The Code Review Agent remains on-demand and commit-bound. It should not be replaced by a daily automation. Use it when a branch is being pushed or merged to `main`, then let Lead Developer and Release Verification handle post-main evidence.
+
+## Decision Authority Matrix
+
+Current rebaseline: merged `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2` on 2026-06-12. GitHub `QA` run `27413665159`, DreamHost deploy run `27413665134`, and `E2E Smoke` run `27413702607` are green on that exact commit. Exact-head standard visual evidence and live Supabase/security proof remain Release Verification follow-ups.
+
+- Code Review Agent: owns exact-commit pre-main `GO` or `NO-GO`. It updates the local `.codex-review-decision.json` only after reviewing the exact head and does not replace Release Verification.
+- Release Verification Agent: owns post-main release verdicts: `GO`, `NO-GO`, `HOLD-DEPLOY`, `HOTFIX-FORWARD`, `ROLLBACK`, or `UNKNOWN`. It can hold a release even when Code Review has approved the commit.
+- Lead Developer Scrum: owns synthesis, engineering priority, sequencing, and recommendation classification such as `READY`, `BLOCKED BY ACCESS`, `BLOCKED BY ANOTHER SPECIALIST`, `NEEDS QA PROOF`, and `STALE`. It does not override Code Review or Release Verification.
+- QA Test Engineer: owns product workflow coverage, role access coverage, and release-risk findings. It can require `HOLD` or `NEEDS QA PROOF` evidence but does not issue final release `GO`.
+- QA Harness Reliability Agent: owns workflow health, visual/deep/smoke reliability, Playwright helpers, artifact capture, and evidence durability.
+- Security Engineer: owns auth, RLS, Supabase grants/functions, secrets, and privileged-path review. Security findings can block or hold release readiness through Code Review, Lead Developer, or Release Verification.
+- Technology Architect Agent: owns platform boundaries, Supabase/service/API strategy, architecture diagrams, ADRs, Admin Architecture page freshness, and cross-cutting maintainability risk.
+- Product-facing specialists: UX, UI, Accessibility, Content, Legal/Compliance, Product Ops, Trust, B2B Growth, Marketing Graphics, CMO, and Decision-Maker Researcher own discipline-specific recommendations and tracker updates; they route release blockers to the gate-owning agents.
+- Agent Operations Steward: owns prompt, roster, schedule, shared-rule, access-needs, and source-of-truth drift so every agent runs from the same current contract.
 
 ## Recurring And On-Demand Roles
 

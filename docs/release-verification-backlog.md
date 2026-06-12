@@ -1,38 +1,37 @@
 # Trusted Bums Release Verification Backlog
 
-_Last updated: 2026-06-12 by Codex daily release verification automation._
+_Last updated: 2026-06-12 by Codex agent rebaseline._
 
 ## Release Decision
 
-Decision: `HOLD-DEPLOY` for current `main` head `d360570`.
+Decision: `HOLD-DEPLOY` for current `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2`.
 
-Current exact-head hosted evidence is green for `QA`, DreamHost deploy, and `E2E Smoke` on `d360570`, and the primary production host is healthy. The release is still not a clean `GO`, because [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still records `GO` for `26fbdc7`, not the current head, and the exact-head standard `Visual UI Audit` run `27395701277` is currently red only because QA Harness Reliability reproduced a false-positive `404` body-text match on `/admin/scrum` and opened `TB-0092`. No rollback or hotfix-forward is indicated; the deployed site looks healthy, but the release gate is still incomplete until Code Review is refreshed and the harness reruns standard visual QA cleanly.
+Current exact-head hosted evidence is green for `QA`, DreamHost deploy, and `E2E Smoke` on `dc9bd01`, and the local Code Review marker has been refreshed for that exact commit after source/security review. The release remains `HOLD-DEPLOY`, not a clean release `GO`, because the standard Visual UI Audit is not current for `dc9bd01` and the newly merged privileged surfaces, `api-access-keys` and `admin-shared-mailbox`, still need live Supabase/security proof or an explicit waiver. No rollback or hotfix-forward is indicated from the available evidence.
 
 ## Evidence Summary
 
-- Current `main` head: `d360570` (`Polish client opportunity workflows`).
-- Current release-chain commits since the last QA snapshot: `43db9c7`, `26fbdc7`, `d79f604`, `ea5a710`, and `d360570`.
-- GitHub `QA` run `27371736190` on `d360570`: passed.
-- GitHub `Deploy TrustedBums to DreamHost` run `27371736211` on `d360570`: passed.
-- GitHub `E2E Smoke` run `27371773276` on `d360570`: passed.
-- Exact-head deep coverage inside `27371773276`: `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)` all passed.
-- Standalone `Deep QA Hotfix Audit`: no current-head run exists for `d360570`; the latest standalone workflow evidence is run `27092527987` on `850e507` from 2026-06-07, and the fresher exact-head deep evidence comes from the `E2E Smoke` deep shards above.
-- Exact-head visual status: GitHub `Visual UI Audit` run `27395701277` failed on `d360570` in step `Run authenticated visual audit`, but QA Harness Reliability reproduced that the route rendered and the failure came from [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts) line `320`, where `expectNoObviousErrorPage()` rejects any body text containing `404`. `/admin/scrum` now includes legitimate tracker descriptions with `404`, so this run is tracked as harness false positive `TB-0092`, not a confirmed product regression.
-- Raw shell QA env state: `corepack pnpm run qa:env` failed before sourcing because `QA_BASE_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `QA_ADMIN_EMAIL`, `QA_CLIENT_ADMIN_EMAIL`, `QA_CLIENT_FINANCE_EMAIL`, `QA_CLIENT_MEMBER_EMAIL`, and `QA_BUM_EMAIL` were not exported in the shell.
-- Sourced local QA env state: after sourcing `.env.qa`, `corepack pnpm run qa:env` passed and `corepack pnpm run qa:target-preflight` passed against `https://trustedbums.com` with DNS, HTTPS, app shell, and Clerk checks green. Extension API stayed intentionally skipped through `QA_EXTENSION_API_EXPECTATION=skip`.
-- Public trust smoke in this session: `curl -I -L --max-time 20 https://trustedbums.com` returned `HTTP/2 200` with the expected HSTS, CSP, frame, content-type, referrer, and permissions headers.
-- External DNS fallback smoke in this session: `curl -I -L --max-time 20 https://rcdl.tplinkdns.com` now fails earlier with `curl: (6) Could not resolve host: rcdl.tplinkdns.com`. Treat that as fallback-host DNS trust debt, not a primary release-host outage.
-- Exact Code Review marker: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) records `GO` for `26fbdc7dc3493e87ffd309ccbfbe2416f44dfc5a`, reviewed at `2026-06-11T17:21:43Z`, not for `d36057032de1d354fe925d48ecfaf0e238e6efd3`.
-- Live Supabase state in this session: project `vaoqvtxqvbptyxddpoju` is still `ACTIVE_HEALTHY`, project URL still resolves to `https://vaoqvtxqvbptyxddpoju.supabase.co`, and edge-function inventory remains callable. Security advisors still flag `record_admin_scrum_item_audit_event()` and `set_admin_scrum_item_audit_fields()` as publicly executable `SECURITY DEFINER` helpers, plus the standing leaked-password and mutable-search-path warnings. Live edge logs also show `sync-claim-decision-replies` version `3` still receiving `POST 200` traffic while the deployed function remains `verify_jwt = false`; auth logs were empty in this session.
-- Current local drift note: the working tree still contains unpublished app, docs, function, and migration changes, including local diffs under [`supabase/functions/client-team/index.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/client-team/index.ts), [`supabase/functions/profile-bootstrap/index.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/profile-bootstrap/index.ts), and untracked migrations. This release verdict applies to deployed head `d360570`, not the current dirty worktree.
+- Current `main` head: `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2` (`Add API access key portal UI`).
+- Current release-chain commits reviewed in this rebaseline include `e1a2905` shared mailbox inbox, `9e51722` Clerk issuer hardening, `123185e` API access key management, and `dc9bd01` API access key portal UI.
+- GitHub `QA` run `27413665159` on `dc9bd01`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27413665134` on `dc9bd01`: passed.
+- GitHub `E2E Smoke` run `27413702607` on `dc9bd01`: passed.
+- Exact-head deep coverage inside `27413702607`: `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)` all passed.
+- Local focused source/security tests: `corepack pnpm exec vitest run src/test/apiAccessKeys.test.ts src/test/adminSharedMailbox.test.ts src/test/clientLegalItRoles.test.ts` passed 10/10.
+- Local full QA from the rebaseline window: `corepack pnpm run qa` passed with lint, Vitest 190/190 tests, and production build.
+- Exact Code Review marker: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) records `GO` for `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2`, reviewed at `2026-06-12T12:02:36Z`.
+- Exact-head visual status: no standard `Visual UI Audit` run was current for `dc9bd01` at rebaseline time. The latest known Visual UI Audit/Complete Visual UI Audit failures were on older `d360570` evidence and remain harness follow-ups through `TB-0092`.
+- Live Supabase/security status for new functions: not refreshed in this rebaseline. Source review confirmed Clerk issuer pinning, profile role checks, metadata-only API key storage, approved shared mailbox enforcement, and audit-event writes; Release Verification still needs live deployed function/config/advisor proof for `api-access-keys` and `admin-shared-mailbox`.
+- Current local drift note: the worktree was clean against `origin/main` before the rebaseline docs were updated.
+
+Older sections below that mention `d360570` are historical carry-forward context unless explicitly updated by this `dc9bd01` rebaseline.
 
 ## Failed Or Missing Checks
 
 ### P1 - [TB-0019] Current exact-head release gate is still incomplete
-- Evidence: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still points at `26fbdc7`, while current `main` is `d360570`. In the same run, exact-head `QA` `27371736190`, deploy `27371736211`, and `E2E Smoke` `27371773276` all passed. QA Harness Reliability reproduced that exact-head `Visual UI Audit` `27395701277` is not a new admin product failure; it is harness false positive `TB-0092`.
-- Impact: Release Verification does not replace Code Review. The release gate is still incomplete because the Code Review marker is stale and the standard exact-head visual lane still needs a clean rerun after the harness fix.
-- Recommendation: Refresh Code Review for `d360570`, then let QA Harness Reliability clear `TB-0092` and rerun standard visual QA before moving the release beyond `HOLD-DEPLOY`.
-- Acceptance criteria: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) matches `d360570`, and a successor exact-head standard visual run completes cleanly after the harness fix.
+- Evidence: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) now points at `dc9bd01`, and exact-head `QA` `27413665159`, deploy `27413665134`, and `E2E Smoke` `27413702607` all passed. The standard exact-head visual lane is not current for `dc9bd01`, and new privileged functions still need live security proof.
+- Impact: Release Verification does not replace Code Review. The release gate is still incomplete because visual and live privileged-path evidence lag the merged code.
+- Recommendation: Let QA Harness Reliability clear or waive `TB-0092`, rerun standard visual QA on `dc9bd01`, and have Security/Release Verification perform live deployed checks for `api-access-keys` and `admin-shared-mailbox`.
+- Acceptance criteria: Code Review marker matches `dc9bd01`, a successor exact-head standard visual run completes cleanly or is explicitly waived, and live checks prove the new privileged functions are deployed with the intended Clerk issuer, role, secret, audit, and RLS posture.
 
 ### P1 - [TB-0092] Exact-head standard visual QA is red because the error-page regex is too broad
 - Evidence: `Visual UI Audit` run `27395701277` captured `/admin/scrum` with normal tracker content, but [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts) still fails any body text containing `404`. Current tracker descriptions include legitimate phrases such as `unknown endpoint 404`, so both `chromium` and `mobile-chrome` fail before the standard admin route set can finish.
@@ -41,7 +40,7 @@ Current exact-head hosted evidence is green for `QA`, DreamHost deploy, and `E2E
 - Acceptance criteria: `/admin/scrum` no longer fails just because tracker text contains `404`, while real config/error pages still fail loudly.
 
 ### P1 - [TB-0054] Exact-head smoke artifacts still drop preflight summaries
-- Evidence: exact-head `E2E Smoke` `27371773276` passed on `d360570`, but the downloaded success artifact tree still omitted `qa-target-preflight` `summary.json` and `summary.txt`.
+- Evidence: the latest confirmed artifact gap came from `E2E Smoke` `27371773276` on older `d360570`, where the downloaded success artifact tree omitted `qa-target-preflight` `summary.json` and `summary.txt`. Current `dc9bd01` E2E Smoke `27413702607` passed, but artifact retention still needs to be rechecked before closing `TB-0054`.
 - Impact: Release Verification still loses the exact preflight evidence that would distinguish env drift from route failures on later regressions.
 - Recommendation: Keep `TB-0054` open until smoke and deep workflows retain the preflight summaries on both success and failure paths.
 - Acceptance criteria: a fresh exact-head smoke success and a later failure both preserve downloadable preflight summaries.
@@ -54,18 +53,19 @@ Current exact-head hosted evidence is green for `QA`, DreamHost deploy, and `E2E
 
 ## Closed Or Satisfied In This Cleanup
 
-- `TB-0017` remains closed: current-head GitHub `QA` run `27371736190` passed on `d360570`.
-- `TB-0019` remains open: the release verdict is still blocked by stale exact-head Code Review, and the standard exact-head visual lane still needs a clean rerun after harness item `TB-0092`.
-- The primary production host is healthy on current head `d360570`: `https://trustedbums.com` returned `HTTP/2 200` with the expected response headers in this run.
+- `TB-0017` remains closed: current-head GitHub `QA` run `27413665159` passed on `dc9bd01`.
+- `TB-0019` remains open: Code Review is now current for `dc9bd01`, but the standard exact-head visual lane and live privileged-function proof still need completion.
+- The primary release chain is healthy on current head `dc9bd01`: GitHub `QA`, DreamHost deploy, and `E2E Smoke` all passed.
 
 ## Cross-Agent Follow-Ups
 
 ### Code Review Agent and Lead Developer - finish the remaining exact-head release gate
-- Current truth: release evidence on `d360570` is green for `QA`, deploy, and `E2E Smoke`, but [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) is still stale and standard exact-head visual QA still needs a clean rerun after harness false positive `TB-0092`.
-- Requested action: refresh Code Review for `d360570`, let QA Harness Reliability rerun standard visual QA after the regex fix, and then refresh `TB-0019` through the tracker with the next exact-head visual result.
+### QA Harness, Security, Release Verification, and Lead Developer - finish the remaining exact-head release gate
+- Current truth: release evidence on `dc9bd01` is green for `QA`, deploy, and `E2E Smoke`, and [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) is current. Standard exact-head visual QA and live privileged-function checks still need completion.
+- Requested action: let QA Harness Reliability rerun or waive standard visual QA after the `TB-0092` fix, have Security/Release Verification prove `api-access-keys` and `admin-shared-mailbox` live posture, and then refresh `TB-0019` through the tracker.
 
 ### QA Harness Reliability and Release Verification - keep artifact durability separate from route health
-- Current truth: exact-head `E2E Smoke` is green on `d360570`, but `TB-0054` is still active because the success artifact does not preserve the preflight summaries.
+- Current truth: exact-head `E2E Smoke` is green on `dc9bd01`, but `TB-0054` is still active until artifact download proof confirms preflight summaries are preserved.
 - Requested action: keep route health and artifact-durability findings separate in future release calls.
 
 ### Trust / Release - fallback DNS host is now a resolution failure
@@ -78,7 +78,7 @@ Current exact-head hosted evidence is green for `QA`, DreamHost deploy, and `E2E
 - Current evidence reviewed:
   - `git rev-parse HEAD`
   - `git log --since='2026-06-10' --oneline --decorate -- docs src supabase .github`
-  - `git show --stat --summary --name-only d360570 --`
+  - `git show --stat --summary --name-only dc9bd01 --`
   - `git show --stat --summary --name-only ea5a710 --`
   - `git show --stat --summary --name-only d79f604 --`
   - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json)
