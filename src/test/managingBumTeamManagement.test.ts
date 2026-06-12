@@ -33,6 +33,14 @@ describe("Managing Bum team management", () => {
     expect(teamPageSource).toContain("Manager share");
   });
 
+  it("keeps the Managing Bum invite workflow on Team Management", () => {
+    expect(teamPageSource).toContain("inviteBum({");
+    expect(teamPageSource).toContain("team-management-invite-email");
+    expect(teamPageSource).toContain("Bum invited");
+    expect(teamPageSource).toContain("will be attached to your team when they sign up.");
+    expect(teamPageSource).toContain("invalidateQueries({ queryKey: [\"bum-team-memberships\", userId] })");
+  });
+
   it("keeps team metrics scoped to active team relationships", () => {
     expect(metricsPolicySource).toContain("Managing bums can read team opportunity claims");
     expect(metricsPolicySource).toContain("Managing bums can read team payouts");

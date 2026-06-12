@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const inviteBumFunctionSource = readFileSync("supabase/functions/invite-bum/index.ts", "utf8");
 const profileBootstrapSource = readFileSync("supabase/functions/profile-bootstrap/index.ts", "utf8");
 const dashboardSource = readFileSync("src/pages/bum/BumDashboard.tsx", "utf8");
+const teamManagementSource = readFileSync("src/pages/bum/BumTeamManagement.tsx", "utf8");
 const inviteMigrationSource = readFileSync("supabase/migrations/20260612170000_add_managing_bum_invite_attachment.sql", "utf8");
 
 describe("Managing Bum invites", () => {
@@ -30,10 +31,13 @@ describe("Managing Bum invites", () => {
     expect(profileBootstrapSource).toContain("managing_bum_invite_attached");
   });
 
-  it("surfaces the invite action only for Managing Bums on the Bum dashboard", () => {
+  it("surfaces the invite action only in Managing Bum Team Management", () => {
     expect(dashboardSource).toContain("const isManagingBum = Boolean(profileQuery.data?.is_managing_bum);");
     expect(dashboardSource).toContain("{isManagingBum ? (");
     expect(dashboardSource).toContain("Managing Bum team");
-    expect(dashboardSource).toContain("inviteBum({");
+    expect(dashboardSource).toContain("<Link to=\"/bum/team\">Team Management</Link>");
+    expect(teamManagementSource).toContain("if (!profileQuery.isLoading && !isManagingBum)");
+    expect(teamManagementSource).toContain("Invite Bum");
+    expect(teamManagementSource).toContain("inviteBum({");
   });
 });

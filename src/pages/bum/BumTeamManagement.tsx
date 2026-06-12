@@ -1,13 +1,19 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   getOwnBumProfile,
+  inviteBum,
   listBumPayouts,
   listBumTeamMemberships,
   listManagingBumCommissionAllocations,
@@ -16,6 +22,7 @@ import {
   type BumTeamMembershipRecord,
 } from "@/lib/portalApi";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
+import { MailPlus } from "lucide-react";
 
 function money(value: number | null | undefined) {
   return `$${Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -42,8 +49,13 @@ function membershipEmail(membership: BumTeamMembershipRecord) {
 
 export default function BumTeamManagement() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const timeZone = useUserTimeZone();
   const userId = user?.id;
+  const [teamInviteEmail, setTeamInviteEmail] = useState("");
+  const [teamInviteName, setTeamInviteName] = useState("");
+  const [teamInviteNote, setTeamInviteNote] = useState("");
 
   const profileQuery = useQuery({
     queryKey: ["bum-profile", userId],
@@ -134,6 +146,32 @@ export default function BumTeamManagement() {
     .filter((allocation) => allocation.status !== "VOID")
     .reduce((sum, allocation) => sum + Number(allocation.allocation_amount ?? 0), 0);
 
+  const inviteTeamBumMutation = useMutation({
+    mutationFn: () =>
+      inviteBum({
+        email: teamInviteEmail,
+        name: teamInviteName,
+        note: teamInviteNote,
+      }),
+    onSuccess: async (result) => {
+      setTeamInviteEmail("");
+      setTeamInviteName("");
+      setTeamInviteNote("");
+      await queryClient.invalidateQueries({ queryKey: ["bum-team-memberships", userId] });
+      toast({
+        title: "Bum invited",
+        description: `${result.email} will be attached to your team when they sign up.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to invite Bum",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!profileQuery.isLoading && !isManagingBum) {
     return (
       <div className="space-y-6">
@@ -154,6 +192,64 @@ export default function BumTeamManagement() {
         title="Team Management"
         description="Track invited Bums, claim activity, team earnings, and your manager share."
       />
+
+      <Card className="border-primary/20">
+        <CardHeader>
+          <div className="flex items-start gap-3">
+            <div className="rounded-md bg-primary/10 p-2 text-primary">
+              <MailPlus className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="font-display">Invite Bum</CardTitle>
+              <CardDescription>
+                Invite a Bum and they will be attached to your team when they create their Trusted Bums account.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="space-y-2">
+              <Label htmlFor="team-management-invite-email">Email</Label>
+              <Input
+                id="team-management-invite-email"
+                type="email"
+                value={teamInviteEmail}
+                onChange={(event) => setTeamInviteEmail(event.target.value)}
+                placeholder="newbum@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="team-management-invite-name">Name</Label>
+              <Input
+                id="team-management-invite-name"
+                value={teamInviteName}
+                onChange={(event) => setTeamInviteName(event.target.value)}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="team-management-invite-note">Note</Label>
+              <Textarea
+                id="team-management-invite-note"
+                rows={3}
+                value={teamInviteNote}
+                onChange={(event) => setTeamInviteNote(event.target.value)}
+                placeholder="Optional context"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={() => inviteTeamBumMutation.mutate()}
+              disabled={inviteTeamBumMutation.isPending || !teamInviteEmail.trim()}
+            >
+              <MailPlus className="mr-2 h-4 w-4" />
+              {inviteTeamBumMutation.isPending ? "Sending..." : "Invite Bum"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
@@ -238,7 +334,7 @@ export default function BumTeamManagement() {
               {!teamQuery.isLoading && !teamRows.length ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                    No team members yet. Invite Bums from your dashboard to start building your team.
+                    No team members yet. Invite Bums above to start building your team.
                   </TableCell>
                 </TableRow>
               ) : null}
