@@ -1,4 +1,4 @@
-import { BUM_FALLBACK_TERMS_VERSION, FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, type TermsFallbackVersion } from "@/data/partnerTerms";
+import { BUM_FALLBACK_TERMS_VERSION, FALLBACK_TERMS_VERSION, DEFAULT_COMMISSION_DURATION, MANAGING_BUM_TERMS_VERSION, type TermsFallbackVersion } from "@/data/partnerTerms";
 import { getSupabaseAccessToken, supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import { DEFAULT_CLIENT_ACCESS_ROLE, type AuthUser, type ClientAccessRole } from "@/data/authData";
 import { normalizeDateFormat, normalizeTimeZone } from "@/lib/timezone";
@@ -1611,6 +1611,10 @@ export interface BumProfileRecord {
   notable_wins: string | null;
   verification_status: BumVerificationStatus;
   is_visible_to_clients: boolean;
+  is_managing_bum: boolean;
+  managing_bum_commission_percent: number;
+  managing_bum_enabled_at: string | null;
+  managing_bum_enabled_by: string | null;
   last_linkedin_imported_at: string | null;
   created_at: string;
   updated_at: string;
@@ -1635,7 +1639,42 @@ export interface BumProfileInput {
   notable_wins?: string;
   verification_status?: BumVerificationStatus;
   is_visible_to_clients?: boolean;
+  is_managing_bum?: boolean;
+  managing_bum_commission_percent?: number | null;
   last_linkedin_imported_at?: string | null;
+}
+
+export type BumTeamMembershipStatus = "INVITED" | "ACTIVE" | "REMOVED";
+
+export interface BumTeamMembershipRecord {
+  id: string;
+  managing_bum_user_id: string;
+  member_bum_user_id: string;
+  status: BumTeamMembershipStatus;
+  invited_by: string | null;
+  manager_commission_percent: number | null;
+  invite_email: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  managing_bum_profile?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  member_bum_profile?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+}
+
+export interface ManagingBumCommissionAllocationRecord {
+  id: string;
+  bum_payout_id: string;
+  claim_invoice_id: string;
+  opportunity_claim_id: string;
+  managing_bum_user_id: string;
+  member_bum_user_id: string;
+  manager_commission_percent: number;
+  allocation_amount: number;
+  currency: string;
+  status: BumPayoutStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BumInviteInput {
@@ -3939,7 +3978,7 @@ export async function updateClaimInvoiceStatus(user: AuthUser, invoice: ClaimInv
 
     const sharePercent = Number(claimShare?.bum_share_percent ?? DEFAULT_BUM_COMMISSION_POOL_PERCENT);
     const payoutAmount = Number(((Number(invoice.invoice_amount ?? 0) * sharePercent) / 100).toFixed(2));
-    await supabase.from("bum_payouts").upsert(
+    const { data: payout, error: payoutError } = await supabase.from("bum_payouts").upsert(
       {
         claim_invoice_id: invoice.id,
         opportunity_claim_id: invoice.opportunity_claim_id,
@@ -3951,10 +3990,96 @@ export async function updateClaimInvoiceStatus(user: AuthUser, invoice: ClaimInv
         notes: "Invoice paid. Payout amount was derived from the claim's Bum share percentage.",
       },
       { onConflict: "claim_invoice_id,opportunity_claim_id" },
-    );
+    ).select("*").single<BumPayoutRecord>();
+
+    if (payoutError) {
+      throw payoutError;
+    }
+
+    await createManagingBumCommissionAllocation(user, invoice, payout);
   }
 
   await createAuditEvent(user, "claim_invoice_status_changed", "claim_invoices", data.id, { status });
+
+  return data;
+}
+
+export function calculateManagingBumCommission(invoiceAmount: number, managerPercent: number) {
+  return Number(((Number(invoiceAmount || 0) * Number(managerPercent || 0)) / 100).toFixed(2));
+}
+
+async function createManagingBumCommissionAllocation(user: AuthUser, invoice: ClaimInvoiceRecord, payout: BumPayoutRecord) {
+  const { data: membership, error: membershipError } = await supabase
+    .from("bum_team_memberships")
+    .select("*")
+    .eq("member_bum_user_id", payout.bum_user_id)
+    .eq("status", "ACTIVE")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<BumTeamMembershipRecord>();
+
+  if (membershipError) {
+    throw membershipError;
+  }
+
+  if (!membership) {
+    return null;
+  }
+
+  const { data: managingBumProfile, error: managerProfileError } = await supabase
+    .from("bum_profiles")
+    .select("user_id, is_managing_bum, managing_bum_commission_percent")
+    .eq("user_id", membership.managing_bum_user_id)
+    .maybeSingle<Pick<BumProfileRecord, "user_id" | "is_managing_bum" | "managing_bum_commission_percent">>();
+
+  if (managerProfileError) {
+    throw managerProfileError;
+  }
+
+  if (!managingBumProfile?.is_managing_bum) {
+    return null;
+  }
+
+  const managerPercent = Number(
+    membership.manager_commission_percent ?? managingBumProfile.managing_bum_commission_percent ?? 0,
+  );
+
+  if (managerPercent <= 0) {
+    return null;
+  }
+
+  const allocationAmount = calculateManagingBumCommission(Number(invoice.invoice_amount ?? 0), managerPercent);
+  const { data, error } = await supabase
+    .from("managing_bum_commission_allocations")
+    .upsert(
+      {
+        bum_payout_id: payout.id,
+        claim_invoice_id: invoice.id,
+        opportunity_claim_id: invoice.opportunity_claim_id,
+        managing_bum_user_id: membership.managing_bum_user_id,
+        member_bum_user_id: payout.bum_user_id,
+        manager_commission_percent: managerPercent,
+        allocation_amount: allocationAmount,
+        currency: invoice.currency,
+        status: "PENDING_ALLOCATION",
+        notes: "Invoice paid. Managing Bum allocation was derived from the active team membership.",
+      },
+      { onConflict: "bum_payout_id" },
+    )
+    .select("*")
+    .single<ManagingBumCommissionAllocationRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "managing_bum_commission_allocated", "managing_bum_commission_allocations", data.id, {
+    bum_payout_id: payout.id,
+    managing_bum_user_id: data.managing_bum_user_id,
+    member_bum_user_id: data.member_bum_user_id,
+    manager_commission_percent: data.manager_commission_percent,
+    allocation_amount: data.allocation_amount,
+  });
 
   return data;
 }
@@ -5196,6 +5321,56 @@ export async function createTermsAssignment(
   });
 
   return data;
+}
+
+async function requireManagingBumTermsAcceptance(user: AuthUser, targetUserId: string) {
+  const { data: terms, error: termsError } = await supabase
+    .from("terms_versions")
+    .select("*")
+    .eq("version", MANAGING_BUM_TERMS_VERSION)
+    .limit(1)
+    .maybeSingle<TermsVersion>();
+
+  if (termsError) {
+    throw termsError;
+  }
+
+  if (!terms) {
+    throw new Error("Managing Bum agreement is not installed yet.");
+  }
+
+  const { data: existingAssignment, error: existingError } = await supabase
+    .from("terms_assignments")
+    .select("id")
+    .eq("terms_version_id", terms.id)
+    .eq("assigned_user_id", targetUserId)
+    .maybeSingle<Pick<TermsAssignmentRecord, "id">>();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existingAssignment) {
+    return;
+  }
+
+  const { error } = await supabase.from("terms_assignments").insert({
+    terms_version_id: terms.id,
+    audience: "BUM",
+    assigned_user_id: targetUserId,
+    assigned_company_id: null,
+    is_required: true,
+    notes: "Required when Admin enables Managing Bum access.",
+    assigned_by: user.id,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "managing_bum_terms_assigned", "terms_versions", terms.id, {
+    assigned_user_id: targetUserId,
+  });
 }
 
 export async function listTermsAssignments() {
@@ -8159,6 +8334,16 @@ export async function upsertOwnBumProfile(user: AuthUser, input: BumProfileInput
     payload.is_visible_to_clients = input.is_visible_to_clients;
   }
 
+  if (input.is_managing_bum !== undefined) {
+    payload.is_managing_bum = input.is_managing_bum;
+    payload.managing_bum_enabled_at = input.is_managing_bum ? new Date().toISOString() : null;
+    payload.managing_bum_enabled_by = input.is_managing_bum ? user.id : null;
+  }
+
+  if (input.managing_bum_commission_percent !== undefined) {
+    payload.managing_bum_commission_percent = input.managing_bum_commission_percent ?? 0;
+  }
+
   if (input.last_linkedin_imported_at !== undefined) {
     payload.last_linkedin_imported_at = input.last_linkedin_imported_at;
   }
@@ -8268,8 +8453,71 @@ export async function updateAdminBumProfile(user: AuthUser, targetUserId: string
     throw error;
   }
 
+  if (input.is_managing_bum) {
+    await requireManagingBumTermsAcceptance(user, targetUserId);
+  }
+
   await createAuditEvent(user, "admin_bum_profile_updated", "bum_profiles", targetUserId, {
     fields: Object.keys(payload).filter((key) => key !== "user_id" && key !== "updated_at"),
+  });
+
+  return data;
+}
+
+export async function listBumTeamMemberships(user: AuthUser, managingBumUserId?: string) {
+  const query = supabase
+    .from("bum_team_memberships")
+    .select("*, managing_bum_profile:profiles!bum_team_memberships_managing_bum_user_id_fkey(id, full_name, email), member_bum_profile:profiles!bum_team_memberships_member_bum_user_id_fkey(id, full_name, email)")
+    .order("created_at", { ascending: false });
+
+  const scopedQuery = managingBumUserId ? query.eq("managing_bum_user_id", managingBumUserId) : query;
+  const { data, error } = await scopedQuery.returns<BumTeamMembershipRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function upsertBumTeamMembership(
+  user: AuthUser,
+  input: {
+    managing_bum_user_id: string;
+    member_bum_user_id: string;
+    status?: BumTeamMembershipStatus;
+    manager_commission_percent?: number | null;
+    notes?: string | null;
+  },
+) {
+  if (user.role !== "ADMIN" && user.id !== input.managing_bum_user_id) {
+    throw new Error("Only Admins and the Managing Bum can update this team.");
+  }
+
+  const { data, error } = await supabase
+    .from("bum_team_memberships")
+    .upsert(
+      {
+        managing_bum_user_id: input.managing_bum_user_id,
+        member_bum_user_id: input.member_bum_user_id,
+        status: input.status ?? "ACTIVE",
+        manager_commission_percent: input.manager_commission_percent ?? null,
+        notes: input.notes ?? null,
+        invited_by: user.id,
+      },
+      { onConflict: "managing_bum_user_id,member_bum_user_id" },
+    )
+    .select("*, managing_bum_profile:profiles!bum_team_memberships_managing_bum_user_id_fkey(id, full_name, email), member_bum_profile:profiles!bum_team_memberships_member_bum_user_id_fkey(id, full_name, email)")
+    .single<BumTeamMembershipRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "bum_team_membership_updated", "bum_team_memberships", data.id, {
+    managing_bum_user_id: data.managing_bum_user_id,
+    member_bum_user_id: data.member_bum_user_id,
+    status: data.status,
   });
 
   return data;

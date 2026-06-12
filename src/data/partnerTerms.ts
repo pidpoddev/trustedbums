@@ -223,7 +223,71 @@ export const BUM_FALLBACK_TERMS_VERSION = {
   created_at: "2026-05-16T00:00:00.000Z",
 };
 
-export type TermsFallbackVersion = typeof FALLBACK_TERMS_VERSION | typeof BUM_FALLBACK_TERMS_VERSION;
+export const MANAGING_BUM_TERMS_VERSION = "managing-bum-1.0";
+export const MANAGING_BUM_TERMS_TITLE = "Trusted Bums Managing Bum Agreement";
+export const MANAGING_BUM_TERMS_CHANGE_SUMMARY = "Adds Managing Bum team, commission-share, compliance, and payout-allocation terms.";
+export const MANAGING_BUM_TERMS_BODY = `This Managing Bum Agreement supplements the Trusted Bums Bum Agreement. It applies only when Trusted Bums approves you as a Managing Bum.
+
+1. Managing Bum Role
+
+A Managing Bum may invite, organize, coach, or support other Bums who participate on a team approved by Trusted Bums. A Managing Bum is not an employee, legal agent, broker-dealer, or exclusive representative of Trusted Bums unless separately agreed in writing.
+
+2. Team Membership
+
+Trusted Bums may approve, reject, pause, or remove team members at its discretion. Team membership does not guarantee that any Bum will receive opportunities, claims, introductions, payouts, or continued access.
+
+3. Manager Commission Share
+
+When an approved team member creates a commissionable result, Trusted Bums may allocate the Managing Bum a percentage of the commission Trusted Bums actually receives for that team member's approved opportunity. The applicable percentage is the percentage approved by Trusted Bums in the platform or in a separate written agreement.
+
+4. Payment Conditions
+
+Managing Bum allocations are payable only after Trusted Bums receives the underlying commission from the client and approves the related payout allocation. Allocations may be adjusted for refunds, credits, disputes, fraud prevention, tax requirements, compliance holds, or payout processing limits.
+
+5. No Guaranteed Earnings
+
+Inviting a Bum, managing a team, supporting an opportunity, or being approved as a Managing Bum does not guarantee compensation, revenue, client payment, team activity, or continued Managing Bum status.
+
+6. Team Conduct
+
+You agree to act in good faith, coach team members toward accurate relationship information, avoid spam or deceptive outreach, and promptly raise compliance, confidentiality, conflict, or eligibility concerns to Trusted Bums.
+
+7. Confidentiality and Compliance
+
+You must protect non-public information about Trusted Bums, clients, opportunities, target accounts, team members, and payout terms. You are responsible for complying with applicable laws, contractual restrictions, employer obligations, and non-disclosure obligations that may apply to your activities.
+
+8. Termination or Change
+
+Trusted Bums may change, pause, or terminate Managing Bum status, team membership, commission percentages, or future team participation at any time. Termination does not automatically eliminate an allocation already approved by Trusted Bums unless the underlying payout is reversed, disputed, voided, or otherwise adjusted under the applicable platform rules.`;
+
+export const MANAGING_BUM_TERMS_FAQ_BODY = `Q: What is a Managing Bum?
+A: A Managing Bum is an approved Bum who can build or support a team of other Bums.
+
+Q: How does a Managing Bum earn?
+A: Trusted Bums may allocate the Managing Bum an approved percentage of the commission Trusted Bums actually receives from a team member's approved opportunity.
+
+Q: Is the manager share guaranteed?
+A: No. The share depends on client payment, platform approval, payout review, and the applicable team terms.
+
+Q: Can Trusted Bums remove a team member or change Managing Bum status?
+A: Yes. Trusted Bums can approve, pause, remove, or change team participation to manage quality, compliance, and business risk.`;
+
+export const MANAGING_BUM_FALLBACK_TERMS_VERSION = {
+  id: "00000000-0000-0000-0000-000000000003",
+  version: MANAGING_BUM_TERMS_VERSION,
+  title: MANAGING_BUM_TERMS_TITLE,
+  body: MANAGING_BUM_TERMS_BODY,
+  faq_body: MANAGING_BUM_TERMS_FAQ_BODY,
+  change_summary: MANAGING_BUM_TERMS_CHANGE_SUMMARY,
+  audience: "BUM",
+  is_custom: true,
+  custom_label: "Managing Bum addendum",
+  created_by: null,
+  is_active: false,
+  created_at: "2026-06-12T00:00:00.000Z",
+};
+
+export type TermsFallbackVersion = typeof FALLBACK_TERMS_VERSION | typeof BUM_FALLBACK_TERMS_VERSION | typeof MANAGING_BUM_FALLBACK_TERMS_VERSION;
 
 export function parseFaq(faqBody: string) {
   return faqBody

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { Check, Edit3, Plus, Power, PowerOff, Search, ShieldQuestion, X } from "lucide-react";
+import { Check, Edit3, Plus, Power, PowerOff, Search, ShieldQuestion, Users, X } from "lucide-react";
 import { BumProfileCard } from "@/components/BumProfileCard";
 import { PaginationControls } from "@/components/PaginationControls";
 import { PageHeader } from "@/components/PageHeader";
@@ -22,6 +22,7 @@ import {
   approveAdminCompanyAccessRequest,
   denyAdminCompanyAccessRequest,
   inviteBum,
+  listBumTeamMemberships,
   listAdminCompanyAccessRequests,
   listAdminBumProfiles,
   listProfiles,
@@ -29,18 +30,20 @@ import {
   listTermsVersions,
   setAdminBumProfileDisabled,
   updateAdminBumProfile,
+  upsertBumTeamMembership,
   type BumAvailabilityStatus,
   type BumProfileRecord,
   type BumVerificationStatus,
   type ClientCompanyAccessRequestRecord,
 } from "@/lib/portalApi";
 
-type BumTypeFilter = "ALL" | "VISIBLE_TO_CLIENTS" | "AGREEMENT_ACCEPTED" | "PROFILE_READY" | "HIDDEN" | "DISABLED";
+type BumTypeFilter = "ALL" | "MANAGING_BUMS" | "VISIBLE_TO_CLIENTS" | "AGREEMENT_ACCEPTED" | "PROFILE_READY" | "HIDDEN" | "DISABLED";
 
 const ADMIN_BUMS_PAGE_SIZE = 8;
 
 const bumTypeFilters: { value: BumTypeFilter; label: string }[] = [
   { value: "ALL", label: "All Bum types" },
+  { value: "MANAGING_BUMS", label: "Managing Bums" },
   { value: "VISIBLE_TO_CLIENTS", label: "Visible to clients" },
   { value: "AGREEMENT_ACCEPTED", label: "Agreement accepted" },
   { value: "PROFILE_READY", label: "Profile ready" },
@@ -72,6 +75,7 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [selectedTeamMemberId, setSelectedTeamMemberId] = useState("");
   const [form, setForm] = useState({
     headline: "",
     bio: "",
@@ -90,7 +94,32 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
     notableWins: "",
     verificationStatus: "self_reported" as BumVerificationStatus,
     isVisibleToClients: false,
+    isManagingBum: false,
+    managingBumCommissionPercent: "10",
   });
+  const profilesQuery = useQuery({ queryKey: ["admin-profiles"], queryFn: listProfiles, enabled: open });
+  const teamQuery = useQuery({
+    queryKey: ["bum-team-memberships", bum.user_id],
+    queryFn: () => listBumTeamMemberships(user!, bum.user_id),
+    enabled: open && Boolean(user) && Boolean(bum.is_managing_bum),
+  });
+  const bumProfilesByUserId = useMemo(
+    () => new Map((profilesQuery.data ?? []).filter((profile) => profile.role === "BUM").map((profile) => [profile.id, profile])),
+    [profilesQuery.data],
+  );
+  const currentTeamMemberIds = useMemo(
+    () => new Set((teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED").map((membership) => membership.member_bum_user_id)),
+    [teamQuery.data],
+  );
+  const availableTeamMembers = useMemo(
+    () =>
+      (profilesQuery.data ?? [])
+        .filter((profile) => profile.role === "BUM")
+        .filter((profile) => profile.id !== bum.user_id)
+        .filter((profile) => !currentTeamMemberIds.has(profile.id))
+        .sort((left, right) => (left.full_name ?? left.email ?? left.id).localeCompare(right.full_name ?? right.email ?? right.id)),
+    [bum.user_id, currentTeamMemberIds, profilesQuery.data],
+  );
 
   function openEditor() {
     setForm({
@@ -111,7 +140,10 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
       notableWins: bum.notable_wins ?? "",
       verificationStatus: bum.verification_status ?? "self_reported",
       isVisibleToClients: Boolean(bum.is_visible_to_clients),
+      isManagingBum: Boolean(bum.is_managing_bum),
+      managingBumCommissionPercent: String(bum.managing_bum_commission_percent ?? 10),
     });
+    setSelectedTeamMemberId("");
     setOpen(true);
   }
 
@@ -135,6 +167,8 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
         notable_wins: form.notableWins,
         verification_status: form.verificationStatus,
         is_visible_to_clients: form.isVisibleToClients,
+        is_managing_bum: form.isManagingBum,
+        managing_bum_commission_percent: form.isManagingBum ? Number(form.managingBumCommissionPercent || 0) : 0,
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-bum-profiles"] });
@@ -145,6 +179,28 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
     onError: (error) => {
       toast({
         title: "Unable to update Bum",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addTeamMemberMutation = useMutation({
+    mutationFn: () =>
+      upsertBumTeamMembership(user!, {
+        managing_bum_user_id: bum.user_id,
+        member_bum_user_id: selectedTeamMemberId,
+        status: "ACTIVE",
+        manager_commission_percent: Number(form.managingBumCommissionPercent || bum.managing_bum_commission_percent || 0),
+      }),
+    onSuccess: async () => {
+      setSelectedTeamMemberId("");
+      await queryClient.invalidateQueries({ queryKey: ["bum-team-memberships", bum.user_id] });
+      toast({ title: "Team member added", description: "This Bum is now on the Managing Bum's team." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to add team member",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -253,6 +309,73 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
               <span>Visible to clients</span>
               <Switch checked={form.isVisibleToClients} onCheckedChange={(checked) => setForm((current) => ({ ...current, isVisibleToClients: checked }))} />
             </label>
+
+            <div className="space-y-3 rounded-md border p-3">
+              <label className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2 font-medium">
+                  <Users className="h-4 w-4" />
+                  Managing Bum
+                </span>
+                <Switch checked={form.isManagingBum} onCheckedChange={(checked) => setForm((current) => ({ ...current, isManagingBum: checked }))} />
+              </label>
+              {form.isManagingBum ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
+                    <div className="space-y-2">
+                      <Label>Manager share of Trusted Bums commission</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={form.managingBumCommissionPercent}
+                        onChange={(event) => setForm((current) => ({ ...current, managingBumCommissionPercent: event.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Team members</Label>
+                    <div className="flex flex-col gap-2 md:flex-row">
+                      <Select value={selectedTeamMemberId} onValueChange={setSelectedTeamMemberId}>
+                        <SelectTrigger className="min-w-0 flex-1">
+                          <SelectValue placeholder="Add existing Bum to this team" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableTeamMembers.map((profile) => (
+                            <SelectItem key={profile.id} value={profile.id}>
+                              {profile.full_name ?? profile.email ?? profile.id}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!selectedTeamMemberId || addTeamMemberMutation.isPending}
+                        onClick={() => addTeamMemberMutation.mutate()}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add
+                      </Button>
+                    </div>
+                    <div className="grid gap-2">
+                      {(teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED").map((membership) => {
+                        const memberProfile = membership.member_bum_profile ?? bumProfilesByUserId.get(membership.member_bum_user_id);
+                        return (
+                          <div key={membership.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                            <span>{memberProfile?.full_name ?? memberProfile?.email ?? membership.member_bum_user_id}</span>
+                            <Badge variant="secondary">{membership.status}</Badge>
+                          </div>
+                        );
+                      })}
+                      {!teamQuery.isLoading && !(teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED").length ? (
+                        <p className="text-sm text-muted-foreground">No team members yet.</p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)} disabled={updateMutation.isPending}>Cancel</Button>
@@ -435,6 +558,10 @@ export default function AdminBums() {
           acceptedTerms: acceptedTermsByUserId.get(profile.id) ?? [],
           lastLoggedInAt: profile.last_sign_in_at,
           is_visible_to_clients: false,
+          is_managing_bum: false,
+          managing_bum_commission_percent: 0,
+          managing_bum_enabled_at: null,
+          managing_bum_enabled_by: null,
         };
       })
       .sort((left, right) =>
@@ -452,6 +579,7 @@ export default function AdminBums() {
     return bumSummaries.filter((bum) => {
       const matchesType =
         typeFilter === "ALL" ||
+        (typeFilter === "MANAGING_BUMS" && Boolean(bum.is_managing_bum)) ||
         (typeFilter === "VISIBLE_TO_CLIENTS" && Boolean(bum.is_visible_to_clients)) ||
         (typeFilter === "AGREEMENT_ACCEPTED" && Boolean(bum.hasAcceptedAgreement)) ||
         (typeFilter === "PROFILE_READY" &&
@@ -643,6 +771,7 @@ export default function AdminBums() {
         {!isLoading && !hasError ? visibleBums.map((bum) => (
           <div key={bum.user_id} className={`space-y-2 rounded-lg ${isBumDisabled(bum) ? "border border-destructive/30 bg-destructive/5 p-3" : ""}`}>
             <div className="flex flex-wrap items-center justify-end gap-2">
+              {bum.is_managing_bum ? <Badge variant="secondary">Managing Bum</Badge> : null}
               {isBumDisabled(bum) ? <Badge variant="destructive">Disabled</Badge> : null}
               <AdminBumEditButton bum={bum} />
               <Button

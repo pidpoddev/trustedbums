@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bumPayoutBusinessDate,
+  calculateManagingBumCommission,
   calculateTrustedBumsCommission,
   claimInvoiceBusinessDate,
   getCommissionPlanInvoiceBlockReason,
@@ -30,6 +31,11 @@ describe("payment commission helpers", () => {
       commissionRate: 8,
       invoiceAmount: 100,
     });
+  });
+
+  it("calculates Managing Bum commission from the commission Trusted Bums receives", () => {
+    expect(calculateManagingBumCommission(1000, 10)).toBe(100);
+    expect(calculateManagingBumCommission(333.33, 7.5)).toBe(25);
   });
 
   it("blocks invoice generation until the deal has an approved active commission plan", () => {
