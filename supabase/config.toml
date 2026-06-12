@@ -90,3 +90,6 @@ verify_jwt = false
 
 [functions.admin-shared-mailbox]
 verify_jwt = false
+
+[functions.api-access-keys]
+verify_jwt = false

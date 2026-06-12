@@ -507,6 +507,59 @@ export interface AdminSharedMailboxSendInput {
   body: string;
 }
 
+export type ApiAccessScope = "trustedbums:client:read" | "trustedbums:client:write" | "trustedbums:inbox:read" | "trustedbums:inbox:send";
+export type ApiAccessKeyStatus = "ACTIVE" | "REVOKED" | "EXPIRED";
+
+export const API_ACCESS_SCOPES: ApiAccessScope[] = [
+  "trustedbums:client:read",
+  "trustedbums:client:write",
+  "trustedbums:inbox:read",
+  "trustedbums:inbox:send",
+];
+
+export interface ApiAccessKeyRecord {
+  id: string;
+  clerk_api_key_id: string;
+  subject_user_id: string;
+  company_id: string;
+  name: string;
+  description: string | null;
+  scopes: ApiAccessScope[];
+  claims: Record<string, unknown>;
+  token_prefix: string | null;
+  status: ApiAccessKeyStatus;
+  expires_at: string | null;
+  revoked_at: string | null;
+  revocation_reason: string | null;
+  created_by: string | null;
+  refreshed_from_id: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Pick<ProfileRecord, "id" | "full_name" | "email" | "client_access_role"> | null;
+  companies?: Pick<CompanyRecord, "id" | "name"> | null;
+}
+
+export interface ApiAccessEligibleProfile {
+  id: string;
+  company_id: string;
+  full_name: string | null;
+  email: string | null;
+  role: "CLIENT";
+  is_admin: boolean;
+  client_access_role: "CLIENT_ADMIN" | "CLIENT_IT";
+  companies?: Pick<CompanyRecord, "id" | "name"> | null;
+}
+
+export interface ApiAccessKeyCreateResult {
+  key: ApiAccessKeyRecord;
+  secret: string | null;
+}
+
+export interface AdminApiAccessKeyListResult {
+  keys: ApiAccessKeyRecord[];
+  eligibleProfiles: ApiAccessEligibleProfile[];
+}
+
 export interface ProspectRecommendationRecord {
   id: string;
   company_id: string;
@@ -5479,6 +5532,70 @@ export async function sendAdminSharedMailboxMessage(input: AdminSharedMailboxSen
 
 export async function updateAdminSharedMailboxStatus(messageId: string, status: AdminSharedMailboxStatus) {
   return await invokeAdminSharedMailboxOperation<AdminSharedMailboxMessage>("update_status", { messageId, status });
+}
+
+type ApiAccessKeysOperationResponse<T> = { data?: T; error?: string };
+
+async function invokeApiAccessKeysOperation<T>(operation: string, payload?: Record<string, unknown>) {
+  const token = await getSupabaseAccessToken("session");
+
+  if (!token) {
+    throw new Error("Sign in before managing API access.");
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/api-access-keys`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ operation, ...(payload ?? {}) }),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as ApiAccessKeysOperationResponse<T>;
+
+  if (!response.ok || data.error) {
+    throw new Error(data.error || "Unable to manage API access.");
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(data, "data")) {
+    throw new Error("API access returned no response.");
+  }
+
+  return data.data as T;
+}
+
+export async function listOwnApiAccessKeys() {
+  return await invokeApiAccessKeysOperation<ApiAccessKeyRecord[]>("list_self");
+}
+
+export async function createOwnApiAccessKey(scopes: ApiAccessScope[] = API_ACCESS_SCOPES) {
+  return await invokeApiAccessKeysOperation<ApiAccessKeyCreateResult>("create_self", { scopes });
+}
+
+export async function refreshOwnApiAccessKey(scopes: ApiAccessScope[] = API_ACCESS_SCOPES) {
+  return await invokeApiAccessKeysOperation<ApiAccessKeyCreateResult>("refresh_self", { scopes });
+}
+
+export async function revokeOwnApiAccessKey(keyId: string) {
+  return await invokeApiAccessKeysOperation<ApiAccessKeyRecord>("revoke_self", { keyId });
+}
+
+export async function listAdminApiAccessKeys() {
+  return await invokeApiAccessKeysOperation<AdminApiAccessKeyListResult>("list_admin");
+}
+
+export async function createAdminApiAccessKeyForProfile(profileId: string, scopes: ApiAccessScope[] = API_ACCESS_SCOPES) {
+  return await invokeApiAccessKeysOperation<ApiAccessKeyCreateResult>("create_for_profile", { profileId, scopes });
+}
+
+export async function refreshAdminApiAccessKey(keyId: string) {
+  return await invokeApiAccessKeysOperation<ApiAccessKeyCreateResult>("refresh_admin", { keyId });
+}
+
+export async function revokeAdminApiAccessKey(keyId: string) {
+  return await invokeApiAccessKeysOperation<ApiAccessKeyRecord>("revoke_admin", { keyId });
 }
 
 export async function listCompanies(options: { includeInactive?: boolean } = {}) {
