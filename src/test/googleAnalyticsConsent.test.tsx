@@ -50,11 +50,23 @@ describe("GoogleAnalytics consent gating", () => {
     delete window.gtag;
   });
 
-  it("does not load Google Analytics before Analytics consent", async () => {
+  it("loads the GA tag with denied storage before Analytics consent", async () => {
     await renderGoogleAnalytics("/privacy-policy");
 
-    expect(document.getElementById("trustedbums-google-analytics")).not.toBeInTheDocument();
-    expect(window.dataLayer).toBeUndefined();
+    const script = await waitFor(() => {
+      const element = document.getElementById("trustedbums-google-analytics") as HTMLScriptElement | null;
+      expect(element).toBeInTheDocument();
+      return element;
+    });
+
+    expect(script?.src).toBe(`https://www.googletagmanager.com/gtag/js?id=${measurementId}`);
+    expect(window.dataLayer).toContainEqual(["consent", "default", expect.objectContaining({ analytics_storage: "denied" })]);
+    expect(window.dataLayer).toContainEqual(["config", measurementId, { send_page_view: false }]);
+    expect(window.dataLayer).not.toContainEqual([
+      "event",
+      "page_view",
+      expect.any(Object),
+    ]);
   });
 
   it("loads the production GA4 stream after Analytics consent", async () => {

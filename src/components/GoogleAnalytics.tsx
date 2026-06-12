@@ -65,10 +65,11 @@ export function GoogleAnalytics() {
       return;
     }
 
+    loadGoogleAnalytics();
+
     const syncAnalytics = () => {
       const granted = hasAnalyticsConsent();
       if (granted) {
-        loadGoogleAnalytics();
         window.gtag?.("consent", "update", {
           analytics_storage: "granted",
           ad_storage: "denied",
