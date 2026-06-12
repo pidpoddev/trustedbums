@@ -6,7 +6,7 @@ import { ConversationDock } from "@/components/ConversationDock";
 import { FirstLoginWalkthrough } from "@/components/FirstLoginWalkthrough";
 import { useAuth } from "@/contexts/AuthContext";
 import { unreadConversationCount } from "@/lib/conversationUnread";
-import { listConversationThreads } from "@/lib/portalApi";
+import { getOwnBumProfile, listConversationThreads } from "@/lib/portalApi";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Outlet } from "react-router-dom";
 import {
@@ -32,9 +32,10 @@ import {
   GraduationCap,
   BarChart3,
   MessageSquare,
+  Users,
 } from "lucide-react";
 
-const navGroups = [
+const baseNavGroups = [
   { label: "Workspace", items: [
   { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
   { title: "Inbox", url: "/bum/live-conversations", icon: MessageSquare },
@@ -50,11 +51,14 @@ const navGroups = [
   ] },
 ];
 
-const navItems = [...navGroups.flatMap((group) => group.items), { title: "Profile settings", url: "/bum/profile", icon: User }];
-
 export default function BumLayout() {
   const location = useLocation();
   const { user } = useAuth();
+  const profileQuery = useQuery({
+    queryKey: ["bum-profile", user?.id],
+    queryFn: () => getOwnBumProfile(user!.id),
+    enabled: Boolean(user?.id && user.role === "BUM"),
+  });
   const conversationsQuery = useQuery({
     queryKey: ["conversation-threads"],
     queryFn: listConversationThreads,
@@ -64,6 +68,20 @@ export default function BumLayout() {
     refetchOnWindowFocus: false,
   });
   const unreadCount = unreadConversationCount(conversationsQuery.data ?? [], user);
+  const navGroups = baseNavGroups.map((group) => {
+    if (group.label !== "Workspace" || !profileQuery.data?.is_managing_bum) {
+      return group;
+    }
+
+    return {
+      ...group,
+      items: [
+        ...group.items,
+        { title: "Team Management", url: "/bum/team", icon: Users },
+      ],
+    };
+  });
+  const navItems = [...navGroups.flatMap((group) => group.items), { title: "Profile settings", url: "/bum/profile", icon: User }];
 
   return (
     <SidebarProvider>

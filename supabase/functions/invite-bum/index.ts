@@ -14,6 +14,12 @@ interface ProfileRow {
   is_admin: boolean;
 }
 
+interface BumProfileRow {
+  user_id: string;
+  is_managing_bum: boolean;
+  managing_bum_commission_percent: number;
+}
+
 interface ClerkInvitationResponse {
   id?: string;
   email_address?: string;
@@ -138,6 +144,7 @@ async function createClerkInvitation(input: {
   note?: string;
   redirectUrl?: string;
   invitedBy: string;
+  managingBumUserId?: string | null;
 }) {
   if (!clerkSecretKey) {
     throw new Error("Set CLERK_SECRET_KEY in Supabase Edge Function secrets before inviting Bums.");
@@ -162,6 +169,7 @@ async function createClerkInvitation(input: {
         invitedBy: input.invitedBy,
         invitedName: input.name || undefined,
         inviteNote: input.note || undefined,
+        managingBumUserId: input.managingBumUserId || undefined,
       },
     }),
   });
@@ -180,6 +188,93 @@ async function createClerkInvitation(input: {
   return payload as ClerkInvitationResponse;
 }
 
+async function getManagingBumProfile(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("bum_profiles")
+    .select("user_id, is_managing_bum, managing_bum_commission_percent")
+    .eq("user_id", userId)
+    .maybeSingle<BumProfileRow>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function createPendingTeamMembership(input: {
+  managingBumUserId: string;
+  invitedBy: string;
+  email: string;
+  note?: string;
+  clerkInvitationId?: string | null;
+  managerCommissionPercent: number;
+}) {
+  const { data: existingProfile, error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .select("id, role")
+    .ilike("email", input.email)
+    .maybeSingle<{ id: string; role: string | null }>();
+
+  if (profileError) {
+    throw profileError;
+  }
+
+  const payload = {
+    managing_bum_user_id: input.managingBumUserId,
+    member_bum_user_id: existingProfile?.role === "BUM" ? existingProfile.id : null,
+    status: existingProfile?.role === "BUM" ? "ACTIVE" : "INVITED",
+    invited_by: input.invitedBy,
+    manager_commission_percent: input.managerCommissionPercent,
+    invite_email: input.email,
+    clerk_invitation_id: input.clerkInvitationId ?? null,
+    notes: input.note || null,
+  };
+
+  if (existingProfile?.role === "BUM") {
+    const { data: existingMembership, error: existingMembershipError } = await supabaseAdmin
+      .from("bum_team_memberships")
+      .select("id")
+      .eq("managing_bum_user_id", input.managingBumUserId)
+      .eq("member_bum_user_id", existingProfile.id)
+      .maybeSingle<{ id: string }>();
+
+    if (existingMembershipError) {
+      throw existingMembershipError;
+    }
+
+    const write = existingMembership
+      ? await supabaseAdmin.from("bum_team_memberships").update(payload).eq("id", existingMembership.id)
+      : await supabaseAdmin.from("bum_team_memberships").insert(payload);
+
+    if (write.error) {
+      throw write.error;
+    }
+    return;
+  }
+
+  const { data: existingInvite, error: existingInviteError } = await supabaseAdmin
+    .from("bum_team_memberships")
+    .select("id")
+    .eq("managing_bum_user_id", input.managingBumUserId)
+    .ilike("invite_email", input.email)
+    .is("member_bum_user_id", null)
+    .neq("status", "REMOVED")
+    .maybeSingle<{ id: string }>();
+
+  if (existingInviteError) {
+    throw existingInviteError;
+  }
+
+  const write = existingInvite
+    ? await supabaseAdmin.from("bum_team_memberships").update(payload).eq("id", existingInvite.id)
+    : await supabaseAdmin.from("bum_team_memberships").insert(payload);
+
+  if (write.error) {
+    throw write.error;
+  }
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -193,8 +288,12 @@ Deno.serve(async (request: Request) => {
     const token = getBearerToken(request);
     const currentProfile = await getCurrentProfile(token);
 
-    if (!currentProfile.is_admin && currentProfile.role !== "ADMIN") {
-      return json(403, { error: "Only admin users can invite Bums." });
+    const managingBumProfile = currentProfile.role === "BUM" ? await getManagingBumProfile(currentProfile.id) : null;
+    const isAdminInvite = currentProfile.is_admin || currentProfile.role === "ADMIN";
+    const isManagingBumInvite = Boolean(managingBumProfile?.is_managing_bum);
+
+    if (!isAdminInvite && !isManagingBumInvite) {
+      return json(403, { error: "Only Admins and Managing Bums can invite Bums." });
     }
 
     const body = (await request.json().catch(() => ({}))) as {
@@ -222,7 +321,19 @@ Deno.serve(async (request: Request) => {
       note,
       redirectUrl,
       invitedBy: currentProfile.id,
+      managingBumUserId: isManagingBumInvite ? currentProfile.id : null,
     });
+
+    if (isManagingBumInvite && managingBumProfile) {
+      await createPendingTeamMembership({
+        managingBumUserId: currentProfile.id,
+        invitedBy: currentProfile.id,
+        email,
+        note,
+        clerkInvitationId: invitation.id ?? null,
+        managerCommissionPercent: Number(managingBumProfile.managing_bum_commission_percent ?? 0),
+      });
+    }
 
     await supabaseAdmin.from("audit_events").insert({
       user_id: currentProfile.id,
@@ -234,6 +345,7 @@ Deno.serve(async (request: Request) => {
         name: name || null,
         note: note || null,
         status: invitation.status ?? null,
+        managingBumUserId: isManagingBumInvite ? currentProfile.id : null,
       },
     });
 
@@ -242,6 +354,7 @@ Deno.serve(async (request: Request) => {
       invitationId: invitation.id ?? null,
       status: invitation.status ?? null,
       email,
+      teamAttached: isManagingBumInvite,
     });
   } catch (error) {
     return json(400, {

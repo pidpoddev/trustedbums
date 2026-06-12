@@ -20,6 +20,8 @@ import {
 } from "@/lib/bumProfileCompleteness";
 import {
   getOwnBumProfile,
+  inviteBum,
+  listBumTeamMemberships,
   listOwnProspectRecommendations,
   listMarketplaceOpportunities,
   upsertOwnBumProfile,
@@ -31,7 +33,9 @@ import {
   Building2,
   ClipboardList,
   Handshake,
+  MailPlus,
   Sparkles,
+  Users,
   Wallet,
   TrendingUp,
 } from "lucide-react";
@@ -41,6 +45,9 @@ export default function BumDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [promptAnswers, setPromptAnswers] = useState<Partial<Record<BumProfilePromptKey, string>>>({});
+  const [teamInviteEmail, setTeamInviteEmail] = useState("");
+  const [teamInviteName, setTeamInviteName] = useState("");
+  const [teamInviteNote, setTeamInviteNote] = useState("");
   const opportunitiesQuery = useQuery({
     queryKey: ["bum-marketplace-opportunities"],
     queryFn: listMarketplaceOpportunities,
@@ -63,6 +70,12 @@ export default function BumDashboard() {
   const { introClaims } = useIntroClaims();
   const myClaims = introClaims.filter((claim) => claim.bum_user_id === user?.id);
   const completeness = useMemo(() => getBumProfileCompleteness(profileQuery.data), [profileQuery.data]);
+  const isManagingBum = Boolean(profileQuery.data?.is_managing_bum);
+  const teamQuery = useQuery({
+    queryKey: ["bum-team-memberships", user?.id],
+    queryFn: () => listBumTeamMemberships(user!, user!.id),
+    enabled: Boolean(user?.id && isManagingBum),
+  });
 
   useEffect(() => {
     if (!completeness.nextPrompts.length) {
@@ -112,6 +125,32 @@ export default function BumDashboard() {
     onError: (error) => {
       toast({
         title: "Unable to save progress",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const inviteTeamBumMutation = useMutation({
+    mutationFn: () =>
+      inviteBum({
+        email: teamInviteEmail,
+        name: teamInviteName,
+        note: teamInviteNote,
+      }),
+    onSuccess: async (result) => {
+      setTeamInviteEmail("");
+      setTeamInviteName("");
+      setTeamInviteNote("");
+      await queryClient.invalidateQueries({ queryKey: ["bum-team-memberships", user?.id] });
+      toast({
+        title: "Bum invited",
+        description: `${result.email} will be attached to your team when they sign up.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to invite Bum",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -232,6 +271,90 @@ export default function BumDashboard() {
         <StatCard title="Pending Earnings" value="$0" icon={TrendingUp} to="/bum/earnings" />
         <StatCard title="Lifetime Payouts" value="$0" icon={Wallet} to="/bum/earnings" />
       </div>
+
+      {isManagingBum ? (
+        <Card className="border-primary/20">
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-md bg-primary/10 p-2 text-primary">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="font-display">Managing Bum team</CardTitle>
+                  <CardDescription>
+                    Invite a Bum and they will be attached to your team when they create their Trusted Bums account.
+                  </CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" asChild>
+                <Link to="/bum/team">Team Management</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <div className="space-y-2">
+                <Label htmlFor="managing-bum-invite-email">Email</Label>
+                <Input
+                  id="managing-bum-invite-email"
+                  type="email"
+                  value={teamInviteEmail}
+                  onChange={(event) => setTeamInviteEmail(event.target.value)}
+                  placeholder="newbum@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="managing-bum-invite-name">Name</Label>
+                <Input
+                  id="managing-bum-invite-name"
+                  value={teamInviteName}
+                  onChange={(event) => setTeamInviteName(event.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="managing-bum-invite-note">Note</Label>
+                <Textarea
+                  id="managing-bum-invite-note"
+                  rows={3}
+                  value={teamInviteNote}
+                  onChange={(event) => setTeamInviteNote(event.target.value)}
+                  placeholder="Optional context"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={() => inviteTeamBumMutation.mutate()}
+                disabled={inviteTeamBumMutation.isPending || !teamInviteEmail.trim()}
+              >
+                <MailPlus className="mr-2 h-4 w-4" />
+                {inviteTeamBumMutation.isPending ? "Sending..." : "Invite Bum"}
+              </Button>
+            </div>
+
+            <div className="grid gap-2">
+              {(teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED").map((membership) => (
+                <div key={membership.id} className="flex flex-col gap-1 rounded-md border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium">
+                      {membership.member_bum_profile?.full_name ?? membership.member_bum_profile?.email ?? membership.invite_email ?? "Invited Bum"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {membership.status === "ACTIVE" ? "Attached to your team" : "Invitation pending"}
+                    </p>
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">{membership.status}</span>
+                </div>
+              ))}
+              {!teamQuery.isLoading && !(teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED").length ? (
+                <p className="text-sm text-muted-foreground">No team members yet.</p>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
         <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">

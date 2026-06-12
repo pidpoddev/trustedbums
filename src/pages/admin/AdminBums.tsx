@@ -108,7 +108,7 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
     [profilesQuery.data],
   );
   const currentTeamMemberIds = useMemo(
-    () => new Set((teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED").map((membership) => membership.member_bum_user_id)),
+    () => new Set((teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED" && membership.member_bum_user_id).map((membership) => membership.member_bum_user_id)),
     [teamQuery.data],
   );
   const availableTeamMembers = useMemo(
@@ -360,10 +360,10 @@ function AdminBumEditButton({ bum }: { bum: BumProfileRecord }) {
                     </div>
                     <div className="grid gap-2">
                       {(teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED").map((membership) => {
-                        const memberProfile = membership.member_bum_profile ?? bumProfilesByUserId.get(membership.member_bum_user_id);
+                        const memberProfile = membership.member_bum_profile ?? (membership.member_bum_user_id ? bumProfilesByUserId.get(membership.member_bum_user_id) : null);
                         return (
                           <div key={membership.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                            <span>{memberProfile?.full_name ?? memberProfile?.email ?? membership.member_bum_user_id}</span>
+                            <span>{memberProfile?.full_name ?? memberProfile?.email ?? membership.invite_email ?? membership.member_bum_user_id}</span>
                             <Badge variant="secondary">{membership.status}</Badge>
                           </div>
                         );

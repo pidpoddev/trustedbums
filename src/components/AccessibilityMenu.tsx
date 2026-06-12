@@ -16,6 +16,8 @@ export function AccessibilityMenu() {
     setAdaModeEnabled,
     isColorBlindModeEnabled,
     setColorBlindModeEnabled,
+    isReadSelectionEnabled,
+    setReadSelectionEnabled,
   } = useAccessibility();
 
   return (
@@ -53,6 +55,16 @@ export function AccessibilityMenu() {
         <div className="px-3 py-2 text-sm leading-7 text-muted-foreground">
           Swaps the palette for easier color separation across buttons, status colors, and highlights.
         </div>
+        <DropdownMenuCheckboxItem
+          className="mt-1 min-h-12 px-3 py-3 pl-10 text-base font-medium leading-6"
+          checked={isReadSelectionEnabled}
+          onCheckedChange={(checked) => setReadSelectionEnabled(Boolean(checked))}
+        >
+          Read highlighted text to me
+        </DropdownMenuCheckboxItem>
+        <div className="px-3 py-2 text-sm leading-7 text-muted-foreground">
+          Uses your browser speaker to read selected page text aloud.
+        </div>
         {isAdaModeEnabled ? (
           <div className="flex items-center gap-2 px-3 pt-2 text-sm font-semibold text-primary">
             <CheckCircle2 className="h-4 w-4" />
@@ -63,6 +75,12 @@ export function AccessibilityMenu() {
           <div className="flex items-center gap-2 px-3 pt-2 text-sm font-semibold text-primary">
             <CheckCircle2 className="h-4 w-4" />
             Color-blind mode is on
+          </div>
+        ) : null}
+        {isReadSelectionEnabled ? (
+          <div className="flex items-center gap-2 px-3 pt-2 text-sm font-semibold text-primary">
+            <CheckCircle2 className="h-4 w-4" />
+            Read-aloud mode is on
           </div>
         ) : null}
       </DropdownMenuContent>

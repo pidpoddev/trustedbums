@@ -77,6 +77,7 @@ const BumContactDetail = lazy(() => import("./pages/bum/BumContactDetail"));
 const BumTrainings = lazy(() => import("./pages/bum/BumTrainings"));
 const BumOpportunityDetail = lazy(() => import("./pages/bum/BumOpportunityDetail"));
 const BumReports = lazy(() => import("./pages/bum/BumReports"));
+const BumTeamManagement = lazy(() => import("./pages/bum/BumTeamManagement"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -196,6 +197,7 @@ const App = () => (
                       <Route path="opportunities/:id" element={<BumOpportunityDetail />} />
                       <Route path="claims" element={<BumClaims />} />
                       <Route path="trainings" element={<BumTrainings />} />
+                      <Route path="team" element={<BumTeamManagement />} />
                       <Route path="live-conversations" element={<BumLiveConversations />} />
                       <Route path="earnings" element={<BumEarnings />} />
                       <Route path="reports" element={<BumReports />} />

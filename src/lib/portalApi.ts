@@ -1649,11 +1649,12 @@ export type BumTeamMembershipStatus = "INVITED" | "ACTIVE" | "REMOVED";
 export interface BumTeamMembershipRecord {
   id: string;
   managing_bum_user_id: string;
-  member_bum_user_id: string;
+  member_bum_user_id: string | null;
   status: BumTeamMembershipStatus;
   invited_by: string | null;
   manager_commission_percent: number | null;
   invite_email: string | null;
+  clerk_invitation_id?: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -1675,6 +1676,10 @@ export interface ManagingBumCommissionAllocationRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  claim_invoices?: Pick<ClaimInvoiceRecord, "id" | "invoice_number" | "invoice_amount" | "status" | "commission_rate"> | null;
+  opportunity_claims?: Pick<OpportunityClaimRecord, "id" | "contact_name" | "contact_company" | "bum_user_id"> | null;
+  managing_bum_profile?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
+  member_bum_profile?: Pick<ProfileRecord, "id" | "full_name" | "email"> | null;
 }
 
 export interface BumInviteInput {
@@ -4096,6 +4101,27 @@ export async function listBumPayouts() {
   }
 
   return sortByBusinessDate(data ?? [], bumPayoutBusinessDate);
+}
+
+export async function listManagingBumCommissionAllocations(user: AuthUser, managingBumUserId?: string) {
+  const targetManagingBumUserId = managingBumUserId ?? user.id;
+
+  if (user.role !== "ADMIN" && user.id !== targetManagingBumUserId) {
+    throw new Error("Only Admins and the Managing Bum can view this team.");
+  }
+
+  const { data, error } = await supabase
+    .from("managing_bum_commission_allocations")
+    .select("*, claim_invoices(id, invoice_number, invoice_amount, commission_rate, status), opportunity_claims(id, contact_name, contact_company, bum_user_id), managing_bum_profile:profiles!managing_bum_commission_allocations_managing_bum_user_id_fkey(id, full_name, email), member_bum_profile:profiles!managing_bum_commission_allocations_member_bum_user_id_fkey(id, full_name, email)")
+    .eq("managing_bum_user_id", targetManagingBumUserId)
+    .order("created_at", { ascending: false })
+    .returns<ManagingBumCommissionAllocationRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return sortByBusinessDate(data ?? [], (allocation) => allocation.updated_at || allocation.created_at);
 }
 
 export async function updateBumPayout(user: AuthUser, payout: BumPayoutRecord, updates: Partial<Pick<BumPayoutRecord, "payout_amount" | "status" | "notes">>) {
@@ -8494,19 +8520,31 @@ export async function upsertBumTeamMembership(
     throw new Error("Only Admins and the Managing Bum can update this team.");
   }
 
-  const { data, error } = await supabase
+  const membershipPayload = {
+    managing_bum_user_id: input.managing_bum_user_id,
+    member_bum_user_id: input.member_bum_user_id,
+    status: input.status ?? "ACTIVE",
+    manager_commission_percent: input.manager_commission_percent ?? null,
+    notes: input.notes ?? null,
+    invited_by: user.id,
+  };
+
+  const { data: existingMembership, error: existingError } = await supabase
     .from("bum_team_memberships")
-    .upsert(
-      {
-        managing_bum_user_id: input.managing_bum_user_id,
-        member_bum_user_id: input.member_bum_user_id,
-        status: input.status ?? "ACTIVE",
-        manager_commission_percent: input.manager_commission_percent ?? null,
-        notes: input.notes ?? null,
-        invited_by: user.id,
-      },
-      { onConflict: "managing_bum_user_id,member_bum_user_id" },
-    )
+    .select("id")
+    .eq("managing_bum_user_id", input.managing_bum_user_id)
+    .eq("member_bum_user_id", input.member_bum_user_id)
+    .maybeSingle<Pick<BumTeamMembershipRecord, "id">>();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  const membershipQuery = existingMembership?.id
+    ? supabase.from("bum_team_memberships").update(membershipPayload).eq("id", existingMembership.id)
+    : supabase.from("bum_team_memberships").insert(membershipPayload);
+
+  const { data, error } = await membershipQuery
     .select("*, managing_bum_profile:profiles!bum_team_memberships_managing_bum_user_id_fkey(id, full_name, email), member_bum_profile:profiles!bum_team_memberships_member_bum_user_id_fkey(id, full_name, email)")
     .single<BumTeamMembershipRecord>();
 

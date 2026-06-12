@@ -287,6 +287,41 @@ async function writeAudit(userId: string, eventType: string, eventData: Record<s
   });
 }
 
+async function attachPendingManagingBumInvite(userId: string, email: string) {
+  const { data: pendingInvite, error: pendingInviteError } = await supabaseAdmin
+    .from("bum_team_memberships")
+    .select("id, managing_bum_user_id, manager_commission_percent")
+    .ilike("invite_email", email)
+    .is("member_bum_user_id", null)
+    .eq("status", "INVITED")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string; managing_bum_user_id: string; manager_commission_percent: number | null }>();
+
+  if (pendingInviteError) throw pendingInviteError;
+  if (!pendingInvite) return null;
+
+  const { error: updateError } = await supabaseAdmin
+    .from("bum_team_memberships")
+    .update({
+      member_bum_user_id: userId,
+      status: "ACTIVE",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", pendingInvite.id);
+
+  if (updateError) throw updateError;
+
+  await writeAudit(userId, "managing_bum_invite_attached", {
+    membershipId: pendingInvite.id,
+    managingBumUserId: pendingInvite.managing_bum_user_id,
+    managerCommissionPercent: pendingInvite.manager_commission_percent,
+    email,
+  });
+
+  return pendingInvite;
+}
+
 async function sendBumSignupAdminNotice(input: {
   requestId: string;
   name: string;
@@ -356,6 +391,9 @@ Deno.serve(async (request: Request) => {
         .select("*, companies(id, name)")
         .single<ProfileRow>();
       if (error) throw error;
+      if (data.role === "BUM") {
+        await attachPendingManagingBumInvite(userId, email);
+      }
       return json(200, { profile: data, request: null });
     }
 
@@ -431,6 +469,7 @@ Deno.serve(async (request: Request) => {
     }
 
     if (role === "BUM") {
+      await attachPendingManagingBumInvite(userId, email);
       const accessRequest = await upsertPendingRequest({
         requesterProfileId: userId,
         email,
