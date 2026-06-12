@@ -10,7 +10,7 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const { user, hasRole, isLoaded, isSignedIn } = useAuth();
   const location = useLocation();
 
-  if (!isLoaded) {
+  if (!isLoaded && !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
         Loading session...
@@ -22,7 +22,7 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (!isSignedIn) {
+  if (isLoaded && !isSignedIn) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

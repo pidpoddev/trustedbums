@@ -10,7 +10,7 @@ export function ClientAccessRoute({ allowedAccessRoles }: ClientAccessRouteProps
   const { user, hasClientAccessRole, isLoaded } = useAuth();
   const location = useLocation();
 
-  if (!isLoaded) {
+  if (!isLoaded && !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
         Loading session...

@@ -102,6 +102,25 @@ describe("route guards", () => {
     expect(screen.getByText("Admin portal")).toBeInTheDocument();
   });
 
+  it("keeps protected content visible during same-user session refreshes", () => {
+    authState.value.user = makeUser("BUM");
+    authState.value.isLoaded = false;
+    authState.value.isSignedIn = true;
+
+    render(
+      <MemoryRouter initialEntries={["/bum/dashboard"]} future={routerFuture}>
+        <Routes>
+          <Route element={<ProtectedRoute allowedRoles={["BUM"]} />}>
+            <Route path="/bum/dashboard" element={<div>Bum dashboard</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Bum dashboard")).toBeInTheDocument();
+    expect(screen.queryByText("Loading session...")).not.toBeInTheDocument();
+  });
+
   it("redirects users with the wrong portal role to their default dashboard", async () => {
     authState.value.user = makeUser("CLIENT", "CLIENT_ADMIN");
     authState.value.isSignedIn = true;
@@ -153,6 +172,25 @@ describe("route guards", () => {
     );
 
     expect(screen.getByText("Payments")).toBeInTheDocument();
+  });
+
+  it("keeps client access content visible during same-user session refreshes", () => {
+    authState.value.user = makeUser("CLIENT", "CLIENT_FINANCE");
+    authState.value.isLoaded = false;
+    authState.value.isSignedIn = true;
+
+    render(
+      <MemoryRouter initialEntries={["/client/payments"]} future={routerFuture}>
+        <Routes>
+          <Route element={<ClientAccessRoute allowedAccessRoles={["CLIENT_FINANCE"]} />}>
+            <Route path="/client/payments" element={<div>Payments</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Payments")).toBeInTheDocument();
+    expect(screen.queryByText("Loading session...")).not.toBeInTheDocument();
   });
 
   it("sends clients and bums who have not accepted current terms to terms", async () => {

@@ -1,5 +1,5 @@
 import { useAuth as useClerkAuth, useSession, useUser } from "@clerk/react";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   readClientAccessRole,
   type AuthUser,
@@ -80,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { isLoaded: isSessionLoaded, session } = useSession();
   const { isLoaded: isUserLoaded, user: clerkUser } = useUser();
   const [dbUser, setDbUser] = useState<AuthUser | null>(null);
+  const dbUserRef = useRef<AuthUser | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [isDbProfileLoaded, setIsDbProfileLoaded] = useState(false);
   const impersonatorUserId =
@@ -101,6 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => setSupabaseAccessTokenProvider(null);
   }, [session]);
+
+  useEffect(() => {
+    dbUserRef.current = dbUser;
+  }, [dbUser]);
 
   const baseUser = useMemo<BaseIdentity | null>(() => {
     const isLoaded = isAuthLoaded && isSessionLoaded && isUserLoaded;
@@ -135,13 +140,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     async function syncProfile() {
-      setDbError(null);
-      setDbUser(null);
-      setIsDbProfileLoaded(false);
-
       if (!baseUser || !session) {
+        setDbError(null);
+        setDbUser(null);
         setIsDbProfileLoaded(true);
         return;
+      }
+
+      setDbError(null);
+
+      if (dbUserRef.current?.id !== baseUser.id) {
+        setDbUser(null);
+        setIsDbProfileLoaded(false);
       }
 
       try {
