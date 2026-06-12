@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { DealRegistrationBetaSettings } from "@/components/DealRegistrationBetaSettings";
-import { ArrowRight, FileCheck } from "lucide-react";
+import { ArrowRight, Copy, FileCheck, KeyRound, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
-import { getOwnClientCompany, updateOwnClientCompanyProfile, updateOwnClientDealRegistrationConfig } from "@/lib/portalApi";
+import {
+  createOwnApiAccessKey,
+  getOwnClientCompany,
+  listOwnApiAccessKeys,
+  refreshOwnApiAccessKey,
+  revokeOwnApiAccessKey,
+  updateOwnClientCompanyProfile,
+  updateOwnClientDealRegistrationConfig,
+} from "@/lib/portalApi";
 import { defaultDealRegistrationConfig, normalizeDealRegistrationConfig } from "@/lib/dealRegistration";
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 
@@ -111,12 +119,21 @@ export default function ClientProfile() {
   const [isDirty, setIsDirty] = useState(false);
   const [restoredDraftAt, setRestoredDraftAt] = useState<string | null>(null);
   const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
+  const [newApiSecret, setNewApiSecret] = useState<string | null>(null);
   const previousClientId = useRef<string | null>(null);
+  const canManageDealRegistration = user?.clientAccessRole === "CLIENT_ADMIN" || user?.clientAccessRole === "CLIENT_IT";
+  const canManageApiAccess = canManageDealRegistration;
 
   const companyQuery = useQuery({
     queryKey: ["own-client-company", user?.clientId],
     queryFn: () => getOwnClientCompany(user!),
     enabled: Boolean(user?.id && user?.role === "CLIENT" && user?.clientId),
+  });
+
+  const apiAccessQuery = useQuery({
+    queryKey: ["own-api-access-keys", user?.id],
+    queryFn: () => listOwnApiAccessKeys(),
+    enabled: Boolean(user?.id && canManageApiAccess),
   });
 
   useEffect(() => {
@@ -290,7 +307,49 @@ export default function ClientProfile() {
   });
 
   const isLoading = companyQuery.isLoading;
-  const canManageDealRegistration = user?.clientAccessRole === "CLIENT_ADMIN" || user?.clientAccessRole === "CLIENT_IT";
+  const activeApiKey = apiAccessQuery.data?.find((key) => key.status === "ACTIVE") ?? null;
+
+  const createApiKeyMutation = useMutation({
+    mutationFn: () => createOwnApiAccessKey(),
+    onSuccess: async (result) => {
+      setNewApiSecret(result.secret);
+      await queryClient.invalidateQueries({ queryKey: ["own-api-access-keys", user?.id] });
+      toast({ title: "API token created", description: "Copy it now. The full token is only shown once." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to create API token", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const refreshApiKeyMutation = useMutation({
+    mutationFn: () => refreshOwnApiAccessKey(),
+    onSuccess: async (result) => {
+      setNewApiSecret(result.secret);
+      await queryClient.invalidateQueries({ queryKey: ["own-api-access-keys", user?.id] });
+      toast({ title: "API token refreshed", description: "The previous token was revoked. Copy the new token now." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to refresh API token", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const revokeApiKeyMutation = useMutation({
+    mutationFn: (keyId: string) => revokeOwnApiAccessKey(keyId),
+    onSuccess: async () => {
+      setNewApiSecret(null);
+      await queryClient.invalidateQueries({ queryKey: ["own-api-access-keys", user?.id] });
+      toast({ title: "API token revoked", description: "The token can no longer access the API." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to revoke API token", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const copyApiSecret = async () => {
+    if (!newApiSecret) return;
+    await navigator.clipboard?.writeText(newApiSecret).catch(() => undefined);
+    toast({ title: "Token copied", description: "The API token was copied when browser permissions allowed it." });
+  };
 
   return (
     <div className="space-y-6">
@@ -448,6 +507,74 @@ export default function ClientProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {canManageApiAccess ? (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle className="font-display flex items-center gap-2">
+                    <KeyRound className="h-5 w-5 text-primary" />
+                    API Access
+                  </CardTitle>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Client Admin and Client IT users can generate a company API token for approved integrations.
+                  </p>
+                </div>
+                <StatusBadge label={activeApiKey ? "Active" : "No active token"} variant={activeApiKey ? "success" : "outline"} />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-md border p-4">
+                  <p className="text-sm font-medium">Token owner</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{user?.name ?? user?.email}</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-sm font-medium">Visible token</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{activeApiKey?.token_prefix ?? "Only shown after generation"}</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-sm font-medium">Expires</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{activeApiKey?.expires_at ? formatDateTimeForTimeZone(activeApiKey.expires_at, timeZone) : "No active token"}</p>
+                </div>
+              </div>
+
+              {newApiSecret ? (
+                <div className="rounded-md border border-warning/40 bg-warning/10 p-4">
+                  <Label htmlFor="client-api-token">New API token</Label>
+                  <div className="mt-2 flex gap-2">
+                    <Input id="client-api-token" readOnly value={newApiSecret} className="font-mono text-xs" />
+                    <Button type="button" variant="outline" onClick={copyApiSecret}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">This full token will not be shown again after you leave this page.</p>
+                </div>
+              ) : null}
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  onClick={() => (activeApiKey ? refreshApiKeyMutation.mutate() : createApiKeyMutation.mutate())}
+                  disabled={createApiKeyMutation.isPending || refreshApiKeyMutation.isPending || apiAccessQuery.isLoading}
+                >
+                  {activeApiKey ? <RefreshCw className="mr-2 h-4 w-4" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                  {activeApiKey ? "Refresh Token" : "Generate Token"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!activeApiKey || revokeApiKeyMutation.isPending}
+                  onClick={() => activeApiKey && revokeApiKeyMutation.mutate(activeApiKey.id)}
+                >
+                  Revoke Token
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     </div>
   );

@@ -1,46 +1,57 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const functionSource = readFileSync("supabase/functions/api-access-keys/index.ts", "utf8");
 const migrationSource = readFileSync("supabase/migrations/20260612154500_add_api_access_key_metadata.sql", "utf8");
+const functionSource = readFileSync("supabase/functions/api-access-keys/index.ts", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
-const supabaseConfigSource = readFileSync("supabase/config.toml", "utf8");
+const clientProfileSource = readFileSync("src/pages/client/ClientProfile.tsx", "utf8");
+const adminPageSource = readFileSync("src/pages/admin/AdminApiAccess.tsx", "utf8");
+const adminLayoutSource = readFileSync("src/layouts/AdminLayout.tsx", "utf8");
+const appSource = readFileSync("src/App.tsx", "utf8");
+const configSource = readFileSync("supabase/config.toml", "utf8");
 
 describe("API access key management", () => {
-  it("creates a client-owned API access key metadata model with admin and client-manager RLS", () => {
+  it("stores only API key metadata with admin and Client IT/Admin read policy", () => {
     expect(migrationSource).toContain("create table if not exists public.api_access_keys");
     expect(migrationSource).toContain("clerk_api_key_id text not null unique");
-    expect(migrationSource).toContain("subject_user_id text not null references public.profiles(id)");
-    expect(migrationSource).toContain("constraint api_access_keys_client_owner_check check (company_id is not null)");
-    expect(migrationSource).toContain("alter table public.api_access_keys enable row level security");
-    expect(migrationSource).toContain("using (private.is_admin())");
-    expect(migrationSource).toContain("Client API managers can read company API keys");
-    expect(migrationSource).toContain("profile.client_access_role in ('CLIENT_ADMIN', 'CLIENT_IT')");
+    expect(migrationSource).toContain("token_prefix text");
+    expect(migrationSource).not.toContain("secret text");
+    expect(migrationSource).toContain("private.is_admin()");
+    expect(migrationSource).toContain("CLIENT_ADMIN");
+    expect(migrationSource).toContain("CLIENT_IT");
+    expect(migrationSource).toContain("grant select on public.api_access_keys to authenticated");
   });
 
-  it("keeps Clerk key lifecycle operations behind an authenticated Edge Function", () => {
-    expect(supabaseConfigSource).toContain("[functions.api-access-keys]");
-    expect(functionSource).toContain("resolveAllowedClerkIssuer");
-    expect(functionSource).toContain("This Clerk session was issued by an unapproved tenant.");
-    expect(functionSource).toContain("CLERK_SECRET_KEY is not configured for API key management.");
+  it("creates and revokes Clerk API keys from a pinned-issuer Edge Function", () => {
+    expect(functionSource).toContain("CLERK_SECRET_KEY");
+    expect(functionSource).toContain("https://api.clerk.com/v1");
     expect(functionSource).toContain('"/api_keys"');
-    expect(functionSource).toContain("/revoke");
-    expect(functionSource).toContain("trustedbums:client:read");
-    expect(functionSource).toContain("trustedbums:inbox:send");
-    expect(functionSource).toContain("api_access_key_created");
-    expect(functionSource).toContain("api_access_key_revoked");
+    expect(functionSource).toContain("`/api_keys/${encodeURIComponent(clerkApiKeyId)}/revoke`");
+    expect(functionSource).toContain("resolveAllowedClerkIssuer");
+    expect(functionSource).toContain("CLIENT_ADMIN");
+    expect(functionSource).toContain("CLIENT_IT");
+    expect(functionSource).toContain("api_access_key_refreshed");
+    expect(configSource).toContain("[functions.api-access-keys]");
   });
 
-  it("exposes self-service and admin API access key helpers", () => {
-    expect(portalApiSource).toContain('functions/v1/api-access-keys');
-    expect(portalApiSource).toContain("API_ACCESS_SCOPES");
-    expect(portalApiSource).toContain("listOwnApiAccessKeys");
-    expect(portalApiSource).toContain("createOwnApiAccessKey");
-    expect(portalApiSource).toContain("refreshOwnApiAccessKey");
-    expect(portalApiSource).toContain("revokeOwnApiAccessKey");
-    expect(portalApiSource).toContain("listAdminApiAccessKeys");
-    expect(portalApiSource).toContain("createAdminApiAccessKeyForProfile");
-    expect(portalApiSource).toContain("refreshAdminApiAccessKey");
-    expect(portalApiSource).toContain("revokeAdminApiAccessKey");
+  it("exposes typed portal operations for client and admin token management", () => {
+    expect(portalApiSource).toContain("export async function listOwnApiAccessKeys");
+    expect(portalApiSource).toContain("export async function createOwnApiAccessKey");
+    expect(portalApiSource).toContain("export async function refreshOwnApiAccessKey");
+    expect(portalApiSource).toContain("export async function revokeOwnApiAccessKey");
+    expect(portalApiSource).toContain("export async function listAdminApiAccessKeys");
+    expect(portalApiSource).toContain("functions/v1/api-access-keys");
+  });
+
+  it("adds client self-service and admin management UI", () => {
+    expect(clientProfileSource).toContain("API Access");
+    expect(clientProfileSource).toContain("Client Admin and Client IT users");
+    expect(clientProfileSource).toContain("refreshOwnApiAccessKey");
+    expect(clientProfileSource).toContain("revokeOwnApiAccessKey");
+    expect(adminPageSource).toContain("Generate Client Token");
+    expect(adminPageSource).toContain("createAdminApiAccessKeyForProfile");
+    expect(adminPageSource).toContain("refreshAdminApiAccessKey");
+    expect(adminLayoutSource).toContain("API Access");
+    expect(appSource).toContain('path="api-access"');
   });
 });

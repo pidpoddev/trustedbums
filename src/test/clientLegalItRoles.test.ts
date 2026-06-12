@@ -33,6 +33,11 @@ describe("client legal and IT access roles", () => {
     expect(clientAgreementsSource).toContain("Legal redlines and amendments");
     expect(clientAgreementsSource).toContain("createConversationThread");
     expect(clientProfileSource).toContain('user?.clientAccessRole === "CLIENT_IT"');
+    expect(clientProfileSource).toContain("API Access");
+    expect(clientProfileSource).toContain("listOwnApiAccessKeys");
+    expect(clientProfileSource).toContain("createOwnApiAccessKey");
+    expect(clientProfileSource).toContain("refreshOwnApiAccessKey");
+    expect(clientProfileSource).toContain("revokeOwnApiAccessKey");
     expect(portalApiSource).toContain('user.clientAccessRole !== "CLIENT_ADMIN" && user.clientAccessRole !== "CLIENT_IT"');
   });
 });

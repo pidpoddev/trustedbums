@@ -42,6 +42,7 @@ const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminScrumTracker = lazy(() => import("./pages/admin/AdminScrumTracker"));
 const AdminPerformanceMetrics = lazy(() => import("./pages/admin/AdminPerformanceMetrics"));
 const AdminArchitecture = lazy(() => import("./pages/admin/AdminArchitecture"));
+const AdminApiAccess = lazy(() => import("./pages/admin/AdminApiAccess"));
 const AdminHandoffs = lazy(() => import("./pages/admin/AdminHandoffs"));
 const AdminTrainingAssets = lazy(() => import("./pages/admin/AdminTrainingAssets"));
 const AdminTroubleshooting = lazy(() => import("./pages/admin/AdminTroubleshooting"));
@@ -137,6 +138,7 @@ const App = () => (
                       <Route path="scrum" element={<AdminScrumTracker />} />
                       <Route path="performance" element={<AdminPerformanceMetrics />} />
                       <Route path="architecture" element={<AdminArchitecture />} />
+                      <Route path="api-access" element={<AdminApiAccess />} />
                       <Route path="troubleshooting" element={<AdminTroubleshooting />} />
                       <Route path="legal" element={<AdminLegal />} />
                       <Route path="profile" element={<AdminProfile />} />
