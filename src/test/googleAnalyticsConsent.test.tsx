@@ -71,6 +71,13 @@ describe("GoogleAnalytics consent gating", () => {
     expect(script?.src).toBe(`https://www.googletagmanager.com/gtag/js?id=${measurementId}`);
     expect(window.dataLayer).toContainEqual(["consent", "default", expect.objectContaining({ analytics_storage: "denied" })]);
     expect(window.dataLayer).toContainEqual(["consent", "update", expect.objectContaining({ analytics_storage: "granted" })]);
-    expect(window.dataLayer).toContainEqual(["config", measurementId, { page_path: "/bums?source=qa" }]);
+    expect(window.dataLayer).toContainEqual([
+      "event",
+      "page_view",
+      expect.objectContaining({
+        page_path: "/bums?source=qa",
+        page_location: expect.stringContaining("/bums?source=qa"),
+      }),
+    ]);
   });
 });

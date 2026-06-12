@@ -75,8 +75,11 @@ export function GoogleAnalytics() {
           ad_user_data: "denied",
           ad_personalization: "denied",
         });
-        window.gtag?.("config", measurementId, {
-          page_path: `${location.pathname}${location.search}`,
+        const pagePath = `${location.pathname}${location.search}`;
+        window.gtag?.("event", "page_view", {
+          page_title: document.title,
+          page_location: new URL(pagePath, window.location.origin).href,
+          page_path: pagePath,
         });
       } else {
         denyAnalyticsConsent();
