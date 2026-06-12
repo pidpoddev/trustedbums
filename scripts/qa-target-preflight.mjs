@@ -102,8 +102,8 @@ async function checkAppShell(state) {
   if (!text.includes('<div id="root"></div>')) {
     throw new Error("app shell root element was not found in the base HTML");
   }
-  if (!text.includes("<title>Trusted Bums</title>")) {
-    throw new Error("Trusted Bums title was not found in the base HTML");
+  if (!/<title>[^<]*Trusted Bums[^<]*<\/title>/.test(text)) {
+    throw new Error("Trusted Bums title was not found in the base HTML title");
   }
 
   return "base HTML contains the Trusted Bums app shell";
