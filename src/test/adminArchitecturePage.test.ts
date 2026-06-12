@@ -28,4 +28,20 @@ describe("Admin architecture page", () => {
     expect(architectureSource).toContain("TB-0090");
     expect(architectureSource).toContain("TB-0099");
   });
+
+  it("keeps website tool dashboards visible in Admin", () => {
+    expect(architectureSource).toContain("Website Tool Dashboards");
+    expect(architectureSource).toContain("analytics.google.com/analytics/web/#/a397280322p540873763");
+    expect(architectureSource).toContain("G-P6B5EYQMVN");
+    expect(architectureSource).toContain("www.bing.com/webmasters/home");
+    expect(architectureSource).toContain("search.google.com/search-console");
+    expect(architectureSource).toContain("/admin/performance");
+    expect(architectureSource).toContain("supabase.com/dashboard/project/vaoqvtxqvbptyxddpoju/advisors/performance");
+    expect(architectureSource).toContain("supabase.com/dashboard/project/vaoqvtxqvbptyxddpoju/advisors/security");
+    expect(architectureSource).toContain("transparencyreport.google.com/safe-browsing/search?url=trustedbums.com");
+    expect(architectureSource).toContain("dash.cloudflare.com/?to=/:account/turnstile");
+    expect(architectureSource).toContain("github.com/pidpoddev/trustedbums/actions");
+    expect(architectureSource).toContain("panel.dreamhost.com");
+    expect(architectureSource).toContain("Add every new website analytics, search, performance, security, delivery, or hosting dashboard here");
+  });
 });

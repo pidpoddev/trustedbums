@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { ArrowRight, Database, GitBranch, KeyRound, Network, Server, ShieldCheck } from "lucide-react";
+import { ArrowRight, Database, ExternalLink, GitBranch, KeyRound, Network, Server, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,14 @@ interface Recommendation {
   priority: string;
   title: string;
   summary: string;
+}
+
+interface WebsiteToolLink {
+  category: string;
+  title: string;
+  href: string;
+  summary: string;
+  status: string;
 }
 
 const currentColumns: DiagramColumn[] = [
@@ -115,6 +123,86 @@ const recommendations: Recommendation[] = [
     priority: "P1",
     title: "Prepare Trusted Bums for a mobile app readiness decision",
     summary: "Decide PWA-first, Capacitor, or Expo/React Native only after mobile auth, API lanes, UX blockers, app-store needs, and QA coverage are proven.",
+  },
+];
+
+const websiteToolLinks: WebsiteToolLink[] = [
+  {
+    category: "Analytics",
+    title: "Google Analytics",
+    href: "https://analytics.google.com/analytics/web/#/a397280322p540873763",
+    summary: "GA4 property for Trusted Bums Web, measurement ID G-P6B5EYQMVN.",
+    status: "Production tag",
+  },
+  {
+    category: "Search",
+    title: "Bing Webmaster Tools",
+    href: "https://www.bing.com/webmasters/home?siteUrl=https%3A%2F%2Ftrustedbums.com%2F",
+    summary: "Bing crawl, sitemap, indexing, query, backlink, and URL inspection reports.",
+    status: "Verified site",
+  },
+  {
+    category: "Search",
+    title: "Google Search Console",
+    href: "https://search.google.com/search-console?resource_id=sc-domain%3Atrustedbums.com",
+    summary: "Google indexing, manual actions, security issues, and sitemap visibility.",
+    status: "DNS verified",
+  },
+  {
+    category: "Performance",
+    title: "Admin Performance Metrics",
+    href: "/admin/performance",
+    summary: "Internal Core Web Vitals and route telemetry from performance_metric_events.",
+    status: "Internal dashboard",
+  },
+  {
+    category: "Performance",
+    title: "Supabase Performance Advisors",
+    href: "https://supabase.com/dashboard/project/vaoqvtxqvbptyxddpoju/advisors/performance",
+    summary: "Database performance advisor findings for the Trusted Bums Supabase project.",
+    status: "Project vaoqvtxqvbptyxddpoju",
+  },
+  {
+    category: "Performance",
+    title: "Cloudflare Web Analytics",
+    href: "https://dash.cloudflare.com/?to=/:account/analytics/web-analytics",
+    summary: "Optional no-cost website analytics when VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN is configured.",
+    status: "Token-backed",
+  },
+  {
+    category: "Security",
+    title: "Supabase Security Advisors",
+    href: "https://supabase.com/dashboard/project/vaoqvtxqvbptyxddpoju/advisors/security",
+    summary: "Database security advisor findings, exposed helpers, RLS, and policy warnings.",
+    status: "Project vaoqvtxqvbptyxddpoju",
+  },
+  {
+    category: "Security",
+    title: "Google Safe Browsing",
+    href: "https://transparencyreport.google.com/safe-browsing/search?url=trustedbums.com",
+    summary: "Public Safe Browsing status check for the production domain.",
+    status: "Public status",
+  },
+  {
+    category: "Security",
+    title: "Cloudflare Turnstile",
+    href: "https://dash.cloudflare.com/?to=/:account/turnstile",
+    summary: "Contact-form bot protection and challenge telemetry.",
+    status: "Contact protection",
+  },
+  {
+    category: "Delivery",
+    title: "GitHub Actions",
+    href: "https://github.com/pidpoddev/trustedbums/actions",
+    summary: "QA, E2E Smoke, visual audits, and DreamHost deployment workflows.",
+    status: "Release evidence",
+  },
+  {
+    category: "Delivery",
+    title: "DreamHost Panel",
+    href: "https://panel.dreamhost.com/",
+    summary: "Production hosting, DNS, TLS, and deployment-provider controls.",
+    status: "Production host",
   },
 ];
 
@@ -261,6 +349,41 @@ export default function AdminArchitecture() {
           </Card>
         ))}
       </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ExternalLink className="h-5 w-5" />
+            Website Tool Dashboards
+          </CardTitle>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Add every new website analytics, search, performance, security, delivery, or hosting dashboard here in the same change that adopts the tool.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {websiteToolLinks.map((tool) => (
+              <a
+                key={tool.title}
+                href={tool.href}
+                target={tool.href.startsWith("http") ? "_blank" : undefined}
+                rel={tool.href.startsWith("http") ? "noreferrer" : undefined}
+                className="group rounded-md border bg-background p-4 text-sm shadow-sm transition-colors hover:border-primary/50 hover:bg-muted/40"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Badge variant="outline">{tool.category}</Badge>
+                    <h3 className="mt-3 font-semibold leading-5 group-hover:text-primary">{tool.title}</h3>
+                  </div>
+                  <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" aria-hidden="true" />
+                </div>
+                <p className="mt-2 leading-6 text-muted-foreground">{tool.summary}</p>
+                <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">{tool.status}</p>
+              </a>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="mt-6">
         <CardHeader>

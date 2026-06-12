@@ -13,6 +13,16 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-12 - Add Admin website tool dashboard directory
+
+- Trigger: User requested Admin backend links for website tooling dashboards, including Google Analytics, Bing Webmaster, performance tools, security tools, and any future tool adopted for the website.
+- Implementation branch: `main`.
+- What changed: Added a Website Tool Dashboards section to [src/pages/admin/AdminArchitecture.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminArchitecture.tsx) with links for Google Analytics, Bing Webmaster Tools, Google Search Console, internal Admin Performance Metrics, Supabase Performance Advisors, Cloudflare Web Analytics, Supabase Security Advisors, Google Safe Browsing, Cloudflare Turnstile, GitHub Actions, and DreamHost Panel. The page now states the operating rule that every newly adopted website analytics, search, performance, security, delivery, or hosting dashboard must be added there in the same change.
+- Main surfaces changed: [src/pages/admin/AdminArchitecture.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminArchitecture.tsx), [src/test/adminArchitecturePage.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/adminArchitecturePage.test.ts), and [docs/codex-edit-log.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/codex-edit-log.md).
+- Checks run: `corepack pnpm exec vitest run src/test/adminArchitecturePage.test.ts`; `corepack pnpm run build`.
+- Recheck agents: Technology Architect, Data Analytics Engineer, Security Engineer, Performance Engineer, Trust/Reputation Specialist, Release Verification Agent, and Lead Developer.
+- Next run should verify: whether any newly signed-up website dashboard is missing from Admin Architecture and whether tool access limitations still need to be mirrored in `docs/consultant-access-needs.md`.
+
 ### 2026-06-12 - Refresh lead developer recommendations for exact head `d360570`
 
 - Trigger: Trusted Bums daily lead developer automation reran after the exact-head overnight specialist set moved from `349bbe0` to `d360570`, corrected the standard visual failure to harness item `TB-0092`, shipped the Google Analytics consent fix on exact head, and surfaced new dirty-worktree Client Legal or Client IT or beta deal-registration merge risks that were not reflected in the checked-in lead handoff.
