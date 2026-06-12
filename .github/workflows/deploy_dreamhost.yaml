@@ -53,6 +53,8 @@ jobs:
           grep -q '<urlset' dist/sitemap.xml
           test -s dist/robots.txt
           grep -q 'Sitemap: https://trustedbums.com/sitemap.xml' dist/robots.txt
+          test -s dist/c6e13fa24dba32bdab55120a5dab7df3.txt
+          grep -qx 'c6e13fa24dba32bdab55120a5dab7df3' dist/c6e13fa24dba32bdab55120a5dab7df3.txt
           grep -Fq 'sitemap\.xml|robots\.txt' dist/.htaccess
           grep -q '<title>Privacy</title>' dist/privacy-policy/index.html
           grep -q 'href="https://trustedbums.com/legal/terms-of-service"' dist/legal/terms-of-service/index.html
@@ -67,3 +69,6 @@ jobs:
           SOURCE: dist/
           ARGS: "-rlgoDzvc --delete"
           EXCLUDE: "/node_modules/, /.git/, /.github/"
+
+      - name: Submit production URLs to Bing IndexNow
+        run: pnpm run indexnow:submit

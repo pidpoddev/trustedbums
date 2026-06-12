@@ -13,6 +13,7 @@
     "qa": "pnpm run lint && pnpm run test && pnpm run build",
     "qa:env": "node scripts/verify-qa-env.mjs",
     "qa:target-preflight": "node scripts/qa-target-preflight.mjs",
+    "indexnow:submit": "node scripts/submit-indexnow.mjs",
     "qa:go-live": "playwright test tests/e2e/go-live-client-bum-workflow.spec.ts --project=chromium",
     "qa:deep": "playwright test tests/e2e/deep-workflow-hotfix-audit.spec.ts --project=chromium",
     "qa:visual": "playwright test tests/e2e/visual-ui-audit.spec.ts",
