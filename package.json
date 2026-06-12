@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/render-route-metadata.mjs",
+    "build": "eslint . && vite build && node scripts/render-route-metadata.mjs",
     "build:dev": "vite build --mode development && node scripts/render-route-metadata.mjs",
     "lint": "eslint .",
     "preview": "vite preview",

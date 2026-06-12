@@ -89,16 +89,29 @@ export default function BumTeamManagement() {
     enabled: Boolean(user && userId && isManagingBum),
   });
 
-  const activeMemberships = (teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED");
-  const activeMemberIds = new Set(
-    activeMemberships
-      .filter((membership) => membership.status === "ACTIVE")
-      .map((membership) => membership.member_bum_user_id)
-      .filter(Boolean) as string[],
+  const activeMemberships = useMemo(
+    () => (teamQuery.data ?? []).filter((membership) => membership.status !== "REMOVED"),
+    [teamQuery.data],
   );
-  const teamClaims = (claimsQuery.data ?? []).filter((claim) => activeMemberIds.has(claim.bum_user_id));
-  const teamPayouts = (payoutsQuery.data ?? []).filter((payout) => activeMemberIds.has(payout.bum_user_id));
-  const managerAllocations = allocationsQuery.data ?? [];
+  const activeMemberIds = useMemo(
+    () =>
+      new Set(
+        activeMemberships
+          .filter((membership) => membership.status === "ACTIVE")
+          .map((membership) => membership.member_bum_user_id)
+          .filter(Boolean) as string[],
+      ),
+    [activeMemberships],
+  );
+  const teamClaims = useMemo(
+    () => (claimsQuery.data ?? []).filter((claim) => activeMemberIds.has(claim.bum_user_id)),
+    [activeMemberIds, claimsQuery.data],
+  );
+  const teamPayouts = useMemo(
+    () => (payoutsQuery.data ?? []).filter((payout) => activeMemberIds.has(payout.bum_user_id)),
+    [activeMemberIds, payoutsQuery.data],
+  );
+  const managerAllocations = useMemo(() => allocationsQuery.data ?? [], [allocationsQuery.data]);
 
   const teamRows = useMemo(
     () =>
