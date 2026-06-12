@@ -1,14 +1,14 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
-import { PanelLeft } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -156,7 +156,7 @@ const Sidebar = React.forwardRef<
         <SheetContent
           data-sidebar="sidebar"
           data-mobile="true"
-          className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="w-[--sidebar-width] gap-0 bg-sidebar p-0 text-sidebar-foreground [&>button]:right-3 [&>button]:top-3 [&>button]:rounded-md [&>button]:p-2 [&>button]:text-sidebar-foreground [&>button]:opacity-100 [&>button]:hover:bg-sidebar-accent [&>button]:hover:text-sidebar-accent-foreground [&>button]:focus:ring-sidebar-ring [&>button>svg]:h-5 [&>button>svg]:w-5"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -164,7 +164,10 @@ const Sidebar = React.forwardRef<
           }
           side={side}
         >
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <SheetHeader className="border-b border-sidebar-border px-4 py-3 pr-14 text-left">
+            <SheetTitle className="text-base font-semibold text-sidebar-foreground">Portal navigation</SheetTitle>
+          </SheetHeader>
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
         </SheetContent>
       </Sheet>
     );
@@ -218,12 +221,15 @@ Sidebar.displayName = "Sidebar";
 
 const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.ComponentProps<typeof Button>>(
   ({ className, onClick, ...props }, ref) => {
-    const { toggleSidebar } = useSidebar();
+    const { isMobile, openMobile, state, toggleSidebar } = useSidebar();
 
     return (
       <Button
         ref={ref}
         data-sidebar="trigger"
+        aria-expanded={isMobile ? openMobile : state === "expanded"}
+        aria-label="Toggle portal navigation"
+        title="Toggle portal navigation"
         variant="ghost"
         size="icon"
         className={cn("h-7 w-7", className)}
@@ -233,8 +239,8 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
         }}
         {...props}
       >
-        <PanelLeft />
-        <span className="sr-only">Toggle Sidebar</span>
+        <Menu />
+        <span className="sr-only">Toggle portal navigation</span>
       </Button>
     );
   },
