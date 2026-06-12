@@ -11,6 +11,7 @@ function read(path: string) {
 const extensionManifest = JSON.parse(read("chrome-extension/trustedbums/manifest.json")) as {
   host_permissions: string[];
 };
+const buildScript = read("scripts/build-chrome-extension.mjs");
 
 describe("Bum extension download gating", () => {
   it("keeps the pre-store extension out of public static assets", () => {
@@ -50,5 +51,10 @@ describe("Bum extension download gating", () => {
     expect(extensionManifest.host_permissions).toContain("https://vaoqvtxqvbptyxddpoju.supabase.co/*");
     expect(extensionManifest.host_permissions).not.toContain("https://*.supabase.co/*");
     expect(extensionManifest.host_permissions).not.toContain("https://api.trustedbums.com/*");
+  });
+
+  it("honors placeholder builds when pnpm forwards a separator", () => {
+    expect(buildScript).toContain('process.argv.slice(2).filter((arg) => arg !== "--")');
+    expect(buildScript).toContain('forwardedArgs.includes("--allow-placeholders")');
   });
 });

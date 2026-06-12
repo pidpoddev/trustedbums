@@ -32,7 +32,7 @@ export function ClientTermsGate() {
   if (!canContinueWithCurrentTerms) {
     const termsPath = user.role === "BUM" ? "/bum/terms" : "/client/terms";
 
-    return <Navigate to={termsPath} replace state={{ from: location.pathname }} />;
+    return <Navigate to={termsPath} replace state={{ from: `${location.pathname}${location.search}${location.hash}` }} />;
   }
 
   return <Outlet />;

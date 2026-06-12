@@ -449,8 +449,10 @@ async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedP
 
     await waitForProtectedRouteSettle(page);
 
-    const currentPath = new URL(page.url()).pathname.replace(/\/$/, "") || "/";
-    const expectedPath = path.replace(/\/$/, "") || "/";
+    const currentUrl = new URL(page.url());
+    const currentPath = `${currentUrl.pathname.replace(/\/$/, "") || "/"}${currentUrl.search}`;
+    const expectedUrl = new URL(path, currentUrl.origin);
+    const expectedPath = `${expectedUrl.pathname.replace(/\/$/, "") || "/"}${expectedUrl.search}`;
 
     if (currentPath === expectedPath) {
       return;
@@ -470,10 +472,11 @@ async function goToPathAfterTerms(page: Page, path: string, options: GoToAuthedP
 
     if (expectedPath !== "/dashboard") {
       if (await clickRouteLinkIfVisible(page, path)) {
-        await page.waitForURL((url) => url.pathname === expectedPath, { timeout: 5_000 }).catch(() => undefined);
+        await page.waitForURL((url) => `${url.pathname.replace(/\/$/, "") || "/"}${url.search}` === expectedPath, { timeout: 5_000 }).catch(() => undefined);
         await acceptTermsIfPrompted(page, path);
 
-        const clickedPath = new URL(page.url()).pathname.replace(/\/$/, "") || "/";
+        const clickedUrl = new URL(page.url());
+        const clickedPath = `${clickedUrl.pathname.replace(/\/$/, "") || "/"}${clickedUrl.search}`;
 
         if (clickedPath === expectedPath) {
           return;

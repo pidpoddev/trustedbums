@@ -317,7 +317,7 @@ async function expectReasonablePageHeight(page: Page) {
 async function expectNoObviousErrorPage(page: Page) {
   const text = await page.locator("body").innerText();
 
-  expect(text).not.toMatch(/configuration needed|set a production clerk publishable key|404|page not found/i);
+  expect(text).not.toMatch(/configuration needed|set a production clerk publishable key|404 page not found|page not found|route not found|not found —/i);
 }
 
 async function dismissConsentBanner(page: Page) {

@@ -8,8 +8,9 @@ const sourceDir = path.join(root, "chrome-extension", "trustedbums");
 const outputDir = path.join(root, "dist", "chrome-extension", "trustedbums");
 const packageDir = path.join(root, "dist", "chrome-extension");
 const zipPath = path.join(packageDir, "trustedbums-extension.zip");
-const isPackageBuild = process.argv.includes("--zip");
-const allowPlaceholders = process.argv.includes("--allow-placeholders");
+const forwardedArgs = process.argv.slice(2).filter((arg) => arg !== "--");
+const isPackageBuild = forwardedArgs.includes("--zip");
+const allowPlaceholders = forwardedArgs.includes("--allow-placeholders");
 
 const clerkFrontendApi = process.env.CLERK_FRONTEND_API || process.env.CLERK_FRONTEND_API_URL || "";
 const apiBaseUrl =

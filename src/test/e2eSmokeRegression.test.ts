@@ -9,6 +9,7 @@ const fieldHelpSource = readFileSync("src/components/FieldHelp.tsx", "utf8");
 const publicIndexSource = readFileSync("src/pages/Index.tsx", "utf8");
 const clientDashboardSource = readFileSync("src/pages/client/ClientDashboard.tsx", "utf8");
 const clientTermsSource = readFileSync("src/pages/client/ClientTerms.tsx", "utf8");
+const e2eAuthHelperSource = readFileSync("tests/e2e/helpers/auth.ts", "utf8");
 const deniedAccessRecoverySource =
   clientDashboardSource.match(/function getDeniedAccessRecovery[\s\S]*?\n}\n\nfunction NextActionsCard/)?.[0] ?? "";
 
@@ -67,5 +68,11 @@ describe("E2E smoke regression coverage", () => {
     expect(deniedAccessRecoverySource).not.toContain('to: "/client/profile"');
     expect(clientTermsSource).toContain("Continue This Session");
     expect(clientTermsSource).not.toContain("Skip This Login");
+  });
+
+  it("keeps authenticated E2E navigation strict for tabbed routes", () => {
+    expect(e2eAuthHelperSource).toContain("currentUrl.search");
+    expect(e2eAuthHelperSource).toContain("expectedUrl.search");
+    expect(e2eAuthHelperSource).toContain("new URL(path, currentUrl.origin)");
   });
 });

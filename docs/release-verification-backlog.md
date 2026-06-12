@@ -4,24 +4,24 @@ _Last updated: 2026-06-12 by Codex agent rebaseline._
 
 ## Release Decision
 
-Decision: `HOLD-DEPLOY` for current `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2`.
+Decision: `HOLD-DEPLOY` for the latest `main` head after this follow-up.
 
-Current exact-head hosted evidence is green for `QA`, DreamHost deploy, and `E2E Smoke` on `dc9bd01`, and the local Code Review marker has been refreshed for that exact commit after source/security review. The release remains `HOLD-DEPLOY`, not a clean release `GO`, because the standard Visual UI Audit is not current for `dc9bd01` and the newly merged privileged surfaces, `api-access-keys` and `admin-shared-mailbox`, still need live Supabase/security proof or an explicit waiver. No rollback or hotfix-forward is indicated from the available evidence.
+Current hosted evidence is green for `QA`, DreamHost deploy, and `E2E Smoke` on pushed docs head `3f203d1`. This follow-up source fix narrows the `TB-0092` visual false positive and preserves query state for tabbed terms-gated routes. The release remains `HOLD-DEPLOY`, not a clean release `GO`, because the standard Visual UI Audit has not yet been rerun after the source fix and the newly merged privileged surfaces, `api-access-keys` and `admin-shared-mailbox`, still need live Supabase/security proof or an explicit waiver. No rollback or hotfix-forward is indicated from the available evidence.
 
 ## Evidence Summary
 
-- Current `main` head: `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2` (`Add API access key portal UI`).
+- Current pushed evidence head before this follow-up: `3f203d15896d6f9d36c7977de372085b7e1ba6eb` (`Rebaseline agent release governance`). This follow-up contains the `TB-0092` harness/navigation fixes and must be validated by its own post-push checks.
 - Current release-chain commits reviewed in this rebaseline include `e1a2905` shared mailbox inbox, `9e51722` Clerk issuer hardening, `123185e` API access key management, and `dc9bd01` API access key portal UI.
-- GitHub `QA` run `27413665159` on `dc9bd01`: passed.
-- GitHub `Deploy TrustedBums to DreamHost` run `27413665134` on `dc9bd01`: passed.
-- GitHub `E2E Smoke` run `27413702607` on `dc9bd01`: passed.
-- Exact-head deep coverage inside `27413702607`: `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)` all passed.
+- GitHub `QA` run `27414752682` on `3f203d1`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27414752664` on `3f203d1`: passed.
+- GitHub `E2E Smoke` run `27414783377` on `3f203d1`: passed.
+- Exact-head deep coverage inside `27414783377`: `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)` all passed.
 - Local focused source/security tests: `corepack pnpm exec vitest run src/test/apiAccessKeys.test.ts src/test/adminSharedMailbox.test.ts src/test/clientLegalItRoles.test.ts` passed 10/10.
 - Local full QA from the rebaseline window: `corepack pnpm run qa` passed with lint, Vitest 190/190 tests, and production build.
-- Exact Code Review marker: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) records `GO` for `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2`, reviewed at `2026-06-12T12:02:36Z`.
-- Exact-head visual status: no standard `Visual UI Audit` run was current for `dc9bd01` at rebaseline time. The latest known Visual UI Audit/Complete Visual UI Audit failures were on older `d360570` evidence and remain harness follow-ups through `TB-0092`.
+- Exact Code Review marker: refresh the local [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) to the follow-up commit before pushing.
+- Exact-head visual status: no standard `Visual UI Audit` run was current after the `TB-0092` source fix at rebaseline time. The latest known Visual UI Audit/Complete Visual UI Audit failures were on older `d360570` evidence and need a successor rerun.
 - Live Supabase/security status for new functions: not refreshed in this rebaseline. Source review confirmed Clerk issuer pinning, profile role checks, metadata-only API key storage, approved shared mailbox enforcement, and audit-event writes; Release Verification still needs live deployed function/config/advisor proof for `api-access-keys` and `admin-shared-mailbox`.
-- Current local drift note: the worktree was clean against `origin/main` before the rebaseline docs were updated.
+- Current local drift note: none intended after the follow-up commit; the source fix should push as one scoped harness/navigation commit after local gate and QA pass.
 
 Older sections below that mention `d360570` are historical carry-forward context unless explicitly updated by this `dc9bd01` rebaseline.
 
@@ -33,11 +33,10 @@ Older sections below that mention `d360570` are historical carry-forward context
 - Recommendation: Let QA Harness Reliability clear or waive `TB-0092`, rerun standard visual QA on `dc9bd01`, and have Security/Release Verification perform live deployed checks for `api-access-keys` and `admin-shared-mailbox`.
 - Acceptance criteria: Code Review marker matches `dc9bd01`, a successor exact-head standard visual run completes cleanly or is explicitly waived, and live checks prove the new privileged functions are deployed with the intended Clerk issuer, role, secret, audit, and RLS posture.
 
-### P1 - [TB-0092] Exact-head standard visual QA is red because the error-page regex is too broad
-- Evidence: `Visual UI Audit` run `27395701277` captured `/admin/scrum` with normal tracker content, but [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts) still fails any body text containing `404`. Current tracker descriptions include legitimate phrases such as `unknown endpoint 404`, so both `chromium` and `mobile-chrome` fail before the standard admin route set can finish.
+- Evidence: `Visual UI Audit` run `27395701277` captured `/admin/scrum` with normal tracker content, but [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts) failed any body text containing `404`. The local source fix narrows detection to real error-page phrases; a successor standard visual run is still needed.
 - Impact: Release Verification loses a clean exact-head standard visual signal even though the route health evidence points to a harness defect, not an outage or broken admin page.
-- Recommendation: Narrow the regex to real error-page surfaces and rerun standard exact-head visual QA.
-- Acceptance criteria: `/admin/scrum` no longer fails just because tracker text contains `404`, while real config/error pages still fail loudly.
+- Recommendation: Commit the narrowed regex and rerun standard exact-head visual QA.
+- Acceptance criteria: `/admin/scrum` no longer fails just because tracker text contains `404`, while real config/error pages still fail loudly, and the successor standard visual run passes or produces a new product finding.
 
 ### P1 - [TB-0054] Exact-head smoke artifacts still drop preflight summaries
 - Evidence: the latest confirmed artifact gap came from `E2E Smoke` `27371773276` on older `d360570`, where the downloaded success artifact tree omitted `qa-target-preflight` `summary.json` and `summary.txt`. Current `dc9bd01` E2E Smoke `27413702607` passed, but artifact retention still needs to be rechecked before closing `TB-0054`.

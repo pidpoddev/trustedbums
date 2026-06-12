@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ClientAccessRoute } from "@/components/ClientAccessRoute";
 import { ClientTermsGate } from "@/components/ClientTermsGate";
@@ -49,6 +49,12 @@ function makeUser(role: UserRole, clientAccessRole?: ClientAccessRole): AuthUser
     clientId: role === "CLIENT" ? "client-1" : undefined,
     bumId: role === "BUM" ? "bum-1" : undefined,
   };
+}
+
+function TermsStateProbe() {
+  const location = useLocation();
+  const state = location.state as { from?: string } | null;
+  return <div>Terms from: {state?.from ?? "none"}</div>;
 }
 
 describe("route guards", () => {
@@ -167,6 +173,26 @@ describe("route guards", () => {
     );
 
     expect(await screen.findByText("Terms page")).toBeInTheDocument();
+  });
+
+  it("preserves query strings when terms-gating tabbed client routes", async () => {
+    authState.value.user = makeUser("CLIENT", "CLIENT_ADMIN");
+    authState.value.isSignedIn = true;
+    termsState.value.hasAcceptedCurrentTerms = false;
+    termsState.value.canContinueWithCurrentTerms = false;
+
+    render(
+      <MemoryRouter initialEntries={["/client/opportunities?tab=bum-originated"]} future={routerFuture}>
+        <Routes>
+          <Route element={<ClientTermsGate />}>
+            <Route path="/client/opportunities" element={<div>Opportunities</div>} />
+          </Route>
+          <Route path="/client/terms" element={<TermsStateProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Terms from: /client/opportunities?tab=bum-originated")).toBeInTheDocument();
   });
 
   it("does not terms-gate admin users", () => {

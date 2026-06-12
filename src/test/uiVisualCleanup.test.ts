@@ -13,6 +13,7 @@ const tooltipSource = readFileSync("src/components/ui/tooltip.tsx", "utf8");
 const adminScrumTrackerSource = readFileSync("src/pages/admin/AdminScrumTracker.tsx", "utf8");
 const selectSource = readFileSync("src/components/ui/select.tsx", "utf8");
 const bumContactsSource = readFileSync("src/pages/bum/BumContacts.tsx", "utf8");
+const visualAuditSource = readFileSync("tests/e2e/visual-ui-audit.spec.ts", "utf8");
 
 describe("UI visual cleanup guardrails", () => {
   it("keeps dialogs above fixed portal widgets with opaque surfaces", () => {
@@ -86,5 +87,11 @@ describe("UI visual cleanup guardrails", () => {
   it("keeps the long scrum tracker list inside a bounded scroll area", () => {
     expect(adminScrumTrackerSource).toContain("max-h-[620px] overflow-auto overscroll-contain rounded-md border md:max-h-[720px]");
     expect(adminScrumTrackerSource).toContain('TableHeader className="sticky top-0 z-10 bg-background"');
+  });
+
+  it("keeps visual error-page detection focused on real route failures", () => {
+    expect(visualAuditSource).toContain("404 page not found");
+    expect(visualAuditSource).toContain("route not found");
+    expect(visualAuditSource).not.toContain("configuration needed|set a production clerk publishable key|404|page not found");
   });
 });

@@ -4,26 +4,27 @@ _Last updated: 2026-06-12 by Codex agent rebaseline._
 
 ## Executive Read
 
-Current release status stays `HOLD-DEPLOY` for exact `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2`.
+Current release status stays `HOLD-DEPLOY` for the latest `main` head after this follow-up.
 
 - Completed work:
   - The merged `main` head is clean and includes shared mailbox inbox, Clerk issuer hardening, API access key management, and API access key portal UI.
   - Code Review was refreshed locally for exact head `dc9bd01` after source/security review of `api-access-keys`, `admin-shared-mailbox`, issuer pinning, role checks, metadata-only API key storage, and focused tests.
-  - Exact-head hosted evidence is green where the lane is healthy: GitHub `QA` run `27413665159`, DreamHost deploy run `27413665134`, and `E2E Smoke` run `27413702607` all passed on `dc9bd01`.
+  - Exact-head hosted evidence is green where the lane is healthy: GitHub `QA` run `27414752682`, DreamHost deploy run `27414752664`, and `E2E Smoke` run `27414783377` all passed on `3f203d1`.
+  - The follow-up harness/navigation source fix preserves tabbed route query state through terms gating and narrows visual error-page detection to real route failures.
   - Local validation passed: focused API/mailbox/role tests, then full `corepack pnpm run qa` with lint, Vitest 190/190 tests, and production build.
 - Current priorities:
-  - rerun or explicitly waive exact-head standard Visual UI Audit for `dc9bd01`;
+  - rerun or explicitly waive exact-head standard Visual UI Audit after this `TB-0092` source fix is pushed;
   - complete live Supabase/security proof for the newly merged privileged functions `api-access-keys` and `admin-shared-mailbox`;
   - fix QA harness items `TB-0092` and `TB-0054` so release evidence stops losing the standard visual lane and preflight artifacts;
   - refresh stale specialist backlogs that still point at `d360570` or source-only Client Legal/IT/deal-registration wording;
   - after release evidence and security proof settle, take the route-shape and access-contract stack `TB-0047`, `TB-0051`, `TB-0044`, and `TB-0045`.
 - Current blockers:
-  - Standard exact-head Visual UI Audit is not current for `dc9bd01`; older `d360570` red visual evidence remains tracked through `TB-0092`.
+  - Standard exact-head Visual UI Audit is not current after the local `TB-0092` source fix; older `d360570` red visual evidence remains the last failed visual proof.
   - The new service-role Edge Functions are source-reviewed but still need live deployed Supabase/security proof.
   - Several specialist backlogs remain stale after the merge and need rebase before their recommendations are treated as current release blockers.
   - Google Analytics property access, CRM truth, support queue exports, mailbox recheck access, and reputation dashboards are still missing, so several growth, content, and analytics conclusions remain evidence-limited.
 - Recommended next actions:
-  1. Rerun standard Visual UI Audit on `dc9bd01` after the `TB-0092` fix or document an explicit waiver.
+  1. Push the `TB-0092` source fix, then rerun standard Visual UI Audit or document an explicit waiver.
   2. Run Security/Release Verification live checks for `api-access-keys` and `admin-shared-mailbox`, including Clerk issuer, role allow/deny, secrets, audit events, and RLS posture.
   3. Land `TB-0092` and `TB-0054` together so release evidence regains both clean standard visuals and downloadable preflight summaries.
   4. Refresh Product Ops, UX, Content, Trust, Data, Performance, and Architecture backlogs so they cite `dc9bd01` and the merged API access/shared mailbox state.
@@ -36,7 +37,7 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `dc9bd01cbcf9e0
   - Next owner: QA Harness Reliability, Security, Release Verification, then Lead Developer.
   - Implementation queue: no.
 - `TB-0092 Narrow the standard visual audit 404 check`: `READY`.
-  - Reason: QA Harness Reliability proved the current failure is a harness false positive, not a product failure.
+  - Reason: QA Harness Reliability proved the current failure is a harness false positive, not a product failure; this follow-up contains the source fix and still needs post-push visual rerun.
   - Next owner: QA Harness Reliability Agent with Lead Developer follow-through.
   - Implementation queue: yes.
 - `TB-0054 Preserve qa-target-preflight artifacts`: `READY`.
@@ -102,7 +103,7 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `dc9bd01cbcf9e0
 - Classification: `BLOCKED BY ANOTHER SPECIALIST`.
 - Source: [docs/release-verification-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/release-verification-backlog.md), [docs/qa-test-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-test-backlog.md), and [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json).
 - Why now: production looks healthy on exact head and Code Review is current, but the release cannot move past `HOLD-DEPLOY` until exact-head standard visual and live privileged-function proof are complete.
-- Recommended fix: rerun standard `Visual UI Audit` on `dc9bd01` after `TB-0092` lands or is waived, then run live checks for `api-access-keys` and `admin-shared-mailbox`.
+- Recommended fix: push the `TB-0092` source fix, rerun standard `Visual UI Audit` or document a waiver, then run live checks for `api-access-keys` and `admin-shared-mailbox`.
 - Likely files/routes: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json), [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts), and the visual QA workflow files.
 - Dependencies/risks: any new merge or push after the review restarts the gate; the standard visual rerun is still blocked on the harness regex.
 - Acceptance criteria: Code Review marker matches `dc9bd01`, a successor standard visual run passes or is explicitly waived, and live checks prove the new privileged functions.
@@ -162,7 +163,7 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `dc9bd01cbcf9e0
 
 ### Release Gate Playbook
 
-- Keep release truth anchored to exact head `dc9bd01`.
+- Keep release truth anchored to the latest pushed head and rerun the gate after each follow-up commit.
 - Treat `TB-0092` as harness work, not product work.
 - Do not move beyond `HOLD-DEPLOY` until standard exact-head visual QA reruns cleanly or is waived and live privileged-function proof is complete.
 
@@ -193,7 +194,7 @@ Current release status stays `HOLD-DEPLOY` for exact `main` head `dc9bd01cbcf9e0
   - GitHub `QA` `27413665159`: passed.
   - DreamHost deploy `27413665134`: passed.
   - GitHub `E2E Smoke` `27413702607`: passed `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
-  - Standard `Visual UI Audit`: not current for `dc9bd01`; older `d360570` evidence remains tied to `TB-0092`.
+  - Standard `Visual UI Audit`: not current after the `TB-0092` source fix; older `d360570` evidence remains tied to the harness false positive.
 - Current decision: `HOLD-DEPLOY`.
 - Why still holding:
   - standard visual evidence is not current for `dc9bd01`;

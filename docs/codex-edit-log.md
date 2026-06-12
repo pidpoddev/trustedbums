@@ -13,6 +13,16 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-12 - Fix visual false positive and tabbed terms return paths
+
+- Trigger: Follow-up from the agent rebaseline found the standard visual audit `404` detector was still too broad and tabbed client routes needed query-preserving terms-gate return handling.
+- Implementation branch: `main` after `3f203d1`.
+- What changed: Narrowed [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts) to detect real error-page phrases instead of any body text containing `404`; preserved query/hash state in [`src/components/ClientTermsGate.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/ClientTermsGate.tsx); made [`tests/e2e/helpers/auth.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/auth.ts) compare path plus query for tabbed authenticated routes; and made [`scripts/build-chrome-extension.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/build-chrome-extension.mjs) ignore a forwarded `--` separator when reading `--zip` and `--allow-placeholders`.
+- Main surfaces changed: [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts), [`tests/e2e/helpers/auth.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/auth.ts), [`src/components/ClientTermsGate.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/ClientTermsGate.tsx), [`scripts/build-chrome-extension.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/build-chrome-extension.mjs), related source guards, and this edit log.
+- Checks run: targeted Vitest for route guards, visual cleanup, E2E smoke regression, and Bum extension download; full `corepack pnpm run qa`; post-push GitHub `QA`, deploy, and `E2E Smoke` should be watched after commit.
+- Recheck agents: QA Harness Reliability Agent, Release Verification Agent, QA Test Engineer, Lead Developer, and Technology Architect.
+- Next run should verify: standard Visual UI Audit runs cleanly on the new head or produces a new product finding, and authenticated client deep-link/tab routes return to the same query state after terms acceptance.
+
 ### 2026-06-12 - Rebaseline agent roles and release authority on merged head `dc9bd01`
 
 - Trigger: Ryan asked to run all agents against the fully merged code and re-establish each agent's role in decisions such as `GO` and `NO-GO`.
