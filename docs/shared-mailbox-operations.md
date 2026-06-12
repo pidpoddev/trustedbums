@@ -35,10 +35,10 @@ The Microsoft app should not have practical read access to unrelated employee or
 ## Implementation Queue
 
 1. Store parsed DMARC aggregate results in an admin-only table for trend review.
-2. Extend the current DMARC reader into a shared inbox intake service.
-3. Add categories for DMARC, legal, question, complaint, privacy, abuse, support, and uncategorized.
-4. Add an Admin Portal shared inbox/reputation intake surface.
-5. Add retention and redaction rules before storing message bodies or attachments.
+2. Extend the current DMARC reader into a shared inbox intake service. `20260612143000_add_admin_shared_mailbox_inbox.sql` adds admin-only shared mailbox messages and send-event tables, and `admin-shared-mailbox` syncs `bums@trustedbums.com` through mailbox-scoped Microsoft Graph access.
+3. Add categories for DMARC, legal, question, complaint, privacy, abuse, support, client criteria, and uncategorized. The shared mailbox sync now assigns these first-pass categories for admin triage.
+4. Add an Admin Portal shared inbox/reputation intake surface. `/admin/inbox` now gives admins a shared Inbox with an External mail switch, mailbox sync, compose, reply, reply-all, and handled/in-progress status actions.
+5. Add retention and redaction rules before storing attachments. Message bodies are stored only for the admin shared-mailbox workflow; attachments remain metadata-only in this slice.
 6. Add a client-criteria intake path that can turn approved client replies into structured opportunity-routing rules.
 
 ## Evidence Status

@@ -35,6 +35,7 @@ import {
   Handshake,
   ClipboardList,
   Network,
+  MessageSquare,
   type LucideIcon,
 } from "lucide-react";
 
@@ -53,6 +54,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
       { title: "Bums", url: "/admin/bums", icon: Users },
       { title: "Opportunities", url: "/admin/opportunities", icon: Target },
       { title: "Handoffs", url: "/admin/handoffs", icon: Handshake },
+      { title: "Inbox", url: "/admin/inbox", icon: MessageSquare },
       { title: "Live Conversations", url: "/admin/live-conversations", icon: Video },
     ],
   },

@@ -34,6 +34,7 @@ const AdminCredits = lazy(() => import("./pages/admin/AdminCredits"));
 const AdminCommissionPlans = lazy(() => import("./pages/admin/AdminCommissionPlans"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
 const AdminPayouts = lazy(() => import("./pages/admin/AdminPayouts"));
+const AdminInbox = lazy(() => import("./pages/admin/AdminInbox"));
 const AdminLiveConversations = lazy(() => import("./pages/admin/AdminLiveConversations"));
 const AdminEmails = lazy(() => import("./pages/admin/AdminEmails"));
 const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
@@ -128,6 +129,7 @@ const App = () => (
                       <Route path="commission-plans" element={<AdminCommissionPlans />} />
                       <Route path="payments" element={<AdminPayments />} />
                       <Route path="payouts" element={<AdminPayouts />} />
+                      <Route path="inbox" element={<AdminInbox />} />
                       <Route path="live-conversations" element={<AdminLiveConversations />} />
                       <Route path="emails" element={<AdminEmails />} />
                       <Route path="training-assets" element={<AdminTrainingAssets />} />

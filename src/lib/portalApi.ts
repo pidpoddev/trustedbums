@@ -433,6 +433,80 @@ export type AdminEmailScheduleInput = Pick<AdminEmailScheduleRecord, "name" | "t
 export type AdminEmailTriggerRuleInput = Pick<AdminEmailTriggerRuleRecord, "name" | "trigger_event" | "template_id" | "is_active" | "delay_minutes" | "conditions">;
 export type AdminEmailBrandSettingsInput = Pick<AdminEmailBrandSettingsRecord, "sender_name" | "logo_url" | "accent_color" | "footer_text" | "physical_address">;
 
+export type AdminSharedMailboxCategory = "dmarc" | "legal" | "question" | "complaint" | "privacy" | "abuse" | "support" | "client_criteria" | "uncategorized";
+export type AdminSharedMailboxStatus = "OPEN" | "IN_PROGRESS" | "HANDLED" | "ARCHIVED";
+export type AdminSharedMailboxDirection = "INBOUND" | "OUTBOUND";
+export type AdminSharedMailboxSendAction = "NEW" | "REPLY" | "REPLY_ALL";
+
+export interface AdminSharedMailboxRecipient {
+  email: string;
+  name: string | null;
+}
+
+export interface AdminSharedMailboxSendEvent {
+  id: string;
+  mailbox_message_id: string | null;
+  action: AdminSharedMailboxSendAction;
+  from_mailbox: string;
+  to_recipients: string[];
+  cc_recipients: string[];
+  subject: string | null;
+  body: string;
+  status: "QUEUED" | "SENT" | "FAILED";
+  error: string | null;
+  sent_by: string | null;
+  sent_at: string | null;
+  created_at: string;
+}
+
+export interface AdminSharedMailboxMessage {
+  id: string;
+  mailbox: string;
+  graph_message_id: string;
+  internet_message_id: string | null;
+  graph_conversation_id: string | null;
+  direction: AdminSharedMailboxDirection;
+  subject: string;
+  body_preview: string | null;
+  body_content: string | null;
+  body_content_type: "text" | "html";
+  from_email: string | null;
+  from_name: string | null;
+  to_recipients: AdminSharedMailboxRecipient[];
+  cc_recipients: AdminSharedMailboxRecipient[];
+  received_at: string | null;
+  sent_at: string | null;
+  has_attachments: boolean;
+  is_read: boolean;
+  importance: string | null;
+  web_link: string | null;
+  category: AdminSharedMailboxCategory;
+  status: AdminSharedMailboxStatus;
+  assigned_to: string | null;
+  handled_by: string | null;
+  handled_at: string | null;
+  last_synced_at: string;
+  created_at: string;
+  updated_at: string;
+  admin_shared_mailbox_send_events?: AdminSharedMailboxSendEvent[];
+}
+
+export interface AdminSharedMailboxSyncResult {
+  mailbox: string;
+  scanned: number;
+  synced: number;
+  nextLinkPresent: boolean;
+}
+
+export interface AdminSharedMailboxSendInput {
+  action: AdminSharedMailboxSendAction;
+  messageId?: string;
+  to?: string[];
+  cc?: string[];
+  subject?: string;
+  body: string;
+}
+
 export interface ProspectRecommendationRecord {
   id: string;
   company_id: string;
@@ -5353,6 +5427,58 @@ export async function saveAdminEmailBrandSettings(user: AuthUser, input: AdminEm
 
 export async function sendAdminEmail(input: AdminEmailSendInput) {
   return await invokeAdminEmailFunction<AdminEmailSendResult>(input, "Unable to send admin email.");
+}
+
+type AdminSharedMailboxOperationResponse<T> = { data?: T; error?: string };
+
+async function invokeAdminSharedMailboxOperation<T>(operation: string, payload?: Record<string, unknown>) {
+  const token = await getSupabaseAccessToken("session");
+
+  if (!token) {
+    throw new Error("Sign in before using the shared mailbox.");
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/admin-shared-mailbox`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ operation, ...(payload ?? {}) }),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as AdminSharedMailboxOperationResponse<T>;
+
+  if (!response.ok || data.error) {
+    throw new Error(data.error || "Unable to use the shared mailbox.");
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(data, "data")) {
+    throw new Error("Shared mailbox returned no response.");
+  }
+
+  return data.data as T;
+}
+
+export async function syncAdminSharedMailbox(options: { top?: number; days?: number } = {}) {
+  return await invokeAdminSharedMailboxOperation<AdminSharedMailboxSyncResult>("sync", options);
+}
+
+export async function listAdminSharedMailboxMessages(options: { status?: AdminSharedMailboxStatus | "ALL"; category?: AdminSharedMailboxCategory | "ALL"; top?: number } = {}) {
+  return await invokeAdminSharedMailboxOperation<AdminSharedMailboxMessage[]>("list_messages", options);
+}
+
+export async function getAdminSharedMailboxMessage(messageId: string) {
+  return await invokeAdminSharedMailboxOperation<AdminSharedMailboxMessage>("get_message", { messageId });
+}
+
+export async function sendAdminSharedMailboxMessage(input: AdminSharedMailboxSendInput) {
+  return await invokeAdminSharedMailboxOperation<{ sent: boolean; action: AdminSharedMailboxSendAction; eventId: string }>("send_message", input);
+}
+
+export async function updateAdminSharedMailboxStatus(messageId: string, status: AdminSharedMailboxStatus) {
+  return await invokeAdminSharedMailboxOperation<AdminSharedMailboxMessage>("update_status", { messageId, status });
 }
 
 export async function listCompanies(options: { includeInactive?: boolean } = {}) {
