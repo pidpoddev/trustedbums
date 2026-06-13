@@ -28,6 +28,12 @@ function writeAnalyticsConsent(analytics: boolean) {
   window.localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(record));
 }
 
+function readGtagCommands() {
+  return (window.dataLayer ?? [])
+    .filter((entry): entry is ArrayLike<unknown> => typeof entry === "object" && entry !== null && "length" in entry)
+    .map((entry) => Array.from(entry));
+}
+
 async function renderGoogleAnalytics(route = "/") {
   vi.resetModules();
   vi.stubEnv("VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID", measurementId);
@@ -60,13 +66,10 @@ describe("GoogleAnalytics consent gating", () => {
     });
 
     expect(script?.src).toBe(`https://www.googletagmanager.com/gtag/js?id=${measurementId}`);
-    expect(window.dataLayer).toContainEqual(["consent", "default", expect.objectContaining({ analytics_storage: "denied" })]);
-    expect(window.dataLayer).toContainEqual(["config", measurementId, { send_page_view: false }]);
-    expect(window.dataLayer).not.toContainEqual([
-      "event",
-      "page_view",
-      expect.any(Object),
-    ]);
+    const commands = readGtagCommands();
+    expect(commands).toContainEqual(["consent", "default", expect.objectContaining({ analytics_storage: "denied" })]);
+    expect(commands).toContainEqual(["config", measurementId, { send_page_view: false }]);
+    expect(commands).not.toContainEqual(["config", measurementId, expect.objectContaining({ page_path: "/privacy-policy" })]);
   });
 
   it("loads the production GA4 stream after Analytics consent", async () => {
@@ -81,12 +84,14 @@ describe("GoogleAnalytics consent gating", () => {
     });
 
     expect(script?.src).toBe(`https://www.googletagmanager.com/gtag/js?id=${measurementId}`);
-    expect(window.dataLayer).toContainEqual(["consent", "default", expect.objectContaining({ analytics_storage: "denied" })]);
-    expect(window.dataLayer).toContainEqual(["consent", "update", expect.objectContaining({ analytics_storage: "granted" })]);
-    expect(window.dataLayer).toContainEqual([
-      "event",
-      "page_view",
+    const commands = readGtagCommands();
+    expect(commands).toContainEqual(["consent", "default", expect.objectContaining({ analytics_storage: "denied" })]);
+    expect(commands).toContainEqual(["consent", "update", expect.objectContaining({ analytics_storage: "granted" })]);
+    expect(commands).toContainEqual([
+      "config",
+      measurementId,
       expect.objectContaining({
+        send_page_view: true,
         page_path: "/bums?source=qa",
         page_location: expect.stringContaining("/bums?source=qa"),
       }),

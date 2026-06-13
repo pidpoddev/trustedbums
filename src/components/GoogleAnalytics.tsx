@@ -32,8 +32,10 @@ function denyAnalyticsConsent() {
 
 function loadGoogleAnalytics() {
   window.dataLayer = window.dataLayer ?? [];
-  window.gtag = window.gtag ?? function gtag(...args: unknown[]) {
-    window.dataLayer?.push(args);
+  window.gtag = window.gtag ?? function gtag() {
+    // Match Google's official gtag snippet so the runtime processes queued commands.
+    // eslint-disable-next-line prefer-rest-params
+    window.dataLayer?.push(arguments);
   };
 
   if (!googleAnalyticsConfigured) {
@@ -70,14 +72,15 @@ export function GoogleAnalytics() {
     const syncAnalytics = () => {
       const granted = hasAnalyticsConsent();
       if (granted) {
+        const pagePath = `${location.pathname}${location.search}`;
         window.gtag?.("consent", "update", {
           analytics_storage: "granted",
           ad_storage: "denied",
           ad_user_data: "denied",
           ad_personalization: "denied",
         });
-        const pagePath = `${location.pathname}${location.search}`;
-        window.gtag?.("event", "page_view", {
+        window.gtag?.("config", measurementId, {
+          send_page_view: true,
           page_title: document.title,
           page_location: new URL(pagePath, window.location.origin).href,
           page_path: pagePath,
