@@ -27,4 +27,11 @@ describe("client opportunity bulk tools", () => {
     expect(portalApiSource).toContain('"pay_program_id"');
     expect(portalApiSource).toContain('"status"');
   });
+
+  it("keeps claimed opportunity quick edits from resending an unchanged commission plan", () => {
+    expect(clientOpportunitySource).toContain('editPayProgramId !== (editingOpportunity.pay_program_id ?? "")');
+    expect(clientOpportunitySource).toContain("updates.pay_program_id = editPayProgramId || null");
+    expect(clientOpportunitySource).toContain("disabled={editingOpportunityHasClaim}");
+    expect(clientOpportunitySource).toContain("Commission plan is locked because this opportunity already has a claim.");
+  });
 });

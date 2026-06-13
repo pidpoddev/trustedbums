@@ -630,14 +630,35 @@ export default function ClientOpportunityNew() {
       return;
     }
 
+    const editingOpportunity = opportunities.find((opportunity) => opportunity.id === editingOpportunityId);
+    if (!editingOpportunity) {
+      toast({
+        title: "Unable to update opportunity",
+        description: "That opportunity is no longer in your pipeline.",
+        variant: "destructive",
+      });
+      setEditingOpportunityId(null);
+      return;
+    }
+
+    const updates: {
+      estimated_deal_value?: number | null;
+      expected_timeline?: string;
+      notes?: string;
+      pay_program_id?: string | null;
+    } = {
+      estimated_deal_value: editEstimatedDealValue.trim() ? Number(editEstimatedDealValue) : null,
+      expected_timeline: editExpectedTimeline,
+      notes: editNotes,
+    };
+
+    if (editPayProgramId !== (editingOpportunity.pay_program_id ?? "")) {
+      updates.pay_program_id = editPayProgramId || null;
+    }
+
     setIsSavingEdit(true);
     try {
-      await updateOwnOpportunityRegistration(user, editingOpportunityId, {
-        estimated_deal_value: editEstimatedDealValue.trim() ? Number(editEstimatedDealValue) : null,
-        expected_timeline: editExpectedTimeline,
-        notes: editNotes,
-        pay_program_id: editPayProgramId || null,
-      });
+      await updateOwnOpportunityRegistration(user, editingOpportunityId, updates);
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       toast({
         title: "Opportunity updated",
@@ -892,6 +913,10 @@ export default function ClientOpportunityNew() {
   const totalPipelineValue = opportunities.reduce((sum, opportunity) => sum + Number(opportunity.estimated_deal_value ?? 0), 0);
   const acceptedCount = opportunities.filter((opportunity) => opportunity.status === "Accepted").length;
   const draftCount = opportunities.filter((opportunity) => opportunity.status === "Draft").length;
+  const editingOpportunity = opportunities.find((opportunity) => opportunity.id === editingOpportunityId);
+  const editingOpportunityHasClaim = Boolean(
+    editingOpportunity && (claimsByOpportunity.get(editingOpportunity.id) ?? []).length > 0,
+  );
 
   return (
     <div>
@@ -1717,7 +1742,7 @@ export default function ClientOpportunityNew() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="pipeline-edit-plan">Commission plan</Label>
-                      <Select value={editPayProgramId} onValueChange={setEditPayProgramId}>
+                      <Select value={editPayProgramId} onValueChange={setEditPayProgramId} disabled={editingOpportunityHasClaim}>
                         <SelectTrigger id="pipeline-edit-plan">
                           <SelectValue placeholder="Select a plan" />
                         </SelectTrigger>
@@ -1729,6 +1754,11 @@ export default function ClientOpportunityNew() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {editingOpportunityHasClaim ? (
+                        <p className="text-xs text-muted-foreground">
+                          Commission plan is locked because this opportunity already has a claim.
+                        </p>
+                      ) : null}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="pipeline-edit-timeline">Expected timeline</Label>
