@@ -34,4 +34,12 @@ describe("client opportunity bulk tools", () => {
     expect(clientOpportunitySource).toContain("disabled={editingOpportunityHasClaim}");
     expect(clientOpportunitySource).toContain("Commission plan is locked because this opportunity already has a claim.");
   });
+
+  it("gives clients a Details action for pipeline opportunities", () => {
+    expect(clientOpportunitySource).toContain("detailsOpportunityId");
+    expect(clientOpportunitySource).toContain("<Eye className=\"mr-2 h-4 w-4\" />");
+    expect(clientOpportunitySource).toContain("Details");
+    expect(clientOpportunitySource).toContain("Opportunity description");
+    expect(clientOpportunitySource).toContain("Claim activity");
+  });
 });

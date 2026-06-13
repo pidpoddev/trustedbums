@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Building2, CheckCircle, Download, FileUp, MessageSquare, PlusCircle, Search, Send, Sparkles, Trash2, Users, X } from "lucide-react";
+import { Building2, CheckCircle, Download, Eye, FileUp, MessageSquare, PlusCircle, Search, Send, Sparkles, Trash2, Users, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PaginationControls } from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
@@ -312,6 +312,7 @@ export default function ClientOpportunityNew() {
   const [importFileName, setImportFileName] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ success: number; failures: string[] } | null>(null);
+  const [detailsOpportunityId, setDetailsOpportunityId] = useState<string | null>(null);
   const [editingOpportunityId, setEditingOpportunityId] = useState<string | null>(null);
   const [editEstimatedDealValue, setEditEstimatedDealValue] = useState("");
   const [editPayProgramId, setEditPayProgramId] = useState("");
@@ -913,6 +914,9 @@ export default function ClientOpportunityNew() {
   const totalPipelineValue = opportunities.reduce((sum, opportunity) => sum + Number(opportunity.estimated_deal_value ?? 0), 0);
   const acceptedCount = opportunities.filter((opportunity) => opportunity.status === "Accepted").length;
   const draftCount = opportunities.filter((opportunity) => opportunity.status === "Draft").length;
+  const detailsOpportunity = opportunities.find((opportunity) => opportunity.id === detailsOpportunityId);
+  const detailsOpportunityClaims = detailsOpportunity ? claimsByOpportunity.get(detailsOpportunity.id) ?? [] : [];
+  const detailsAssignedClaim = getAssignedClaim(detailsOpportunityClaims);
   const editingOpportunity = opportunities.find((opportunity) => opportunity.id === editingOpportunityId);
   const editingOpportunityHasClaim = Boolean(
     editingOpportunity && (claimsByOpportunity.get(editingOpportunity.id) ?? []).length > 0,
@@ -1619,6 +1623,15 @@ export default function ClientOpportunityNew() {
                         <TableCell>{opportunity.client_contact ?? opportunity.trusted_bums_contact ?? "Client team"}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex flex-col items-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDetailsOpportunityId((current) => (current === opportunity.id ? null : opportunity.id))}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              Details
+                            </Button>
                             <Button type="button" variant="outline" size="sm" onClick={() => startEditing(opportunity)}>
                               Edit
                             </Button>
@@ -1722,6 +1735,91 @@ export default function ClientOpportunityNew() {
                   })}
                 </TableBody>
               </Table>
+
+              {detailsOpportunity ? (
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+                    <div>
+                      <CardTitle className="font-display text-lg">{detailsOpportunity.target_account_name}</CardTitle>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {detailsOpportunity.expected_product_service ?? detailsOpportunity.business_unit ?? "No product or business unit set"}
+                      </p>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setDetailsOpportunityId(null)} aria-label="Close opportunity details">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-3 text-sm md:grid-cols-3">
+                      <div className="rounded-md border bg-background/70 p-3">
+                        <p className="text-muted-foreground">Status</p>
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          <StatusBadge label={detailsOpportunity.status} variant={registrationVariant(detailsOpportunity.status)} />
+                          <StatusBadge label={opportunityStageLabel(stageFromRegistrationStatus(detailsOpportunity.status))} variant="info" />
+                        </div>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-3">
+                        <p className="text-muted-foreground">Estimated value</p>
+                        <p className="mt-1 font-medium">{formatMoney(detailsOpportunity.estimated_deal_value)}</p>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-3">
+                        <p className="text-muted-foreground">Last activity</p>
+                        <p className="mt-1 font-medium">{formatDateForTimeZone(detailsOpportunity.updated_at ?? detailsOpportunity.created_at, timeZone)}</p>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-3">
+                        <p className="text-muted-foreground">Business unit</p>
+                        <p className="mt-1 font-medium">{detailsOpportunity.business_unit ?? "Not specified"}</p>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-3">
+                        <p className="text-muted-foreground">Expected timeline</p>
+                        <p className="mt-1 font-medium">{detailsOpportunity.expected_timeline ?? "Not specified"}</p>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-3">
+                        <p className="text-muted-foreground">Owner</p>
+                        <p className="mt-1 font-medium">{detailsOpportunity.client_contact ?? detailsOpportunity.trusted_bums_contact ?? "Client team"}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="rounded-md border bg-background/70 p-4">
+                        <p className="font-medium">Opportunity description</p>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {detailsOpportunity.opportunity_description ?? "No opportunity description has been provided yet."}
+                        </p>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-4">
+                        <p className="font-medium">Commission plan</p>
+                        {detailsOpportunity.client_pay_programs ? (
+                          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                            <p>{detailsOpportunity.client_pay_programs.name}</p>
+                            <p>{commissionScheduleSummary(detailsOpportunity.client_pay_programs)}</p>
+                            <StatusBadge label={detailsOpportunity.client_pay_programs.approval_status.toLowerCase()} variant={approvalVariant(detailsOpportunity.client_pay_programs.approval_status)} />
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-sm text-muted-foreground">No commission plan selected.</p>
+                        )}
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-4">
+                        <p className="font-medium">Notes</p>
+                        <p className="mt-2 text-sm text-muted-foreground">{detailsOpportunity.notes ?? "No notes yet."}</p>
+                      </div>
+                      <div className="rounded-md border bg-background/70 p-4">
+                        <p className="font-medium">Claim activity</p>
+                        {detailsOpportunityClaims.length ? (
+                          <div className="mt-2 space-y-2 text-sm text-muted-foreground">
+                            <p>{detailsOpportunityClaims.length} claim{detailsOpportunityClaims.length === 1 ? "" : "s"} connected to this opportunity.</p>
+                            <p>Assigned Bum: {bumName(detailsAssignedClaim)}</p>
+                            {detailsAssignedClaim ? <StatusBadge label={detailsAssignedClaim.status.replaceAll("_", " ").toLowerCase()} variant="secondary" /> : null}
+                            {claimDecisionSummary(detailsAssignedClaim) ? <p className="text-destructive">{claimDecisionSummary(detailsAssignedClaim)}</p> : null}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-sm text-muted-foreground">No Bum claims yet.</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
 
               {editingOpportunityId ? (
                 <Card className="border-primary/30 bg-primary/5">
