@@ -125,13 +125,21 @@ When adding a rule, include:
 - QA proof: `curl -sL` for `/`, `/privacy-policy`, and at least one `/legal/:slug` route should return different initial titles, descriptions, canonical URLs, and `og:url` values before JavaScript execution. Hosted DreamHost deploy checks should verify at least one generated trust route and one generated legal route.
 - Open questions: None.
 
+### Consultant local preview and external DNS checks use fixed targets
+- Rule: When consultant work needs a local preview or local route check from the Codex runner, use port `8080` only. When external DNS context is needed from the same runner, use `https://rcdl.tplinkdns.com` as the external target unless Ryan specifies a different host for that run.
+- Applies to: UX, UI, Content, QA, Trust & Reputation, Lead Developer, and any Codex-run local preview or external reachability check.
+- Why it matters: The runner needs predictable ports and a single known external host so evidence is comparable across specialist runs and local test setup does not drift.
+- Implementation notes: Do not start local preview servers on alternate ports during consultant runs. For GitHub-hosted `QA`, `E2E Smoke`, `Visual UI Audit`, and `Deep QA Hotfix Audit`, keep `QA_BASE_URL` on `https://trustedbums.com` unless Ryan explicitly asks to validate another deployed host. If a specialist needs external DNS or TLS context, record results against `rcdl.tplinkdns.com` and distinguish runner-local failures from confirmed production outages.
+- QA proof: Agent Inputs cite local preview checks on `127.0.0.1:8080` when used, and external reachability or TLS notes cite `rcdl.tplinkdns.com` unless the user explicitly overrides it.
+- Open questions: Whether `rcdl.tplinkdns.com` is expected to present a publicly trusted TLS chain from all consultant environments.
+
 ### Google Analytics is an approved source for specialist evidence
 - Rule: Trusted Bums agents may use the Google Analytics property for `https://trustedbums.com` when their work requires website traffic, funnel, source, campaign, or engagement evidence.
 - Applies to: Data/Analytics, B2B Growth, UX, UI, Product Ops, Trust & Reputation, Performance, QA, Release Verification, Lead Developer, `docs/*-backlog.md`, and `docs/agents/*`.
 - Why it matters: GA gives the specialist team current website and acquisition evidence so recommendations can move beyond source-only assumptions.
-- Implementation notes: The GA4 web stream is `Trusted Bums Web` with measurement ID `G-P6B5EYQMVN`; tracker item `TB-0066` records the setup. Agents should use aggregate GA evidence when relevant, cite dashboard/date-range context in Agent Inputs, and avoid placing raw visitor, user-level, private, or unnecessary campaign data in repo markdown. Google Analytics is optional product analytics and must stay tied to the site's Analytics consent category in product code.
-- QA proof: GA currently shows data collection pending after stream creation; close `TB-0066` only after production deploy plus GA "data received" or comparable current reporting evidence proves live collection.
-- Open questions: Which GA role/access path should each automation use once the deployed site starts collecting data?
+- Implementation notes: The GA4 web stream is `Trusted Bums Web` with measurement ID `G-P6B5EYQMVN`; tracker item `TB-0066` records the setup. Agents should use aggregate GA evidence when relevant, cite dashboard/date-range context in Agent Inputs, and avoid placing raw visitor, user-level, private, or unnecessary campaign data in repo markdown. Product instrumentation should stay consent-gated, strip portal route IDs and sensitive query strings from GA page paths, and use aggregate-safe parameters such as `portal_area`, `route_group`, `auth_gate`, and `is_portal_route` for portal funnel reporting. Google Analytics is optional product analytics and must stay tied to the site's Analytics consent category in product code.
+- QA proof: GA property access still needs verification. Before closing `TB-0066`, confirm production "data received" or comparable live collection proof, verify authenticated portal route events in Realtime or DebugView, and confirm GA custom dimensions are registered if agents need `portal_area`, `route_group`, `auth_gate`, or `is_portal_route` in standard reports.
+- Open questions: Which GA role/access path should each automation use once the bums@trustedbums.com Chrome profile or another agent-safe route can load the GA property?
 
 ### Bing Webmaster Tools is an approved source for search and reputation evidence
 - Rule: Trusted Bums agents may use Bing Webmaster Tools for `https://trustedbums.com` when their work requires Bing search visibility, crawl, indexing, sitemap, SEO/GEO, backlink, keyword, or Microsoft-side reputation evidence.
@@ -148,6 +156,14 @@ When adding a rule, include:
 - Implementation notes: Agents should create or update `public.admin_scrum_items`, set `added_by_agent`, classify true defects as `item_type = BUG`, and keep `source_key` stable for git commits, GitHub runs, or backlog-section imports so repeated runs update instead of duplicating. Before opening a new item, agents should search existing open, blocked, fixed, and recently closed tracker rows by `source_key`, title, affected route/table/workflow, GitHub commit/run ID, backlog heading, and related `TB-` references. If one agent's best action is to add context to another agent's existing ticket, update that existing `TB-` item with the new evidence, affected agent, recommendation, or blocker instead of opening a duplicate. Handoffs should cite the returned or updated `TB-` number next to each open or closed item. Closed items need closure evidence or a waiver note; blocked items need the blocker named.
 - QA proof: A scrum/backlog run can query the tracker and show every open agent item has a `TB-` number, status, priority, item type, owner, adding agent, and evidence/source reference.
 - Open questions: Should future agent automation call a dedicated server-side tracker API instead of writing through Supabase MCP or the Admin UI?
+
+### New-development regressions require agent feedback
+- Rule: When an error appears after a new development, QA or the first agent that investigates it must analyze how the error happened, identify the agent or implementation role whose recommendation or code path introduced it when that can be determined, and update that agent's prompt, backlog, acceptance criteria, or operating rule so the same error pattern is not repeated.
+- Applies to: QA Test Engineer, QA Harness Reliability, Lead Developer, Code Review, Release Verification, all specialist agents, scrum tracker triage, post-main QA, and any hotfix or regression investigation.
+- Why it matters: Fixing the symptom without updating the producing agent lets the same class of mistake return in the next implementation cycle.
+- Implementation notes: Regression writeups should include the triggering change, missed assumption, missing test or review gate, responsible source when identifiable, preventive rule or acceptance criterion added, and the `TB-` item that tracks the fix. If the source cannot be identified, record the uncertainty and update the broadest relevant gate, usually QA, Code Review, Lead Developer, or QA Harness Reliability.
+- QA proof: Every post-development regression has a tracker note or backlog entry with root cause, prevention update, and verification evidence; repeated failures are checked against prior prevention notes before opening a new duplicate item.
+- Open questions: None.
 
 ### UI consultant visual evidence comes from GitHub Visual QA
 - Rule: The UI consultant should use the GitHub Actions workflow named `Visual UI Audit` and its `visual-ui-audit` artifacts for visual QA evidence instead of attempting local Vite, local browser, or local Playwright visual checks.

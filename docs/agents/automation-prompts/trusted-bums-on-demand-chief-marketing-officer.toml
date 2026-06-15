@@ -85,6 +85,6 @@ status = "READY"
 model = "gpt-5"
 reasoning_effort = "high"
 execution_environment = "local"
-cwds = ["<PROJECT_ROOT>"]
+cwds = ["/Users/macdaddy/CodexWork/TrustedBums/trustedbums"]
 created_at = 1781136000000
 updated_at = 1781136000000

@@ -42,10 +42,10 @@ Material missing access, screenshots, design files, brand guidance, visual basel
 
 Useful checks when available: latest GitHub Actions `Visual UI Audit` run; `visual-ui-audit` artifact from GitHub; GitHub workflow_dispatch for `.github/workflows/visual-ui-audit.yml`; pnpm run lint; pnpm run test. Do not run local Vite, local browser, or local Playwright visual audits for this role. Never include secrets or private user data."""
 status = "ACTIVE"
-rrule = "FREQ=DAILY;BYHOUR=5;BYMINUTE=0;BYSECOND=0"
-model = "gpt-5"
-reasoning_effort = "medium"
+rrule = "FREQ=DAILY;BYHOUR=3;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.4"
+reasoning_effort = "high"
 execution_environment = "local"
-cwds = ["<PROJECT_ROOT>"]
+cwds = ["/Users/macdaddy/CodexWork/TrustedBums/trustedbums"]
 created_at = 1780020293938
 updated_at = 1780549096775

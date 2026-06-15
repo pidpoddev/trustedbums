@@ -1,6 +1,6 @@
 # Trusted Bums Agent Operating Pack
 
-_Last updated: 2026-06-12 by Codex agent rebaseline._
+_Last updated: 2026-06-15 by Codex._
 
 This folder is the repo-shared source for Trusted Bums consultant agents, operating rules, and review gates. It exists so every developer can inspect the same expected behaviors instead of relying on one person's local Codex automation registry.
 
@@ -14,6 +14,7 @@ This folder is the repo-shared source for Trusted Bums consultant agents, operat
 - `../decision-maker-researcher.md`: public-web decision-maker research playbook, scoring model, LinkedIn boundary, and import-ready output schema.
 - `../first-call-deck-playbook.md`: Chief Marketing Officer-owned workflow for customized prospect-specific First Call Decks.
 - `consultant-access-needs.md`: durable list of access, dashboard, connector, QA, and evidence gaps that limit consultant quality.
+- `../google-analytics-api.md`: local Google Analytics Data/Admin API setup for agent-safe aggregate reporting without automating the GA web UI.
 - `business-access-rules.md`: role and data access expectations used by Security, QA, Data, Product Ops, Lead Developer, and Code Review.
 - `code-review-agent.md`: pre-main Code Review Agent contract, GO/NO-GO output format, and Lead Developer handoff rules.
 - `../b2b-marketing-growth-backlog.md`: growth strategy backlog for increasing qualified Bums and Clients while preserving marketplace quality and trust.
@@ -32,7 +33,13 @@ Tracker entries live in `/admin/scrum` and `public.admin_scrum_items`. Set `adde
 
 Google Analytics is configured as an approved aggregate website analytics source for `https://trustedbums.com`: account/property `Trusted Bums`, stream `Trusted Bums Web`, measurement ID `G-P6B5EYQMVN`, tracked by `TB-0066`. Agents may use GA for traffic, source, funnel, campaign, content, and engagement evidence once live data collection is proven. Until `TB-0066` is closed, treat GA as configured but pending data collection. Do not place raw visitor-level data, private exports, credentials, or unnecessary campaign details in repo markdown.
 
+For GA access, prefer the local API path in `docs/google-analytics-api.md` over browser UI automation. The API path uses `GA4_PROPERTY_ID`, `GOOGLE_APPLICATION_CREDENTIALS`, and `scripts/google-analytics-api.mjs` to pull aggregate reports or create the approved event-scoped custom dimensions when the service account has the right GA property role.
+
 Bing Webmaster Tools is verified as an approved search and Microsoft-side reputation evidence source for `https://trustedbums.com/`, tracked by closed item `TB-0071`. Agents may use Bing for crawl, indexing, sitemap, SEO/GEO, backlink, keyword, and reputation evidence when report data is available. The production sitemap `https://trustedbums.com/sitemap.xml` was submitted on 2026-06-09 and may show `Processing` while Bing builds reports. Do not place private exports, credentials, or unnecessary query/campaign detail in repo markdown.
+
+## Chrome Profile Contract
+
+Chrome work for Trusted Bums must use the Chrome profile named `Trusted Bums`. Before opening Google Analytics, Gmail, Microsoft or Google dashboards, webmaster tools, Trusted Bums admin tools, or any browser session where account state matters, explicitly select or verify that the connected Chrome profile metadata reports `profileName = "Trusted Bums"`. Do not use the `Bumfuzzle Boutique` or `Ryan` profiles for Trusted Bums agent work. If the Trusted Bums profile is unavailable or a page unexpectedly opens under another account, stop, record the blocker, and ask Ryan before continuing account-dependent browser work.
 
 ## Code Review Gate
 
