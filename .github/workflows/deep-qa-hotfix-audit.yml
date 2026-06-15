@@ -56,6 +56,7 @@ jobs:
           QA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          QA_TARGET_PREFLIGHT_OUTPUT_DIR: qa-target-preflight-artifacts/${{ matrix.deep_suite }}
           QA_EXTENSION_API_EXPECTATION: required
           QA_EXTENSION_API_BASE_URL: ${{ vars.QA_EXTENSION_API_BASE_URL || secrets.QA_EXTENSION_API_BASE_URL }}
           QA_EXTENSION_API_TOKEN: ${{ secrets.QA_EXTENSION_API_TOKEN }}
@@ -72,6 +73,7 @@ jobs:
         with:
           name: deep-qa-hotfix-audit-${{ matrix.deep_suite }}
           path: |
+            qa-target-preflight-artifacts/
             playwright-report/
             test-results/
           retention-days: 7

@@ -4,7 +4,7 @@ import net from "node:net";
 import path from "node:path";
 
 const timeoutMs = Number(process.env.QA_TARGET_PREFLIGHT_TIMEOUT_MS ?? 15_000);
-const outputDir = process.env.QA_TARGET_PREFLIGHT_OUTPUT_DIR?.trim() || "test-results/qa-target-preflight";
+const outputDir = process.env.QA_TARGET_PREFLIGHT_OUTPUT_DIR?.trim() || "qa-target-preflight-artifacts";
 const fetchAttempts = Number(process.env.QA_TARGET_PREFLIGHT_FETCH_ATTEMPTS ?? 6);
 const fetchRetryDelayMs = Number(process.env.QA_TARGET_PREFLIGHT_FETCH_RETRY_DELAY_MS ?? 5_000);
 

@@ -13,6 +13,7 @@ dist
 dist-ssr
 playwright-report
 test-results
+qa-target-preflight-artifacts
 tmp-*-audit/
 tmp-ui-audit/
 *.local
