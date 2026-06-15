@@ -75,10 +75,10 @@ Quality bar:
 - Never include secrets, private user data, customer contact details, private dashboards, raw emails, or private analytics in prompts, image files, or markdown.
 - Text in generated bitmaps is suspect until proven correct by visual QA. If in doubt, reject it."""
 status = "ACTIVE"
-rrule = "FREQ=DAILY;BYHOUR=9;BYMINUTE=30;BYSECOND=0"
-model = "gpt-5"
-reasoning_effort = "medium"
+rrule = "FREQ=DAILY;BYHOUR=3;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.4"
+reasoning_effort = "high"
 execution_environment = "local"
-cwds = ["<PROJECT_ROOT>"]
+cwds = ["/Users/macdaddy/CodexWork/TrustedBums/trustedbums"]
 created_at = 1780588800000
 updated_at = 1780588800000

@@ -260,6 +260,66 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
   - What exact readiness evidence must Admin or Product Ops record before a beta deal-registration setup can move from configured to operationally enabled?
   - Should Client Legal have read-only access to integration notes that affect agreement obligations, or should those stay Admin plus Client IT only?
 
+### Shared Mailbox Intake And Admin Inbox
+- Roles: Admin, future explicitly approved operations or legal reviewers, mailbox-scoped Microsoft Graph integration.
+- Data needed: Mailbox category, status, sender and recipient metadata, body preview, raw body content when allowed, attachment metadata, handled state, optional assignment owner, send-event history, and audit events.
+- Allowed actions:
+  - Admins may sync, read, classify, reply, reply-all, compose, and update status for shared-mailbox messages in the approved operations mailbox.
+  - Future operations or legal reviewers may gain category-limited access only after Product Ops, Security, and Legal/Compliance define that narrower role explicitly.
+  - The system may store parsed operational facts from mailbox messages when Product Ops approves the target workflow and audit path.
+- Allowed when:
+  - The mailbox is the approved shared operations mailbox `bums@trustedbums.com`.
+  - Raw message bodies remain admin-only unless a narrower approved role is added with explicit category limits.
+  - Attachments stay metadata-only unless a specific approved workflow requires durable attachment storage.
+  - Categories such as `legal`, `privacy`, `abuse`, `complaint`, `support`, `question`, `client_criteria`, `dmarc`, and `uncategorized` drive who may see the message, what SLA applies, and whether the app should store metadata only, parsed facts, or the raw body.
+  - Status changes, replies, sends, future assignment changes, and any durable record creation write audit events.
+- Denied when:
+  - Client, Bum, public, pending, disabled, or unauthenticated users try to read or mutate shared-mailbox records.
+  - The app stores raw attachments or broad raw mailbox content without an approved workflow-specific retention rule.
+  - A mailbox workflow reads unrelated employee or tenant mailboxes instead of the approved shared mailbox.
+  - A message is treated as routine support when its category requires tighter legal, privacy, or abuse handling.
+- Sensitive fields: Raw body content, sender and recipient emails, message categories, legal or privacy request details, complaint or abuse details, attachment metadata, send history, and audit events.
+- Source of truth: `admin_shared_mailbox_messages`, `admin_shared_mailbox_send_events`, `supabase/functions/admin-shared-mailbox`, `src/pages/admin/AdminInbox.tsx`, `docs/shared-mailbox-operations.md`, and `audit_events`.
+- RLS/authorization owner: Security Engineer plus Product Ops, with Legal/Compliance review for legal, privacy, abuse, and complaint categories.
+- QA proof:
+  - Only Admin can sync, read, reply, compose, and update mailbox records through the route, function, and direct data path.
+  - Category and status changes are auditable.
+  - Attachment handling stays metadata-only unless an approved workflow explicitly changes that rule.
+  - Any future non-admin mailbox reviewer proves positive access for the approved categories and negative access for unapproved categories.
+- Open questions:
+  - Which categories need a response SLA or escalation target, and who owns each one?
+  - Should the current `assigned_to` field become a real operator-assignment workflow or be removed until Product Ops needs it?
+  - Which mailbox categories should remain metadata-only, and which may keep raw body content in the product?
+
+### Managing Bum Team Management And Team Payout Visibility
+- Roles: Admin, approved Managing Bum, invited or active member Bum, future finance reviewers where explicitly approved.
+- Data needed: Managing Bum status, manager commission percent, team memberships, invite email, invite attachment state, terms assignments, team claims and payouts, manager allocation rows, and audit events.
+- Allowed actions:
+  - Admin may enable or remove Managing Bum status, set manager commission percent, assign the Managing Bum addendum, add or remove team members, and review all team payout or allocation activity.
+  - An approved Managing Bum may invite Bums, view their own team memberships, and review only their own team claims, payouts, and manager-allocation rows.
+  - A pending or active team member Bum may see only the membership data or workflow context explicitly tied to their own account.
+- Allowed when:
+  - Admin has approved Managing Bum status and the Managing Bum terms assignment is in place before team economics are used.
+  - Invite-based memberships stay scoped to the inviting Managing Bum until the invited Bum signs up and the profile-bootstrap flow attaches the membership.
+  - Team claims, payouts, and manager allocations stay scoped to the owning Managing Bum or Admin rather than all Bums or client users.
+  - Any team-membership, manager-share, terms-assignment, or status change writes an audit event.
+- Denied when:
+  - A non-admin, non-managing Bum invites team members or edits another Managing Bum's team.
+  - Client users, unrelated Bums, or public users read team claims, payouts, invite emails, commission percentages, or allocation rows.
+  - Invite status alone grants broader opportunity, payout, or client-data visibility before the underlying workflow relationship exists.
+- Sensitive fields: Invite emails, team membership notes, manager commission percentages, payout amounts, allocation amounts, terms-assignment state, and audit events.
+- Source of truth: `bum_profiles`, `bum_team_memberships`, `managing_bum_commission_allocations`, `terms_versions`, `terms_assignments`, `supabase/functions/invite-bum`, `supabase/functions/profile-bootstrap`, `src/pages/bum/BumTeamManagement.tsx`, `src/pages/admin/AdminBums.tsx`, and `audit_events`.
+- RLS/authorization owner: Security Engineer plus Product Ops, with Finance and QA review before first live manager-allocation payout volume.
+- QA proof:
+  - Only Admin or the owning Managing Bum can invite team members or update the team.
+  - Pending invite attachments become active only for the matching Bum signup.
+  - Only Admin or the owning Managing Bum can read team claims, payouts, and allocation rows.
+  - Non-team Bums, client users, and public users are denied from the same data paths.
+- Open questions:
+  - How long should invited-but-not-yet-signed-up team rows remain open before reminder or closure workflows apply?
+  - Which finance or support roles, if any, should see manager-allocation records before the first live payout volume lands?
+  - Should Admin remove or pause a pending team membership through the same surface that approves Managing Bum status, or through a separate queue?
+
 ### Customer Targets
 - Roles: Admin, Client Admin, Client Member where assigned, Bum where explicitly entitled.
 - Data needed: Target company/person details, status, linked opportunities, linked responses, linked conversations, relevant activity history.

@@ -96,10 +96,10 @@ Quality bar:
 - Do not make unapproved factual claims, customer-logo claims, partner claims, revenue claims, security claims, legal claims, or payout promises.
 - Never include secrets, private user data, customer contact details, raw emails, private analytics exports, or confidential pipeline details in prompts or markdown."""
 status = "ACTIVE"
-rrule = "FREQ=DAILY;BYHOUR=10;BYMINUTE=30;BYSECOND=0"
-model = "gpt-5"
+rrule = "FREQ=DAILY;BYHOUR=3;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.4"
 reasoning_effort = "high"
 execution_environment = "local"
-cwds = ["<PROJECT_ROOT>"]
+cwds = ["/Users/macdaddy/CodexWork/TrustedBums/trustedbums"]
 created_at = 1780588800000
 updated_at = 1780588800000

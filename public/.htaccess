@@ -18,14 +18,14 @@ RewriteRule ^(sitemap\.xml|robots\.txt)$ - [L]
 # Keep the pre-store extension package off the public site.
 RewriteRule ^downloads/trustedbums-extension\.zip$ - [F,L]
 
+# Serve generated public-route metadata snapshots before the SPA fallback.
+RewriteRule ^(bums|login|privacy-policy)$ $1/index.html [L]
+RewriteRule ^legal/(terms-of-service|cookie-policy|dpa|subprocessors|security|acceptable-use|recording-transcription-notice|data-retention|client-agreement|bum-agreement)$ legal/$1/index.html [L]
+
 # Let Apache serve real files and directories directly.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
-
-# Serve generated public-route metadata snapshots before the SPA fallback.
-RewriteRule ^(bums|login|privacy-policy)$ $1/index.html [L]
-RewriteRule ^legal/(terms-of-service|cookie-policy|dpa|subprocessors|security|acceptable-use|recording-transcription-notice|data-retention|client-agreement|bum-agreement)$ legal/$1/index.html [L]
 
 # Route all SPA requests back to the React entrypoint.
 RewriteRule ^ index.html [L]

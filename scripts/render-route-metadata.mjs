@@ -25,6 +25,14 @@ function renderRouteHtml(route) {
   const imageUrl = `${manifest.siteOrigin}${manifest.imagePath}`;
   const title = escapeHtml(route.title);
   const description = escapeHtml(route.description);
+  const fallbackHtml = [
+    '<div id="root">',
+    '  <main style="font-family: system-ui, sans-serif; max-width: 48rem; margin: 4rem auto; padding: 0 1.5rem; color: #111827;">',
+    `    <h1>${title}</h1>`,
+    `    <p>${description}</p>`,
+    "  </main>",
+    "</div>",
+  ].join("\n");
 
   let html = template;
   html = setTag(html, /<title>[\s\S]*?<\/title>/, `<title>${title}</title>`);
@@ -37,6 +45,7 @@ function renderRouteHtml(route) {
   html = setTag(html, /<meta\s+name="twitter:title"[\s\S]*?\/>/, `<meta name="twitter:title" content="${title}" />`);
   html = setTag(html, /<meta\s+name="twitter:description"[\s\S]*?\/>/, `<meta name="twitter:description" content="${description}" />`);
   html = setTag(html, /<meta\s+name="twitter:image"[\s\S]*?\/>/, `<meta name="twitter:image" content="${imageUrl}" />`);
+  html = setTag(html, /<div id="root"><\/div>/, fallbackHtml);
   return html;
 }
 

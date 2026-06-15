@@ -20,6 +20,9 @@ tmp-ui-audit/
 .env.qa
 .env.development
 .codex-review-decision.json
+.secrets/
+google-analytics-service-account*.json
+ga4-service-account*.json
 
 # Editor directories and files
 .vscode/*

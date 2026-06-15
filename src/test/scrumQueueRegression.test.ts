@@ -38,6 +38,8 @@ describe("scrum implementation queue regression coverage", () => {
     expect(htmlShell).toContain('"alternateName": "TrustedBums.com"');
     expect(metadataRenderer).toContain("distDir");
     expect(metadataRenderer).toContain("renderRouteHtml");
+    expect(metadataRenderer).toContain('<div id="root">');
+    expect(metadataRenderer).toContain("<h1>${title}</h1>");
     expect(qaTargetPreflight).toContain("<title>[^<]*Trusted Bums[^<]*<\\/title>");
     expect(htmlShell).toContain('href="https://trustedbums.com/"');
     expect(htmlShell).toContain('content="https://trustedbums.com/og-image.svg"');
@@ -79,8 +81,8 @@ describe("scrum implementation queue regression coverage", () => {
 
   it("keeps the seeded live allow/deny proof lane explicit until fixtures exist", () => {
     expect(qaBacklog).toContain("Business Access Coverage");
-    expect(qaBacklog).toContain("extension API still lacks the negative-path and abuse-control contract proof");
+    expect(qaBacklog).toContain("extension API still lacks executable negative-path and abuse-control contract proof");
     expect(qaBacklog).toContain("Bum represented contacts");
-    expect(qaBacklog).toContain("Client opportunity publish, delete, and claim-status workflows");
+    expect(qaBacklog).toContain("Client opportunity publish, delete, claim-status, and details workflows");
   });
 });
