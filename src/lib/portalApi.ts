@@ -4406,6 +4406,49 @@ function normalizedClaimContacts(input: OpportunityClaimInput, fallbackCompany: 
   }));
 }
 
+type NormalizedClaimContact = ReturnType<typeof normalizedClaimContacts>[number];
+
+function normalizeClaimContactKey(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function isSameClaimContact(claim: Pick<OpportunityClaimRecord, "contact_name" | "contact_company">, contact: NormalizedClaimContact) {
+  return (
+    normalizeClaimContactKey(claim.contact_name) === normalizeClaimContactKey(contact.contactName) &&
+    normalizeClaimContactKey(claim.contact_company) === normalizeClaimContactKey(contact.contactCompany)
+  );
+}
+
+function isDuplicateOpportunityClaimError(error: unknown) {
+  const text = [
+    String((error as { message?: unknown } | null)?.message ?? ""),
+    String((error as { details?: unknown } | null)?.details ?? ""),
+  ].join(" ");
+
+  return (
+    Boolean(error) &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: string }).code === "23505" &&
+    text.includes("opportunity_claims_opportunity_bum_contact_idx")
+  );
+}
+
+async function findExistingOpportunityClaimForContact(user: AuthUser, opportunityId: string, contact: NormalizedClaimContact) {
+  const { data, error } = await supabase
+    .from("opportunity_claims")
+    .select("*, opportunity_claim_contacts(*)")
+    .eq("opportunity_registration_id", opportunityId)
+    .eq("bum_user_id", user.id)
+    .returns<OpportunityClaimRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.find((claim) => isSameClaimContact(claim, contact)) ?? null;
+}
+
 export async function updateAdminOpportunityClaim(
   user: AuthUser,
   claimId: string,
@@ -4547,6 +4590,11 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
       : null,
   ].filter(Boolean).join("\n\n");
 
+  const existingClaim = await findExistingOpportunityClaimForContact(user, opportunity.id, primaryContact);
+  if (existingClaim) {
+    return existingClaim;
+  }
+
   const { data, error } = await supabase
     .from("opportunity_claims")
     .insert({
@@ -4566,6 +4614,12 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
     .single<OpportunityClaimRecord>();
 
   if (error) {
+    if (isDuplicateOpportunityClaimError(error)) {
+      const existingDuplicateClaim = await findExistingOpportunityClaimForContact(user, opportunity.id, primaryContact);
+      if (existingDuplicateClaim) {
+        return existingDuplicateClaim;
+      }
+    }
     throw error;
   }
 
