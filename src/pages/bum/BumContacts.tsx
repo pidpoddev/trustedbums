@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, ExternalLink, Mail, Phone, Plus, Search, UserRound } from "lucide-react";
+import { Building2, ExternalLink, Mail, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { trackAnalyticsEvent } from "@/lib/analyticsEvents";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { createBumRepresentedContact, listBumRepresentedContacts, type BumRepresentedContactRecord, type BumRepresentedContactSource } from "@/lib/portalApi";
+import { createBumRepresentedContact, deleteBumRepresentedContact, listBumRepresentedContacts, type BumRepresentedContactRecord, type BumRepresentedContactSource } from "@/lib/portalApi";
 
 const sourceLabels: Record<BumRepresentedContactSource, string> = {
   OPPORTUNITY_CLAIM: "Claim",
@@ -144,6 +144,26 @@ export default function BumContacts() {
     },
     onError: (error) => {
       toast({ title: "Unable to add contact", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const deleteContactMutation = useMutation({
+    mutationFn: (contact: BumRepresentedContactRecord) => {
+      if (contact.source === "OPPORTUNITY_CLAIM") {
+        throw new Error("Contacts attached to a Claim cannot be deleted.");
+      }
+      return deleteBumRepresentedContact(contact.id);
+    },
+    onSuccess: (result) => {
+      queryClient.setQueryData<BumRepresentedContactRecord[]>(["bum-represented-contacts", user?.id], (current) =>
+        (current ?? []).filter((contact) => contact.id !== result.contactId),
+      );
+      queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["portal-search", "bum-contacts", user?.id] });
+      toast({ title: "Contact deleted", description: "The contact was removed from My Contacts." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to delete contact", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     },
   });
 
@@ -284,6 +304,27 @@ export default function BumContacts() {
                   <Button size="sm" asChild>
                     <Link to={contact.detailUrl}>Edit contact</Link>
                   </Button>
+                  {contact.source === "OPPORTUNITY_CLAIM" ? (
+                    <Button size="sm" variant="outline" disabled title="Contacts attached to a Claim cannot be deleted.">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      disabled={deleteContactMutation.isPending}
+                      onClick={() => {
+                        if (window.confirm(`Delete ${contact.name} from My Contacts?`)) {
+                          deleteContactMutation.mutate(contact);
+                        }
+                      }}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>

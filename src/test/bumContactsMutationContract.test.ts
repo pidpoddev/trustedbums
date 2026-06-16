@@ -29,6 +29,20 @@ describe("Bum manual contact mutation contract", () => {
     expect(portalContactsFunctionSource).toContain('return getContactDetail(userId, data.id)');
   });
 
+  it("lets Bums delete contacts unless they are already attached to a Claim", () => {
+    expect(bumContactsSource).toContain("deleteBumRepresentedContact(contact.id)");
+    expect(bumContactsSource).toContain('contact.source === "OPPORTUNITY_CLAIM"');
+    expect(bumContactsSource).toContain("Contacts attached to a Claim cannot be deleted.");
+    expect(bumContactsSource).toContain("Delete");
+    expect(portalApiSource).toContain('invokePortalContacts<{ deleted: boolean; contactId: string }>({ action: "delete", contactId })');
+    expect(portalContactsFunctionSource).toContain("async function deleteContact(userId: string, contactId: string)");
+    expect(portalContactsFunctionSource).toContain('if (contact.source_type === "OPPORTUNITY_CLAIM")');
+    expect(portalContactsFunctionSource).toContain('throw new Error("Contacts attached to a Claim cannot be deleted.");');
+    expect(portalContactsFunctionSource).toContain('.from("bum_contacts")');
+    expect(portalContactsFunctionSource).toContain(".delete()");
+    expect(portalContactsFunctionSource).toContain('if (action === "delete") return json(200, await deleteContact(profile.id, contactId));');
+  });
+
   it("fails closed unless the portal contacts token issuer matches configured Clerk issuer", () => {
     expect(portalContactsFunctionSource).toContain('const expectedIssuer = clerkFrontendApiUrl?.trim();');
     expect(portalContactsFunctionSource).toContain('if (!expectedIssuer) throw new Error("The portal contacts Clerk issuer is not configured.");');

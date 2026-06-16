@@ -620,6 +620,22 @@ async function createContact(userId: string, patch: Record<string, unknown>) {
   return getContactDetail(userId, data.id);
 }
 
+async function deleteContact(userId: string, contactId: string) {
+  const contact = await fetchContact(userId, contactId);
+  if (contact.source_type === "OPPORTUNITY_CLAIM") {
+    throw new Error("Contacts attached to a Claim cannot be deleted.");
+  }
+
+  const { error } = await supabaseAdmin
+    .from("bum_contacts")
+    .delete()
+    .eq("bum_user_id", userId)
+    .eq("id", contactId);
+  if (error) throw error;
+
+  return { deleted: true, contactId };
+}
+
 function captureUpdates(capture: ExtensionCaptureRow) {
   const name = extensionCaptureContactName(capture);
   const headline = inferLinkedInHeadline(capture, name);
@@ -708,6 +724,7 @@ Deno.serve(async (request) => {
     if (!contactId) return json(400, { error: "Contact ID is required." });
     if (action === "get") return json(200, await getContactDetail(profile.id, contactId));
     if (action === "update") return json(200, await updateContact(profile.id, contactId, (body.patch as Record<string, unknown>) ?? {}));
+    if (action === "delete") return json(200, await deleteContact(profile.id, contactId));
     if (action === "resync") return json(200, await resyncContact(profile.id, contactId));
 
     return json(400, { error: "Unsupported contacts action." });

@@ -6618,6 +6618,12 @@ export async function createBumRepresentedContact(input: BumContactUpdateInput) 
   return payload;
 }
 
+export async function deleteBumRepresentedContact(contactId: string) {
+  const payload = await invokePortalContacts<{ deleted: boolean; contactId: string }>({ action: "delete", contactId });
+  if (!payload) throw new Error("Sign in again to delete this contact.");
+  return payload;
+}
+
 export async function resyncBumRepresentedContact(contactId: string) {
   const payload = await invokePortalContacts<BumContactDetailResponse>({ action: "resync", contactId });
   if (!payload) throw new Error("Sign in again to re-sync this contact.");
