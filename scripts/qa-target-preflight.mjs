@@ -99,7 +99,7 @@ async function checkBaseHttp(targetUrl, state) {
 
 async function checkAppShell(state) {
   const text = state.baseText ?? "";
-  if (!text.includes('<div id="root"></div>')) {
+  if (!/<div\b(?=[^>]*\bid=["']root["'])[^>]*>/i.test(text)) {
     throw new Error("app shell root element was not found in the base HTML");
   }
   if (!/<title>[^<]*Trusted Bums[^<]*<\/title>/.test(text)) {

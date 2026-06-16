@@ -19,6 +19,11 @@ describe("QA target preflight contract", () => {
     expect(preflightSource).toContain('["Extension API", () => checkExtensionApi()]');
   });
 
+  it("accepts prerendered root markup in deployed app shell checks", () => {
+    expect(preflightSource).toMatch(/<div\\b\(\?=\[\^>\]\*\\bid=\["'\]root\["'\]\)\[\^>\]\*>/);
+    expect(preflightSource).not.toContain("'<div id=\"root\"></div>'");
+  });
+
   it("fails dependent suites when authenticated extension inputs are incomplete", () => {
     expect(preflightSource).toContain("hasDynamicExtensionAuth");
     expect(preflightSource).toContain('getRequiredEnv("QA_EXTENSION_API_TOKEN")');
