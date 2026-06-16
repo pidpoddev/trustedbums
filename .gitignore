@@ -21,6 +21,7 @@ tmp-ui-audit/
 .env.development
 .codex-review-decision.json
 .secrets/
+supabase/.temp/
 google-analytics-service-account*.json
 ga4-service-account*.json
 
