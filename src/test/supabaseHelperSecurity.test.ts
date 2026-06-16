@@ -17,6 +17,15 @@ const privateRlsPolicyMigration = readFileSync(
   "supabase/migrations/20260608013500_qualify_private_rls_helper_references.sql",
   "utf8",
 );
+const authBoundaryHelperMigration = readFileSync(
+  "supabase/migrations/20260616110000_harden_auth_boundary_helpers.sql",
+  "utf8",
+);
+const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
+const duplicateCheckFunctionSource = readFileSync(
+  "supabase/functions/customer-lead-duplicate-check/index.ts",
+  "utf8",
+);
 
 const rlsHelperFunctions = [
   "public.can_add_conversation_participant(uuid)",
@@ -89,5 +98,31 @@ describe("Supabase helper function security", () => {
     expect(helperSecurityMigration).toContain(
       "alter function public.normalize_submitted_opportunity_status() set search_path = public;",
     );
+  });
+
+  it("removes exposed execution from admin audit and customer-lead duplicate helpers", () => {
+    for (const helperFunction of [
+      "public.record_admin_scrum_item_audit_event()",
+      "public.set_admin_scrum_item_audit_fields()",
+      "public.find_customer_lead_duplicate(uuid, text)",
+      "public.normalize_customer_domain(text)",
+    ]) {
+      expect(authBoundaryHelperMigration).toContain(`revoke execute on function ${helperFunction} from public;`);
+      expect(authBoundaryHelperMigration).toContain(`revoke execute on function ${helperFunction} from anon;`);
+      expect(authBoundaryHelperMigration).toContain(`revoke execute on function ${helperFunction} from authenticated;`);
+      expect(authBoundaryHelperMigration).toContain(`grant execute on function ${helperFunction} to service_role;`);
+    }
+
+    expect(authBoundaryHelperMigration).toContain(
+      "alter function public.normalize_customer_domain(text) set search_path = public, pg_temp;",
+    );
+  });
+
+  it("keeps customer-lead duplicate checks behind a signed-in Edge Function", () => {
+    expect(portalApiSource).toContain("/functions/v1/customer-lead-duplicate-check");
+    expect(portalApiSource).not.toContain(".rpc(\"find_customer_lead_duplicate\"");
+    expect(duplicateCheckFunctionSource).toContain("getBearerToken(request)");
+    expect(duplicateCheckFunctionSource).toContain("Only Bums can check customer lead duplicates.");
+    expect(duplicateCheckFunctionSource).toContain(".rpc(\"find_customer_lead_duplicate\"");
   });
 });

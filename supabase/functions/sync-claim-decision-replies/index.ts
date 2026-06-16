@@ -94,7 +94,7 @@ const microsoftClientSecret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
 const defaultMailbox = Deno.env.get("CLAIM_DECISION_MAILBOX") ?? Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
 const microsoftSenderEmail = Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
 const portalBaseUrl = (Deno.env.get("PORTAL_BASE_URL") ?? "https://trustedbums.com").replace(/\/+$/, "");
-const syncSecret = Deno.env.get("CLAIM_DECISION_SYNC_SECRET");
+const syncSecret = Deno.env.get("CLAIM_DECISION_SYNC_SECRET")?.trim();
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -590,7 +590,11 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return json(405, { error: "Method not allowed." });
 
   try {
-    if (syncSecret && request.headers.get("x-sync-secret") !== syncSecret) {
+    if (!syncSecret) {
+      return json(503, { error: "CLAIM_DECISION_SYNC_SECRET is not configured." });
+    }
+
+    if (request.headers.get("x-sync-secret") !== syncSecret) {
       return json(403, { error: "Invalid sync secret." });
     }
 

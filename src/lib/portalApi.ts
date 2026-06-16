@@ -6624,18 +6624,35 @@ export async function findCustomerLeadDuplicate(vendorCompanyId: string, custome
     return null;
   }
 
-  const { data, error } = await supabase
-    .rpc("find_customer_lead_duplicate", {
-      p_vendor_company_id: vendorCompanyId,
-      p_customer_domain: normalizedDomain,
-    })
-    .returns<CustomerLeadDuplicateRecord[]>();
+  const token = await getSupabaseAccessToken();
 
-  if (error) {
-    throw error;
+  if (!token) {
+    throw new Error("Sign in before checking customer leads.");
   }
 
-  return data?.[0] ?? null;
+  const response = await fetch(`${supabaseUrl}/functions/v1/customer-lead-duplicate-check`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      vendorCompanyId,
+      customerDomain: normalizedDomain,
+    }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as {
+    duplicate?: CustomerLeadDuplicateRecord | null;
+    error?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Unable to check customer leads.");
+  }
+
+  return payload.duplicate ?? null;
 }
 
 export async function listOwnReverseOpportunities(userId: string) {

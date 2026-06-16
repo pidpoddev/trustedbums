@@ -56,6 +56,8 @@ describe("claim decline workflow", () => {
     expect(syncFunctionSource).toContain("claim_decision_email_events");
     expect(syncFunctionSource).toContain("claim.status !== \"PROPOSED\"");
     expect(syncFunctionSource).toContain("x-sync-secret");
+    expect(syncFunctionSource).toContain("CLAIM_DECISION_SYNC_SECRET is not configured.");
+    expect(syncFunctionSource).toContain("if (!syncSecret)");
     expect(migrationSource).toContain("Claim decision token: {{claim_decision_token}}");
   });
 });

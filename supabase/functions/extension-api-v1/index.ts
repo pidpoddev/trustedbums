@@ -50,6 +50,8 @@ interface CaptureRow {
 }
 
 const API_VERSION = "v1";
+const CAPTURE_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const captureRateLimitPerHour = Number.parseInt(Deno.env.get("EXTENSION_API_CAPTURE_LIMIT_PER_HOUR") ?? "60", 10);
 const allowedCorsOrigins = new Set(
   (Deno.env.get("EXTENSION_API_ALLOWED_ORIGINS") ?? "chrome-extension://eemjcjegjdmeghobmfdbaiammapaefde")
     .split(",")
@@ -64,6 +66,16 @@ const clerkFrontendApiUrl = Deno.env.get("CLERK_FRONTEND_API_URL");
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
+}
+
+class ExtensionApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ExtensionApiError";
+    this.status = status;
+  }
 }
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -324,6 +336,21 @@ async function findExistingCapture(profile: ProfileRow, clientRequestId: string 
   return data;
 }
 
+async function enforceCaptureRateLimit(profile: ProfileRow) {
+  if (isAdmin(profile) || !Number.isFinite(captureRateLimitPerHour) || captureRateLimitPerHour <= 0) return;
+
+  const since = new Date(Date.now() - CAPTURE_RATE_LIMIT_WINDOW_MS).toISOString();
+  const { count, error } = await supabaseAdmin
+    .from("extension_page_captures")
+    .select("id", { count: "exact", head: true })
+    .eq("created_by", profile.id)
+    .gte("created_at", since);
+  if (error) throw error;
+  if ((count ?? 0) >= captureRateLimitPerHour) {
+    throw new ExtensionApiError(429, "Extension capture rate limit reached. Please try again later.");
+  }
+}
+
 async function createPageCapture(request: Request, profile: ProfileRow) {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const opportunityId = nullableCleanString(body.opportunityId, 80);
@@ -332,11 +359,15 @@ async function createPageCapture(request: Request, profile: ProfileRow) {
   const clientRequestId = nullableCleanString(body.clientRequestId, 128);
 
   if (!destinationType) throw new Error("destinationType, opportunityId, or customerTargetId is required.");
+  if (opportunityId && customerTargetId) throw new ExtensionApiError(400, "Choose either opportunityId or customerTargetId, not both.");
   if (destinationType === "OPPORTUNITY_REGISTRATION" && !opportunityId) throw new Error("opportunityId is required for opportunity captures.");
+  if (destinationType === "OPPORTUNITY_REGISTRATION" && customerTargetId) throw new ExtensionApiError(400, "customerTargetId is not valid for opportunity captures.");
   if (destinationType === "CUSTOMER_TARGET" && !customerTargetId) throw new Error("customerTargetId is required for customer target captures.");
+  if (destinationType === "CUSTOMER_TARGET" && opportunityId) throw new ExtensionApiError(400, "opportunityId is not valid for customer target captures.");
 
   const existing = await findExistingCapture(profile, clientRequestId);
   if (existing) return json(request, 200, { capture: serializeCapture(existing), idempotent: true });
+  await enforceCaptureRateLimit(profile);
 
   let companyId: string | null = null;
   let destinationSummary: Record<string, unknown> = {};
@@ -423,7 +454,9 @@ Deno.serve(async (request: Request) => {
     return json(request, 404, { error: "Unknown extension API endpoint." });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to process extension API request.";
-    const status = /missing bearer|session token|verify|jwt|profile/i.test(message)
+    const status = error instanceof ExtensionApiError
+      ? error.status
+      : /missing bearer|session token|verify|jwt|profile/i.test(message)
       ? 401
       : /do not have access/i.test(message)
         ? 403

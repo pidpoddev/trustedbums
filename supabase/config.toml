@@ -93,3 +93,6 @@ verify_jwt = false
 
 [functions.api-access-keys]
 verify_jwt = false
+
+[functions.customer-lead-duplicate-check]
+verify_jwt = false

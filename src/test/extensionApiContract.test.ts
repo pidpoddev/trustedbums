@@ -31,6 +31,16 @@ describe("extension API contract", () => {
     expect(functionSource).toContain("apiVersion: API_VERSION");
   });
 
+  it("rejects ambiguous capture destinations and rate-limits capture creation", () => {
+    expect(functionSource).toContain("class ExtensionApiError extends Error");
+    expect(functionSource).toContain("EXTENSION_API_CAPTURE_LIMIT_PER_HOUR");
+    expect(functionSource).toContain("enforceCaptureRateLimit(profile)");
+    expect(functionSource).toContain("throw new ExtensionApiError(429");
+    expect(functionSource).toContain("Choose either opportunityId or customerTargetId, not both.");
+    expect(functionSource).toContain("customerTargetId is not valid for opportunity captures.");
+    expect(functionSource).toContain("opportunityId is not valid for customer target captures.");
+  });
+
   it("restricts extension API CORS to configured extension origins", () => {
     expect(functionSource).toContain("EXTENSION_API_ALLOWED_ORIGINS");
     expect(functionSource).toContain("chrome-extension://eemjcjegjdmeghobmfdbaiammapaefde");
