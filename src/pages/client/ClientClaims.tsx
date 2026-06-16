@@ -20,7 +20,7 @@ import {
   type OpportunityClaimContactBuyingRole,
 } from "@/lib/portalApi";
 import { opportunityOriginLabel, opportunityStageLabel, stageFromClaimStatus } from "@/lib/opportunityModel";
-import { formatDateForTimeZone } from "@/lib/timezone";
+import { formatDateForTimeZone, formatDateTimeForTimeZone } from "@/lib/timezone";
 
 const currentClaimStatuses: OpportunityClaimStatus[] = ["APPROVED", "SCHEDULED", "MEETING_HELD"];
 const clientEditableClaimStatuses: OpportunityClaimStatus[] = ["APPROVED", "SCHEDULED", "MEETING_HELD"];
@@ -234,6 +234,34 @@ export default function ClientClaims() {
                             {claimContact.note ? <p className="mt-2 text-muted-foreground">{claimContact.note}</p> : null}
                           </div>
                         ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {claim.client_notification_preview ? (
+                  <div className="rounded-xl border bg-muted/20 p-4 text-sm">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="flex items-center gap-2 font-medium text-foreground">
+                          <Mail className="h-4 w-4" />
+                          Message sent to client team
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {claim.client_notification_preview.sent_at
+                            ? formatDateTimeForTimeZone(claim.client_notification_preview.sent_at, timeZone)
+                            : formatDateTimeForTimeZone(claim.client_notification_preview.created_at, timeZone)}
+                        </p>
+                      </div>
+                      <StatusBadge
+                        label={claim.client_notification_preview.status}
+                        variant={claim.client_notification_preview.status === "FAILED" ? "destructive" : "secondary"}
+                      />
+                    </div>
+                    <div className="mt-3 rounded-lg border bg-background p-3">
+                      <p className="font-medium text-foreground">{claim.client_notification_preview.subject}</p>
+                      <p className="mt-3 whitespace-pre-wrap break-words leading-6 text-muted-foreground">
+                        {claim.client_notification_preview.body}
+                      </p>
                     </div>
                   </div>
                 ) : null}

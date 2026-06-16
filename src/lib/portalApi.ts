@@ -318,6 +318,16 @@ export interface AdminEmailDeliveryRecord {
   created_at: string;
 }
 
+export interface ClaimClientNotificationPreviewRecord {
+  opportunity_claim_id: string;
+  template_slug: string | null;
+  subject: string;
+  body: string;
+  status: AdminEmailDeliveryStatus;
+  sent_at: string | null;
+  created_at: string;
+}
+
 export interface AdminEmailSendInput {
   mode?: "manual" | "action" | "preview" | "test";
   templateId?: string;
@@ -1329,6 +1339,7 @@ export interface OpportunityClaimRecord {
   created_at: string;
   updated_at: string;
   meeting_locked?: boolean;
+  client_notification_preview?: ClaimClientNotificationPreviewRecord | null;
   opportunity_claim_contacts?: OpportunityClaimContactRecord[];
   opportunity_registrations?: Pick<
     OpportunityRegistration,
@@ -3688,7 +3699,11 @@ export async function listOpportunityClaims(opportunityId?: string, options: { i
   const claimIds = claims.map((claim) => claim.id).filter(Boolean);
 
   if (claimIds.length) {
-    const [{ data: transcriptRows, error: transcriptError }, { data: meetingRows, error: meetingError }] =
+    const [
+      { data: transcriptRows, error: transcriptError },
+      { data: meetingRows, error: meetingError },
+      { data: notificationRows, error: notificationError },
+    ] =
       await Promise.all([
         supabase
           .from("meeting_transcripts")
@@ -3702,6 +3717,11 @@ export async function listOpportunityClaims(opportunityId?: string, options: { i
           .in("opportunity_claim_id", claimIds)
           .eq("status", "COMPLETED")
           .limit(claimIds.length),
+        supabase
+          .from("claim_client_notification_previews")
+          .select("*")
+          .in("opportunity_claim_id", claimIds)
+          .returns<ClaimClientNotificationPreviewRecord[]>(),
       ]);
 
     if (transcriptError) {
@@ -3709,6 +3729,9 @@ export async function listOpportunityClaims(opportunityId?: string, options: { i
     }
     if (meetingError) {
       throw meetingError;
+    }
+    if (notificationError) {
+      throw notificationError;
     }
 
     for (const row of transcriptRows ?? []) {
@@ -3721,11 +3744,22 @@ export async function listOpportunityClaims(opportunityId?: string, options: { i
         lockedClaimIds.add(row.opportunity_claim_id);
       }
     }
+
+    const notificationPreviewByClaimId = new Map(
+      (notificationRows ?? []).map((preview) => [preview.opportunity_claim_id, preview]),
+    );
+
+    return claims.map((claim) => ({
+      ...claim,
+      meeting_locked: lockedClaimIds.has(claim.id),
+      client_notification_preview: notificationPreviewByClaimId.get(claim.id) ?? null,
+    }));
   }
 
   return claims.map((claim) => ({
     ...claim,
     meeting_locked: lockedClaimIds.has(claim.id),
+    client_notification_preview: null,
   }));
 }
 
