@@ -63,7 +63,7 @@ jobs:
           grep -qx 'c6e13fa24dba32bdab55120a5dab7df3' dist/c6e13fa24dba32bdab55120a5dab7df3.txt
           grep -Fq 'sitemap\.xml|robots\.txt' dist/.htaccess
           grep -q '<title>Privacy</title>' dist/privacy-policy/index.html
-          grep -q 'href="https://trustedbums.com/legal/terms-of-service"' dist/legal/terms-of-service/index.html
+          grep -q 'href="https://trustedbums.com/legal/terms-of-service/"' dist/legal/terms-of-service/index.html
 
       - name: Deploy to DreamHost via SSH
         uses: easingthemes/ssh-deploy@main

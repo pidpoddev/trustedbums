@@ -2403,6 +2403,14 @@ This file is the running handoff log for implementation work Codex has made in t
 - Results: The Trust and Growth queues now support clean search-engine submission and real-world citation work, but future agents are barred from recommending backlink tactics that would create search or reputation risk.
 - Next run should verify: after the sitemap/canonical fix is deployed, resubmit the sitemap and public URLs through Google Search Console and Bing, then create an approved citation list before any external profile or listing work starts.
 
+### 2026-06-16 - Fix deploy crawler-check expectation after canonical trailing-slash change
+
+- Trigger: DreamHost deploy run `27590568079` failed after commit `1f221c9` in the `Verify crawler assets` step.
+- Root cause: The app and generated metadata correctly changed public non-root canonical URLs to trailing-slash URLs, but the deploy workflow still grepped for `https://trustedbums.com/legal/terms-of-service` without the trailing slash.
+- Prevention update: Release/deploy checks that assert canonical or `og:url` values must be updated in the same commit as public-route canonicalization changes, and post-push QA should inspect failed deploy assertions before treating the app build as broken.
+- What changed: Updated `.github/workflows/deploy_dreamhost.yaml` so the legal-route crawler check expects `https://trustedbums.com/legal/terms-of-service/`.
+- Next run should verify: the next DreamHost deploy should pass `Verify crawler assets`, deploy the corrected sitemap/canonical metadata, then run Bing health, IndexNow, and Bing Webmaster submissions.
+
 ### 2026-06-12 - Run agent review on the new API boundary
 
 - Trigger: Ryan asked to run agents that would have an opinion on the new API, especially Security.
