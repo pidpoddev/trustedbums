@@ -82,6 +82,12 @@ async function bingRequest(methodName, { method = "GET", body, query = {} } = {}
   return payload;
 }
 
+function quotaRemainingFromError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const match = message.match(/Quota remaining for today:\s*(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
 async function submitFeed(args) {
   const siteUrl = getSiteOrigin(args);
   const feedUrl = getSitemapUrl(args);
@@ -96,12 +102,35 @@ async function submitFeed(args) {
 async function submitUrls(args) {
   const siteUrl = getSiteOrigin(args);
   const urlList = publicUrls(siteUrl);
-  const payload = await bingRequest("SubmitUrlBatch", {
-    method: "POST",
-    body: { siteUrl, urlList },
-  });
+  let submittedUrls = urlList;
+  let payload = null;
 
-  console.log(JSON.stringify({ action: "submit-url-batch", siteUrl, urlCount: urlList.length, response: payload }, null, 2));
+  try {
+    payload = await bingRequest("SubmitUrlBatch", {
+      method: "POST",
+      body: { siteUrl, urlList },
+    });
+  } catch (error) {
+    const remainingQuota = quotaRemainingFromError(error);
+    if (remainingQuota === null) {
+      throw error;
+    }
+
+    if (remainingQuota <= 0) {
+      console.warn(`Bing Webmaster URL quota is exhausted; skipping ${urlList.length} URL submissions.`);
+      console.log(JSON.stringify({ action: "submit-url-batch", siteUrl, urlCount: 0, skippedUrlCount: urlList.length, reason: "quota-exhausted" }, null, 2));
+      return;
+    }
+
+    submittedUrls = urlList.slice(0, remainingQuota);
+    console.warn(`Bing Webmaster URL quota only has ${remainingQuota} submissions remaining; submitting a reduced batch.`);
+    payload = await bingRequest("SubmitUrlBatch", {
+      method: "POST",
+      body: { siteUrl, urlList: submittedUrls },
+    });
+  }
+
+  console.log(JSON.stringify({ action: "submit-url-batch", siteUrl, urlCount: submittedUrls.length, skippedUrlCount: urlList.length - submittedUrls.length, response: payload }, null, 2));
 }
 
 async function traffic(args) {
