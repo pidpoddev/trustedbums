@@ -22,6 +22,8 @@ describe("opportunity claim stakeholders", () => {
     expect(portalApiSource).toContain("export type OpportunityClaimContactBuyingRole");
     expect(portalApiSource).toContain("opportunity_claim_contacts?: OpportunityClaimContactRecord[]");
     expect(portalApiSource).toContain("contacts?: Array<{");
+    expect(portalApiSource).toContain("canSponsorCall: boolean");
+    expect(portalApiSource).toContain("Must be able to sponsor a call in order to claim.");
     expect(portalApiSource).toContain("function normalizedClaimContacts");
     expect(portalApiSource).toContain('.from("opportunity_claim_contacts")');
     expect(portalApiSource).toContain("data.opportunity_claim_contacts = contactRows ?? []");
@@ -36,7 +38,19 @@ describe("opportunity claim stakeholders", () => {
     expect(bumOpportunityDetailSource).toContain('value: "TECHNICAL_LEADER", label: "Technical / Development Leader"');
     expect(bumOpportunityDetailSource).toContain('value: "BLOCKER", label: "Blocker"');
     expect(bumOpportunityDetailSource).toContain("Neil leads development and may prefer to self-develop instead of buying.");
+    expect(bumOpportunityDetailSource).toContain("I can sponsor a call with this customer");
+    expect(bumOpportunityDetailSource).toContain("setCanSponsorCall(value === \"yes\")");
     expect(bumOpportunityDetailSource).toContain("contacts: normalizedContacts.map");
+  });
+
+  it("requires call sponsorship before a Bum can submit a claim", () => {
+    const bumOpportunitiesSource = readFileSync("src/pages/bum/BumOpportunities.tsx", "utf8");
+
+    expect(bumOpportunitiesSource).toContain("I can sponsor a call with this customer");
+    expect(bumOpportunitiesSource).toContain("canSponsorCall: responseForm.canSponsorCall");
+    expect(bumOpportunitiesSource).toContain("!responseForm.canSponsorCall");
+    expect(bumOpportunityDetailSource).toContain("canSponsorCall,");
+    expect(bumOpportunityDetailSource).toContain("!canSponsorCall");
   });
 
   it("shows stakeholder bundles back to Bums and Clients after submission", () => {

@@ -58,6 +58,7 @@ const responseFormInitial = {
   contactCompany: "",
   contactEmail: "",
   relationshipStrength: "warm" as CustomerTargetResponseStrength,
+  canSponsorCall: false,
   note: "",
 };
 
@@ -328,6 +329,7 @@ export default function BumOpportunities() {
         contactCompany: responseForm.contactCompany || selectedOpportunity!.target_account_name,
         contactEmail: responseForm.contactEmail,
         relationshipStrength: claimStrengthFromTargetStrength(responseForm.relationshipStrength),
+        canSponsorCall: responseForm.canSponsorCall,
         note: responseForm.note,
       });
       if (selectedContactId) {
@@ -1290,6 +1292,23 @@ export default function BumOpportunities() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>I can sponsor a call with this customer</Label>
+                <Select
+                  value={responseForm.canSponsorCall ? "yes" : "no"}
+                  onValueChange={(value) =>
+                    setResponseForm((current) => ({ ...current, canSponsorCall: value === "yes" }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="opportunity-contact-note">Context</Label>
@@ -1308,7 +1327,7 @@ export default function BumOpportunities() {
             </Button>
             <Button
               className="w-full sm:w-auto"
-              disabled={!responseForm.contactName.trim() || !responseForm.contactCompany.trim() || opportunityClaimMutation.isPending}
+              disabled={!responseForm.contactName.trim() || !responseForm.contactCompany.trim() || !responseForm.canSponsorCall || opportunityClaimMutation.isPending}
               onClick={() => opportunityClaimMutation.mutate()}
             >
               {opportunityClaimMutation.isPending ? "Requesting..." : "Request claim"}

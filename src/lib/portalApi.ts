@@ -1346,6 +1346,7 @@ export interface OpportunityClaimInput {
   contactCompany: string;
   contactEmail?: string;
   relationshipStrength: OpportunityClaimStrength;
+  canSponsorCall: boolean;
   note?: string;
   contacts?: Array<{
     contactName: string;
@@ -4500,6 +4501,10 @@ export async function updateAdminOpportunityClaim(
 export async function createOpportunityClaim(user: AuthUser, input: OpportunityClaimInput) {
   if (user.role !== "BUM") {
     throw new Error("Only Bums can request opportunity claims.");
+  }
+
+  if (!input.canSponsorCall) {
+    throw new Error("Must be able to sponsor a call in order to claim.");
   }
 
   const { data: opportunity, error: opportunityError } = await supabase

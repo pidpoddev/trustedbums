@@ -250,7 +250,7 @@ export default function AdminOpportunities() {
     ? requestedTab
     : selectedRegistrationCompanyId !== "ALL"
       ? "registrations"
-      : "priority";
+      : "registrations";
 
   function updateOpportunitySearchParams(updates: { tab?: AdminOpportunityTab; companyId?: string }) {
     setSearchParams((current) => {

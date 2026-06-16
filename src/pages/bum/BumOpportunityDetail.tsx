@@ -140,6 +140,7 @@ export default function BumOpportunityDetail() {
 
   const [claimContacts, setClaimContacts] = useState<ClaimContactDraft[]>(() => [makeClaimContactDraft()]);
   const [note, setNote] = useState("");
+  const [canSponsorCall, setCanSponsorCall] = useState(false);
   const [questionText, setQuestionText] = useState("");
   const [decisionMakerMatchForClaim, setDecisionMakerMatchForClaim] = useState<PotentialDecisionMakerMatchRecord | null>(null);
   const [claimedDecisionMakerMatchIds, setClaimedDecisionMakerMatchIds] = useState<Set<string>>(new Set());
@@ -170,6 +171,7 @@ export default function BumOpportunityDetail() {
         contactCompany: primaryContact.contactCompany,
         contactEmail: primaryContact.contactEmail,
         relationshipStrength: primaryContact.relationshipStrength,
+        canSponsorCall,
         note,
         contacts: normalizedContacts.map((claimContact, index) => ({
           contactName: claimContact.contactName,
@@ -224,6 +226,7 @@ export default function BumOpportunityDetail() {
       );
       setClaimContacts([makeClaimContactDraft()]);
       setNote("");
+      setCanSponsorCall(false);
       setDecisionMakerMatchForClaim(null);
     },
     onError: (error) => {
@@ -290,6 +293,10 @@ export default function BumOpportunityDetail() {
   const submitRecommendation = () => {
     if (!claimContacts.some((claimContact) => claimContact.contactName.trim())) {
       toast.error("Add at least one person you can introduce");
+      return;
+    }
+    if (!canSponsorCall) {
+      toast.error("Must be able to sponsor a call in order to claim.");
       return;
     }
     createClaimMutation.mutate();
@@ -763,7 +770,17 @@ export default function BumOpportunityDetail() {
               <Label>Overall claim context</Label>
               <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="How you would introduce the buying group and what the client should know before engaging them." rows={3} />
             </div>
-            <Button onClick={submitRecommendation} className="w-full" disabled={createClaimMutation.isPending || !claimContacts.some((claimContact) => claimContact.contactName.trim())}>
+            <div className="grid gap-2">
+              <Label>I can sponsor a call with this customer</Label>
+              <Select value={canSponsorCall ? "yes" : "no"} onValueChange={(value) => setCanSponsorCall(value === "yes")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">Yes</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={submitRecommendation} className="w-full" disabled={createClaimMutation.isPending || !claimContacts.some((claimContact) => claimContact.contactName.trim()) || !canSponsorCall}>
               {createClaimMutation.isPending ? "Requesting..." : decisionMakerMatchForClaim ? "Claim this opportunity" : "Request claim"}
             </Button>
           </CardContent>
