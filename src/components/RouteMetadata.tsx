@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { defaultImage, getPublicRouteMetadata, siteOrigin } from "@/data/publicRouteMetadata";
+import { defaultImage, getCanonicalPublicPath, getPublicRouteMetadata, siteOrigin } from "@/data/publicRouteMetadata";
 
 function upsertMeta(selector: string, attributes: Record<string, string>) {
   let element = document.head.querySelector<HTMLMetaElement>(selector);
@@ -41,7 +41,7 @@ export function RouteMetadata({
       description ??
       routeMetadata?.description ??
       "Warm introduction strategy for hard-to-reach target accounts.";
-    const canonicalPath = path ?? routeMetadata?.path ?? window.location.pathname;
+    const canonicalPath = getCanonicalPublicPath(path ?? routeMetadata?.path ?? window.location.pathname);
     const canonicalUrl = `${siteOrigin}${canonicalPath}`;
     document.title = resolvedTitle;
     upsertCanonical(canonicalUrl);

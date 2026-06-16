@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "react-router-dom";
 import { openConversationDock } from "@/lib/conversationDock";
+import { trackAnalyticsEvent } from "@/lib/analyticsEvents";
 import { buildLinkedInFirstConnectionsUrl } from "@/lib/linkedinSearch";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -184,6 +185,13 @@ export default function BumOpportunityDetail() {
       });
     },
     onSuccess: async (claim) => {
+      trackAnalyticsEvent("trustedbums_claim_requested", {
+        opportunity_origin: "opportunity_detail",
+        relationship_strength: claim.relationship_strength,
+        claim_contact_count: claim.opportunity_claim_contacts?.length ?? claimContacts.filter((contact) => contact.contactName.trim()).length,
+        has_blocker: claim.opportunity_claim_contacts?.some((contact) => contact.buying_role === "BLOCKER") ?? claimContacts.some((contact) => contact.buyingRole === "BLOCKER" && contact.contactName.trim()),
+        has_purchasing_leader: claim.opportunity_claim_contacts?.some((contact) => contact.buying_role === "PURCHASING_LEADER") ?? claimContacts.some((contact) => contact.buyingRole === "PURCHASING_LEADER" && contact.contactName.trim()),
+      });
       if (decisionMakerMatchForClaim) {
         try {
           await createBumRepresentedContact({

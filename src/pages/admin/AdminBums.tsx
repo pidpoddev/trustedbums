@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { BUM_TERMS_VERSION } from "@/data/partnerTerms";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { trackAnalyticsEvent } from "@/lib/analyticsEvents";
 import { getPageItems } from "@/lib/pagination";
 import {
   approveAdminCompanyAccessRequest,
@@ -419,6 +420,11 @@ export default function AdminBums() {
   const inviteMutation = useMutation({
     mutationFn: () => inviteBum({ email: inviteEmail, name: inviteName, note: inviteNote }),
     onSuccess: (result) => {
+      trackAnalyticsEvent("trustedbums_bum_invited", {
+        invite_source: "admin_bums",
+        has_name: Boolean(inviteName.trim()),
+        has_note: Boolean(inviteNote.trim()),
+      });
       setInviteOpen(false);
       setInviteEmail("");
       setInviteName("");

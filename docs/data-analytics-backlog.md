@@ -30,6 +30,7 @@ The remaining gaps are implementation and reporting quality issues, not policy g
 ## Watchlist
 
 - `TB-0066` is API-verified for aggregate GA evidence on current head `7ee97c1`: `src/components/GoogleAnalytics.tsx` loads GA from the app shell, keeps consent denied by default, sends public and authenticated SPA page views only after analytics consent, strips protected-route IDs and portal query strings, and emits `trustedbums_route_view` for aggregate portal reporting. On 2026-06-15, `pnpm ga4:report -- --preset=overview --start-date=7daysAgo --end-date=today` returned live GA rows for property `540873763`, including `25` active users, `25` sessions, `58` screen page views, and `282` events for 2026-06-15 so far. The route report returned portal paths including `/client/dashboard`, `/admin`, and `/bum/dashboard`, and the four custom dimensions for `portal_area`, `route_group`, `auth_gate`, and `is_portal_route` already exist. The `trustedbums_route_view` portal custom-dimension report still returned zero rows in the 7-day check, so keep that custom portal-event report on watch until post-deploy consented portal traffic populates it.
+- 2026-06-15 manual cleanup added consent-gated outcome tracking for public lead submissions, client opportunity creation/import/update, Bum claim requests, target responses/questions, Bum contact creation, and Bum invitations. GA Admin API setup creates the event-scoped dimensions `lead_type`, `target_account_count`, `urgency`, `opportunity_origin`, `opportunity_status`, `relationship_strength`, `claim_contact_count`, `contact_source`, `invite_source`, `response_strength`, `has_blocker`, `has_purchasing_leader`, `has_estimated_value`, `has_pay_program`, and `has_target_accounts`; it also creates key events for `generate_lead`, `trustedbums_client_lead_submitted`, `trustedbums_opportunity_created`, `trustedbums_claim_requested`, `trustedbums_target_response_submitted`, and `trustedbums_bum_invited`. Current `pnpm ga4:report -- --preset=outcomes --start-date=7daysAgo --end-date=today --limit=25` returned `0` rows, which is expected until this app instrumentation is deployed and consented users trigger the new events.
 - Live production finance volume is still zero: `0` `customer_payment_reports` rows and `0` `claim_invoices` rows were present on 2026-06-15. Recheck finance exception reporting once seeded disputed, void, late, or paid-history cases exist in live or QA data.
 
 ## Agent Inputs
@@ -38,6 +39,13 @@ The remaining gaps are implementation and reporting quality issues, not policy g
 - Files and docs reviewed: `docs/agents/automation-prompts/trusted-bums-daily-data-analytics-engineer.toml`, `docs/agents/consultant-team-rules.md`, `docs/agents/company-wide-rules.md`, `docs/agents/consultant-access-needs.md`, `docs/agents/business-access-rules.md`, `docs/data-analytics-backlog.md`, `docs/business-access-rules.md`, `docs/consultant-access-needs.md`, `docs/codex-edit-log.md`, `src/lib/portalApi.ts`, `src/pages/client/clientReportsModel.ts`, `src/pages/client/clientExportsModel.ts`, `src/pages/admin/AdminEmails.tsx`, `src/components/GoogleAnalytics.tsx`, `src/test/googleAnalyticsConsent.test.tsx`, `src/test/financeReportsModel.test.ts`, `src/test/clientExportsAccess.test.ts`, and `supabase/functions/send-admin-email/index.ts`.
 - Live Supabase inputs reviewed for project `vaoqvtxqvbptyxddpoju`: project health, project URL confirmation, deployed `send-admin-email` function source, current performance advisors, aggregate row counts for `admin_email_deliveries`, `admin_email_campaigns`, `admin_email_events`, `customer_payment_reports`, and `claim_invoices`, aggregate `OPEN` and `CLICK` event counts, current `public.admin_scrum_items` rows for `TB-0044`, `TB-0045`, `TB-0046`, and `TB-0066`, and `information_schema.columns` for `admin_email_engagement_summary`.
 - Checks run:
+- `corepack pnpm exec vitest run src/test/analyticsEvents.test.ts src/test/googleAnalyticsConsent.test.tsx`
+- `corepack pnpm run lint`
+- `corepack pnpm exec tsc --noEmit --pretty false`
+- `node scripts/google-analytics-api.mjs help`
+- `pnpm ga4:setup-custom-dimensions`
+- `pnpm ga4:setup-key-events`
+- `pnpm ga4:report -- --preset=outcomes --start-date=7daysAgo --end-date=today --limit=25`
 - `git rev-parse HEAD`
 - `git status --short`
 - `git diff --stat HEAD~1..HEAD -- src supabase docs .github`

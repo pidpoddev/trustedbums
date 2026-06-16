@@ -7,6 +7,14 @@ const distDir = join(root, "dist");
 const manifest = JSON.parse(readFileSync(join(root, "src/data/publicRouteMetadata.json"), "utf8"));
 const template = readFileSync(join(distDir, "index.html"), "utf8");
 
+function canonicalPath(route) {
+  if (route.path === "/") {
+    return "/";
+  }
+
+  return `${route.path}/`;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -21,7 +29,7 @@ function setTag(html, pattern, replacement) {
 }
 
 function renderRouteHtml(route) {
-  const canonicalUrl = `${manifest.siteOrigin}${route.path}`;
+  const canonicalUrl = new URL(canonicalPath(route), manifest.siteOrigin).href;
   const imageUrl = `${manifest.siteOrigin}${manifest.imagePath}`;
   const title = escapeHtml(route.title);
   const description = escapeHtml(route.description);

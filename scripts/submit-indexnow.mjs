@@ -9,7 +9,9 @@ const hostOrigin = process.env.INDEXNOW_HOST ?? manifest.siteOrigin;
 const endpoint = process.env.INDEXNOW_ENDPOINT ?? "https://www.bing.com/indexnow";
 const dryRun = process.argv.includes("--dry-run");
 
-const urls = manifest.routes.map((route) => new URL(route.path, hostOrigin).href);
+const urls = manifest.routes
+  .filter((route) => route.path !== "/login")
+  .map((route) => new URL(route.path === "/" ? "/" : `${route.path}/`, hostOrigin).href);
 
 const payload = {
   host: new URL(hostOrigin).host,

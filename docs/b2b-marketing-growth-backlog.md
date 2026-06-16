@@ -16,6 +16,7 @@ The marketplace constraint is still Client demand, not Bum supply. The latest sh
 - Legal and claims guardrail: no guaranteed meetings, guaranteed revenue, customer-logo claims, referral compensation claims, or payout promises outside approved proof boundaries.
 - Marketplace guardrail: keep Bum recruiting invite-only until Client demand, recruiting terminology, and activation tracking are stronger.
 - Channel guardrail: keep outbound email, DMs, referral asks, and any paid pilot low-volume and human-reviewed until CRM truth, suppression handling, and objection logging are in place.
+- Search and citation guardrail: use search engines for clean discovery and reputation proof, not volume hacks. Submit clean sitemap/URL signals after deploy, and pursue only legitimate company, founder, partner, customer, or relevant industry citations. Do not buy backlinks, trade links, use mass directories, or publish thin guest posts for ranking.
 - Analytics guardrail: GA setup is shipped, and exact head `7ee97c1` now improves consented page-view dispatch, but this run still had no live GA or Bing dashboard access. Treat analytics as configured infrastructure, not current performance proof.
 - Runner constraint: use port `8080` only for local testing. When external DNS context is needed, use `https://rcdl.tplinkdns.com` and treat runner-local failures as partial evidence only.
 
@@ -44,6 +45,18 @@ The marketplace constraint is still Client demand, not Bum supply. The latest sh
 - Trust and brand risk: meme-heavy tone, over-detailed forms, personal-email capture, or routing traffic into unclear CTA language will make the brand look conversion-hungry instead of selective.
 - Recommendation: draft a three-post sequence, one comment-to-DM follow-up, and one optional paid pilot spec. If a paid pilot runs, keep the form to work-email-first plus one seriousness filter, use hidden fields for attribution, and send qualified leads into the richer founder-review flow instead of cloning the full website form.
 - Acceptance criteria: three founder posts exist, one DM follow-up exists, CTA routing is explicit, any paid pilot spec stays short-form and proof-safe, and LinkedIn traffic is routed to strategy review rather than generic signup.
+
+### P2 - Build legitimate search and company citation coverage
+- Growth goal: make the public site easier to discover and verify without weakening trust.
+- Audience: search engines, prospective Clients checking legitimacy, Bums checking the company before joining, and referral sources who need a credible public page to share.
+- Channel: Google Search Console, Bing Webmaster Tools, IndexNow, LinkedIn company profile, approved founder/company profiles, partner or customer announcements, and selective industry listings where Trusted Bums truly belongs.
+- Evidence: The 2026-06-16 analytics/search setup pass added Bing Webmaster API, IndexNow automation, Clarity/GA integration, and local sitemap/canonical alignment for trailing-slash public URLs. Bing currently reports zero search clicks/impressions and limited indexed detail beyond the homepage, so growth should not interpret zero Bing traffic as proof that the brand has demand. The first move is clean crawl/index hygiene, followed by real citations.
+- Message and offer: point citations to useful public pages that explain the marketplace and the serious strategy-review path, not to generic signup.
+- Activation path: search or citation visit -> public trust/content page -> strategy-review request or founder conversation -> manual qualification.
+- Metric: sitemap processing status, indexed public pages, brand-query impressions, qualified strategy-review visits from organic/referral sources, and referral source quality.
+- Trust and brand risk: paid backlinks, reciprocal links, low-quality directories, and thin guest posts would make Trusted Bums look like a search-manipulation project instead of a trust marketplace.
+- Recommendation: after the current sitemap/canonical fix is deployed, resubmit sitemap/URLs through Google Search Console and Bing, then create an approved citation list with 3-5 high-quality external profiles or editorial links. Pair this with one strong public explainer page before chasing broader backlinks.
+- Acceptance criteria: Google Search Console and Bing show the sitemap submitted/read against deployed canonical URLs; at least three approved external citations point to useful public Trusted Bums pages; and no paid, exchanged, mass-directory, or unapproved guest-post links are used.
 
 ### P1 - [TB-0038] Keep Bum recruiting invite-only and referral-scored
 - Growth goal: qualified Bum acquisition.
@@ -114,7 +127,15 @@ The marketplace constraint is still Client demand, not Bum supply. The latest sh
 - Owner: Founder + Growth.
 - Stop or scale criteria: stop if traffic skews generic or low-fit; scale if strategy-review quality stays high.
 
-3. Hypothesis: keeping Bum recruiting invite-only will preserve marketplace quality while Client demand is still the main constraint.
+3. Hypothesis: clean search submission plus legitimate company citations will improve discoverability and trust verification more safely than generic backlink building.
+- Audience: search engines, prospective Clients, referred Bums, referral sources.
+- Channel: Google Search Console, Bing Webmaster Tools, IndexNow, LinkedIn/company profiles, partner/customer/editorial citations.
+- Asset needs: deployed canonical sitemap, approved citation/source list, one useful public explainer page.
+- Measurement: indexed page count, brand-query impressions, organic/referral strategy-review visits, citation quality, crawler errors.
+- Owner: Growth + Trust + Founder.
+- Stop or scale criteria: stop any citation source that requires payment for followed links, reciprocal placement, low-quality directory submission, or unapproved claims; scale only sources that make the company more credible to real buyers and operators.
+
+4. Hypothesis: keeping Bum recruiting invite-only will preserve marketplace quality while Client demand is still the main constraint.
 - Audience: current Bums and trusted referrers.
 - Channel: referral ask and selective direct outreach.
 - Asset needs: recruiting ask, screening rubric, activation handoff.
@@ -122,7 +143,7 @@ The marketplace constraint is still Client demand, not Bum supply. The latest sh
 - Owner: Founder + Product Ops.
 - Stop or scale criteria: stop any source that brings weak-fit supply; scale only when Client demand and activation rates justify it.
 
-4. Hypothesis: a short manual nurture sequence plus objection logging will improve qualified contact-to-call conversion without raising sender risk.
+5. Hypothesis: a short manual nurture sequence plus objection logging will improve qualified contact-to-call conversion without raising sender risk.
 - Audience: qualified Client prospects who do not convert immediately.
 - Channel: founder follow-up and manual email.
 - Asset needs: nurture sequence, founder one-pager, objection taxonomy, minimum tracking schema.

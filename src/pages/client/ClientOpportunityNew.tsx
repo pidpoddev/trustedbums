@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
+import { trackAnalyticsEvent } from "@/lib/analyticsEvents";
 import { cn } from "@/lib/utils";
 import { getPageItems } from "@/lib/pagination";
 import {
@@ -589,6 +590,15 @@ export default function ClientOpportunityNew() {
         }
       }
 
+      if (success > 0) {
+        trackAnalyticsEvent(bulkMode === "create" ? "trustedbums_opportunity_created" : "trustedbums_opportunity_updated", {
+          opportunity_origin: "client_import",
+          opportunity_status: bulkMode === "create" ? "imported" : "updated",
+          opportunity_count: success,
+          failure_count: failures.length,
+        });
+      }
+
       setBulkResult({ success, failures });
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-registrations", user?.clientId] });
       await queryClient.invalidateQueries({ queryKey: ["client-opportunity-claims", user?.clientId] });
@@ -690,6 +700,13 @@ export default function ClientOpportunityNew() {
         pay_program_id: form.pay_program_id || null,
         estimated_deal_value: form.estimated_deal_value ? Number(form.estimated_deal_value) : null,
         status: publishToBums ? "Accepted" : "Draft",
+      });
+      trackAnalyticsEvent("trustedbums_opportunity_created", {
+        opportunity_origin: "client_manual",
+        opportunity_status: publishToBums ? "published" : "draft",
+        has_estimated_value: Boolean(form.estimated_deal_value),
+        has_pay_program: Boolean(form.pay_program_id),
+        has_expected_timeline: Boolean(form.expected_timeline.trim()),
       });
       setSubmittedId(opportunity.id);
       clearClientOpportunityDraft(user?.clientId);

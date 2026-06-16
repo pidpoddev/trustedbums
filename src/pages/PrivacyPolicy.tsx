@@ -36,7 +36,7 @@ const sections = [
   {
     title: "Cookies, Local Storage, and Consent",
     body:
-      "Strictly necessary storage and lightweight performance monitoring are used for security, authentication, accessibility, service reliability, and remembering your consent choice. Optional product analytics, preferences, and marketing or engagement measurement are disabled unless you choose them. You can reject all optional categories as easily as accepting them, and you can change your choices at any time using the Privacy choices control.",
+      "Strictly necessary storage and lightweight performance monitoring are used for security, authentication, accessibility, service reliability, and remembering your consent choice. Optional product analytics, preferences, Microsoft Clarity interaction analytics, and marketing or engagement measurement are disabled unless you choose them. You can reject all optional categories as easily as accepting them, and you can change your choices at any time using the Privacy choices control.",
   },
   {
     title: "Your Choices and EU/UK Rights",

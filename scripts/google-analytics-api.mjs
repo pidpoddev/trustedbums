@@ -31,6 +31,105 @@ const customDimensions = [
     description: "Whether the route is part of the authenticated portal.",
     scope: "EVENT",
   },
+  {
+    displayName: "Lead type",
+    parameterName: "lead_type",
+    description: "Aggregate public lead type, such as client or Bum.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Target account count",
+    parameterName: "target_account_count",
+    description: "Bucketed count of target accounts entered on lead forms.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Lead urgency",
+    parameterName: "urgency",
+    description: "Lead timing bucket entered on lead forms.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Opportunity origin",
+    parameterName: "opportunity_origin",
+    description: "Aggregate source of an opportunity or claim action.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Opportunity status",
+    parameterName: "opportunity_status",
+    description: "Aggregate opportunity state such as draft, published, imported, or updated.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Relationship strength",
+    parameterName: "relationship_strength",
+    description: "Aggregate relationship strength selected by a Bum.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Claim contact count",
+    parameterName: "claim_contact_count",
+    description: "Number of stakeholders attached to a claim request.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Contact source",
+    parameterName: "contact_source",
+    description: "Aggregate place where a Bum contact was added.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Invite source",
+    parameterName: "invite_source",
+    description: "Aggregate source for Bum invitations.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Response strength",
+    parameterName: "response_strength",
+    description: "Aggregate response strength for client target responses.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Has blocker",
+    parameterName: "has_blocker",
+    description: "Whether a Bum claim includes at least one blocker stakeholder.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Has purchasing leader",
+    parameterName: "has_purchasing_leader",
+    description: "Whether a Bum claim includes a purchasing leader stakeholder.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Has estimated value",
+    parameterName: "has_estimated_value",
+    description: "Whether a client opportunity includes an estimated deal value.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Has pay program",
+    parameterName: "has_pay_program",
+    description: "Whether a client opportunity is attached to a pay program.",
+    scope: "EVENT",
+  },
+  {
+    displayName: "Has target accounts",
+    parameterName: "has_target_accounts",
+    description: "Whether a public lead included target-account context.",
+    scope: "EVENT",
+  },
+];
+
+const keyEvents = [
+  { eventName: "generate_lead", countingMethod: "ONCE_PER_EVENT" },
+  { eventName: "trustedbums_client_lead_submitted", countingMethod: "ONCE_PER_EVENT" },
+  { eventName: "trustedbums_opportunity_created", countingMethod: "ONCE_PER_EVENT" },
+  { eventName: "trustedbums_claim_requested", countingMethod: "ONCE_PER_EVENT" },
+  { eventName: "trustedbums_target_response_submitted", countingMethod: "ONCE_PER_EVENT" },
+  { eventName: "trustedbums_bum_invited", countingMethod: "ONCE_PER_EVENT" },
 ];
 
 const reportPresets = {
@@ -79,6 +178,36 @@ const reportPresets = {
         filter: {
           fieldName: "eventName",
           stringFilter: { matchType: "EXACT", value: "trustedbums_route_view" },
+        },
+      },
+      orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+      limit,
+    }),
+  },
+  outcomes: {
+    endpoint: "runReport",
+    body: ({ startDate, endDate, limit }) => ({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "eventName" }, { name: "customEvent:opportunity_origin" }],
+      metrics: [{ name: "eventCount" }, { name: "activeUsers" }],
+      dimensionFilter: {
+        orGroup: {
+          expressions: [
+            "generate_lead",
+            "trustedbums_client_lead_submitted",
+            "trustedbums_opportunity_created",
+            "trustedbums_opportunity_updated",
+            "trustedbums_claim_requested",
+            "trustedbums_target_response_submitted",
+            "trustedbums_target_question_submitted",
+            "trustedbums_contact_added",
+            "trustedbums_bum_invited",
+          ].map((eventName) => ({
+            filter: {
+              fieldName: "eventName",
+              stringFilter: { matchType: "EXACT", value: eventName },
+            },
+          })),
         },
       },
       orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
@@ -310,6 +439,23 @@ async function listCustomDimensions({ propertyId, token }) {
   return dimensions;
 }
 
+async function listKeyEvents({ propertyId, token }) {
+  const events = [];
+  let pageToken;
+
+  do {
+    const url = new URL(`${adminApiBaseUrl}/properties/${propertyId}/keyEvents`);
+    if (pageToken) {
+      url.searchParams.set("pageToken", pageToken);
+    }
+    const response = await googleRequest({ url, token });
+    events.push(...(response.keyEvents ?? []));
+    pageToken = response.nextPageToken;
+  } while (pageToken);
+
+  return events;
+}
+
 async function setupCustomDimensions() {
   const propertyId = getPropertyId();
   const token = await getAccessToken(["https://www.googleapis.com/auth/analytics.edit"]);
@@ -346,14 +492,52 @@ async function setupCustomDimensions() {
   console.log(JSON.stringify({ property: `properties/${propertyId}`, results }, null, 2));
 }
 
+async function setupKeyEvents() {
+  const propertyId = getPropertyId();
+  const token = await getAccessToken(["https://www.googleapis.com/auth/analytics.edit"]);
+  const existing = await listKeyEvents({ propertyId, token });
+  const existingByEventName = new Map(existing.map((event) => [event.eventName, event]));
+  const results = [];
+
+  for (const event of keyEvents) {
+    const existingEvent = existingByEventName.get(event.eventName);
+    if (existingEvent) {
+      results.push({
+        action: "exists",
+        eventName: event.eventName,
+        countingMethod: existingEvent.countingMethod,
+        name: existingEvent.name,
+      });
+      continue;
+    }
+
+    const created = await googleRequest({
+      url: `${adminApiBaseUrl}/properties/${propertyId}/keyEvents`,
+      method: "POST",
+      body: event,
+      token,
+    });
+    results.push({
+      action: "created",
+      eventName: created.eventName,
+      countingMethod: created.countingMethod,
+      name: created.name,
+    });
+  }
+
+  console.log(JSON.stringify({ property: `properties/${propertyId}`, results }, null, 2));
+}
+
 function printHelp() {
   console.log(`Usage:
   pnpm ga4:report -- --preset=overview --start-date=7daysAgo --end-date=today
   pnpm ga4:report -- --preset=routes --limit=25
   pnpm ga4:report -- --preset=events
   pnpm ga4:report -- --preset=portal
+  pnpm ga4:report -- --preset=outcomes
   pnpm ga4:report -- --preset=realtime
   pnpm ga4:setup-custom-dimensions
+  pnpm ga4:setup-key-events
 
 Required environment:
   GA4_PROPERTY_ID
@@ -367,7 +551,7 @@ Optional quota project:
   GOOGLE_CLOUD_PROJECT or GOOGLE_CLOUD_QUOTA_PROJECT
 
 Optional report args:
-  --preset=overview|routes|events|portal|realtime
+  --preset=overview|routes|events|portal|outcomes|realtime
   --start-date=YYYY-MM-DD|7daysAgo
   --end-date=YYYY-MM-DD|today
   --limit=25
@@ -390,6 +574,11 @@ async function main() {
 
   if (command === "setup-custom-dimensions") {
     await setupCustomDimensions();
+    return;
+  }
+
+  if (command === "setup-key-events") {
+    await setupKeyEvents();
     return;
   }
 

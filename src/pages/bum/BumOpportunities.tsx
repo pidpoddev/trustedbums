@@ -39,6 +39,7 @@ import {
 } from "@/lib/portalApi";
 import { opportunityOriginLabel, opportunityStageLabel, stageFromRegistrationStatus, stageFromTargetStatus } from "@/lib/opportunityModel";
 import type { RelationshipStrength } from "@/lib/claimConfig";
+import { trackAnalyticsEvent } from "@/lib/analyticsEvents";
 import { cn } from "@/lib/utils";
 import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, ChevronDown, ChevronUp, ExternalLink, UserPlus, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -302,6 +303,11 @@ export default function BumOpportunities() {
         customerTargetId: selectedTarget?.id ?? null,
       }),
     onSuccess: (result) => {
+      trackAnalyticsEvent("trustedbums_contact_added", {
+        contact_source: selectedOpportunity ? "opportunity_quick_add" : selectedTarget ? "target_quick_add" : "quick_add",
+        has_email: Boolean(quickAddForm.email.trim()),
+        has_linkedin: Boolean(quickAddForm.linkedinUrl.trim()),
+      });
       applyContact(result.contact);
       setQuickAddOpen(false);
       setQuickAddForm(quickAddInitial);
@@ -330,6 +336,12 @@ export default function BumOpportunities() {
       return claim;
     },
     onSuccess: (claim) => {
+      trackAnalyticsEvent("trustedbums_claim_requested", {
+        opportunity_origin: "marketplace_card",
+        relationship_strength: responseForm.relationshipStrength,
+        claim_contact_count: 1,
+        used_existing_contact: Boolean(selectedContactId),
+      });
       toast({ title: "Claim requested", description: "Requested with " + claim.contact_name + " at " + claim.contact_company + "." });
       queryClient.invalidateQueries({ queryKey: ["marketplace-claim-summaries"] });
       queryClient.invalidateQueries({ queryKey: ["opportunity-contact-picker", user?.id] });
@@ -360,6 +372,13 @@ export default function BumOpportunities() {
     },
     onSuccess: (result) => {
       const conversationId = result.conversation_thread_id ?? null;
+      trackAnalyticsEvent(
+        targetDialogMode === "question" ? "trustedbums_target_question_submitted" : "trustedbums_target_response_submitted",
+        {
+          response_strength: targetDialogMode === "question" ? "question" : responseForm.relationshipStrength,
+          has_note: Boolean(responseForm.note.trim()),
+        },
+      );
       toast({
         title: targetDialogMode === "question" ? "Conversation started" : "Response sent",
         description: targetDialogMode === "question"

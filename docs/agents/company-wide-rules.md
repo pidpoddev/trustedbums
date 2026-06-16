@@ -141,6 +141,14 @@ When adding a rule, include:
 - QA proof: GA property access still needs verification. Before closing `TB-0066`, confirm production "data received" or comparable live collection proof, verify authenticated portal route events in Realtime or DebugView, and confirm GA custom dimensions are registered if agents need `portal_area`, `route_group`, `auth_gate`, or `is_portal_route` in standard reports.
 - Open questions: Which GA role/access path should each automation use once the bums@trustedbums.com Chrome profile or another agent-safe route can load the GA property?
 
+### Microsoft Clarity is approved only as consent-gated behavior analytics
+- Rule: Trusted Bums may use Microsoft Clarity for `https://trustedbums.com` to review consented interaction patterns, heatmaps, and session behavior when diagnosing funnel friction, usability issues, or content engagement.
+- Applies to: Data/Analytics, UX, UI, B2B Growth, Product Ops, Trust & Reputation, QA, Release Verification, Lead Developer, public website routes, and authenticated portal routes.
+- Why it matters: Clarity can reveal interaction behavior that aggregate page-view data misses, but it is more sensitive than ordinary aggregate analytics and must stay privacy-controlled.
+- Implementation notes: The production Clarity project ID is `x7nevilplm`. Clarity must load only after the user opts into the Analytics consent category. Do not include raw session recordings, visitor-level timelines, names, emails, company names, customer targets, notes, or other private user data in repo markdown or agent handoffs; summarize aggregate patterns and cite date ranges instead.
+- QA proof: Product code includes a consent-gated Microsoft Clarity component and CSP entries for `https://www.clarity.ms` and `https://*.clarity.ms`.
+- Open questions: Which Clarity dashboard role/access path should each specialist automation use for recurring aggregate heatmap or session-friction evidence?
+
 ### Bing Webmaster Tools is an approved source for search and reputation evidence
 - Rule: Trusted Bums agents may use Bing Webmaster Tools for `https://trustedbums.com` when their work requires Bing search visibility, crawl, indexing, sitemap, SEO/GEO, backlink, keyword, or Microsoft-side reputation evidence.
 - Applies to: Trust & Reputation, B2B Growth, Data/Analytics, Content, Marketing Graphics, UX, UI, Performance, QA, Release Verification, Lead Developer, `docs/*-backlog.md`, and `docs/agents/*`.
@@ -148,6 +156,12 @@ When adding a rule, include:
 - Implementation notes: Closed tracker item `TB-0071` records the Bing setup. Bing has a verified site entry for `https://trustedbums.com/`, production serves the `msvalidate.01` verification tag, `public/robots.txt` points Bingbot to `https://trustedbums.com/sitemap.xml`, and the sitemap was submitted on 2026-06-09. Agents should use aggregate/report-level Bing evidence, cite dashboard/date-range/report context in Agent Inputs, and avoid placing private exports, credentials, or unnecessary query/campaign detail in repo markdown.
 - QA proof: DreamHost deploy run `27209133291` published commit `6512a6c`; `curl https://trustedbums.com/` shows the Bing verification tag; Bing Verify succeeded; and `https://trustedbums.com/sitemap.xml` is submitted with status `Processing`.
 - Open questions: Which agent-safe Bing Webmaster access path should each automation use for recurring report access?
+
+### Search discovery and backlink work must be trust-safe
+- Rule: Trusted Bums agents may recommend clean sitemap submission, IndexNow/Bing URL submission, Google Search Console follow-up, crawlable internal links, and legitimate company, founder, partner, customer, or relevant industry citations. Agents must not recommend paid backlinks, reciprocal link exchanges, mass directory submission, low-quality guest posts, synthetic AI citation networks, or any tactic whose main purpose is manipulating ranking signals.
+- Applies to: Trust & Reputation, B2B Growth, Content, Data/Analytics, Product Ops, QA, Release Verification, Lead Developer, `docs/*-backlog.md`, and `docs/agents/*`.
+- Why it matters: Trusted Bums sells trust. Search visibility should make the company easier to verify, not create reputation risk with tactics that search engines classify as spam or manipulation.
+- Implementation notes: After public-route metadata or sitemap changes deploy, run the approved crawler checks and submissions documented in `docs/bing-webmaster-api.md`, then record only aggregate status in backlog docs. External citations must point to useful public Trusted Bums pages and must be backed by a real business profile, relationship, customer or partner approval, or relevant directory fit.
 
 ### Agent findings must be tracked with TB IDs
 - Rule: Any agent-created or agent-preserved recommendation, bug, release blocker, QA gap, security finding, access blocker, or implementation follow-up must have an Admin Tools Scrum Tracker item and a `TB-` tracking ID before the agent publishes its handoff.

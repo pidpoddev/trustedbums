@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPathForRole } from "@/data/authData";
+import { trackAnalyticsEvent } from "@/lib/analyticsEvents";
 import { clerkSignInRedirectProps } from "@/lib/clerkRedirects";
 import { type ContactInterest, submitContactSubmission } from "@/lib/contactApi";
 import { footerLegalLinks } from "@/data/legalDocuments";
@@ -217,6 +218,22 @@ const Index = () => {
         ...contactForm,
         turnstileToken,
         idempotencyKey: crypto.randomUUID(),
+      });
+      trackAnalyticsEvent("generate_lead", {
+        lead_type: contactForm.interest.toLowerCase(),
+        target_account_count: contactForm.targetAccountCount,
+        urgency: contactForm.urgency,
+        has_referral_source: Boolean(contactForm.referralSource.trim()),
+        has_target_accounts: Boolean(targetAccounts),
+        has_message: Boolean(message),
+      });
+      trackAnalyticsEvent("trustedbums_client_lead_submitted", {
+        lead_type: contactForm.interest.toLowerCase(),
+        target_account_count: contactForm.targetAccountCount,
+        urgency: contactForm.urgency,
+        has_referral_source: Boolean(contactForm.referralSource.trim()),
+        has_target_accounts: Boolean(targetAccounts),
+        has_message: Boolean(message),
       });
       setContactForm(defaultContactForm);
       setContactFormErrors({});

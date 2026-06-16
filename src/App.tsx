@@ -5,6 +5,7 @@ import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { ClerkTicketHandler } from "@/components/ClerkTicketHandler";
 import { ConsentManager } from "@/components/ConsentManager";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { MicrosoftClarity } from "@/components/MicrosoftClarity";
 import { PerformanceMonitoring } from "@/components/PerformanceMonitoring";
 import { RouteMetadata } from "@/components/RouteMetadata";
 import { ClientAccessRoute } from "@/components/ClientAccessRoute";
@@ -103,6 +104,7 @@ const App = () => (
             <AppErrorBoundary>
               <PerformanceMonitoring />
               <GoogleAnalytics />
+              <MicrosoftClarity />
               <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading...</div>}>
               <Routes>
                 <Route path="/" element={<><RouteMetadata routePath="/" /><Index /></>} />

@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
+import { trackAnalyticsEvent } from "@/lib/analyticsEvents";
 import { formatDateForTimeZone } from "@/lib/timezone";
 import { createBumRepresentedContact, listBumRepresentedContacts, type BumRepresentedContactRecord, type BumRepresentedContactSource } from "@/lib/portalApi";
 
@@ -124,6 +125,13 @@ export default function BumContacts() {
       });
     },
     onSuccess: (result) => {
+      trackAnalyticsEvent("trustedbums_contact_added", {
+        contact_source: "bum_contacts",
+        relationship_strength: contactForm.relationshipStrength || "not_specified",
+        has_email: Boolean(contactForm.email.trim()),
+        has_phone: Boolean(contactForm.phone.trim()),
+        has_linkedin: Boolean(contactForm.linkedinUrl.trim()),
+      });
       queryClient.setQueryData<BumRepresentedContactRecord[]>(["bum-represented-contacts", user?.id], (current) => {
         if (!current?.length) return [result.contact];
         return [result.contact, ...current.filter((contact) => contact.id !== result.contact.id)];

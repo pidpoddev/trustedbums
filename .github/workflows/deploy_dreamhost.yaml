@@ -47,6 +47,12 @@ jobs:
           grep -Fq "https://www.googletagmanager.com" dist/.htaccess
           grep -Fq "https://www.google-analytics.com" dist/.htaccess
 
+      - name: Verify Microsoft Clarity production tag
+        run: |
+          grep -R "x7nevilplm" dist/assets
+          grep -Fq "https://www.clarity.ms" dist/.htaccess
+          grep -Fq "https://*.clarity.ms" dist/.htaccess
+
       - name: Verify crawler assets
         run: |
           test -s dist/sitemap.xml
@@ -70,5 +76,19 @@ jobs:
           ARGS: "-rlgoDzvc --delete"
           EXCLUDE: "/node_modules/, /.git/, /.github/"
 
+      - name: Verify live Bing crawler assets
+        run: pnpm run bing:health
+
       - name: Submit production URLs to Bing IndexNow
-        run: pnpm run indexnow:submit
+        run: pnpm run bing:indexnow
+
+      - name: Submit sitemap and URLs to Bing Webmaster API
+        env:
+          BING_WEBMASTER_API_KEY: ${{ secrets.BING_WEBMASTER_API_KEY }}
+        run: |
+          if [ -z "$BING_WEBMASTER_API_KEY" ]; then
+            echo "BING_WEBMASTER_API_KEY is not configured; skipping Bing Webmaster API submission."
+            exit 0
+          fi
+          pnpm run bing:webmaster submit-feed
+          pnpm run bing:webmaster submit-urls

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
+import { trackAnalyticsEvent } from "@/lib/analyticsEvents";
 import {
   getOwnBumProfile,
   inviteBum,
@@ -167,6 +168,11 @@ export default function BumTeamManagement() {
         note: teamInviteNote,
       }),
     onSuccess: async (result) => {
+      trackAnalyticsEvent("trustedbums_bum_invited", {
+        invite_source: "managing_bum_team",
+        has_name: Boolean(teamInviteName.trim()),
+        has_note: Boolean(teamInviteNote.trim()),
+      });
       setTeamInviteEmail("");
       setTeamInviteName("");
       setTeamInviteNote("");
