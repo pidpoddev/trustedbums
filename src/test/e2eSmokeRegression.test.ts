@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const stagingSmokeSource = readFileSync("tests/e2e/staging-smoke.spec.ts", "utf8");
+const opportunityWorkflowSource = readFileSync("tests/e2e/opportunity-workflow.spec.ts", "utf8");
 const clientPaymentsSource = readFileSync("src/pages/client/ClientPayments.tsx", "utf8");
 const portalSearchSource = readFileSync("src/components/PortalGlobalSearch.tsx", "utf8");
 const signupIntentSource = readFileSync("src/components/SignupIntentDialog.tsx", "utf8");
@@ -74,5 +75,14 @@ describe("E2E smoke regression coverage", () => {
     expect(e2eAuthHelperSource).toContain("currentUrl.search");
     expect(e2eAuthHelperSource).toContain("expectedUrl.search");
     expect(e2eAuthHelperSource).toContain("new URL(path, currentUrl.origin)");
+  });
+
+  it("cleans up fake opportunity records after mutating smoke tests", () => {
+    expect(opportunityWorkflowSource).toContain("hasQaCleanupCredential");
+    expect(opportunityWorkflowSource).toContain('table: "opportunity_registrations"');
+    expect(opportunityWorkflowSource).toContain('field: "target_account_name"');
+    expect(opportunityWorkflowSource).toContain("cleanupCreatedRecords(createdRecords, cleanupIssues)");
+    expect(opportunityWorkflowSource).toContain("finally");
+    expect(opportunityWorkflowSource).toContain('issue.severity === "P1"');
   });
 });
