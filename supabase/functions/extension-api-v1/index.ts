@@ -126,9 +126,10 @@ function parseJwtPayload(token: string) {
 }
 
 function resolveClerkJwksUrl(issuer?: string) {
-  const candidate = issuer?.trim() || clerkFrontendApiUrl?.trim();
-  if (!candidate) throw new Error("Unable to determine the Clerk JWKS endpoint for this session.");
-  return new URL("/.well-known/jwks.json", candidate).toString();
+  const expectedIssuer = clerkFrontendApiUrl?.trim();
+  if (!expectedIssuer) throw new Error("The extension API Clerk issuer is not configured.");
+  if (!issuer || issuer.trim() !== expectedIssuer) throw new Error("The current session token issuer is not trusted.");
+  return new URL("/.well-known/jwks.json", expectedIssuer).toString();
 }
 
 async function getCurrentProfile(token: string) {
@@ -136,7 +137,7 @@ async function getCurrentProfile(token: string) {
   const { payload: verifiedPayload } = await jose.jwtVerify(
     token,
     jose.createRemoteJWKSet(new URL(resolveClerkJwksUrl(payload.iss))),
-    payload.iss ? { issuer: payload.iss } : undefined,
+    { issuer: payload.iss },
   );
   const currentUserId = (verifiedPayload as ClaimsResponse).sub?.trim();
   if (!currentUserId) throw new Error("The verified Clerk session did not include a user ID.");

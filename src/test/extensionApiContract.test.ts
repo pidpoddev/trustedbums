@@ -5,6 +5,7 @@ const openApi = readFileSync("docs/openapi.yaml", "utf8");
 const apiDocs = readFileSync("docs/api.md", "utf8");
 const functionSource = readFileSync("supabase/functions/extension-api-v1/index.ts", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
+const extensionCaptureMigration = readFileSync("supabase/migrations/20260525160000_add_extension_api_page_captures.sql", "utf8");
 
 describe("extension API contract", () => {
   it("documents the implemented v1 endpoints", () => {
@@ -31,6 +32,15 @@ describe("extension API contract", () => {
     expect(functionSource).toContain("apiVersion: API_VERSION");
   });
 
+  it("fails closed for forged or wrong-issuer Clerk tokens", () => {
+    expect(functionSource).toContain('throw new Error("The extension API Clerk issuer is not configured.")');
+    expect(functionSource).toContain('throw new Error("The current session token issuer is not trusted.")');
+    expect(functionSource).toContain("jose.jwtVerify");
+    expect(functionSource).toContain("resolveClerkJwksUrl(payload.iss)");
+    expect(functionSource).toContain("{ issuer: payload.iss }");
+    expect(functionSource).not.toContain("issuer?.trim() || clerkFrontendApiUrl?.trim()");
+  });
+
   it("rejects ambiguous capture destinations and rate-limits capture creation", () => {
     expect(functionSource).toContain("class ExtensionApiError extends Error");
     expect(functionSource).toContain("EXTENSION_API_CAPTURE_LIMIT_PER_HOUR");
@@ -39,6 +49,18 @@ describe("extension API contract", () => {
     expect(functionSource).toContain("Choose either opportunityId or customerTargetId, not both.");
     expect(functionSource).toContain("customerTargetId is not valid for opportunity captures.");
     expect(functionSource).toContain("opportunityId is not valid for customer target captures.");
+    expect(functionSource).toContain("sourceUrl is required.");
+    expect(functionSource).toContain("sourceUrl must be a valid absolute URL.");
+    expect(functionSource).toContain("sourceUrl must use http or https.");
+    expect(functionSource).toContain('/required|valid|destination/i.test(message)');
+  });
+
+  it("keeps idempotent retries ahead of rate limiting for page captures", () => {
+    const createPageCaptureBody = functionSource.match(/async function createPageCapture[\s\S]*?return json\(request, 201, \{ capture: serializeCapture\(data\) \}\);\n}/)?.[0] ?? "";
+
+    expect(createPageCaptureBody).toContain("const existing = await findExistingCapture(profile, clientRequestId);");
+    expect(createPageCaptureBody).toContain("if (existing) return json(request, 200, { capture: serializeCapture(existing), idempotent: true });");
+    expect(createPageCaptureBody.indexOf("findExistingCapture")).toBeLessThan(createPageCaptureBody.indexOf("enforceCaptureRateLimit"));
   });
 
   it("restricts extension API CORS to configured extension origins", () => {
@@ -52,6 +74,16 @@ describe("extension API contract", () => {
     expect(functionSource).toContain('if (normalizeRole(profile) === "CLIENT") return Boolean(profile.company_id && target.client_company_id === profile.company_id)');
     expect(functionSource).not.toContain('if (normalizeRole(profile) === "BUM") return true');
     expect(functionSource).toContain("targetQuery = targetQuery.limit(0);");
+  });
+
+  it("keeps raw extension capture writes service-role only while allowing scoped reads", () => {
+    expect(extensionCaptureMigration).toContain("grant select on public.extension_page_captures to authenticated;");
+    expect(extensionCaptureMigration).not.toContain("grant insert on public.extension_page_captures to authenticated");
+    expect(extensionCaptureMigration).not.toContain("grant update on public.extension_page_captures to authenticated");
+    expect(extensionCaptureMigration).not.toContain("grant delete on public.extension_page_captures to authenticated");
+    expect(extensionCaptureMigration).toContain("grant all on public.extension_page_captures to service_role;");
+    expect(functionSource).toContain('.from("extension_page_captures")');
+    expect(functionSource).toContain("SUPABASE_SERVICE_ROLE_KEY");
   });
 
   it("keeps opportunities requestable until a client accepts an intro request", () => {
