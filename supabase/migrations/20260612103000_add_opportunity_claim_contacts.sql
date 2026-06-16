@@ -44,9 +44,13 @@ create policy "Users can read relevant opportunity claim contacts"
 on public.opportunity_claim_contacts for select
 to anon, authenticated
 using (
-  public.is_admin()
-  or bum_user_id = public.current_user_id()
-  or company_id = public.current_company_id()
+  bum_user_id = public.current_user_id()
+  or exists (
+    select 1
+    from public.profiles profile
+    where profile.id = public.current_user_id()
+      and (profile.is_admin or profile.company_id = opportunity_claim_contacts.company_id)
+  )
 );
 
 drop policy if exists "Bums can create own opportunity claim contacts" on public.opportunity_claim_contacts;
@@ -68,5 +72,21 @@ drop policy if exists "Bums and admins can update opportunity claim contacts" on
 create policy "Bums and admins can update opportunity claim contacts"
 on public.opportunity_claim_contacts for update
 to anon, authenticated
-using (bum_user_id = public.current_user_id() or public.is_admin())
-with check (bum_user_id = public.current_user_id() or public.is_admin());
+using (
+  bum_user_id = public.current_user_id()
+  or exists (
+    select 1
+    from public.profiles profile
+    where profile.id = public.current_user_id()
+      and profile.is_admin
+  )
+)
+with check (
+  bum_user_id = public.current_user_id()
+  or exists (
+    select 1
+    from public.profiles profile
+    where profile.id = public.current_user_id()
+      and profile.is_admin
+  )
+);
