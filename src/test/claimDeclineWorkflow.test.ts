@@ -10,6 +10,10 @@ const bumOpportunityDetailSource = readFileSync("src/pages/bum/BumOpportunityDet
 const migrationSource = readFileSync("supabase/migrations/20260609124500_add_claim_decline_reasons_and_email_decisions.sql", "utf8");
 const syncFunctionSource = readFileSync("supabase/functions/sync-claim-decision-replies/index.ts", "utf8");
 const supabaseConfigSource = readFileSync("supabase/config.toml", "utf8");
+const syncSecretRpcMigration = readFileSync(
+  "supabase/migrations/20260616113000_add_claim_decision_sync_secret_rpc.sql",
+  "utf8",
+);
 
 describe("claim decline workflow", () => {
   it("adds declined as a first-class claim status with structured reasons", () => {
@@ -58,6 +62,10 @@ describe("claim decline workflow", () => {
     expect(syncFunctionSource).toContain("x-sync-secret");
     expect(syncFunctionSource).toContain("CLAIM_DECISION_SYNC_SECRET is not configured.");
     expect(syncFunctionSource).toContain("if (!syncSecret)");
+    expect(syncFunctionSource).toContain('supabaseAdmin.rpc("claim_decision_sync_secret")');
+    expect(syncSecretRpcMigration).toContain("security definer");
+    expect(syncSecretRpcMigration).toContain("trusted_bums_claim_decision_sync_secret");
+    expect(syncSecretRpcMigration).toContain("grant execute on function public.claim_decision_sync_secret() to service_role;");
     expect(migrationSource).toContain("Claim decision token: {{claim_decision_token}}");
   });
 });

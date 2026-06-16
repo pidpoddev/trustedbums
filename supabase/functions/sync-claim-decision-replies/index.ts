@@ -94,7 +94,7 @@ const microsoftClientSecret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
 const defaultMailbox = Deno.env.get("CLAIM_DECISION_MAILBOX") ?? Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
 const microsoftSenderEmail = Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
 const portalBaseUrl = (Deno.env.get("PORTAL_BASE_URL") ?? "https://trustedbums.com").replace(/\/+$/, "");
-const syncSecret = Deno.env.get("CLAIM_DECISION_SYNC_SECRET")?.trim();
+const syncSecretEnv = Deno.env.get("CLAIM_DECISION_SYNC_SECRET")?.trim();
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase function environment is missing required project credentials.");
@@ -106,6 +106,15 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
 
 function json(status: number, payload: Record<string, unknown>) {
   return new Response(JSON.stringify(payload), { status, headers: corsHeaders });
+}
+
+async function getSyncSecret() {
+  if (syncSecretEnv) return syncSecretEnv;
+
+  const { data, error } = await supabaseAdmin.rpc("claim_decision_sync_secret");
+  if (error) throw error;
+
+  return typeof data === "string" ? data.trim() : "";
 }
 
 function cleanMailbox(value: unknown) {
@@ -590,6 +599,8 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return json(405, { error: "Method not allowed." });
 
   try {
+    const syncSecret = await getSyncSecret();
+
     if (!syncSecret) {
       return json(503, { error: "CLAIM_DECISION_SYNC_SECRET is not configured." });
     }
