@@ -33,19 +33,20 @@ The Scrum team should treat the glossary as a product alignment epic with severa
 
 Goal: Replace ambiguous or inconsistent terms with the approved glossary so Clients, Bums, Admins, and public visitors see the same concepts across the website, product, legal docs, and training.
 
-Success measure: A user can tell the difference between Customer, Client, Client Prospect, Bum, Bum Prospect, Opportunity, Customer Lead, Intro Request, Claim, Accepted Claim, Completed Introduction, Customer Payment Report, and Commission Invoice Generator without relying on internal knowledge.
+Success measure: A user can tell the difference between Customer, Client, Prospective Client, Bum, Prospective Bum, Represented Client, Opportunity, Customer Lead, Intro Request, Claim, Accepted Claim, Completed Introduction, Customer Payment Report, Commission Plan, and Commission Invoice Generator without relying on internal knowledge.
 
 ## Stories
 
-### Story 1 - Standardize Client Agreement Language
+### Story 1 - Standardize Agreements Workspace And Client Agreement Language
 
-As a Client user, I want every legal acceptance and legal-history surface to use the same terms so I know whether I am reviewing the current Client Agreement or past agreement records.
+As a Client user, I want every legal acceptance and legal-history surface to use the same terms so I know whether I am opening the Agreements workspace, reviewing the current Client Agreement, or looking at past agreement records.
 
 Recommended terms:
 
-- Use `Client Agreement` for the binding Client contract.
+- Use `Agreements` for the Client legal workspace that contains the current contract, FAQ, redline/amendment requests, and agreement records.
+- Use `Client Agreement` for the binding Client contract or document.
 - Use `Agreement records` for history.
-- Avoid `Partner Terms`, `Terms & Legal Agreements`, and generic `Agreements` where the current Client contract is meant.
+- Avoid `Partner Terms`, `Terms & Legal Agreements`, and singular `Client Agreement` where the whole workspace is meant.
 
 Candidate files:
 
@@ -61,7 +62,8 @@ Candidate files:
 
 Acceptance criteria:
 
-- Client nav, dashboard, profile, terms page, search, and agreement-history page use `Client Agreement` consistently for the current agreement.
+- Client nav, dashboard, profile, search, and agreement-history workspace links use `Agreements` consistently for the workspace.
+- The current contract remains labeled `Client Agreement`.
 - History remains distinguishable as `Agreement records`.
 - No client-facing CTA says `Open terms screen`.
 - Tests asserting visible legal labels are updated.
@@ -159,6 +161,7 @@ As a Client Finance user, I want finance copy to make clear that Customers pay C
 Recommended terms:
 
 - `Customer Payment Report` for Client-entered Customer revenue.
+- `Commission Plan` for the approved finance object that explains how commission is calculated.
 - `Commission Invoice Generator` for the tool that calculates the current Trusted Bums commission amount.
 - `Commission` for legal/finance calculation.
 - `Revenue Share` for narrative explanation of the business model.
@@ -167,6 +170,7 @@ Avoid:
 
 - `Payment processing`
 - `Paid through Trusted Bums`
+- `Commission structure` as the visible product term when the approved object is the `Commission Plan`
 - Any copy implying Customer money passes through Trusted Bums
 - `Trusted Bums receipt` unless a future legal/finance decision defines it
 
@@ -183,20 +187,21 @@ Acceptance criteria:
 
 - Finance copy says Customers pay Clients directly.
 - Client-entered revenue is called a `Customer Payment Report`.
+- Client-facing finance setup and dashboard copy use `Commission Plan` for the approved finance object.
 - Invoice tool copy reflects commission calculation, not payment processing.
 - Finance export labels do not imply broad operational access.
 
 ### Story 5 - Align Public Site And Intake Copy With Party Terms
 
-As a public visitor, I want to understand the difference between Customers, Clients, Bums, and Bum Prospects before I sign up or contact Trusted Bums.
+As a public visitor, I want to understand the difference between Customers, Clients, Bums, Prospective Bums, and Prospective Clients before I sign up or contact Trusted Bums.
 
 Recommended terms:
 
 - `Client` for the company seeking access and paying Trusted Bums.
 - `Customer` for the end buyer.
 - `Bum` for an approved network participant.
-- `Bum Prospect` for a person who wants to become a Bum but is not yet approved.
-- `Client Prospect` for a company that might become a Client.
+- `Prospective Bum` for a person who wants to become a Bum but is not yet approved.
+- `Prospective Client` for a company that might become a Client.
 
 Candidate files:
 
@@ -208,10 +213,41 @@ Candidate files:
 Acceptance criteria:
 
 - Public signup/contact copy does not imply every applicant is already a Bum.
-- Admin intake copy distinguishes Bum Prospects from approved Bums.
+- Admin intake copy distinguishes Prospective Bums from approved Bums.
+- Public signup and company-contact routes distinguish Prospective Clients from active Clients.
 - Public explanation distinguishes Customers from Clients when the business model is being explained.
+- No visible recruiting flow or generated admin note uses `Bum Prospect`.
+- No future-client UI uses `Client Prospect`.
 
-### Story 6 - Define CRM Stage Names Before Implementing Stage UI
+### Story 6 - Separate Represented Clients From Prospective Clients
+
+As a Bum user, I want active Client companies and future Client companies to use different labels so I know whether I am representing an approved Client or suggesting a company that could become one.
+
+Recommended terms:
+
+- `Represented Clients` for active or live Client companies a Bum can represent, search, or work with.
+- `Prospective Clients` for companies that might become Clients through recommendation, demand routing, or business development.
+- Avoid `Clients We Represent`, generic `Prospects`, `Client Prospect`, and `Target Prospects` as primary user-facing labels.
+
+Candidate files:
+
+- `src/pages/bum/BumClients.tsx`
+- `src/pages/bum/BumProspects.tsx`
+- `src/pages/bum/BumDashboard.tsx`
+- `src/pages/bum/BumReports.tsx`
+- `src/pages/bum/BumReverseOpportunities.tsx`
+- `src/components/PortalGlobalSearch.tsx`
+- `src/components/FirstLoginWalkthrough.tsx`
+- route/visual audit tests that assert old labels
+
+Acceptance criteria:
+
+- `/bum/clients` uses `Represented Clients`.
+- `/bum/prospects` uses `Prospective Clients`.
+- Bum dashboard, reports, search, walkthrough, and related Opportunity copy use those terms consistently.
+- Old labels remain only in migration notes, test descriptions for legacy coverage, or explicit avoid lists.
+
+### Story 7 - Define CRM Stage Names Before Implementing Stage UI
 
 As the Scrum team, we need agreed stage names before changing workflow statuses so product labels, reporting, legal records, and analytics stay aligned.
 
@@ -231,10 +267,11 @@ Acceptance criteria:
 
 1. Legal and role-label copy pass: low workflow risk and high trust clarity.
 2. Finance copy pass: requires careful review to avoid implying payment processing.
-3. Public intake copy pass: align marketing and admin intake with Bum Prospect / Client Prospect.
-4. Opportunity IA design: define one Opportunity workspace, origin values, stage model, and Claim action rules.
-5. Unified Opportunity implementation: consolidate separate Opportunity/Reverse Opportunity/Customer Lead/request views after Product/Legal/Data/QA agree.
-6. CRM stage design: do before changing status enums or reports.
+3. Public intake copy pass: align marketing and admin intake with Prospective Bum / Prospective Client.
+4. Bum company workflow copy pass: align Represented Clients and Prospective Clients.
+5. Opportunity IA design: define one Opportunity workspace, origin values, stage model, and Claim action rules.
+6. Unified Opportunity implementation: consolidate separate Opportunity/Reverse Opportunity/Customer Lead/request views after Product/Legal/Data/QA agree.
+7. CRM stage design: do before changing status enums or reports.
 
 ## Cross-Functional Review Needed
 
@@ -245,6 +282,14 @@ Acceptance criteria:
 - Data/Analytics: reviews stage names and finance/reporting terms.
 - QA: updates route, visual, and copy assertions.
 - Trust/Reputation: reviews public-site and finance copy for buyer confidence.
+
+## Resolved Decisions
+
+- `Prospective Bum` replaces `Bum Prospect`.
+- `Prospective Client` replaces `Client Prospect`.
+- `Agreements` names the Client legal workspace; `Client Agreement` remains the binding contract.
+- `Commission Plan` names the approved Client finance object.
+- `Represented Clients` names active Bum-side Client companies.
 
 ## Open Decisions
 
