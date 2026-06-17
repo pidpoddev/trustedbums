@@ -477,7 +477,7 @@ export default function ClientProfile() {
           <CardHeader>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <CardTitle className="font-display">Deal Registration Process</CardTitle>
+                <CardTitle className="font-display">Deal Registration Beta Setup</CardTitle>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Beta setup for submitting Bum claims and Bum-originated opportunities into an external client registration portal.
                 </p>
@@ -502,7 +502,7 @@ export default function ClientProfile() {
                 onClick={() => saveDealRegistrationMutation.mutate()}
                 disabled={isLoading || !canManageDealRegistration || saveDealRegistrationMutation.isPending}
               >
-                {saveDealRegistrationMutation.isPending ? "Saving..." : "Save Deal Registration Beta"}
+                {saveDealRegistrationMutation.isPending ? "Saving..." : "Save Deal Registration Beta Setup"}
               </Button>
             </div>
           </CardContent>

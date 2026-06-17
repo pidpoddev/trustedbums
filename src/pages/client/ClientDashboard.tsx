@@ -250,7 +250,7 @@ export default function ClientDashboard() {
 
   if (isItUser) {
     const itActions: DashboardAction[] = [
-      { title: "Configure Deal Registration Beta", description: "Set API provider, auth method, required fields, approval tracking, and fallback workflow.", to: "/client/profile", primary: true },
+      { title: "Configure Deal Registration Beta Setup", description: "Set API provider, auth method, required fields, approval tracking, and fallback workflow.", to: "/client/profile", primary: true },
       { title: "Open Inbox", description: "Coordinate portal API, security, and future SSO setup questions with Trusted Bums.", to: "/client/live-conversations" },
       { title: "Review Client Agreement", description: "Check integration-related legal context and agreement records.", to: "/client/agreements" },
     ];

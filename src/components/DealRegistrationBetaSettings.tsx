@@ -47,7 +47,7 @@ export function DealRegistrationBetaSettings({ value, onChange, disabled = false
       <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium">Deal Registration Automation</p>
+            <p className="font-medium">Deal Registration Beta Setup</p>
             <Badge variant="secondary">Beta</Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">

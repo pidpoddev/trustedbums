@@ -399,7 +399,7 @@ test.describe("public visual UI audit", () => {
 
     await page.goto("/");
     await dismissConsentBanner(page);
-    await page.getByRole("button", { name: /^Sign up$/i }).click();
+    await page.getByRole("button", { name: /^Create Client account$/i }).click();
     const signupDialog = page.getByRole("dialog", { name: "Create your Client account" });
     await expect(signupDialog).toBeVisible();
     await captureVisualState(page, testInfo, "public-signup-intent", { route: "/", name: "public-signup-intent" });

@@ -302,7 +302,7 @@ const Index = () => {
                 </SignInButton>
                 <SignupIntentDialog lockedRole="CLIENT">
                   <Button size="sm" className="rounded-full px-5 shadow-[0_0_28px_rgba(255,122,26,0.35)]">
-                    Sign up
+                    Create Client account
                   </Button>
                 </SignupIntentDialog>
               </>
@@ -607,7 +607,7 @@ const Index = () => {
                           variant="outline"
                           className="h-14 rounded-full border-white/25 bg-white/8 px-8 text-base font-bold text-white hover:bg-white hover:text-[#08111f]"
                         >
-                          Client signup
+                          Create Client account
                         </Button>
                       </SignupIntentDialog>
                     </>

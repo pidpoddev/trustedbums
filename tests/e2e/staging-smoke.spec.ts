@@ -8,7 +8,7 @@ test.describe("staging smoke", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /Your buyer is ignoring strangers/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /Request an intro strategy/i })).toBeVisible();
-    await expect(page.getByRole("banner").getByRole("button", { name: /^Sign up$/i })).toBeVisible();
+    await expect(page.getByRole("banner").getByRole("button", { name: /^Create Client account$/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /For Bums/i }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: /Accessibility settings/i })).toBeVisible();
 
@@ -41,7 +41,7 @@ test.describe("staging smoke", () => {
 
   test("validates the signup intent dialog before Clerk handoff", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("banner").getByRole("button", { name: /^Sign up$/i }).click();
+    await page.getByRole("banner").getByRole("button", { name: /^Create Client account$/i }).click();
 
     await expect(page.getByRole("heading", { name: "Create your Client account" })).toBeVisible();
     await page.getByRole("button", { name: "Continue" }).click();

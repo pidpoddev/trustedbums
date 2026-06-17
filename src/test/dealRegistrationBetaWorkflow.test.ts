@@ -25,9 +25,9 @@ describe("deal registration beta workflow", () => {
     expect(dealRegistrationSettingsSource).toContain("Credential reference");
   });
 
-  it("surfaces the beta process for Client Admins and Trusted Bums Admins", () => {
-    expect(clientProfileSource).toContain("Deal Registration Process");
-    expect(clientProfileSource).toContain("Save Deal Registration Beta");
+  it("surfaces the beta setup for Client Admins and Trusted Bums Admins", () => {
+    expect(clientProfileSource).toContain("Deal Registration Beta Setup");
+    expect(clientProfileSource).toContain("Save Deal Registration Beta Setup");
     expect(adminClientsSource).toContain("DealRegistrationBetaSettings");
     expect(adminClientsSource).toContain("Deal Reg");
     expect(adminClientsSource).toContain("dealRegistrationConfig");
