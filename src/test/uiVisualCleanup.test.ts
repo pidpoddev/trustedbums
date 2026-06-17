@@ -14,6 +14,9 @@ const adminScrumTrackerSource = readFileSync("src/pages/admin/AdminScrumTracker.
 const selectSource = readFileSync("src/components/ui/select.tsx", "utf8");
 const bumContactsSource = readFileSync("src/pages/bum/BumContacts.tsx", "utf8");
 const visualAuditSource = readFileSync("tests/e2e/visual-ui-audit.spec.ts", "utf8");
+const publicIndexSource = readFileSync("src/pages/Index.tsx", "utf8");
+const reportsWorkspaceSource = readFileSync("src/components/reports/ReportsWorkspace.tsx", "utf8");
+const legalDocumentPageSource = readFileSync("src/pages/LegalDocumentPage.tsx", "utf8");
 
 describe("UI visual cleanup guardrails", () => {
   it("keeps dialogs above fixed portal widgets with opaque surfaces", () => {
@@ -70,6 +73,25 @@ describe("UI visual cleanup guardrails", () => {
   it("uses short mobile-safe search placeholders", () => {
     expect(contactSubmissionsSource).toContain('placeholder="Search contacts"');
     expect(clientTargetsSource).toContain('placeholder="Search targets"');
+  });
+
+  it("keeps public mobile header actions readable at narrow widths", () => {
+    expect(publicIndexSource).toContain("flex min-h-20 items-center justify-between gap-3 px-4 py-2 sm:px-6");
+    expect(publicIndexSource).toContain("flex flex-wrap items-center justify-end gap-2 sm:gap-3");
+    expect(publicIndexSource).toContain("rounded-full px-3 shadow-[0_0_28px_rgba(255,122,26,0.35)] sm:px-5");
+  });
+
+  it("uses mobile disclosure for dense report controls", () => {
+    expect(reportsWorkspaceSource).toContain("const reportControls = (");
+    expect(reportsWorkspaceSource).toContain('<details className="rounded-md border bg-card p-4 xl:hidden">');
+    expect(reportsWorkspaceSource).toContain('<summary className="cursor-pointer font-medium">Report controls</summary>');
+    expect(reportsWorkspaceSource).toContain('className="order-2 hidden xl:order-1 xl:block"');
+  });
+
+  it("uses trust navigation disclosure on mobile legal pages", () => {
+    expect(legalDocumentPageSource).toContain("Trust & legal navigation");
+    expect(legalDocumentPageSource).toContain('aria-label="Trust and legal pages"');
+    expect(legalDocumentPageSource).toContain('className="hidden lg:sticky lg:top-24 lg:block lg:self-start"');
   });
 
   it("keeps mobile tooltip overlays from blocking modal controls", () => {

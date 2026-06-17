@@ -184,7 +184,11 @@ export function PortalGlobalSearch() {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const shouldFetchSearchData = Boolean(user && (focused || mobileOpen || query.trim().length >= 2));
+  const committedQuery = query.trim();
+  const shouldFetchSearchData = Boolean(user && committedQuery.length >= 2);
+  const canSearchTargets = user?.role === "ADMIN" || user?.role === "BUM" || user?.clientAccessRole === "CLIENT_ADMIN" || user?.clientAccessRole === "CLIENT_MEMBER";
+  const canSearchClientOpportunities = user?.role === "CLIENT" && (user?.clientAccessRole === "CLIENT_ADMIN" || user?.clientAccessRole === "CLIENT_MEMBER");
+  const canSearchClientReverse = canSearchClientOpportunities;
 
   const marketplaceOpportunitiesQuery = useQuery({
     queryKey: ["portal-search", "marketplace-opportunities", user?.role],
@@ -201,13 +205,13 @@ export function PortalGlobalSearch() {
   const clientOpportunitiesQuery = useQuery({
     queryKey: ["portal-search", "client-opportunities", user?.id],
     queryFn: () => listOwnOpportunityRegistrations(user!),
-    enabled: shouldFetchSearchData && user?.role === "CLIENT",
+    enabled: shouldFetchSearchData && canSearchClientOpportunities,
     staleTime: 60_000,
   });
   const targetsQuery = useQuery({
     queryKey: ["portal-search", "targets", user?.role, user?.clientId],
     queryFn: () => listCustomerTargets(user?.role === "CLIENT" ? user : null),
-    enabled: shouldFetchSearchData,
+    enabled: shouldFetchSearchData && canSearchTargets,
     staleTime: 60_000,
   });
   const companiesQuery = useQuery({
@@ -255,7 +259,7 @@ export function PortalGlobalSearch() {
   const clientReverseQuery = useQuery({
     queryKey: ["portal-search", "client-reverse", user?.clientId],
     queryFn: () => listClientReverseOpportunities(user!),
-    enabled: shouldFetchSearchData && user?.role === "CLIENT",
+    enabled: shouldFetchSearchData && canSearchClientReverse,
     staleTime: 60_000,
   });
   const profilesQuery = useQuery({

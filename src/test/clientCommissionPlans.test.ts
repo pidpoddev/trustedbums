@@ -15,6 +15,7 @@ describe("client commission plans", () => {
     expect(clientLayoutSource).toContain("/client/commission-plans");
     expect(portalSearchSource).toContain("page:client-commission-plans");
     expect(portalSearchSource).toContain("/client/commission-plans");
+    expect(portalSearchSource).toContain('accessRole === "CLIENT_ADMIN" || accessRole === "CLIENT_FINANCE"');
   });
 
   it("moves commission plan requests out of the opportunity filter", () => {
@@ -24,5 +25,7 @@ describe("client commission plans", () => {
     expect(clientOpportunitiesSource).not.toContain("Request commission plan");
     expect(clientOpportunitiesSource).not.toContain('<SelectItem value="commission-plan">');
     expect(clientOpportunitiesSource).toContain("Finance &gt; Commission Plans");
+    expect(clientOpportunitiesSource).toContain("canOpenCommissionPlans");
+    expect(clientOpportunitiesSource).toContain("Ask a Client Admin or Client Finance user to request it.");
   });
 });

@@ -52,8 +52,19 @@ export default function LegalDocumentPage() {
         </div>
       </header>
 
-      <main className="container mx-auto grid max-w-6xl gap-8 px-6 py-12 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+      <main className="container mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:py-12">
+        <details className="rounded-md border bg-card p-4 lg:hidden">
+          <summary className="cursor-pointer text-sm font-semibold">Trust & legal navigation</summary>
+          <nav aria-label="Trust and legal pages" className="mt-3 grid gap-2 text-sm">
+            {footerLegalLinks.map((link) => (
+              <Link key={link.to} to={link.to} className={link.to.endsWith(document.slug) ? "font-medium text-primary" : "text-muted-foreground hover:text-foreground"}>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </details>
+
+        <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
           <div className="rounded-md border bg-card p-4">
             <p className="text-sm font-semibold">Legal</p>
             <nav className="mt-3 grid gap-2 text-sm">
@@ -66,7 +77,7 @@ export default function LegalDocumentPage() {
           </div>
         </aside>
 
-        <article className="rounded-md border bg-card p-8 md:p-12">
+        <article className="rounded-md border bg-card p-5 sm:p-8 md:p-12">
           <div className="max-w-3xl">
             <p className="text-sm font-medium text-primary">Effective Date: {document.effectiveDate}</p>
             <h1 className="mt-3 font-display text-4xl font-bold">{document.title}</h1>

@@ -176,6 +176,63 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
     setVisibleColumnKeys(getDefaultColumns(report));
   }
 
+  const reportControls = (
+    <>
+      <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+        {recommendations.map((report) => (
+          <button
+            key={report.id}
+            type="button"
+            onClick={() => selectReport(report)}
+            className={`w-full rounded-md border p-2.5 text-left transition hover:border-primary ${selectedReport?.id === report.id ? "border-primary bg-primary/5" : "border-border"}`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span className="font-medium">{report.title}</span>
+              {selectedReport?.id === report.id ? <Check className="h-4 w-4 text-primary" /> : null}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{report.category} · {report.rows.length.toLocaleString()} {report.dataLabel}</p>
+          </button>
+        ))}
+      </div>
+      <div className="space-y-2">
+        <Label>Date range</Label>
+        <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRange)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(dateRangeLabels).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-3">
+        <Label>Fields</Label>
+        <div className="max-h-[260px] space-y-2 overflow-y-auto pr-1">
+          {selectedReport?.columns.map((column) => (
+            <label key={column.key} className="flex items-center gap-2 rounded-md border p-2 text-sm">
+              <Checkbox
+                checked={visibleColumnKeys.includes(column.key)}
+                onCheckedChange={(checked) =>
+                  setVisibleColumnKeys((current) =>
+                    checked
+                      ? Array.from(new Set([...current, column.key]))
+                      : current.filter((key) => key !== column.key),
+                  )
+                }
+              />
+              {column.label}
+            </label>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader title={title} description={description}>
@@ -191,66 +248,18 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
         </Button>
       </PageHeader>
 
+      <details className="rounded-md border bg-card p-4 xl:hidden">
+        <summary className="cursor-pointer font-medium">Report controls</summary>
+        <div className="mt-4 space-y-5">{reportControls}</div>
+      </details>
+
       <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <Card className="order-2 xl:order-1">
+        <Card className="order-2 hidden xl:order-1 xl:block">
           <CardHeader>
             <CardTitle className="font-display">Reports</CardTitle>
             <CardDescription>Choose a report, date window, and fields.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
-              {recommendations.map((report) => (
-                <button
-                  key={report.id}
-                  type="button"
-                  onClick={() => selectReport(report)}
-                  className={`w-full rounded-md border p-2.5 text-left transition hover:border-primary ${selectedReport?.id === report.id ? "border-primary bg-primary/5" : "border-border"}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="font-medium">{report.title}</span>
-                    {selectedReport?.id === report.id ? <Check className="h-4 w-4 text-primary" /> : null}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{report.category} · {report.rows.length.toLocaleString()} {report.dataLabel}</p>
-                </button>
-              ))}
-            </div>
-            <div className="space-y-2">
-              <Label>Date range</Label>
-              <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRange)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(dateRangeLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Fields</Label>
-              <div className="max-h-[260px] space-y-2 overflow-y-auto pr-1">
-                {selectedReport?.columns.map((column) => (
-                  <label key={column.key} className="flex items-center gap-2 rounded-md border p-2 text-sm">
-                    <Checkbox
-                      checked={visibleColumnKeys.includes(column.key)}
-                      onCheckedChange={(checked) =>
-                        setVisibleColumnKeys((current) =>
-                          checked
-                            ? Array.from(new Set([...current, column.key]))
-                            : current.filter((key) => key !== column.key),
-                        )
-                      }
-                    />
-                    {column.label}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </CardContent>
+          <CardContent className="space-y-5">{reportControls}</CardContent>
         </Card>
 
         <div className="order-1 space-y-6 xl:order-2">

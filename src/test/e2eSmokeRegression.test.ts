@@ -49,6 +49,9 @@ describe("E2E smoke regression coverage", () => {
     expect(portalSearchSource).toContain("scoreSearchResult");
     expect(portalSearchSource).toContain("singularizeSearchToken");
     expect(portalSearchSource).toContain('item.icon === "page"');
+    expect(portalSearchSource).toContain("const committedQuery = query.trim()");
+    expect(portalSearchSource).toContain("shouldFetchSearchData = Boolean(user && committedQuery.length >= 2)");
+    expect(portalSearchSource).not.toContain("focused || mobileOpen || query.trim().length >= 2");
     expect(portalSearchSource).toContain(".sort((first, second) => scoreSearchResult(first, normalizedQuery) - scoreSearchResult(second, normalizedQuery))");
   });
 

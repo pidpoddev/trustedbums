@@ -299,6 +299,7 @@ function nullableNumberChanged(nextValue: number | null | undefined, currentValu
 
 export default function ClientOpportunityNew() {
   const { user } = useAuth();
+  const canOpenCommissionPlans = user?.clientAccessRole === "CLIENT_ADMIN" || user?.clientAccessRole === "CLIENT_FINANCE";
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
@@ -1491,11 +1492,18 @@ export default function ClientOpportunityNew() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Clients only see commission plans assigned to their own company. Need a new structure? Request it under{" "}
-                  <Link to="/client/commission-plans" className="font-medium text-primary hover:underline">
-                    Finance &gt; Commission Plans
-                  </Link>
-                  .
+                  Clients only see commission plans assigned to their own company.{" "}
+                  {canOpenCommissionPlans ? (
+                    <>
+                      Need a new plan? Request it under{" "}
+                      <Link to="/client/commission-plans" className="font-medium text-primary hover:underline">
+                        Finance &gt; Commission Plans
+                      </Link>
+                      .
+                    </>
+                  ) : (
+                    "Need a new plan? Ask a Client Admin or Client Finance user to request it."
+                  )}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   The commission schedule starts when the first commission is paid to Trusted Bums. Until then, the system treats payments as Year 1.
