@@ -81,8 +81,9 @@ describe("scrum implementation queue regression coverage", () => {
 
   it("keeps the seeded live allow/deny proof lane explicit until fixtures exist", () => {
     expect(qaBacklog).toContain("Business Access Coverage");
-    expect(qaBacklog).toContain("extension API still lacks executable negative-path and abuse-control contract proof");
     expect(qaBacklog).toContain("Bum represented contacts");
-    expect(qaBacklog).toContain("Client opportunity publish, delete, claim-status, and details workflows");
+    expect(qaBacklog).toContain("unrelated Bums and client-company users deny");
+    expect(qaBacklog).toContain("one authenticated browser or direct-data proof");
+    expect(qaBacklog).toContain("one foreign Bum deny case");
   });
 });

@@ -2,6 +2,12 @@
 
 _Last updated: 2026-06-17 by Codex daily accessibility specialist automation._
 
+## 2026-06-17 Closeout Update
+
+`TB-0032` is fixed in successor source after `8d27912`. The collapsed `Privacy choices` control now renders as a normal-size fixed button (`min-h-9`, `px-3`, `py-2`) instead of the prior `h-5` micro chip. Rendered Playwright measurement on the current local build at `http://127.0.0.1:8080/` with QA env loaded measured the dismissed launcher at `116.75 by 36 CSS pixels`, exceeding the WCAG 2.2 `24 by 24 CSS pixel` minimum.
+
+Verification: `corepack pnpm run build:dev` passed with `.env.qa` loaded, the launcher measurement passed on a Pixel 7 viewport, and the full unit suite passed `238/238`.
+
 ## Executive Read
 
 The accessibility queue stays narrow on current `main` head `af944fe`. Exact-head hosted evidence is mixed but still useful: GitHub `QA` run `27653495600` passed on 2026-06-16 UTC, the paired DreamHost workflow `27653495695` reached the live SSH deploy and `https://trustedbums.com` now returns `HTTP/2 200` with `Last-Modified: Tue, 16 Jun 2026 22:54:45 GMT`, but that workflow finished `failure` only after deployment because Bing Webmaster URL submission hit the daily quota (`HTTP 400`, quota `100`). Exact-head `E2E Smoke` run `27653527364` was then skipped, and the next exact-head `Visual UI Audit` run `27671724557` later completed successfully on 2026-06-17 UTC. That improves current hosted visual confidence, but it does not replace the still-missing hosted mobile, assistive-technology, and Client Member closure proof.

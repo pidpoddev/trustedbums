@@ -2,6 +2,12 @@
 
 _Last updated: 2026-06-17 by Codex daily security engineer automation._
 
+## 2026-06-17 Closeout Update
+
+`TB-0108` is fixed in live Supabase and in repo migrations. The successor migration recreates `public.claim_client_notification_previews` with `security_invoker = true`, revokes broad public/anonymous/authenticated privileges, then grants only `SELECT` to `authenticated`. Live SQL on project `vaoqvtxqvbptyxddpoju` now reports `reloptions = ["security_invoker=true"]`, and `information_schema.role_table_grants` shows only `authenticated SELECT` for the view.
+
+Verification: `corepack pnpm exec vitest run src/test/supabaseHelperSecurity.test.ts src/test/scrumQueueRegression.test.ts src/test/opportunityClaimStakeholders.test.ts` passed `20/20`, and the full unit suite passed `238/238`.
+
 ## Executive Read
 
 Exact head `af944fe` (`Allow bums to delete unattached contacts`) now has a materially different live security queue than the older `7ee97c1` backlog snapshot. GitHub `QA` run `27653495600` passed for `af944fe` on 2026-06-16, but DreamHost deploy `27653495695` concluded `failure` after publish because the Bing Webmaster submission step still failed on the live quota branch, `E2E Smoke` `27653527364` skipped as a result, and exact-head `Visual UI Audit` run `27671724557` was still `in_progress` when this security review ran on 2026-06-17.

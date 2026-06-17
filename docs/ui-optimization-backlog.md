@@ -2,6 +2,16 @@
 
 _Last updated: 2026-06-17 by Codex daily UI consultant automation._
 
+## 2026-06-17 Closeout Update
+
+Successor source after pushed head `8d27912` closes the source-backed UI items `TB-0098`, `TB-0110`, and the privacy-control portion of `TB-0062`/`TB-0032`:
+
+- `TB-0098`: `/client/opportunities/new` now starts mobile users in workflow/pipeline context, with the full `New opportunity` form one tap away.
+- `TB-0110`: both Bum claim entry points now include visible helper text explaining the sponsor-call requirement and disabled CTA state.
+- `TB-0062`/`TB-0032`: the dismissed consent entry point now renders as a visible `Privacy choices` button, measured locally at `116.75 by 36 CSS pixels`.
+
+Verification: full unit suite passed `238/238`, and the targeted deployed mobile smoke for `client opportunity form opens without saving` passed against `https://trustedbums.com` after updating the test expectation to the new workflow-first behavior.
+
 ## Executive Read
 
 Current head is `af944fe`. Exact-head GitHub `Visual UI Audit` run `27671724557` against `https://trustedbums.com` completed `success` on 2026-06-17, so the carried-forward mobile route issues are now backed by fresh exact-head screenshots again instead of older fallback artifacts.

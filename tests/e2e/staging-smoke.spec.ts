@@ -161,6 +161,9 @@ test.describe("staging smoke", () => {
     await goToAuthedPath(page, clientAdmin, "/client/opportunities/new");
     await expect(page.getByRole("heading", { name: "Opportunities" })).toBeVisible();
 
+    const newOpportunityButton = page.getByRole("button", { name: "New opportunity" }).first();
+    await expect(newOpportunityButton).toBeVisible();
+    await newOpportunityButton.click();
     await expect(page.getByLabel("Customer account name")).toBeVisible();
     await expect(page.getByLabel("Expected product/service")).toBeVisible();
     await expect(page.getByRole("button", { name: /Publish Opportunity to Bums|Save Draft Opportunity/i })).toBeVisible();

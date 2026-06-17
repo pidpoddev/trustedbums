@@ -2,6 +2,12 @@
 
 _Last updated: 2026-06-17 by Codex daily lead developer automation._
 
+## 2026-06-17 Closeout Update
+
+The next lead queue should treat `TB-0105`, `TB-0106`, `TB-0108`, `TB-0032`, `TB-0098`, and `TB-0110` as fixed pending final pushed-head hosted reruns and tracker closeout. Local successor work after `8d27912` passes the full unit suite (`238/238`), fixes the stale QA regression assertion, updates mobile smoke to the new workflow-first client opportunity behavior, applies the live Supabase security-invoker/grant cleanup for `claim_client_notification_previews`, and proves the rebuilt `Privacy choices` launcher at `116.75 by 36 CSS pixels`.
+
+Remaining lead priorities after closeout are `TB-0019` exact-head Code Review for the final successor SHA, `TB-0089` Clerk issuer pinning, access-blocked `TB-0023`, `TB-0024` fallback TLS, and the data/workflow queues that were not touched by this closeout batch.
+
 ## Executive Read
 
 Current release status remains `HOLD-DEPLOY` for `main` head `af944fe27b0ed851ce2b85dae99304a5b0c3a0bd`.

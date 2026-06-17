@@ -2,6 +2,16 @@
 
 _Last updated: 2026-06-17 by Codex daily QA/test engineer automation._
 
+## 2026-06-17 Closeout Update
+
+Successor local work after pushed head `8d27912` clears the two QA workflow blockers that were preventing closeout. `src/test/scrumQueueRegression.test.ts` now matches the current QA backlog language instead of requiring stale extension-API wording, and the full unit suite passes locally (`61` files, `238` tests). The mobile deployed smoke expectation for `/client/opportunities/new` now matches the workflow-first `TB-0098` behavior and the targeted `mobile-chrome` smoke against `https://trustedbums.com` passes.
+
+Closeout candidates after the next push:
+
+- `TB-0105`: fixed by `8d27912`; deploy `27679784801` passed and E2E was allowed to start.
+- `TB-0106`: fixed by `8d27912`; the detail-page claim flow no longer calls `createBumRepresentedContact()` and `src/test/opportunityClaimStakeholders.test.ts` stays green.
+- `TB-0098`: fixed in source and smoke expectation; mobile route now opens workflow context first and the form remains one tap away.
+
 ## Executive Read
 
 Current `main` head `af944fe` (`Allow bums to delete unattached contacts`) is not release-ready.

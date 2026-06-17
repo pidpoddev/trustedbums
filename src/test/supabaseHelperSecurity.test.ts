@@ -21,6 +21,10 @@ const authBoundaryHelperMigration = readFileSync(
   "supabase/migrations/20260616110000_harden_auth_boundary_helpers.sql",
   "utf8",
 );
+const claimNotificationPreviewMigration = readFileSync(
+  "supabase/migrations/20260617113000_make_claim_notification_previews_security_invoker.sql",
+  "utf8",
+);
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 const duplicateCheckFunctionSource = readFileSync(
   "supabase/functions/customer-lead-duplicate-check/index.ts",
@@ -124,5 +128,22 @@ describe("Supabase helper function security", () => {
     expect(duplicateCheckFunctionSource).toContain("getBearerToken(request)");
     expect(duplicateCheckFunctionSource).toContain("Only Bums can check customer lead duplicates.");
     expect(duplicateCheckFunctionSource).toContain(".rpc(\"find_customer_lead_duplicate\"");
+  });
+
+  it("keeps claim notification previews out of security-definer view mode", () => {
+    expect(claimNotificationPreviewMigration).toContain("create or replace view public.claim_client_notification_previews");
+    expect(claimNotificationPreviewMigration).toContain("with (security_invoker = true)");
+    expect(claimNotificationPreviewMigration).toContain(
+      "revoke all on public.claim_client_notification_previews from public;",
+    );
+    expect(claimNotificationPreviewMigration).toContain(
+      "revoke all on public.claim_client_notification_previews from anon;",
+    );
+    expect(claimNotificationPreviewMigration).toContain(
+      "revoke all on public.claim_client_notification_previews from authenticated;",
+    );
+    expect(claimNotificationPreviewMigration).toContain(
+      "grant select on public.claim_client_notification_previews to authenticated;",
+    );
   });
 });

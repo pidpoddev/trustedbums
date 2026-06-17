@@ -2,6 +2,12 @@
 
 _Last updated: 2026-06-17 by Codex daily release verification automation._
 
+## 2026-06-17 Closeout Update
+
+Successor work after `af944fe` and pushed head `8d27912` changes the release queue materially. `TB-0105` is now fixed by the Bing quota parser and confirmed by DreamHost deploy `27679784801` completing successfully on `8d27912`. `TB-0106` is fixed in source by removing the extra detail-page manual-contact creation path and keeping the claim-backed My Contacts projection as the single row. `TB-0108` is fixed live and in repo migrations: `public.claim_client_notification_previews` now has `security_invoker=true`, no `anon` grant, and only `authenticated SELECT`.
+
+Current release caveat: GitHub `QA` run `27679784697` on `8d27912` failed on stale `src/test/scrumQueueRegression.test.ts` documentation wording, and `E2E Smoke` `27679821590` failed only in the front smoke job because the mobile `/client/opportunities/new` test still expected the old form-first behavior. Both local tests have been updated and verified locally; the next pushed head needs hosted QA/E2E reruns before changing the release decision from `HOLD-DEPLOY`.
+
 ## Release Decision
 
 Decision: `HOLD-DEPLOY` for current `main` head `af944fe27b0ed851ce2b85dae99304a5b0c3a0bd`.
