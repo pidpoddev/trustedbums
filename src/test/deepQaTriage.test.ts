@@ -60,11 +60,14 @@ describe("deep QA triage coverage", () => {
     expect(e2eSmokeWorkflowSource).toContain("QA_DEEP_SUITE: ${{ matrix.deep_suite }}");
   });
 
-  it("enforces the same env contract before both deep QA workflow entrypoints", () => {
-    const expectedRunChain = "pnpm run qa:target-preflight && pnpm run qa:env && pnpm run qa:deep";
+  it("uses one deploy-triggered target preflight before dependent deep QA shards", () => {
+    const standaloneRunChain = "pnpm run qa:target-preflight && pnpm run qa:env && pnpm run qa:deep";
+    const gatedDeployRunChain = "pnpm run qa:env && pnpm run qa:deep";
 
-    expect(deepQaWorkflowSource).toContain(expectedRunChain);
-    expect(e2eSmokeWorkflowSource).toContain(expectedRunChain);
+    expect(deepQaWorkflowSource).toContain(standaloneRunChain);
+    expect(e2eSmokeWorkflowSource).toContain("needs: smoke");
+    expect(e2eSmokeWorkflowSource).toContain(gatedDeployRunChain);
+    expect(e2eSmokeWorkflowSource).not.toContain(standaloneRunChain);
   });
 
   it("requires extension API coverage in hosted Deep QA workflow preflight", () => {
