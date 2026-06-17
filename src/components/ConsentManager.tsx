@@ -143,7 +143,7 @@ We use necessary storage and performance monitoring to run, secure, and maintain
           type="button"
           variant="outline"
           size="sm"
-          className="fixed bottom-0 left-3 z-40 h-5 rounded-b-none rounded-t px-2 py-0 text-[10px] font-medium leading-none text-muted-foreground shadow-sm hover:text-foreground"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.25rem)] right-3 z-40 min-h-9 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground"
           aria-label="Privacy choices"
           title="Privacy choices"
           onClick={() => {
@@ -152,7 +152,7 @@ We use necessary storage and performance monitoring to run, secure, and maintain
             setIsOpen(true);
           }}
         >
-          Privacy
+          Privacy choices
         </Button>
       ) : null}
     </>

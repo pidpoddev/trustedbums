@@ -120,11 +120,17 @@ export default function PrivacyPolicy() {
 
           <div className="mt-8 rounded-md border bg-background p-4">
             <h2 className="font-display text-xl font-bold">Related Legal Links</h2>
-            <div className="mt-4 flex flex-wrap gap-3 text-sm">
+            <nav aria-label="Related legal pages" className="mt-4 grid gap-2 sm:grid-cols-2">
               {footerLegalLinks.filter((link) => link.to !== "/privacy-policy").map((link) => (
-                <Link key={link.to} to={link.to} className="text-primary hover:underline">{link.label}</Link>
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="rounded-md border bg-card px-3 py-2 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/5"
+                >
+                  {link.label}
+                </Link>
               ))}
-            </div>
+            </nav>
           </div>
 
           <div className="mt-10 space-y-8">

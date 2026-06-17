@@ -305,6 +305,9 @@ export default function ClientOpportunityNew() {
   const linkedClaimId = useMemo(() => new URLSearchParams(location.search).get("claimId"), [location.search]);
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
+  const startsOnNewRoute = location.pathname.endsWith("/new");
+  const shouldStartOnRegister =
+    startsOnNewRoute && typeof window !== "undefined" && window.matchMedia?.("(min-width: 768px)").matches;
   const [form, setForm] = useState(initialForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
@@ -326,8 +329,8 @@ export default function ClientOpportunityNew() {
   const [bumOriginatedTypeFilter, setBumOriginatedTypeFilter] = useState<BumOriginatedTypeFilter>("ALL");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [registeredPage, setRegisteredPage] = useState(1);
-  const [activeView, setActiveView] = useState<OpportunityViewFilter>(location.pathname.endsWith("/new") ? "register" : "pipeline");
-  const [isRegisterOpen, setIsRegisterOpen] = useState(location.pathname.endsWith("/new"));
+  const [activeView, setActiveView] = useState<OpportunityViewFilter>(shouldStartOnRegister ? "register" : "pipeline");
+  const [isRegisterOpen, setIsRegisterOpen] = useState(shouldStartOnRegister);
   const [publishToBums, setPublishToBums] = useState(true);
   const [isRegistrationDraftDirty, setIsRegistrationDraftDirty] = useState(false);
   const [restoredRegistrationDraftAt, setRestoredRegistrationDraftAt] = useState<string | null>(null);
@@ -379,8 +382,13 @@ export default function ClientOpportunityNew() {
 
   useEffect(() => {
     if (location.pathname.endsWith("/new")) {
-      setActiveView("register");
-      setIsRegisterOpen(true);
+      if (typeof window !== "undefined" && window.matchMedia?.("(min-width: 768px)").matches) {
+        setActiveView("register");
+        setIsRegisterOpen(true);
+      } else {
+        setActiveView("pipeline");
+        setIsRegisterOpen(false);
+      }
     }
   }, [location.pathname]);
 

@@ -25,7 +25,6 @@ import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
   buildTopLineShareSchedule,
   calculateTopLineSharePercent,
-  createBumRepresentedContact,
   createOpportunityClaim,
   createOpportunityQuestion,
   DEFAULT_BUM_COMMISSION_POOL_PERCENT,
@@ -195,28 +194,9 @@ export default function BumOpportunityDetail() {
         has_purchasing_leader: claim.opportunity_claim_contacts?.some((contact) => contact.buying_role === "PURCHASING_LEADER") ?? claimContacts.some((contact) => contact.buyingRole === "PURCHASING_LEADER" && contact.contactName.trim()),
       });
       if (decisionMakerMatchForClaim) {
-        try {
-          await createBumRepresentedContact({
-            name: decisionMakerMatchForClaim.person_name,
-            title: decisionMakerMatchForClaim.title,
-            companyName: decisionMakerMatchForClaim.company || opp!.target_account_name,
-            email: claimContacts[0]?.contactEmail,
-            linkedinUrl: decisionMakerMatchForClaim.linkedin_url_candidate,
-            relationshipStrength: "unknown",
-            note: [
-              `Claimed ${opp!.target_account_name} because I know this person.`,
-              decisionMakerMatchForClaim.recommended_bum_ask ? `Suggested warm-path ask: ${decisionMakerMatchForClaim.recommended_bum_ask}` : null,
-              decisionMakerMatchForClaim.evidence_summary ? `Research note: ${decisionMakerMatchForClaim.evidence_summary}` : null,
-              note ? `Claim context: ${note}` : null,
-            ].filter(Boolean).join("\n\n"),
-            opportunityRegistrationId: opp!.id,
-          });
-          queryClient.invalidateQueries({ queryKey: ["opportunity-contact-picker", user?.id] });
-          queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] });
-          setClaimedDecisionMakerMatchIds((current) => new Set(current).add(decisionMakerMatchForClaim.id));
-        } catch (error) {
-          toast.error(error instanceof Error ? error.message : "Claim created, but the contact could not be saved.");
-        }
+        queryClient.invalidateQueries({ queryKey: ["opportunity-contact-picker", user?.id] });
+        queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] });
+        setClaimedDecisionMakerMatchIds((current) => new Set(current).add(decisionMakerMatchForClaim.id));
       }
       queryClient.invalidateQueries({ queryKey: ["opportunity-claims", id] });
       toast.success(
@@ -296,7 +276,7 @@ export default function BumOpportunityDetail() {
       return;
     }
     if (!canSponsorCall) {
-      toast.error("Must be able to sponsor a call in order to claim.");
+      toast.error("Confirm that you can sponsor a customer call before claiming.");
       return;
     }
     createClaimMutation.mutate();
@@ -772,6 +752,9 @@ export default function BumOpportunityDetail() {
             </div>
             <div className="grid gap-2">
               <Label>I can sponsor a call with this customer</Label>
+              <p className="text-sm leading-5 text-muted-foreground">
+                Claim only when you can personally help move this customer into a real conversation. If you are still researching the path, ask a question or save your notes before submitting.
+              </p>
               <Select value={canSponsorCall ? "yes" : "no"} onValueChange={(value) => setCanSponsorCall(value === "yes")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -783,6 +766,11 @@ export default function BumOpportunityDetail() {
             <Button onClick={submitRecommendation} className="w-full" disabled={createClaimMutation.isPending || !claimContacts.some((claimContact) => claimContact.contactName.trim()) || !canSponsorCall}>
               {createClaimMutation.isPending ? "Requesting..." : decisionMakerMatchForClaim ? "Claim this opportunity" : "Request claim"}
             </Button>
+            {!canSponsorCall ? (
+              <p className="text-center text-xs text-muted-foreground">
+                The claim button enables after you confirm you can sponsor the customer call.
+              </p>
+            ) : null}
           </CardContent>
         </Card>
 

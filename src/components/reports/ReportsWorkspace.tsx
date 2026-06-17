@@ -192,7 +192,7 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
       </PageHeader>
 
       <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <Card>
+        <Card className="order-2 xl:order-1">
           <CardHeader>
             <CardTitle className="font-display">Reports</CardTitle>
             <CardDescription>Choose a report, date window, and fields.</CardDescription>
@@ -253,7 +253,7 @@ export function ReportsWorkspace({ title, description, recommendations, isLoadin
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
+        <div className="order-1 space-y-6 xl:order-2">
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader>

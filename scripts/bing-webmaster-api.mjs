@@ -85,7 +85,15 @@ async function bingRequest(methodName, { method = "GET", body, query = {} } = {}
 function quotaRemainingFromError(error) {
   const message = error instanceof Error ? error.message : String(error);
   const match = message.match(/Quota remaining for today:\s*(\d+)/i);
-  return match ? Number(match[1]) : null;
+  if (match) {
+    return Number(match[1]);
+  }
+
+  if (/exceeded your daily url submission quota|daily url submission quota/i.test(message)) {
+    return 0;
+  }
+
+  return null;
 }
 
 async function submitFeed(args) {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const migrationSource = readFileSync("supabase/migrations/20260612103000_add_opportunity_claim_contacts.sql", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
+const portalContactsFunctionSource = readFileSync("supabase/functions/portal-contacts/index.ts", "utf8");
 const bumOpportunityDetailSource = readFileSync("src/pages/bum/BumOpportunityDetail.tsx", "utf8");
 const bumClaimsSource = readFileSync("src/pages/bum/BumClaims.tsx", "utf8");
 const clientClaimsSource = readFileSync("src/pages/client/ClientClaims.tsx", "utf8");
@@ -41,6 +42,12 @@ describe("opportunity claim stakeholders", () => {
     expect(bumOpportunityDetailSource).toContain("I can sponsor a call with this customer");
     expect(bumOpportunityDetailSource).toContain("setCanSponsorCall(value === \"yes\")");
     expect(bumOpportunityDetailSource).toContain("contacts: normalizedContacts.map");
+  });
+
+  it("does not create a separate manual My Contacts row after a detail-page claim", () => {
+    expect(bumOpportunityDetailSource).not.toContain("createBumRepresentedContact");
+    expect(bumOpportunityDetailSource).toContain('queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] })');
+    expect(portalContactsFunctionSource).toContain('source_type: "OPPORTUNITY_CLAIM"');
   });
 
   it("requires call sponsorship before a Bum can submit a claim", () => {

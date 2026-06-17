@@ -319,7 +319,8 @@ export default function AdminScrumTracker() {
         </Card>
       </div>
 
-      <Card className="mt-6">
+      <div className="mt-6 flex flex-col gap-6">
+        <Card className="order-2 lg:order-1">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Plus className="h-5 w-5" />
@@ -410,9 +411,9 @@ export default function AdminScrumTracker() {
             </div>
           </div>
         </CardContent>
-      </Card>
+        </Card>
 
-      <Card className="mt-6">
+        <Card className="order-1 lg:order-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <ClipboardList className="h-5 w-5" />
@@ -499,7 +500,8 @@ export default function AdminScrumTracker() {
             <p className="text-sm text-muted-foreground">No scrum items match the current filters.</p>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -1294,6 +1294,9 @@ export default function BumOpportunities() {
               </div>
               <div className="space-y-2">
                 <Label>I can sponsor a call with this customer</Label>
+                <p className="text-sm leading-5 text-muted-foreground">
+                  Choose yes only when you can personally help get the customer into a real conversation. If you cannot sponsor that warm call yet, save the relationship work until you can.
+                </p>
                 <Select
                   value={responseForm.canSponsorCall ? "yes" : "no"}
                   onValueChange={(value) =>
@@ -1332,6 +1335,11 @@ export default function BumOpportunities() {
             >
               {opportunityClaimMutation.isPending ? "Requesting..." : "Request claim"}
             </Button>
+            {!responseForm.canSponsorCall ? (
+              <p className="w-full text-center text-xs text-muted-foreground sm:text-left">
+                Claim submission unlocks after you confirm you can sponsor a customer call.
+              </p>
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>
