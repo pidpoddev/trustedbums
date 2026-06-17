@@ -97,7 +97,7 @@ function ScrumItemRow({ item }: { item: AdminScrumItemRecord }) {
   const timeZone = useUserTimeZone();
   const [status, setStatus] = useState<AdminScrumItemStatus>(item.status);
   const [priority, setPriority] = useState<AdminScrumItemPriority>(item.priority);
-  const [ownerLabel, setOwnerLabel] = useState(item.owner_label ?? "");
+  const [ownerLabel, setOwnerLabel] = useState(item.owner ?? item.owner_label ?? "");
   const [closureNote, setClosureNote] = useState(item.closure_note ?? "");
   const [evidenceText, setEvidenceText] = useState((item.evidence_links ?? []).join("\n"));
   const rowId = item.tracking_id.toLowerCase();
@@ -263,6 +263,7 @@ export default function AdminScrumTracker() {
         item.title,
         item.description,
         item.related_area,
+        item.owner,
         item.owner_label,
         item.added_by_agent,
         item.item_type,

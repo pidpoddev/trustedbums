@@ -161,6 +161,7 @@ export interface AdminScrumItemRecord {
   item_type: AdminScrumItemType;
   source: AdminScrumItemSource;
   related_area: string | null;
+  owner: string | null;
   owner_label: string | null;
   added_by_agent: string;
   source_key: string | null;
@@ -7851,6 +7852,7 @@ export async function createAdminScrumItem(input: AdminScrumItemInput) {
       item_type: input.itemType ?? "TASK",
       source: input.source,
       related_area: cleanScrumText(input.relatedArea),
+      owner: cleanScrumText(input.ownerLabel),
       owner_label: cleanScrumText(input.ownerLabel),
       added_by_agent: cleanScrumText(input.addedByAgent) ?? "Lead Developer",
       source_key: cleanScrumText(input.sourceKey),
@@ -7885,7 +7887,11 @@ export async function updateAdminScrumItem(id: string, input: Partial<AdminScrum
   if (input.itemType !== undefined) patch.item_type = input.itemType;
   if (input.source !== undefined) patch.source = input.source;
   if (input.relatedArea !== undefined) patch.related_area = cleanScrumText(input.relatedArea);
-  if (input.ownerLabel !== undefined) patch.owner_label = cleanScrumText(input.ownerLabel);
+  if (input.ownerLabel !== undefined) {
+    const owner = cleanScrumText(input.ownerLabel);
+    patch.owner = owner;
+    patch.owner_label = owner;
+  }
   if (input.addedByAgent !== undefined) patch.added_by_agent = cleanScrumText(input.addedByAgent) ?? "Lead Developer";
   if (input.sourceKey !== undefined) patch.source_key = cleanScrumText(input.sourceKey);
   if (input.githubCommit !== undefined) patch.github_commit = cleanScrumText(input.githubCommit);
