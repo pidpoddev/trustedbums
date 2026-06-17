@@ -1,8 +1,0 @@
-{
-  "reviewer": "Code Review Agent",
-  "decision": "GO",
-  "targetBranch": "main",
-  "head": "ad02e07aba640bd9c36c189f100731d6671d0335",
-  "reviewedAt": "2026-06-17T11:32:30.000-04:00",
-  "summary": "Approved the release backlog closeout successor after reviewing the exact commit for security-invoker claim notification previews, tightened view grants, stale QA regression wording, mobile opportunity smoke behavior, and closeout backlog evidence. No blocking issues found."
-}
