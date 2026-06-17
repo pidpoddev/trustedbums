@@ -106,7 +106,7 @@ export function SignupIntentDialog({ children, initialRole, lockedRole }: Signup
               ? "Add the work email and company name you want attached to Trusted Bums Client access."
               : lockedRole === "BUM"
                 ? "Add the email you want attached to your Trusted Bums application."
-                : "Choose whether you are a Client Prospect or Bum Prospect, then add the email you want attached to Trusted Bums access."}
+                : "Choose whether you are a Prospective Client or Prospective Bum, then add the email you want attached to Trusted Bums access."}
           </DialogDescription>
         </DialogHeader>
 
@@ -115,7 +115,7 @@ export function SignupIntentDialog({ children, initialRole, lockedRole }: Signup
             <div className="space-y-3">
               <FieldLabel
                 id={accountLabelId}
-                help="Choose Client Prospect when you are requesting company workspace access. Choose Bum Prospect when you are applying to make warm introductions."
+                help="Choose Prospective Client when you are requesting company workspace access. Choose Prospective Bum when you are applying to make warm introductions."
               >
                 Account type
               </FieldLabel>
@@ -138,7 +138,7 @@ export function SignupIntentDialog({ children, initialRole, lockedRole }: Signup
                   <span>
                     <span className="flex items-center gap-2 font-medium">
                       <Briefcase className="h-4 w-4" />
-                      Client Prospect
+                      Prospective Client
                     </span>
                     <span className="mt-1 block text-sm font-normal text-muted-foreground">
                       Company workspace
@@ -153,7 +153,7 @@ export function SignupIntentDialog({ children, initialRole, lockedRole }: Signup
                   <span>
                     <span className="flex items-center gap-2 font-medium">
                       <Users className="h-4 w-4" />
-                      Bum Prospect
+                      Prospective Bum
                     </span>
                     <span className="mt-1 block text-sm font-normal text-muted-foreground">
                       Bum account
@@ -161,7 +161,7 @@ export function SignupIntentDialog({ children, initialRole, lockedRole }: Signup
                   </span>
                 </Label>
               </RadioGroup>
-              {accountTypeError ? <p id={accountErrorId} className="text-sm text-destructive">Select Client Prospect or Bum Prospect.</p> : null}
+              {accountTypeError ? <p id={accountErrorId} className="text-sm text-destructive">Select Prospective Client or Prospective Bum.</p> : null}
             </div>
           ) : null}
 

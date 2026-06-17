@@ -284,12 +284,12 @@ export default function BumDashboard() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Prospect activity</CardTitle>
+              <CardTitle className="font-display">Prospective Client activity</CardTitle>
               <CardDescription>Quick snapshot of the sourcing pipeline you are building.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Prospects submitted</span>
+                <span className="text-muted-foreground">Prospective Clients submitted</span>
                 <span className="font-medium">{prospectsQuery.data?.length ?? 0}</span>
               </div>
               <div className="flex items-center justify-between">

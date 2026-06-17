@@ -138,7 +138,7 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
       result({ id: "page:client-reports", icon: "report", category: "Page", title: "Reports", subtitle: "Client reporting", href: "/client/reports", terms: ["analytics reports"] }),
       result({ id: "page:client-profile", icon: "profile", category: "Page", title: "Company Profile", subtitle: "Company settings", href: "/client/profile", terms: ["company settings deal registration api integration sso client it"] }),
       result({ id: "page:client-user-profile", icon: "profile", category: "Page", title: "User Profile", subtitle: "Personal settings", href: "/client/user-profile", terms: ["account settings"] }),
-      result({ id: "page:client-agreements", icon: "page", category: "Page", title: "Client Agreement", subtitle: "Agreement records and current terms", href: "/client/agreements", terms: ["contracts terms legal agreement records redlines amendments client legal"] }),
+      result({ id: "page:client-agreements", icon: "page", category: "Page", title: "Agreements", subtitle: "Agreement records and current terms", href: "/client/agreements", terms: ["contracts terms legal agreement records redlines amendments client legal"] }),
     ];
 
     if (accessRole === "CLIENT_ADMIN" || accessRole === "CLIENT_MEMBER") {
@@ -150,7 +150,7 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
 
     if (accessRole === "CLIENT_ADMIN" || accessRole === "CLIENT_FINANCE") {
       pages.push(
-        result({ id: "page:client-commission-plans", icon: "report", category: "Page", title: "Commission Plans", subtitle: "Finance commission structures", href: "/client/commission-plans", terms: ["finance commission plans rates terms"] }),
+        result({ id: "page:client-commission-plans", icon: "report", category: "Page", title: "Commission Plans", subtitle: "Finance commission plans", href: "/client/commission-plans", terms: ["finance commission plans rates terms"] }),
         result({ id: "page:client-payments", icon: "report", category: "Page", title: "Payment Reports", subtitle: "Customer Payment Reports and commission invoices", href: "/client/payments", terms: ["finance invoices customer payment reports commission"] }),
         result({ id: "page:client-exports", icon: "report", category: "Page", title: "Exports", subtitle: "CSV downloads", href: "/client/exports", terms: ["downloads csv exports"] }),
       );
@@ -169,8 +169,8 @@ function rolePages(user?: { role?: string; clientAccessRole?: string }) {
       result({ id: "page:bum-contacts", icon: "contact", category: "Page", title: "Contacts", subtitle: "People you represent", href: "/bum/contacts", terms: ["relationships represented people"] }),
       result({ id: "page:bum-opportunities", icon: "opportunity", category: "Page", title: "Opportunities", subtitle: "Marketplace and target accounts", href: "/bum/opportunities", terms: ["targets marketplace"] }),
       result({ id: "page:bum-claims", icon: "claim", category: "Page", title: "Claims", subtitle: "Opportunity Claim requests", href: "/bum/claims", terms: ["introductions contacts claims"] }),
-      result({ id: "page:bum-prospects", icon: "client", category: "Page", title: "Prospects", subtitle: "Client Prospects and contacts", href: "/bum/prospects", terms: ["recommendations contacts"] }),
-      result({ id: "page:bum-clients", icon: "client", category: "Page", title: "Clients", subtitle: "Client companies", href: "/bum/clients", terms: ["companies customers"] }),
+      result({ id: "page:bum-prospects", icon: "client", category: "Page", title: "Prospective Clients", subtitle: "Prospective Clients and contacts", href: "/bum/prospects", terms: ["recommendations contacts"] }),
+      result({ id: "page:bum-clients", icon: "client", category: "Page", title: "Represented Clients", subtitle: "Client companies", href: "/bum/clients", terms: ["companies customers"] }),
       result({ id: "page:bum-earnings", icon: "report", category: "Page", title: "Earnings", subtitle: "Bum finance", href: "/bum/earnings", terms: ["payments payouts"] }),
     ];
   }

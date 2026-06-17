@@ -39,10 +39,10 @@ type DeniedAccessRecovery = {
 function getDeniedAccessRecovery(deniedFrom: string | undefined, isFinanceUser: boolean): DeniedAccessRecovery {
   if (deniedFrom?.includes("/agreements") || deniedFrom?.includes("/terms")) {
     return {
-      title: "Client Agreement needs attention.",
+      title: "Agreements need attention.",
       description: "Open agreement records to review the current Client Agreement and continue the recovery path.",
       to: "/client/agreements",
-      cta: "Open Client Agreement",
+      cta: "Open Agreements",
     };
   }
 
@@ -165,7 +165,7 @@ export default function ClientDashboard() {
   const unpaidInvoices = invoices.filter((invoice) => !["PAID", "VOID"].includes(invoice.status)).length;
   const financeNextActions: DashboardAction[] = [
     !hasAcceptedCurrentTerms
-      ? { title: "Review Client Agreement", description: "The current agreement needs acceptance before the workspace is current.", to: "/client/agreements", primary: true }
+      ? { title: "Review Agreements", description: "The current Client Agreement needs acceptance before the workspace is current.", to: "/client/agreements", primary: true }
       : null,
     paymentReports.length
       ? { title: "Import next Customer Payment Report", description: "Add the latest Customer revenue CSV after Customers pay you directly.", to: "/client/payments", primary: !pendingPaymentReports && !unpaidInvoices }
@@ -180,7 +180,7 @@ export default function ClientDashboard() {
   ].filter(Boolean) as DashboardAction[];
   const clientNextActions: DashboardAction[] = [
     !hasAcceptedCurrentTerms
-      ? { title: "Review Client Agreement", description: "Open the Client Agreement center to review and accept the current version.", to: "/client/agreements", primary: true }
+      ? { title: "Review Agreements", description: "Open Agreements to review and accept the current Client Agreement.", to: "/client/agreements", primary: true }
       : null,
     opportunities.length
       ? { title: "Add another opportunity", description: "Create the next customer account or deal your team wants help with.", to: "/client/opportunities/new", primary: !activeCount }
@@ -204,7 +204,7 @@ export default function ClientDashboard() {
 
   if (isLegalUser) {
     const legalActions: DashboardAction[] = [
-      { title: "Review Client Agreement", description: "Open the legal workspace to review terms, download the PDF, and submit redline or amendment requests.", to: "/client/agreements", primary: !hasAcceptedCurrentTerms },
+      { title: "Review Agreements", description: "Open the legal workspace to review terms, download the PDF, and submit redline or amendment requests.", to: "/client/agreements", primary: !hasAcceptedCurrentTerms },
       { title: "Open Inbox", description: "Track legal questions, amendments, and Trusted Bums follow-up in one place.", to: "/client/live-conversations" },
       { title: "Review company profile", description: "Check the company details tied to agreement records and legal notices.", to: "/client/profile" },
     ];
@@ -218,7 +218,7 @@ export default function ClientDashboard() {
           <Button asChild>
             <Link to="/client/agreements">
               <FileCheck className="mr-2 h-4 w-4" />
-              Open Client Agreement
+              Open Agreements
             </Link>
           </Button>
         </PageHeader>
@@ -252,7 +252,7 @@ export default function ClientDashboard() {
     const itActions: DashboardAction[] = [
       { title: "Configure Deal Registration Beta Setup", description: "Set API provider, auth method, required fields, approval tracking, and fallback workflow.", to: "/client/profile", primary: true },
       { title: "Open Inbox", description: "Coordinate portal API, security, and future SSO setup questions with Trusted Bums.", to: "/client/live-conversations" },
-      { title: "Review Client Agreement", description: "Check integration-related legal context and agreement records.", to: "/client/agreements" },
+      { title: "Review Agreements", description: "Check integration-related legal context and agreement records.", to: "/client/agreements" },
     ];
 
     return (

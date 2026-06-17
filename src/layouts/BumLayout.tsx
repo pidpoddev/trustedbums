@@ -39,7 +39,7 @@ const baseNavGroups = [
   { label: "Workspace", items: [
   { title: "Dashboard", url: "/bum/dashboard", icon: LayoutDashboard },
   { title: "Inbox", url: "/bum/live-conversations", icon: MessageSquare },
-  { title: "Clients", url: "/bum/clients", icon: Building2 },
+  { title: "Represented Clients", url: "/bum/clients", icon: Building2 },
   { title: "Opportunities", url: "/bum/opportunities", icon: Briefcase },
   { title: "My Contacts", url: "/bum/contacts", icon: ContactRound },
   { title: "Claims", url: "/bum/claims", icon: Handshake },

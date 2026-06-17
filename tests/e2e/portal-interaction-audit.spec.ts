@@ -63,7 +63,7 @@ const roleAudits: RoleAuditConfig[] = [
       { path: "/client/team", heading: "Team Management", navName: "Team Management" },
       { path: "/client/profile", heading: "Company Profile", navName: "Company Profile" },
       { path: "/client/user-profile", heading: "User Profile", navName: "User Profile" },
-      { path: "/client/agreements", heading: "Client Agreement", navName: "Client Agreement" },
+      { path: "/client/agreements", heading: "Agreements", navName: "Agreements" },
     ],
   },
   {
@@ -82,7 +82,7 @@ const roleAudits: RoleAuditConfig[] = [
       { path: "/client/reports", heading: "Client Reports", navName: "Reports" },
       { path: "/client/profile", heading: "Company Profile", navName: "Company Profile" },
       { path: "/client/user-profile", heading: "User Profile", navName: "User Profile" },
-      { path: "/client/agreements", heading: "Client Agreement", navName: "Client Agreement" },
+      { path: "/client/agreements", heading: "Agreements", navName: "Agreements" },
     ],
   },
   {
@@ -93,9 +93,9 @@ const roleAudits: RoleAuditConfig[] = [
     searchDestination: /\/bum\/contacts\/?$/,
     routes: [
       { path: "/bum/dashboard", heading: /Welcome back/i, navName: "Dashboard" },
-      { path: "/bum/prospects", heading: "Prospects", navName: "Prospects" },
+      { path: "/bum/prospects", heading: "Prospective Clients", navName: "Prospective Clients" },
       { path: "/bum/reverse-opportunities", heading: "Customer Leads", navName: "Customer Leads" },
-      { path: "/bum/clients", heading: "Clients We Represent", navName: "Clients" },
+      { path: "/bum/clients", heading: "Represented Clients", navName: "Represented Clients" },
       { path: "/bum/contacts", heading: "Contacts", navName: "Contacts" },
       { path: "/bum/opportunities", heading: "Opportunities", navName: "Opportunities" },
       { path: "/bum/claims", heading: "Claims", navName: "Claims" },

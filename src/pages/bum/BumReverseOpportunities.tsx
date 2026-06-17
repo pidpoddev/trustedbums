@@ -345,7 +345,7 @@ export default function BumReverseOpportunities() {
               ? `The lead was saved and ${contactsAdded} contact${contactsAdded === 1 ? " was" : "s were"} added to My Contacts.`
               : record.client_mode === "EXISTING_CLIENT"
                 ? "We logged this Customer Lead against the existing Client for review and outreach."
-                : "We created the Client Prospect record and queued the Customer Lead for review and outreach.",
+                : "We created the Prospective Client record and queued the Customer Lead for review and outreach.",
         variant: contactsFailed > 0 ? "destructive" : "default",
       });
       setForm(initialForm);
@@ -377,7 +377,7 @@ export default function BumReverseOpportunities() {
     <div className="space-y-6">
       <PageHeader
         title="Customer Leads"
-        description="Start with real Customer demand, then route it to an existing Client or a Client Prospect who could fulfill it."
+        description="Start with real Customer demand, then route it to an existing Client or a Prospective Client who could fulfill it."
       />
 
       <Card>
@@ -407,7 +407,7 @@ export default function BumReverseOpportunities() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="EXISTING_CLIENT">An existing Client</SelectItem>
-                    <SelectItem value="PROSPECT_CLIENT">A Client Prospect</SelectItem>
+                    <SelectItem value="PROSPECT_CLIENT">A Prospective Client</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -430,7 +430,7 @@ export default function BumReverseOpportunities() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="prospect-client-name">Client Prospect company</Label>
+                  <Label htmlFor="prospect-client-name">Prospective Client company</Label>
                   <Input
                     id="prospect-client-name"
                     required={form.client_mode === "PROSPECT_CLIENT"}
@@ -444,7 +444,7 @@ export default function BumReverseOpportunities() {
               {form.client_mode === "PROSPECT_CLIENT" ? (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="prospect-client-website">Client Prospect website</Label>
+                    <Label htmlFor="prospect-client-website">Prospective Client website</Label>
                     <Input
                       id="prospect-client-website"
                       value={form.prospect_client_website}
@@ -453,7 +453,7 @@ export default function BumReverseOpportunities() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="prospect-client-linkedin">Client Prospect LinkedIn</Label>
+                    <Label htmlFor="prospect-client-linkedin">Prospective Client LinkedIn</Label>
                     <Input
                       id="prospect-client-linkedin"
                       value={form.prospect_client_linkedin_url}
@@ -806,7 +806,7 @@ export default function BumReverseOpportunities() {
         {!reverseOpportunitiesQuery.data?.length ? (
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground">
-              No Customer Leads yet. Add the first one above when you know a real Customer need and the right Client or Client Prospect to pursue it.
+              No Customer Leads yet. Add the first one above when you know a real Customer need and the right Client or Prospective Client to pursue it.
             </CardContent>
           </Card>
         ) : null}

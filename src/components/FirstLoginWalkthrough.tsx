@@ -81,7 +81,7 @@ function getWalkthroughSteps(role?: string, clientAccessRole?: string): Walkthro
     if (clientAccessRole === "CLIENT_LEGAL") {
       return [
         {
-          title: "Start with Client Agreement",
+          title: "Start with Agreements",
           body: "Review the current agreement, download the PDF, and submit redline or amendment requests from the agreement workspace.",
           route: "/client/agreements",
           routeLabel: "Open Agreement",
@@ -117,7 +117,7 @@ function getWalkthroughSteps(role?: string, clientAccessRole?: string): Walkthro
         },
         {
           title: "Review agreement context",
-          body: "Client Agreement records explain the legal and operational context for integrations.",
+          body: "Agreement records explain the legal and operational context for integrations.",
           route: "/client/agreements",
           routeLabel: "Open Agreement",
         },
@@ -139,7 +139,7 @@ function getWalkthroughSteps(role?: string, clientAccessRole?: string): Walkthro
       },
       {
         title: "Manage your team and agreement",
-        body: "Team Management, Company Profile, User Profile, and Client Agreement keep access, company details, and contract status current.",
+        body: "Team Management, Company Profile, User Profile, and Agreements keep access, company details, and contract status current.",
         route: clientAccessRole === "CLIENT_MEMBER" ? "/client/user-profile" : "/client/team",
         routeLabel: clientAccessRole === "CLIENT_MEMBER" ? "Open User Profile" : "Open Team",
       },
@@ -156,7 +156,7 @@ function getWalkthroughSteps(role?: string, clientAccessRole?: string): Walkthro
       },
       {
         title: "Build your relationship map",
-        body: "Use Contacts, Prospects, and Customer Leads to keep track of who you know and where Trusted Bums can create demand.",
+        body: "Use Contacts, Prospective Clients, and Customer Leads to keep track of who you know and where Trusted Bums can create demand.",
         route: "/bum/contacts",
         routeLabel: "Open Contacts",
       },

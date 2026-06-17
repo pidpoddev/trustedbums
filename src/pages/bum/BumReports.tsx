@@ -155,7 +155,7 @@ export default function BumReports() {
         dateKey: "createdAt",
         groupByKey: "status",
         groupByLabel: "prospect status",
-        valueLabel: "Prospects",
+        valueLabel: "Prospective Clients",
       },
       {
         id: "reverse-opportunity-submissions",

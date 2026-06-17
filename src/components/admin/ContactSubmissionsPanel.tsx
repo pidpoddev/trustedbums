@@ -232,7 +232,7 @@ export function ContactSubmissionsPanel({ companies }: ContactSubmissionsPanelPr
     mutationFn: (submission: ContactSubmissionRecord) => escalateContactToProspectiveBum(user!, submission),
     onSuccess: async () => {
       await refreshAdminData();
-      toast({ title: "Bum Prospect created", description: "The contact now appears in Admin Bums for review." });
+      toast({ title: "Prospective Bum created", description: "The contact now appears in Admin Bums for review." });
     },
     onError: (error) => {
       toast({
@@ -311,7 +311,7 @@ export function ContactSubmissionsPanel({ companies }: ContactSubmissionsPanelPr
           <div>
             <CardTitle className="font-display">Contact Submissions</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Review homepage leads, convert Client Prospect requests into targets, and qualify Bum Prospects.
+              Review homepage leads, convert Prospective Client requests into targets, and qualify Prospective Bums.
             </p>
           </div>
           <Badge variant="secondary">{submissions.length} total</Badge>
@@ -662,7 +662,7 @@ export function ContactSubmissionsPanel({ companies }: ContactSubmissionsPanelPr
                   {isBumSubmission ? (
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground">
-                        Create a hidden Bum Prospect profile for admin review, or mark that you invited this person to sign up.
+                        Create a hidden Prospective Bum profile for admin review, or mark that you invited this person to sign up.
                       </p>
                       <Button
                         className="w-full"
@@ -670,7 +670,7 @@ export function ContactSubmissionsPanel({ companies }: ContactSubmissionsPanelPr
                         onClick={() => bumProfileMutation.mutate(submission)}
                       >
                         <UserPlus className="mr-2 h-4 w-4" />
-                        Create Bum Prospect
+                        Create Prospective Bum
                       </Button>
                       <div className="space-y-2">
                         <Label>Invite notes</Label>

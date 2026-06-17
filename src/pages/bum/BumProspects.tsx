@@ -101,14 +101,14 @@ export default function BumProspects() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Prospects"
+        title="Prospective Clients"
         description="Add target companies once, anchor them to a key contact, and tell admin who should own the invite."
       />
 
       <Card>
         <CardHeader>
           <CardTitle className="font-display flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" /> Add Client Prospect
+            <Plus className="h-5 w-5 text-primary" /> Add Prospective Client
           </CardTitle>
         </CardHeader>
         <CardContent>

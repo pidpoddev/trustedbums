@@ -275,7 +275,7 @@ export default function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard title="Companies" value={companiesCount} icon={ShieldCheck} to="/admin/clients" />
         <StatCard title="Users" value={userCount} subtitle={userCountSubtitle} icon={ShieldCheck} to="/admin/troubleshooting" />
-        <StatCard title="Client Prospects" value={clientProspectsCount} icon={Building2} to="/admin/clients" />
+        <StatCard title="Prospective Clients" value={clientProspectsCount} icon={Building2} to="/admin/clients" />
         <StatCard title="Target Accounts" value={customerTargetsCount} icon={Target} to="/admin/opportunities" />
       </div>
 

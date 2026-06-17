@@ -269,7 +269,7 @@ export default function BumClients() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Clients We Represent"
+        title="Represented Clients"
         description="Search live client companies, target-account pipelines, and formal marketplace opportunities."
       >
         <Button asChild>

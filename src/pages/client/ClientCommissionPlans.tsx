@@ -129,7 +129,7 @@ export default function ClientCommissionPlans() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Commission Plans" description="Review available commission structures and request new plans for Admin approval.">
+      <PageHeader title="Commission Plans" description="Review available commission plans and request new plans for Admin approval.">
         <Button type="button" onClick={() => setIsRequestOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Request Plan

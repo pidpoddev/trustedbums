@@ -1097,7 +1097,7 @@ export default function ClientOpportunityNew() {
                         <StatusBadge label={opportunityStageLabel(stageFromReverseOpportunityStatus(opportunity.status))} variant="info" />
                         <StatusBadge label={opportunity.status.replaceAll("_", " ")} variant={reverseOpportunityVariant(opportunity.status)} />
                         <StatusBadge
-                          label={opportunity.client_mode === "EXISTING_CLIENT" ? "Existing Client" : "Client Prospect"}
+                          label={opportunity.client_mode === "EXISTING_CLIENT" ? "Existing Client" : "Prospective Client"}
                           variant="secondary"
                         />
                       </div>

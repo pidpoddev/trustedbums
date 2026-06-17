@@ -63,7 +63,7 @@ export default function ClientAgreements() {
 
   return (
     <div>
-      <PageHeader title="Client Agreement" description="Review the current Client Agreement, FAQ, and agreement records.">
+      <PageHeader title="Agreements" description="Review the current Client Agreement, FAQ, and agreement records.">
         <Button variant="outline" onClick={() => downloadPartnerTermsPdf(terms)}>
           <Download className="mr-2 h-4 w-4" />
           Download PDF

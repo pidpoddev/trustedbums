@@ -140,9 +140,9 @@ test.describe("go-live Client and Bum workflow gate", () => {
 
     await openBumPage(page, bum, "/bum/contacts", "Contacts");
     await openBumPage(page, bum, "/bum/claims", "Claims");
-    await openBumPage(page, bum, "/bum/prospects", "Prospects");
+    await openBumPage(page, bum, "/bum/prospects", "Prospective Clients");
     await openBumPage(page, bum, "/bum/reverse-opportunities", "Customer Leads");
-    await openBumPage(page, bum, "/bum/clients", "Clients We Represent");
+    await openBumPage(page, bum, "/bum/clients", "Represented Clients");
     await openBumPage(page, bum, "/bum/earnings", "Earnings");
     await openBumPage(page, bum, "/bum/reports", "Bum Reports");
   });

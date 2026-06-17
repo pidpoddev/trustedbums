@@ -75,15 +75,15 @@ function calculateTrustedBumsCommission(
 
 function getCommissionPlanInvoiceBlockReason(program: CommissionProgram | null | undefined) {
   if (!program) {
-    return "This deal does not have a commission structure assigned.";
+    return "This deal does not have a commission plan assigned.";
   }
 
   if (program.approval_status !== "APPROVED") {
-    return "This deal's commission structure is not approved yet.";
+    return "This deal's commission plan is not approved yet.";
   }
 
   if (program.status !== "ACTIVE") {
-    return "This deal's commission structure is not active.";
+    return "This deal's commission plan is not active.";
   }
 
   return null;
@@ -227,7 +227,7 @@ export default function ClientPayments() {
   const reportMutation = useMutation({
     mutationFn: async () => {
       if (!selectedClaim) {
-        throw new Error("Choose a claim with an approved active commission structure before generating an invoice.");
+        throw new Error("Choose a claim with an approved active commission plan before generating an invoice.");
       }
 
       const report = await createCustomerPaymentReport(user!, {
@@ -424,16 +424,16 @@ export default function ClientPayments() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Recommended columns: <code>claim_id</code> or <code>account_name</code>, plus <code>payment_date</code>,
-                  <code>gross_amount</code>, optional <code>commissionable_amount</code>, and optional <code>invoice_number</code>. Rows only match approved deals with active commission structures.
+                  <code>gross_amount</code>, optional <code>commissionable_amount</code>, and optional <code>invoice_number</code>. Rows only match approved deals with active commission plans.
                 </p>
                 {claimsQuery.isLoading ? (
-                  <p className="text-xs text-muted-foreground">Loading approved deals and commission structures so we can match your CSV rows.</p>
+                  <p className="text-xs text-muted-foreground">Loading approved deals and commission plans so we can match your CSV rows.</p>
                 ) : null}
               </div>
 
               {!claimsQuery.isLoading && blockedClaimCount ? (
                 <p className="text-xs text-warning">
-                  {blockedClaimCount} approved deal{blockedClaimCount === 1 ? "" : "s"} cannot be invoiced until an approved active commission structure is assigned.
+                  {blockedClaimCount} approved deal{blockedClaimCount === 1 ? "" : "s"} cannot be invoiced until an approved active commission plan is assigned.
                 </p>
               ) : null}
 
@@ -552,7 +552,7 @@ export default function ClientPayments() {
                 {!claims.length ? (
                   <p className="text-xs text-muted-foreground">No approved deals are ready for payment reporting yet.</p>
                 ) : !invoiceReadyClaims.length ? (
-                  <p className="text-xs text-warning">Approved deal / intro claims exist, but none have an approved active commission structure yet.</p>
+                  <p className="text-xs text-warning">Approved deal / intro claims exist, but none have an approved active commission plan yet.</p>
                 ) : blockedClaimCount ? (
                   <p className="text-xs text-muted-foreground">{blockedClaimCount} approved deal{blockedClaimCount === 1 ? "" : "s"} hidden until commission terms are approved.</p>
                 ) : null}

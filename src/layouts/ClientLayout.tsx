@@ -63,7 +63,7 @@ const navGroups: Array<{
   { title: "Team Management", url: "/client/team", icon: User, allowedAccessRoles: ["CLIENT_ADMIN"] },
   { title: "Company Profile", url: "/client/profile", icon: Building2 },
   { title: "User Profile", url: "/client/user-profile", icon: User },
-  { title: "Client Agreement", url: "/client/agreements", icon: FileCheck },
+  { title: "Agreements", url: "/client/agreements", icon: FileCheck },
   ] },
 ];
 

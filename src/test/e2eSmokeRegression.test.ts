@@ -63,8 +63,8 @@ describe("E2E smoke regression coverage", () => {
     expect(clientDashboardSource).toContain("deniedFrom");
     expect(clientDashboardSource).toContain("getDeniedAccessRecovery");
     expect(clientDashboardSource).toContain("That workspace area is not available for this account.");
-    expect(clientDashboardSource).toContain("Client Agreement needs attention.");
-    expect(clientDashboardSource).toContain("Open Client Agreement");
+    expect(clientDashboardSource).toContain("Agreements need attention.");
+    expect(clientDashboardSource).toContain("Open Agreements");
     expect(deniedAccessRecoverySource).toContain('to: "/client/agreements"');
     expect(deniedAccessRecoverySource).not.toContain('to: "/client/profile"');
     expect(clientTermsSource).toContain("Continue This Session");

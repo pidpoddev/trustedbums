@@ -49,7 +49,7 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
     { path: "/client/exports", heading: "Exports", name: "client-exports" },
     { path: "/client/reports", heading: "Client Reports", name: "client-reports" },
     { path: "/client/profile", heading: "Company Profile", name: "client-profile" },
-    { path: "/client/agreements", heading: "Client Agreement", name: "client-agreements" },
+    { path: "/client/agreements", heading: "Agreements", name: "client-agreements" },
   ],
   CLIENT_FINANCE: [
     { path: "/client/dashboard", heading: /Welcome back/i, name: "client-finance-dashboard" },
@@ -61,9 +61,9 @@ const routesByRole: Record<RoleKey, VisualRoute[]> = {
   ],
   BUM: [
     { path: "/bum/dashboard", heading: /Welcome back/i, name: "bum-dashboard" },
-    { path: "/bum/prospects", heading: "Prospects", name: "bum-prospects" },
+    { path: "/bum/prospects", heading: "Prospective Clients", name: "bum-prospects" },
     { path: "/bum/reverse-opportunities", heading: "Customer Leads", name: "bum-reverse-opportunities" },
-    { path: "/bum/clients", heading: "Clients We Represent", name: "bum-clients" },
+    { path: "/bum/clients", heading: "Represented Clients", name: "bum-clients" },
     { path: "/bum/contacts", heading: "Contacts", name: "bum-contacts" },
     { path: "/bum/opportunities", heading: "Opportunities", name: "bum-opportunities" },
     { path: "/bum/claims", heading: "Claims", name: "bum-claims" },
@@ -227,7 +227,7 @@ const completeInteractionsByRole: Record<RoleKey, VisualInteraction[]> = {
   BUM: [
     {
       path: "/bum/prospects",
-      heading: "Prospects",
+      heading: "Prospective Clients",
       name: "bum-prospects-filtered",
       prepare: async (page) => {
         const search = page.locator('input[placeholder*="Search"]').first();
@@ -235,7 +235,7 @@ const completeInteractionsByRole: Record<RoleKey, VisualInteraction[]> = {
           await search.fill("visual-audit-empty");
           await expect(search).toHaveValue("visual-audit-empty");
         } else {
-          await expect(page.getByRole("heading", { name: "Prospects" })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Prospective Clients" })).toBeVisible();
         }
       },
     },
