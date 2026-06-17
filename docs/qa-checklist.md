@@ -42,6 +42,10 @@ QA_DEEP_MUTATION=1 QA_SUPABASE_SERVICE_ROLE_KEY=... QA_BASE_URL=https://your-sta
 
 Mutating deep QA tags created records with a unique `qa-deep-*` run id and attempts to delete them afterward. Do not run mutating deep QA against production unless the test accounts, data, and cleanup key are approved for that target.
 
+Deep QA is not complete until the role-based business workflows in [business-workflow-qa-contract.md](./business-workflow-qa-contract.md) are covered or explicitly marked blocked. Page loads, route navigation, button actionability, and non-destructive clicks are necessary but not sufficient. For Admin, Client, Bum, and Managing Bum workflows, QA must prove the end-to-end business job: user action, data side effect, audit or notification effect, next-role visibility, duplicate/idempotency behavior, and cleanup.
+
+Escaped defects from live founder, client, Bum, or admin testing must become durable QA coverage. When a defect such as an admin delete failure, claim request failure, or duplicate contact creation escapes, update the business workflow contract and add or recommend the executable regression before the QA item is closed.
+
 For local authenticated smoke testing, copy `.env.qa.example` to `.env.qa`, fill the dedicated QA account credentials, then run:
 
 ```sh
@@ -116,6 +120,17 @@ Run these checks after migrations, policy edits, or changes to `src/lib/portalAp
 - Admin-visible audit events are created for opportunity submissions and sensitive status changes.
 - Deep mutating QA either deletes all records tagged with the `qa-deep-*` run id or reports exact cleanup failures to Lead Dev.
 
+## Business Workflow Checks
+
+Use [business-workflow-qa-contract.md](./business-workflow-qa-contract.md) as the source of truth for role goals and release-blocking workflow scenarios. At minimum, prove these chains after opportunity, claim, contact, role, notification, or admin-operation changes:
+
+- Admin can delete records that business rules say are deletable, and cannot delete claimed or locked records without an approved override.
+- Client can create, edit, delete, and manage unclaimed opportunities, and sees clear locked-state behavior once a claim exists.
+- Bum can open opportunity details, request a claim, add multiple stakeholders, retry safely, and avoid duplicate claim/contact side effects.
+- Client receives or is eligible to receive claim-created notifications, and Claims shows a redacted sent-message preview without client recipient names or emails.
+- Manual contacts can be deleted only when unattached, and claim-backed contacts remain protected.
+- Duplicate form submits, refreshes, retries, and repeated clicks do not create duplicate records.
+
 ## Regression Matrix
 
 Use this matrix when deciding what to retest for a change:
@@ -139,6 +154,7 @@ A release is ready when:
 
 - The GitHub `QA` workflow passes for the commit.
 - GitHub `E2E Smoke` passes against the deployed target, including authenticated role smoke, portal interaction audit, and deep workflow hotfix audit.
+- Required business workflow scenarios are covered by executable QA or explicitly blocked with the missing seed, credential, cleanup, or environment requirement.
 - GitHub `Visual UI Audit` passes or any visual findings are explicitly accepted.
 - Any Supabase migrations have been applied and RLS checks pass.
 - Test data created during QA is either clearly labeled or cleaned up.
