@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Building2, CheckCircle, Download, Eye, FileUp, MessageSquare, PlusCircle, Search, Send, Sparkles, Trash2, Users, X } from "lucide-react";
@@ -35,6 +35,7 @@ import {
   type ClientPayProgramApprovalStatus,
   type CustomerTargetResponseRecord,
   type OpportunityClaimDeclineReason,
+  type OpportunityClaimContactBuyingRole,
   type OpportunityClaimRecord,
   type OpportunityRegistration,
   type RegistrationStatus,
@@ -59,6 +60,16 @@ const bumOriginatedTypeFilters: { value: BumOriginatedTypeFilter; label: string 
   { value: "CONVERTED", label: "Converted" },
   { value: "CLOSED", label: "Closed lost" },
 ];
+
+const buyingRoleLabels: Record<OpportunityClaimContactBuyingRole, string> = {
+  DECISION_MAKER: "Decision Maker",
+  PURCHASING_LEADER: "Purchasing Leader",
+  TECHNICAL_LEADER: "Technical / Development Leader",
+  CHAMPION: "Champion",
+  BLOCKER: "Blocker",
+  INFLUENCER: "Influencer",
+  OTHER: "Other stakeholder",
+};
 
 const initialForm = {
   pay_program_id: "",
@@ -216,6 +227,11 @@ function getAssignedClaim(claims: OpportunityClaimRecord[]) {
   );
 }
 
+function getFocusedClaim(claims: OpportunityClaimRecord[], linkedClaimId: string | null) {
+  const linkedClaim = linkedClaimId ? claims.find((claim) => claim.id === linkedClaimId) ?? null : null;
+  return linkedClaim ?? getAssignedClaim(claims);
+}
+
 function bumName(claim: OpportunityClaimRecord | null) {
   if (!claim) {
     return "Unassigned";
@@ -304,6 +320,7 @@ export default function ClientOpportunityNew() {
   const location = useLocation();
   const navigate = useNavigate();
   const linkedClaimId = useMemo(() => new URLSearchParams(location.search).get("claimId"), [location.search]);
+  const linkedClaimDetailsRef = useRef<HTMLDivElement | null>(null);
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const startsOnNewRoute = location.pathname.endsWith("/new");
@@ -940,12 +957,116 @@ export default function ClientOpportunityNew() {
   const totalPipelineValue = opportunities.reduce((sum, opportunity) => sum + Number(opportunity.estimated_deal_value ?? 0), 0);
   const acceptedCount = opportunities.filter((opportunity) => opportunity.status === "Accepted").length;
   const draftCount = opportunities.filter((opportunity) => opportunity.status === "Draft").length;
+  const linkedClaim = useMemo(
+    () => (linkedClaimId ? claimsQuery.data?.find((claim) => claim.id === linkedClaimId) ?? null : null),
+    [claimsQuery.data, linkedClaimId],
+  );
   const detailsOpportunity = opportunities.find((opportunity) => opportunity.id === detailsOpportunityId);
   const detailsOpportunityClaims = detailsOpportunity ? claimsByOpportunity.get(detailsOpportunity.id) ?? [] : [];
-  const detailsAssignedClaim = getAssignedClaim(detailsOpportunityClaims);
+  const detailsAssignedClaim = getFocusedClaim(detailsOpportunityClaims, linkedClaimId);
   const editingOpportunity = opportunities.find((opportunity) => opportunity.id === editingOpportunityId);
   const editingOpportunityHasClaim = Boolean(
     editingOpportunity && (claimsByOpportunity.get(editingOpportunity.id) ?? []).length > 0,
+  );
+
+  useEffect(() => {
+    if (!linkedClaimId || !linkedClaim) {
+      return;
+    }
+
+    const linkedOpportunityIndex = opportunities.findIndex((opportunity) => opportunity.id === linkedClaim.opportunity_registration_id);
+    if (linkedOpportunityIndex < 0) {
+      return;
+    }
+
+    setActiveView("pipeline");
+    setIsRegisterOpen(false);
+    setRegisteredPage(Math.floor(linkedOpportunityIndex / REGISTERED_OPPORTUNITIES_PAGE_SIZE) + 1);
+    setDetailsOpportunityId(linkedClaim.opportunity_registration_id);
+  }, [linkedClaim, linkedClaimId, opportunities]);
+
+  useEffect(() => {
+    if (
+      !linkedClaimId ||
+      !linkedClaim ||
+      detailsOpportunityId !== linkedClaim.opportunity_registration_id ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      linkedClaimDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [detailsOpportunityId, linkedClaim, linkedClaimId]);
+
+  const renderClaimDecisionControls = (claim: OpportunityClaimRecord, options: { emphasized?: boolean; compact?: boolean } = {}) => (
+    <div
+      className={cn(
+        "grid gap-2 rounded-md border p-3 text-left",
+        options.compact ? "w-64" : "bg-background/70",
+        options.emphasized ? "border-primary/50 bg-primary/10" : "bg-muted/20",
+      )}
+      data-claim-decision-controls="true"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-medium">Claim decision</p>
+        <StatusBadge label="Awaiting client approval" variant="warning" />
+      </div>
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          type="button"
+          size="sm"
+          disabled={claimDecisionMutation.isPending}
+          onClick={() => claimDecisionMutation.mutate({ claim, decision: "APPROVED" })}
+        >
+          Approve
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={claimDecisionMutation.isPending}
+          onClick={() => {
+            const reason = claimDeclineReasonById[claim.id] ?? "ALREADY_CONNECTED";
+            claimDecisionMutation.mutate({
+              claim,
+              decision: "DECLINED",
+              declineReason: reason,
+              declineNote: claimDeclineNoteById[claim.id],
+            });
+          }}
+        >
+          Decline
+        </Button>
+      </div>
+      <Select
+        value={claimDeclineReasonById[claim.id] ?? "ALREADY_CONNECTED"}
+        onValueChange={(value: OpportunityClaimDeclineReason) =>
+          setClaimDeclineReasonById((current) => ({ ...current, [claim.id]: value }))
+        }
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {claimDeclineReasons.map((reason) => (
+            <SelectItem key={reason.value} value={reason.value}>
+              {reason.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Textarea
+        rows={2}
+        value={claimDeclineNoteById[claim.id] ?? ""}
+        onChange={(event) =>
+          setClaimDeclineNoteById((current) => ({ ...current, [claim.id]: event.target.value }))
+        }
+        placeholder="Optional detail for the Bum"
+      />
+    </div>
   );
 
   return (
@@ -1604,7 +1725,7 @@ export default function ClientOpportunityNew() {
                 <TableBody>
                   {visibleOpportunities.map((opportunity) => {
                     const opportunityClaims = claimsByOpportunity.get(opportunity.id) ?? [];
-                    const assignedClaim = getAssignedClaim(opportunityClaims);
+                    const assignedClaim = getFocusedClaim(opportunityClaims, linkedClaimId);
                     const hasClaim = opportunityClaims.length > 0;
                     const isLinkedClaim = Boolean(linkedClaimId && opportunityClaims.some((claim) => claim.id === linkedClaimId));
                     const plan = opportunity.client_pay_programs;
@@ -1704,63 +1825,9 @@ export default function ClientOpportunityNew() {
                                 Publish to Bums
                               </Button>
                             ) : null}
-                            {assignedClaim?.status === "PROPOSED" ? (
-                              <div className={`grid w-64 gap-2 rounded-md border p-2 text-left ${isLinkedClaim ? "border-primary/50 bg-primary/10" : "bg-muted/20"}`}>
-                                <p className="text-xs font-medium">Claim decision</p>
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    disabled={claimDecisionMutation.isPending}
-                                    onClick={() => claimDecisionMutation.mutate({ claim: assignedClaim, decision: "APPROVED" })}
-                                  >
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={claimDecisionMutation.isPending}
-                                    onClick={() => {
-                                      const reason = claimDeclineReasonById[assignedClaim.id] ?? "ALREADY_CONNECTED";
-                                      claimDecisionMutation.mutate({
-                                        claim: assignedClaim,
-                                        decision: "DECLINED",
-                                        declineReason: reason,
-                                        declineNote: claimDeclineNoteById[assignedClaim.id],
-                                      });
-                                    }}
-                                  >
-                                    Decline
-                                  </Button>
-                                </div>
-                                <Select
-                                  value={claimDeclineReasonById[assignedClaim.id] ?? "ALREADY_CONNECTED"}
-                                  onValueChange={(value: OpportunityClaimDeclineReason) =>
-                                    setClaimDeclineReasonById((current) => ({ ...current, [assignedClaim.id]: value }))
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {claimDeclineReasons.map((reason) => (
-                                      <SelectItem key={reason.value} value={reason.value}>
-                                        {reason.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Textarea
-                                  rows={2}
-                                  value={claimDeclineNoteById[assignedClaim.id] ?? ""}
-                                  onChange={(event) =>
-                                    setClaimDeclineNoteById((current) => ({ ...current, [assignedClaim.id]: event.target.value }))
-                                  }
-                                  placeholder="Optional detail for the Bum"
-                                />
-                              </div>
-                            ) : null}
+                            {assignedClaim?.status === "PROPOSED"
+                              ? renderClaimDecisionControls(assignedClaim, { emphasized: isLinkedClaim, compact: true })
+                              : null}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1770,6 +1837,7 @@ export default function ClientOpportunityNew() {
               </Table>
 
               {detailsOpportunity ? (
+                <div ref={detailsAssignedClaim?.id === linkedClaimId ? linkedClaimDetailsRef : undefined}>
                 <Card className="border-primary/30 bg-primary/5">
                   <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                     <div>
@@ -1839,11 +1907,60 @@ export default function ClientOpportunityNew() {
                       <div className="rounded-md border bg-background/70 p-4">
                         <p className="font-medium">Claim activity</p>
                         {detailsOpportunityClaims.length ? (
-                          <div className="mt-2 space-y-2 text-sm text-muted-foreground">
+                          <div className="mt-2 space-y-3 text-sm text-muted-foreground">
                             <p>{detailsOpportunityClaims.length} claim{detailsOpportunityClaims.length === 1 ? "" : "s"} connected to this opportunity.</p>
-                            <p>Assigned Bum: {bumName(detailsAssignedClaim)}</p>
-                            {detailsAssignedClaim ? <StatusBadge label={detailsAssignedClaim.status.replaceAll("_", " ").toLowerCase()} variant="secondary" /> : null}
-                            {claimDecisionSummary(detailsAssignedClaim) ? <p className="text-destructive">{claimDecisionSummary(detailsAssignedClaim)}</p> : null}
+                            {detailsAssignedClaim ? (
+                              <>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span>Assigned Bum: {bumName(detailsAssignedClaim)}</span>
+                                  <StatusBadge label={detailsAssignedClaim.status.replaceAll("_", " ").toLowerCase()} variant="secondary" />
+                                </div>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                  <div className="rounded-md border bg-background p-3">
+                                    <p className="text-muted-foreground">Primary contact</p>
+                                    <p className="mt-1 font-medium text-foreground">{detailsAssignedClaim.contact_name}</p>
+                                    <p className="text-xs">{detailsAssignedClaim.contact_email ?? "No email provided"}</p>
+                                  </div>
+                                  <div className="rounded-md border bg-background p-3">
+                                    <p className="text-muted-foreground">Contact company</p>
+                                    <p className="mt-1 font-medium text-foreground">{detailsAssignedClaim.contact_company}</p>
+                                    <p className="text-xs">{detailsAssignedClaim.relationship_strength.toLowerCase()} relationship</p>
+                                  </div>
+                                  <div className="rounded-md border bg-background p-3 sm:col-span-2">
+                                    <p className="text-muted-foreground">Bum context</p>
+                                    <p className="mt-1 text-foreground">{detailsAssignedClaim.note ?? "No additional context provided."}</p>
+                                  </div>
+                                </div>
+                                {detailsAssignedClaim.opportunity_claim_contacts?.length ? (
+                                  <div>
+                                    <p className="font-medium text-foreground">Stakeholders included in this claim</p>
+                                    <div className="mt-2 grid gap-2">
+                                      {detailsAssignedClaim.opportunity_claim_contacts
+                                        .slice()
+                                        .sort((left, right) => left.sort_order - right.sort_order)
+                                        .map((claimContact) => (
+                                          <div key={claimContact.id} className="rounded-md border bg-background p-3">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <span className="font-medium text-foreground">{claimContact.contact_name}</span>
+                                              {claimContact.is_inner_circle ? <StatusBadge label="Inner Circle" variant="success" /> : null}
+                                              <StatusBadge
+                                                label={buyingRoleLabels[claimContact.buying_role]}
+                                                variant={claimContact.buying_role === "BLOCKER" ? "warning" : "secondary"}
+                                              />
+                                            </div>
+                                            <p className="mt-1 text-xs">{[claimContact.contact_title, claimContact.contact_company].filter(Boolean).join(" · ")}</p>
+                                            {claimContact.note ? <p className="mt-2">{claimContact.note}</p> : null}
+                                          </div>
+                                        ))}
+                                    </div>
+                                  </div>
+                                ) : null}
+                                {claimDecisionSummary(detailsAssignedClaim) ? <p className="text-destructive">{claimDecisionSummary(detailsAssignedClaim)}</p> : null}
+                                {detailsAssignedClaim.status === "PROPOSED"
+                                  ? renderClaimDecisionControls(detailsAssignedClaim, { emphasized: detailsAssignedClaim.id === linkedClaimId })
+                                  : null}
+                              </>
+                            ) : null}
                           </div>
                         ) : (
                           <p className="mt-2 text-sm text-muted-foreground">No Bum claims yet.</p>
@@ -1852,6 +1969,7 @@ export default function ClientOpportunityNew() {
                     </div>
                   </CardContent>
                 </Card>
+                </div>
               ) : null}
 
               {editingOpportunityId ? (

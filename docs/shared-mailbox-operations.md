@@ -1,6 +1,6 @@
 # Shared Mailbox Operations
 
-_Last updated: 2026-06-09 by Codex._
+_Last updated: 2026-06-18 by Codex._
 
 ## Mailbox
 
@@ -13,6 +13,7 @@ Approved uses:
 - Public visitor questions.
 - Client, Bum, and partner questions that come through the site.
 - Client criteria replies that define routing rules for Trusted Bums opportunities, such as BlackCurrant outreach criteria.
+- Claim decision replies where a Client Admin replies `Approved` or `Declined` to a claim-review email, provided the reply includes enough token or claim context to bind it to the intended claim.
 - Complaints, abuse reports, privacy requests, and escalation intake.
 - Support triage where the message belongs to Trusted Bums operations.
 
@@ -31,6 +32,7 @@ The Microsoft app should not have practical read access to unrelated employee or
 - Sensitive messages should be visible only to admins or a future explicitly authorized operations/legal role.
 - Every mailbox-reading workflow should log who initiated the read, what category was handled, and whether any durable app record was created.
 - Client criteria replies may be summarized into structured opportunity-routing fields, but raw reply bodies should stay out of durable product docs unless a founder/admin explicitly approves storing the text.
+- Claim decision replies should not be treated as final product state until the reply-sync or admin review path verifies the decision token or claim ID and records the resulting claim status. A user-reported reply of `Approved` is an operations signal, not database proof by itself. The 2026-06-18 CoreWeave reply is the proof pattern: live product state showed `APPROVED` via `email_reply`, and the corresponding Bum notification delivery was `SENT`.
 
 ## Implementation Queue
 
@@ -40,6 +42,7 @@ The Microsoft app should not have practical read access to unrelated employee or
 4. Add an Admin Portal shared inbox/reputation intake surface. `/admin/inbox` now gives admins a shared Inbox with an External mail switch, mailbox sync, compose, reply, reply-all, and handled/in-progress status actions.
 5. Add retention and redaction rules before storing attachments. Message bodies are stored only for the admin shared-mailbox workflow; attachments remain metadata-only in this slice.
 6. Add a client-criteria intake path that can turn approved client replies into structured opportunity-routing rules.
+7. Keep claim-decision reply handling observable after client-side junk-folder delivery. On 2026-06-18, Ryan relayed that Akshay found the CoreWeave test claim email in junk, did not see an accept/decline prompt in the Trusted Bums account, and replied `approved` by email. Follow-up live reads confirmed `sync-claim-decision-replies` processed the reply and sent the Bum next-step email. The remaining work is to retain safe header diagnostics for future decision replies and verify the local portal-link fix after release.
 
 ## Evidence Status
 

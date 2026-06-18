@@ -1,6 +1,6 @@
 # Trusted Bums Bum Supply Leader Backlog
 
-_Last updated: 2026-06-17 by Codex daily Bum Supply Leader setup._
+_Last updated: 2026-06-18 by Codex._
 
 ## Executive Read
 
@@ -10,7 +10,7 @@ The first operating goal is a BlackCurrant top-10 relationship-supply sprint. Ea
 
 ## BlackCurrant Supply Map
 
-Current setup status: first-pass supply map created from the existing BlackCurrant decision-maker research pilot and live Supabase roster checks. The full research run says BlackCurrant has 81 target accounts and 117 loaded Research Bot records, but this backlog currently has source-backed supply asks for the four pilot accounts with explicit opportunity IDs: Vantage Data Centers, QTS (see Blackstone), Crusoe, and CoreWeave (Oracle). Live checks found one actual CoreWeave opportunity-claim contact and several self-reported Bum profile keyword matches for the four pilot accounts. The next Supply run should expand this structure across the remaining high-priority accounts from live data or the imported research table.
+Current setup status: first-pass supply map created from the existing BlackCurrant decision-maker research pilot and live Supabase roster checks. The full research run says BlackCurrant has 81 target accounts and 117 loaded Research Bot records, but this backlog currently has source-backed supply asks for the four pilot accounts with explicit opportunity IDs: Vantage Data Centers, QTS (see Blackstone), Crusoe, and CoreWeave (Oracle). Live checks found one actual CoreWeave opportunity-claim contact and several self-reported Bum profile keyword matches for the four pilot accounts. On 2026-06-18, Ryan relayed that Akshay found the CoreWeave test claim email in junk, could receive it, did not see an accept/decline prompt in the Trusted Bums account, and replied `approved` by email. Follow-up live Supabase reads verified the CoreWeave claim is now `APPROVED` via `email_reply` and the `opportunity_claim_accepted_bum` next-step email to Jason was sent. The remaining product fix is the portal landing path: claim-review email links must open the claim details and decision controls directly instead of only highlighting a pipeline row. The next Supply run should expand this structure across the remaining high-priority accounts from live data or the imported research table.
 
 For each priority opportunity or account:
 
@@ -65,13 +65,13 @@ For each priority opportunity or account:
 - Opportunity ID: `57c0d016-4357-4b66-8496-c615dcde7c8b`
 - Desired relationship profile: Oracle Cloud, Google Cloud, AI infrastructure, data-center capacity planning, executive operations, GPU cloud, energy finance, natural gas, AI-infrastructure investor, or capacity-development route.
 - Decision-maker/champion hypothesis: Sachin Jain, COO; Brian Venturo, CSO/co-founder.
-- Candidate Bum/referrer path: live data shows one Managing Bum has already created a `PROPOSED` opportunity-claim contact for CoreWeave with relationship strength marked `WEAK`. Roster keyword matches also show one open Bum with `cloud` / `data center` profile evidence and one Managing Bum with `data center` evidence.
+- Candidate Bum/referrer path: live data shows one Managing Bum created the CoreWeave opportunity-claim contact with relationship strength marked `WEAK`; the claim is now `APPROVED` via Akshay's email reply. Roster keyword matches also show one open Bum with `cloud` / `data center` profile evidence and one Managing Bum with `data center` evidence.
 - Classification: existing Managing Bum claim path plus direct active Bum screening path.
-- Current status: `route_claimed_weak`.
-- Next action: review the existing CoreWeave claim for whether it can become a credible warm path or should be disqualified, then ask matched Bums for Oracle Cloud, Google Cloud, AI infrastructure, data-center capacity, GPU cloud, energy finance, founder, or investor routes.
+- Current status: `client_email_reply_approved_intro_email_sent`.
+- Next action: treat the CoreWeave claim as accepted product state, then move to intro setup and Managing Bum relationship screening. Keep a Product Ops follow-up on the portal review URL because live edge logs showed the tracked link was clicked, but the old client page only switched to the pipeline and highlighted the row rather than opening the claim details decision panel. Then ask matched Bums for Oracle Cloud, Google Cloud, AI infrastructure, data-center capacity, GPU cloud, energy finance, founder, or investor routes.
 - Owner: `Supply Agent`; human review by Ryan or named BlackCurrant Account Operator before external outreach.
 - Due date: 2026-06-19.
-- Risk or approval needed: likely needs high-credibility executive or former-cloud-infrastructure route; do not use generic BD outreach.
+- Risk or approval needed: user-reported junk placement means the email path has deliverability friction; likely needs high-credibility executive or former-cloud-infrastructure route; do not use generic BD outreach.
 
 ## Active Supply Actions
 
@@ -291,7 +291,7 @@ Supply should maintain these fields in backlog/tracker/product design until Prod
 ### Immediate Application To BlackCurrant Pilot
 
 - Supply should run `Inner Circle` intake with the current Managing Bums and strongest matched Bums before broad recruiting. First target: identify whether any listed Inner Circle person works at, advises, invests in, sells to, buys from, or can credibly reach Crusoe, Vantage, QTS/Blackstone, CoreWeave/Oracle, or their priority decision makers. Second target: use public evidence to identify whether those Inner Circle people create Second Circle routes through investors, board members, founders, former companies, portfolio companies, or project partners.
-- CoreWeave / Oracle: existing weak claim path must be screened. Current default decision is `weak_route`; next action is to ask the Managing Bum the screening questions and either upgrade to `verify_first` / `qualified_route` or disqualify.
+- CoreWeave / Oracle: existing weak claim path must now be screened as an accepted route. Live product state verified Akshay's email reply moved the claim to `APPROVED`, and the next-step email to Jason was sent. The remaining product defect is the email-link landing behavior, not the claim state.
 - Crusoe: candidate profile matches must receive account-specific screening questions before any route is counted as credible.
 - Vantage Data Centers: Managing Bum and direct Bum profile matches must be screened for Vantage/Liberty Energy/North America power delivery specificity.
 - QTS / Blackstone: Managing Bum and direct Bum profile matches must be screened for QTS operations/facilities/engineering or Blackstone infrastructure specificity.
@@ -317,7 +317,7 @@ Track:
 - `weak_routes`: 1
 - `candidate_bums_invited`: 0
 - `candidate_bums_approved`: 0
-- `routes_claimed`: 1 weak proposed CoreWeave path
+- `routes_claimed`: 1 CoreWeave path with live email-reply approval verified and Jason next-step email sent
 - `routes_disqualified`: 0
 - `no_route_reason_count`: 0 for the four mapped accounts after live roster screening; relationship strength still unverified.
 - `approval_blocked_compensation_paths`: 0
@@ -343,6 +343,8 @@ The Supply Agent should prepare, but not approve, compensation review packets. R
 - The Org API access for a constrained decision-maker research pilot: API key, plan/credit budget, and permission to use the official API for BlackCurrant customer org-chart research. Start with the free account if possible; upgrade only if the first org-chart test is useful and the credit budget is approved.
 - Current BlackCurrant opportunity export or live queue access for the remaining top-six accounts and the full 81-account prioritization.
 - Human-verifiable Bum relationship strength for the matched Bums and Managing Bums. Live roster matching only proves keyword/profile overlap, not trusted access.
+- Product follow-up for the CoreWeave claim-review link landing behavior: local code now opens the linked claim details and decision controls, but release and browser proof are still pending.
+- Mail-deliverability evidence for the CoreWeave claim email that landed in Akshay's junk folder, ideally message trace or recipient headers before treating this as systemic deliverability failure. The current live decision event did not retain raw headers.
 - Current CRM/account-plan notes, if any.
 - Named BlackCurrant Account Operator.
 - Named legal/economics approval owner for compensation constructs.
@@ -351,6 +353,7 @@ The Supply Agent should prepare, but not approve, compensation review packets. R
 ## Agent Inputs
 
 - Date of run: 2026-06-17.
+- 2026-06-18 user update reviewed: Ryan relayed Akshay's CoreWeave test claim email result, including junk-folder delivery, no visible in-account accept/decline prompt, and an email reply of `approved`. Follow-up live Supabase reads verified the approval and Jason notification were processed.
 - Files reviewed: `docs/ceo-agent-operating-backlog.md`, `docs/agents/README.md`, `docs/company-wide-rules.md`, `docs/consultant-team-rules.md`, `docs/decision-maker-research/blackcurrant-2026-06-09-pilot.md`, `docs/decision-maker-research/blackcurrant-2026-06-09-full.md`, `docs/blackcurrant-client-criteria-workflow.md`, `supabase/migrations/20260517054500_correct_blackcurrant_opportunity_positioning.sql`, and existing automation prompt patterns.
 - Live evidence reviewed: Supabase schema for `bum_profiles`, `profiles`, `bum_contacts`, `bum_team_memberships`, `opportunity_registrations`, `customer_targets`, `potential_decision_maker_matches`, and `opportunity_claims`; live Bum profile keyword matches against Crusoe, Vantage, QTS/Blackstone, and CoreWeave/Oracle; and live Bum contact/opportunity-claim search for those accounts.
 - Changes made: Created the Bum Supply Leader prompt snapshot and this operating backlog; populated first-pass supply map and ask packs for Crusoe, Vantage Data Centers, QTS/Blackstone, and CoreWeave/Oracle; updated the map with live candidate screening paths and the existing weak CoreWeave claim path.

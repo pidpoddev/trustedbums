@@ -3,10 +3,11 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import * as jose from "jsr:@panva/jose@6";
 
 interface ClaimsResponse { sub?: string }
-interface ProfileRow { id: string | null; company_id: string | null; full_name: string | null; email: string | null; role: string | null; is_admin: boolean }
+interface ProfileRow { id: string | null; company_id: string | null; full_name: string | null; email: string | null; role: string | null; is_admin: boolean; client_access_role: string | null }
 interface EmailTemplateRow { id: string; slug: string; name: string; recipient_group: RecipientGroup; trigger_event: string | null; subject: string; body: string; is_active: boolean; category: EmailCategory; reply_to: string | null; rate_limit_per_hour: number }
 interface BrandSettingsRow { sender_name: string; logo_url: string; accent_color: string; footer_text: string; physical_address: string | null }
 interface BumProfileRow { user_id: string; industries: string[] | null; profiles: Pick<ProfileRow, "id" | "full_name" | "email"> | null }
+interface OpportunityClaimAcceptedActionRow { id: string; company_id: string | null; status: string | null; profiles: Pick<ProfileRow, "email"> | null }
 
 type RecipientGroup = "ALL_USERS" | "CLIENT_COMPANY" | "ALL_CLIENTS" | "ALL_BUMS" | "BUM_INDUSTRY_MATCH" | "ADMINS" | "CUSTOM";
 type EmailCategory = "transactional" | "opportunity_updates" | "client_alerts" | "bum_marketplace_alerts" | "admin_announcements" | "onboarding" | "marketing";
@@ -48,7 +49,7 @@ function getBearerToken(request: Request) { const authorization = request.header
 function decodeBase64Url(segment: string) { const normalized = segment.replace(/-/g, "+").replace(/_/g, "/"); const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4)); return atob(`${normalized}${padding}`) }
 function parseJwtPayload(token: string) { const payloadSegment = token.split(".")[1] ?? ""; if (!payloadSegment) throw new Error("The current session token is malformed."); return JSON.parse(decodeBase64Url(payloadSegment)) as ClaimsResponse & { iss?: string } }
 function resolveClerkJwksUrl(issuer?: string) { const candidate = issuer?.trim() || clerkFrontendApiUrl?.trim(); if (!candidate) throw new Error("Unable to determine the Clerk JWKS endpoint for this session."); return new URL("/.well-known/jwks.json", candidate).toString() }
-async function getCurrentProfile(token: string) { const payload = parseJwtPayload(token); const jwksUrl = resolveClerkJwksUrl(payload.iss); const { payload: verifiedPayload } = await jose.jwtVerify(token, jose.createRemoteJWKSet(new URL(jwksUrl)), payload.iss ? { issuer: payload.iss } : undefined); const currentUserId = (verifiedPayload as ClaimsResponse).sub?.trim(); if (!currentUserId) throw new Error("The verified Clerk session did not include a user ID."); const { data, error } = await supabaseAdmin.from("profiles").select("id, company_id, full_name, email, role, is_admin").eq("id", currentUserId).maybeSingle<ProfileRow>(); if (error || !data) throw new Error("Unable to verify the current Trusted Bums profile."); return data }
+async function getCurrentProfile(token: string) { const payload = parseJwtPayload(token); const jwksUrl = resolveClerkJwksUrl(payload.iss); const { payload: verifiedPayload } = await jose.jwtVerify(token, jose.createRemoteJWKSet(new URL(jwksUrl)), payload.iss ? { issuer: payload.iss } : undefined); const currentUserId = (verifiedPayload as ClaimsResponse).sub?.trim(); if (!currentUserId) throw new Error("The verified Clerk session did not include a user ID."); const { data, error } = await supabaseAdmin.from("profiles").select("id, company_id, full_name, email, role, is_admin, client_access_role").eq("id", currentUserId).maybeSingle<ProfileRow>(); if (error || !data) throw new Error("Unable to verify the current Trusted Bums profile."); return data }
 function isAdmin(profile: ProfileRow) { return profile.is_admin || profile.role?.toUpperCase() === "ADMIN" }
 function cleanString(value: unknown, maxLength: number) { return typeof value === "string" ? value.trim().slice(0, maxLength) : "" }
 function isEmail(value: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) }
@@ -56,6 +57,29 @@ function isSelfOnlyCustomAction(input: SendAdminEmailRequest, currentProfile: Pr
   const currentEmail = currentProfile.email?.trim().toLowerCase();
   const recipients = (input.recipientEmails ?? []).map((email) => email.trim().toLowerCase()).filter(isEmail);
   return Boolean(currentEmail && recipients.length === 1 && recipients[0] === currentEmail);
+}
+async function isAuthorizedClaimAcceptedAction(input: SendAdminEmailRequest, currentProfile: ProfileRow, template: EmailTemplateRow, metadata: Record<string, string>) {
+  if (template.slug !== "opportunity_claim_accepted_bum" || input.triggeredBy !== "OPPORTUNITY_CLAIM_ACCEPTED") return false;
+  if (currentProfile.role?.toUpperCase() !== "CLIENT") return false;
+  if (currentProfile.client_access_role !== "CLIENT_ADMIN" && currentProfile.client_access_role !== "CLIENT_MEMBER") return false;
+  if (!currentProfile.company_id) return false;
+  const claimId = metadata.claim_id?.trim();
+  const recipients = (input.recipientEmails ?? []).map((email) => email.trim().toLowerCase()).filter(isEmail);
+  if (!claimId || recipients.length !== 1) return false;
+  const { data, error } = await supabaseAdmin
+    .from("opportunity_claims")
+    .select("id, company_id, status, profiles(email)")
+    .eq("id", claimId)
+    .maybeSingle<OpportunityClaimAcceptedActionRow>();
+  if (error) throw error;
+  const bumEmail = data?.profiles?.email?.trim().toLowerCase();
+  return Boolean(
+    data &&
+    data.company_id === currentProfile.company_id &&
+    data.status === "APPROVED" &&
+    bumEmail &&
+    recipients[0] === bumEmail,
+  );
 }
 function isInternalEmailRequest(request: Request) {
   return request.headers.get("authorization") === `Bearer ${supabaseServiceRoleKey}` &&
@@ -345,7 +369,7 @@ Deno.serve(async (request) => {
   try {
     const input = await request.json().catch(() => ({})) as SendAdminEmailRequest;
     const currentProfile = isInternalEmailRequest(request)
-      ? { id: null, company_id: null, full_name: "Trusted Bums", email: null, role: "ADMIN", is_admin: true }
+      ? { id: null, company_id: null, full_name: "Trusted Bums", email: null, role: "ADMIN", is_admin: true, client_access_role: null }
       : await getCurrentProfile(getBearerToken(request));
     if (input.operation) return await handleAdminEmailOperation(input.operation, recordValue(input.payload), currentProfile);
     const mode: SendMode = input.mode === "action" || input.mode === "preview" || input.mode === "test" ? input.mode : "manual";
@@ -355,7 +379,11 @@ Deno.serve(async (request) => {
     const group = input.recipientGroup ?? template.recipient_group;
     if ((mode === "manual" || mode === "preview" || mode === "test") && !isAdmin(currentProfile)) return json(403, { error: "Only admins can use manual messaging tools." });
     if (mode === "action" && template.trigger_event === "MANUAL") return json(403, { error: "Manual-only templates cannot be action triggered." });
-    if (mode === "action" && template.recipient_group === "CUSTOM" && !isAdmin(currentProfile) && !isSelfOnlyCustomAction(input, currentProfile)) return json(403, { error: "Custom action-triggered email requires an admin." });
+    let customActionAllowed = isAdmin(currentProfile) || isSelfOnlyCustomAction(input, currentProfile);
+    if (mode === "action" && template.recipient_group === "CUSTOM" && !customActionAllowed) {
+      customActionAllowed = await isAuthorizedClaimAcceptedAction(input, currentProfile, template, metadata);
+    }
+    if (mode === "action" && template.recipient_group === "CUSTOM" && !customActionAllowed) return json(403, { error: "Custom action-triggered email requires an admin." });
     if (mode === "action" && input.recipientGroup && input.recipientGroup !== template.recipient_group) return json(400, { error: "Action-triggered email cannot override the template recipient group." });
     const subjectTemplate = mode === "manual" || mode === "preview" || mode === "test" ? cleanString(input.subject, 240) || template.subject : template.subject;
     const bodyTemplate = mode === "manual" || mode === "preview" || mode === "test" ? cleanString(input.body, 8000) || template.body : template.body;

@@ -17,12 +17,18 @@ interface GraphEmailAddress {
   };
 }
 
+interface GraphHeader {
+  name?: string;
+  value?: string;
+}
+
 interface GraphMessage {
   id: string;
   internetMessageId?: string;
   receivedDateTime?: string;
   subject?: string;
   from?: GraphEmailAddress;
+  internetMessageHeaders?: GraphHeader[];
   bodyPreview?: string;
   body?: {
     content?: string;
@@ -151,6 +157,34 @@ function messageText(message: GraphMessage) {
   return [message.subject ?? "", message.bodyPreview ?? "", body].filter(Boolean).join("\n");
 }
 
+const safeDiagnosticHeaderNames = new Set([
+  "authentication-results",
+  "received-spf",
+  "x-forefront-antispam-report",
+  "x-ms-exchange-organization-authas",
+  "x-ms-exchange-organization-pcl",
+  "x-ms-exchange-organization-scl",
+  "x-ms-publictraffictype",
+]);
+
+function safeHeaderDiagnostics(message: GraphMessage) {
+  const headers = (message.internetMessageHeaders ?? [])
+    .map((header) => ({
+      name: header.name?.trim().toLowerCase() ?? "",
+      value: header.value?.replace(/\s+/g, " ").trim() ?? "",
+    }))
+    .filter((header) => header.name && header.value && safeDiagnosticHeaderNames.has(header.name))
+    .map((header) => `${header.name}=${header.value.slice(0, 320)}`)
+    .slice(0, 6);
+
+  return headers.length ? `Safe headers: ${headers.join(" | ")}` : null;
+}
+
+function noteWithHeaderDiagnostics(message: GraphMessage, note: string) {
+  const headerDiagnostics = safeHeaderDiagnostics(message);
+  return headerDiagnostics ? `${note} ${headerDiagnostics}` : note;
+}
+
 function extractDecisionToken(text: string) {
   return (
     text.match(/claim\s+decision\s+token\s*:\s*([a-f0-9]{16,64})/i)?.[1]?.toLowerCase() ??
@@ -245,6 +279,25 @@ async function listRecentMessages(accessToken: string, mailbox: string, top: num
   return payload.value ?? [];
 }
 
+async function messageWithHeaderDiagnostics(accessToken: string, mailbox: string, message: GraphMessage) {
+  if (message.internetMessageHeaders?.length) {
+    return message;
+  }
+
+  const params = new URLSearchParams({ "$select": "id,internetMessageHeaders" });
+  const response = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(mailbox)}/messages/${encodeURIComponent(message.id)}?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!response.ok) {
+    console.warn("Unable to load message headers for claim decision diagnostics", response.status);
+    return message;
+  }
+
+  const payload = await response.json().catch(() => ({})) as Pick<GraphMessage, "internetMessageHeaders">;
+  return { ...message, internetMessageHeaders: payload.internetMessageHeaders ?? [] };
+}
+
 async function alreadyProcessed(messageId: string) {
   const { data, error } = await supabaseAdmin
     .from("claim_decision_email_events")
@@ -331,9 +384,14 @@ async function loadClaim(token: string | null, claimId: string | null) {
 
 async function notifyBumClaimApproved(accessToken: string, claim: ClaimRow) {
   const recipientEmail = claim.profiles?.email?.trim();
-  if (!recipientEmail) return;
+  if (!recipientEmail) {
+    throw new Error("Approved claim has no Bum email for the next-step notification.");
+  }
 
   await sendTemplateEmail(accessToken, "opportunity_claim_accepted_bum", recipientEmail, {
+    claim_id: claim.id,
+    opportunity_registration_id: claim.opportunity_registration_id,
+    company_id: claim.company_id ?? "",
     bum_name: claim.profiles?.full_name?.trim() || recipientEmail,
     target_account_name: claim.opportunity_registrations?.target_account_name ?? "this opportunity",
     contact_name: claim.contact_name,
@@ -528,7 +586,7 @@ async function applyBumSignupApproval(message: GraphMessage, requestId: string, 
   return "processed";
 }
 
-async function applyDecision(message: GraphMessage, claim: ClaimRow, decision: Decision, text: string, accessToken: string) {
+async function applyDecision(message: GraphMessage, claim: ClaimRow, decision: Decision, text: string, accessToken: string, mailbox: string) {
   if (claim.status !== "PROPOSED") {
     await recordEvent(message, {
       claimId: claim.id,
@@ -578,20 +636,27 @@ async function applyDecision(message: GraphMessage, claim: ClaimRow, decision: D
       sender_email: message.from?.emailAddress?.address ?? null,
     },
   });
-  await recordEvent(message, {
+  let processingStatus: "PROCESSED" | "FAILED" = "PROCESSED";
+  let processingNote = "Claim decision applied.";
+  if (decision === "APPROVED") {
+    try {
+      await notifyBumClaimApproved(accessToken, claim);
+      processingNote = "Claim decision applied and Bum notification sent.";
+    } catch (error) {
+      processingStatus = "FAILED";
+      processingNote = `Claim approved, but Bum notification failed: ${error instanceof Error ? error.message : "Unable to send notification."}`;
+    }
+  }
+  const diagnosticMessage = await messageWithHeaderDiagnostics(accessToken, mailbox, message);
+  await recordEvent(diagnosticMessage, {
     claimId: claim.id,
     decision,
     reasonCode: decision === "DECLINED" ? reason.code : null,
     reasonNote: decision === "DECLINED" ? reason.note : null,
-    status: "PROCESSED",
-    note: "Claim decision applied.",
+    status: processingStatus,
+    note: noteWithHeaderDiagnostics(diagnosticMessage, processingNote),
   });
-  if (decision === "APPROVED") {
-    await notifyBumClaimApproved(accessToken, claim).catch((error) => {
-      console.warn("Unable to send claim approval notification", error);
-    });
-  }
-  return "processed";
+  return processingStatus === "FAILED" ? "failed" : "processed";
 }
 
 Deno.serve(async (request) => {
@@ -662,8 +727,9 @@ Deno.serve(async (request) => {
           continue;
         }
 
-        const result = await applyDecision(message, claim, decision, text, accessToken);
+        const result = await applyDecision(message, claim, decision, text, accessToken, mailbox);
         if (result === "processed") processed += 1;
+        else if (result === "failed") failed += 1;
         else skipped += 1;
       } catch (error) {
         failed += 1;

@@ -42,9 +42,16 @@ describe("claim decline workflow", () => {
 
   it("lets Clients decide pending claims and shows declined reasons to Bums", () => {
     expect(clientOpportunitySource).toContain("Claim decision");
+    expect(clientOpportunitySource).toContain("getFocusedClaim");
+    expect(clientOpportunitySource).toContain("setDetailsOpportunityId(linkedClaim.opportunity_registration_id)");
+    expect(clientOpportunitySource).toContain("data-claim-decision-controls");
+    expect(clientOpportunitySource).toContain("Stakeholders included in this claim");
     expect(clientOpportunitySource).toContain("claimDeclineReasons.map");
     expect(clientOpportunitySource).toContain('decision: "DECLINED"');
     expect(clientOpportunitySource).toContain('decision: "APPROVED"');
+    expect(portalApiSource).toContain('templateSlug: "opportunity_claim_accepted_bum"');
+    expect(portalApiSource).toContain("claim_id: claim.id");
+    expect(portalApiSource).not.toContain('if (user.role !== "ADMIN" || !claim.profiles?.email)');
     expect(bumClaimsSource).toContain("Why this Claim was declined");
     expect(bumOpportunityDetailSource).toContain("Why this Claim was declined");
     expect(bumOpportunityDetailSource).toContain("bumClaimUpdateStatuses");
@@ -59,6 +66,10 @@ describe("claim decline workflow", () => {
     expect(syncFunctionSource).toContain("alreadyProcessed");
     expect(syncFunctionSource).toContain("claim_decision_email_events");
     expect(syncFunctionSource).toContain("claim.status !== \"PROPOSED\"");
+    expect(syncFunctionSource).toContain("internetMessageHeaders");
+    expect(syncFunctionSource).toContain("safeHeaderDiagnostics");
+    expect(syncFunctionSource).toContain("Claim decision applied and Bum notification sent.");
+    expect(syncFunctionSource).toContain("Claim approved, but Bum notification failed");
     expect(syncFunctionSource).toContain("x-sync-secret");
     expect(syncFunctionSource).toContain("CLAIM_DECISION_SYNC_SECRET is not configured.");
     expect(syncFunctionSource).toContain("if (!syncSecret)");

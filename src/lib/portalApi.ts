@@ -4381,16 +4381,19 @@ export async function updateOpportunityClaimShare(user: AuthUser, claimId: strin
 }
 
 async function notifyClaimAccepted(user: AuthUser, claim: OpportunityClaimRecord, note?: string) {
-  if (user.role !== "ADMIN" || !claim.profiles?.email) {
+  if (!claim.profiles?.email) {
     return;
   }
 
   const company = claim.company_id ? await getCompanyById(claim.company_id) : null;
-  await sendAdminEmail({
+  const result = await sendAdminEmail({
     mode: "action",
     templateSlug: "opportunity_claim_accepted_bum",
     recipientEmails: [claim.profiles.email],
     metadata: {
+      claim_id: claim.id,
+      opportunity_registration_id: claim.opportunity_registration_id,
+      company_id: claim.company_id ?? "",
       bum_name: claim.profiles.full_name ?? claim.profiles.email,
       target_account_name: claim.opportunity_registrations?.target_account_name ?? "this opportunity",
       contact_name: claim.contact_name,
@@ -4400,9 +4403,12 @@ async function notifyClaimAccepted(user: AuthUser, claim: OpportunityClaimRecord
       admin_note: note ?? claim.note ?? "",
     },
     triggeredBy: "OPPORTUNITY_CLAIM_ACCEPTED",
-  }).catch((error) => {
-    console.error("Unable to send claim accepted notification", error);
   });
+
+  if (result.failed > 0) {
+    const detail = result.results.find((item) => item.status === "FAILED")?.error;
+    throw new Error(detail || "The claim was approved, but the Bum next-step email could not be sent.");
+  }
 }
 
 function normalizedClaimContacts(input: OpportunityClaimInput, fallbackCompany: string) {

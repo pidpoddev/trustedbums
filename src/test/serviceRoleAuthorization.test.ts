@@ -95,9 +95,13 @@ describe("service-role edge function authorization contracts", () => {
     expect(extensionApiSource).toContain("You do not have access to that customer target.");
   });
 
-  it("limits admin email operations to admins except self-only action emails", () => {
+  it("limits admin email operations to admins except validated action emails", () => {
     expect(sendAdminEmailSource).toContain("function isAdmin");
     expect(sendAdminEmailSource).toContain("function isSelfOnlyCustomAction");
+    expect(sendAdminEmailSource).toContain("function isAuthorizedClaimAcceptedAction");
+    expect(sendAdminEmailSource).toContain("client_access_role");
+    expect(sendAdminEmailSource).toContain('template.slug !== "opportunity_claim_accepted_bum"');
+    expect(sendAdminEmailSource).toContain('data.status === "APPROVED"');
     expect(sendAdminEmailSource).toContain("Only admins can manage email tools.");
     expect(sendAdminEmailSource).toContain("Only admins can use manual messaging tools.");
     expect(sendAdminEmailSource).toContain("Manual-only templates cannot be action triggered.");
