@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migrationSource = readFileSync("supabase/migrations/20260612103000_add_opportunity_claim_contacts.sql", "utf8");
+const innerCircleMigrationSource = readFileSync("supabase/migrations/20260618100000_add_inner_circle_contacts.sql", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 const portalContactsFunctionSource = readFileSync("supabase/functions/portal-contacts/index.ts", "utf8");
 const bumOpportunityDetailSource = readFileSync("src/pages/bum/BumOpportunityDetail.tsx", "utf8");
@@ -17,6 +18,8 @@ describe("opportunity claim stakeholders", () => {
     expect(migrationSource).toContain("alter table public.opportunity_claim_contacts enable row level security");
     expect(migrationSource).toContain('"Users can read relevant opportunity claim contacts"');
     expect(migrationSource).toContain('"Bums can create own opportunity claim contacts"');
+    expect(innerCircleMigrationSource).toContain("alter table public.opportunity_claim_contacts");
+    expect(innerCircleMigrationSource).toContain("add column if not exists is_inner_circle boolean not null default false");
   });
 
   it("keeps the legacy claim contact while inserting the stakeholder bundle", () => {
@@ -26,7 +29,9 @@ describe("opportunity claim stakeholders", () => {
     expect(portalApiSource).toContain("canSponsorCall: boolean");
     expect(portalApiSource).toContain("Must be able to sponsor a call in order to claim.");
     expect(portalApiSource).toContain("function normalizedClaimContacts");
+    expect(portalApiSource).toContain("applyInnerCircleDesignations");
     expect(portalApiSource).toContain('.from("opportunity_claim_contacts")');
+    expect(portalApiSource).toContain("is_inner_circle: contact.isInnerCircle");
     expect(portalApiSource).toContain("data.opportunity_claim_contacts = contactRows ?? []");
     expect(portalApiSource).toContain("introduced_contacts");
   });
@@ -41,6 +46,8 @@ describe("opportunity claim stakeholders", () => {
     expect(bumOpportunityDetailSource).toContain("Neil leads development and may prefer to self-develop instead of buying.");
     expect(bumOpportunityDetailSource).toContain("I can sponsor a call with this customer");
     expect(bumOpportunityDetailSource).toContain("setCanSponsorCall(value === \"yes\")");
+    expect(bumOpportunityDetailSource).toContain("Inner Circle contact");
+    expect(bumOpportunityDetailSource).toContain("isInnerCircle: claimContact.isInnerCircle");
     expect(bumOpportunityDetailSource).toContain("contacts: normalizedContacts.map");
   });
 
@@ -65,5 +72,8 @@ describe("opportunity claim stakeholders", () => {
     expect(bumClaimsSource).toContain("Introductions included");
     expect(clientClaimsSource).toContain("Stakeholders included in this claim");
     expect(clientClaimsSource).toContain("buyingRoleLabels[claimContact.buying_role]");
+    expect(bumOpportunityDetailSource).toContain('claimContact.is_inner_circle ? <StatusBadge label="Inner Circle"');
+    expect(bumClaimsSource).toContain('claimContact.is_inner_circle ? <StatusBadge label="Inner Circle"');
+    expect(clientClaimsSource).toContain('claimContact.is_inner_circle ? <StatusBadge label="Inner Circle"');
   });
 });

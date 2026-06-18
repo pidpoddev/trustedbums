@@ -1,140 +1,150 @@
 # Trusted Bums QA And Test Backlog
 
-_Last updated: 2026-06-17 by Codex daily QA/test engineer automation._
-
-## 2026-06-17 Closeout Update
-
-Successor local work after pushed head `8d27912` clears the two QA workflow blockers that were preventing closeout. `src/test/scrumQueueRegression.test.ts` now matches the current QA backlog language instead of requiring stale extension-API wording, and the full unit suite passes locally (`61` files, `238` tests). The mobile deployed smoke expectation for `/client/opportunities/new` now matches the workflow-first `TB-0098` behavior and the targeted `mobile-chrome` smoke against `https://trustedbums.com` passes.
-
-Closeout candidates after the next push:
-
-- `TB-0105`: fixed by `8d27912`; deploy `27679784801` passed and E2E was allowed to start.
-- `TB-0106`: fixed by `8d27912`; the detail-page claim flow no longer calls `createBumRepresentedContact()` and `src/test/opportunityClaimStakeholders.test.ts` stays green.
-- `TB-0098`: fixed in source and smoke expectation; mobile route now opens workflow context first and the form remains one tap away.
+_Last updated: 2026-06-18 by Codex daily QA/test engineer automation._
 
 ## Executive Read
 
-Current `main` head `af944fe` (`Allow bums to delete unattached contacts`) is not release-ready.
+Current `main` head `4dfca6111781e0df4b9b6ee14dd811c0d90ac787` has green hosted QA/release evidence, including exact-head Code Review and hosted Visual UI proof.
 
-- GitHub `QA` run `27653495600` on `af944fe`: passed.
-- GitHub `Deploy TrustedBums to DreamHost` run `27653495695` on `af944fe`: failed after the site publish step because the Bing Webmaster URL submission step hit the live daily quota and exited `1`.
-- GitHub `E2E Smoke` run `27653527364` on `af944fe`: skipped because the deploy workflow did not finish cleanly.
-- [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) is stale on older head `f0996c5`, so `TB-0019` is open again for exact-head Code Review.
+- GitHub `QA` run `27753046146` on `4dfca61`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27753046130` on `4dfca61`: passed.
+- GitHub `Visual UI Audit` run `27753060606` on `4dfca61`: passed.
+- GitHub `E2E Smoke` run `27753099729` on `4dfca61`: passed, including `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
+- Latest standalone `Deep QA Hotfix Audit` success is still stale on `850e507`, but deploy-triggered deep QA on the current head is green and is the fresher evidence surface.
+- [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) records `GO` for `4dfca6111781e0df4b9b6ee14dd811c0d90ac787`, and live tracker `TB-0019` is closed on the same head.
 
-Current-session local QA preflight still separates the shell-env contract from the product state:
+Current-session local preflight stayed split across the expected three QA env surfaces:
 
-- Raw `corepack pnpm run qa:env`: failed in a fresh shell because QA variables were not exported.
+- Raw `corepack pnpm run qa:env`: failed because the shell did not have `QA_BASE_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `QA_ADMIN_EMAIL`, `QA_CLIENT_ADMIN_EMAIL`, `QA_CLIENT_FINANCE_EMAIL`, `QA_CLIENT_MEMBER_EMAIL`, and `QA_BUM_EMAIL` exported.
 - Sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`: passed.
 - Sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:target-preflight`: passed against `https://trustedbums.com`.
-- Focused current-worktree regression pack passed: `src/test/bumContactsMutationContract.test.ts`, `src/test/opportunityClaimStakeholders.test.ts`, and `src/test/e2eSmokeRegression.test.ts` (`18` tests total).
+- Focused current-head regression pack passed: `src/test/opportunityClaimStakeholders.test.ts`, `src/test/clientCommissionPlans.test.ts`, `src/test/e2eSmokeRegression.test.ts`, `src/test/uiVisualCleanup.test.ts`, and `src/test/scrumQueueRegression.test.ts` (`34/34`).
+- Focused Visual UI harness fix passed against `https://trustedbums.com`: `public marketing and privacy states render cleanly` plus `client admin interactive states render cleanly` on both `chromium` and `mobile-chrome`.
 
-That local green pack does not clear the current head. Exact-head source review found a real product bug on `af944fe`: the detail-page claim flow still creates a manual represented-contact row even though My Contacts already synthesizes claim-backed rows from `opportunity_claims`, so the same person can appear twice. QA logged that as `[TB-0106]`.
+Closed items validated by current source, live Supabase state, or current hosted evidence and not reopened here: `TB-0032`, `TB-0054`, `TB-0098`, `TB-0105`, `TB-0106`, `TB-0108`, and `TB-0110`.
 
 ## Active Recommendations
 
-### P1 - [TB-0105] Keep Bing Webmaster quota from failing deploy after publish
-- Evidence: GitHub `QA` `27653495600` passed on `af944fe`, but deploy run `27653495695` failed in `Submit sitemap and URLs to Bing Webmaster API` after the DreamHost publish step, live Bing health, and IndexNow steps had already succeeded. The failed log ended with `Bing Webmaster API SubmitUrlBatch failed with HTTP 400: {"ErrorCode":2,"Message":"ERROR!!! You have exceeded your daily url submission quota : 100"}`. The earlier quota-handling commit `12d777f` only parses quota messages that include `Quota remaining for today`, so the real GitHub error text still bubbles out as a hard failure. `E2E Smoke` `27653527364` then skipped because the deploy workflow did not complete successfully.
-- Why it matters: Current release evidence is being blocked by a post-publish search-submission step instead of a product or deploy failure. That leaves exact-head smoke evidence incomplete and hides whether the shipped site is actually healthy.
-- Recommendation: Treat Bing Webmaster URL batch submission as quota-aware best-effort after publish. Update the script to recognize the real quota-exhausted error shape, and/or make the workflow fail soft after the site is already deployed while still logging the skipped submission.
-- Acceptance criteria: a rerun on the next head still publishes the site, records Bing quota exhaustion as a non-blocking outcome when applicable, and allows exact-head `E2E Smoke` to run instead of skipping.
+### P1 - [TB-0019] Refresh exact-head Code Review
+- Evidence: `main` is now `4dfca6111781e0df4b9b6ee14dd811c0d90ac787`, [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) records `GO` for that head, and live tracker row `TB-0019` is closed with matching hosted run evidence.
+- Why it matters: closed. Release and QA docs can now claim exact-head review coverage for the pushed head.
+- Recommendation: no action unless `main` advances again.
+- Acceptance criteria: met.
 
-### P1 - [TB-0106] Stop detail-page claims from duplicating My Contacts rows
-- Evidence: Exact head `af944fe` still calls `createBumRepresentedContact()` inside [`src/pages/bum/BumOpportunityDetail.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumOpportunityDetail.tsx) after a successful decision-maker-match claim. The represented-contacts list in [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts) also derives `OPPORTUNITY_CLAIM` rows directly from `opportunity_claims`, so the same person can surface twice in My Contacts. The current worktree already contains a narrow follow-up diff and a new contract expectation in [`src/test/opportunityClaimStakeholders.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/opportunityClaimStakeholders.test.ts) that remove the manual-row side effect and keep only cache invalidation.
-- Why it matters: After `af944fe`, Bums can now delete unattached manual contacts. Duplicate rows would leave one claim-backed row correctly locked and a second manual row inconsistently deletable, which makes the new contact-management behavior look broken even though the real bug is the extra row.
-- Recommendation: Remove the detail-page manual-contact side effect for claim-backed matches and keep one focused regression that proves a detail-page claim invalidates My Contacts without creating a second manual row.
-- Acceptance criteria: a detail-page claim for a suggested decision-maker match yields only the claim-backed My Contacts entry, no extra manual `bum_contacts` row is created, and the regression is covered by at least one focused contract or browser proof.
-
-### P1 - [TB-0019] Refresh exact-head Code Review for `af944fe`
-- Evidence: `main` advanced to `af944fe27b0ed851ce2b85dae99304a5b0c3a0bd`, but [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still records `GO` for older head `f0996c5c9f4304d36ab57908c4da34d05efc4ab6` at `2026-06-16T17:00:18Z`. Exact-head `QA` is green, but current-head deploy and smoke evidence are incomplete, so the pre-main review marker is not current for the code now on `main`.
-- Why it matters: Release and QA docs cannot treat exact-head Code Review as closed once `main` moves past the reviewed SHA.
-- Recommendation: Re-run Code Review for `af944fe` after the release-workflow blocker is understood so the exact-head review notes match the code and post-main QA plan currently under discussion.
-- Acceptance criteria: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) points at `af944fe...`, and `TB-0019` can close again with the matching exact-head review evidence.
+### P2 - Refresh exact-head `Visual UI Audit`
+- Evidence: hosted `Visual UI Audit` `27753060606` passed on `4dfca61` after the harness fix.
+- Why it matters: closed. The latest pushed head now has hosted screenshot coverage for the affected UI states.
+- Recommendation: no action unless a future UI head changes.
+- Acceptance criteria: met.
 
 ## Business Access Coverage
 
 ### Bum represented contacts and detail-page claim flows
-- Roles: Bum allow for own manual contacts, own claim-backed contacts, own prospect contacts, own target-response contacts, and own extension captures; unrelated Bums and client-company users deny unless a separate business rule explicitly grants access; Admin may troubleshoot.
-- Current proof: Current local contract coverage proves manual contact add/delete wiring, claim-contact synthesis, and the non-delete guard for `OPPORTUNITY_CLAIM` rows. Sourced current-session preflight passed against `https://trustedbums.com`. The exact head also still uses signed-in portal-contact mutations and claim-backed contact synthesis.
-- Missing allow or deny proof: one authenticated browser or direct-data proof that a decision-maker-match claim creates only the claim-backed contact projection and not a second manual row; one deny proof that foreign Bums cannot read or mutate another Bum's contacts after the delete-contact change; and one current-head browser proof for the delete path once the duplicate-row bug is fixed.
-- Seed data needed: one Bum with a decision-maker-match claim path, one foreign Bum deny case, and cleanup-safe tagged contacts that can be created and removed without contaminating later runs.
+- Current proof: exact-head source in [`src/pages/bum/BumOpportunityDetail.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumOpportunityDetail.tsx) now invalidates `bum-represented-contacts` after claim success without recreating the old manual `createBumRepresentedContact()` side effect, and [`src/test/opportunityClaimStakeholders.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/opportunityClaimStakeholders.test.ts) passed on the current head. Hosted `QA` `27710960865`, deploy `27710961582`, and deploy-triggered `E2E Smoke` `27711014094` are also green on the same head.
+- Missing allow or deny proof: one fresh deny check that a foreign Bum cannot read or mutate another Bum's represented contacts through the current live portal or direct Supabase surface, and one populated-state browser proof that a detail-page claim still yields only the claim-backed contact row on the exact head.
+- Seed data needed: one Bum with a suggested decision-maker claim path, one foreign Bum deny case, and cleanup-safe represented contacts that can be created and removed without contaminating later runs.
+
+### Claim notification preview view
+- Current proof: live Supabase on project `vaoqvtxqvbptyxddpoju` now reports `public.claim_client_notification_previews` with `security_invoker=true` and only `authenticated SELECT`; older `TB-0108` closure remains consistent with current live SQL.
+- Missing allow or deny proof: if this view changes again, QA still needs one exact-head role matrix proving Admin allow, intended same-company client allow, foreign-company deny, Bum deny, and public deny using the real production token shape.
+- Seed data needed: one claim with notification preview rows visible to the intended client company, one foreign-company client, one Bum, and one unauthenticated request surface for deny coverage.
 
 ## Cross-Agent Follow-Ups
 
-### Lead Developer / Release Verification - [TB-0105] Bing quota is blocking release evidence, not the site publish
-- Evidence: deploy `27653495695` published the app and passed live crawler health plus IndexNow before failing on the Bing Webmaster URL batch quota. The subsequent `E2E Smoke` run skipped instead of testing the freshly published site.
-- Requested action: harden the Bing Webmaster submission step so quota exhaustion is logged without aborting post-publish release evidence, then rerun exact-head deploy plus smoke.
+### Code Review Agent / Release Verification - [TB-0019] exact-head review gate drifted closed on the wrong SHA
+- Evidence: closed on `4dfca61`; tracker row `TB-0019` and [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) now match the pushed head.
+- Requested action: keep reviewed-SHA drift as a reopen condition before the next release closeout.
 
-### Lead Developer / Code Review Agent - [TB-0106] exact head still duplicates My Contacts rows after a detail-page claim
-- Evidence: exact-head source still creates a manual represented contact after a claim succeeds, while My Contacts separately synthesizes claim-backed rows. The current worktree follow-up removes that side effect and adds a regression expectation, which means the bug is known locally but not fixed on `main`.
-- Requested action: land the narrow follow-up, then rerun focused QA so the duplicate-row fix is proven on the shipped head rather than only in pending local changes.
+### Release Verification / UI Consultant / UX Consultant - current head visual proof is closed
+- Evidence: hosted `Visual UI Audit` `27753060606` passed on `4dfca61`, replacing failed `57231bf` run `27742677438`.
+- Requested action: no action unless a future UI head changes.
 
-### Code Review Agent / Release Verification - [TB-0019] exact-head review marker is stale again
-- Evidence: `main` is `af944fe`, but the review marker still points at `f0996c5`.
-- Requested action: refresh exact-head Code Review after the release-workflow blocker is handled, and keep release docs from claiming a current-head review until the marker matches.
+### QA Harness Reliability Agent - drop stale `TB-0105` carry-forward from harness language
+- Evidence: current source in [`scripts/bing-webmaster-api.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/bing-webmaster-api.mjs) now treats the real daily-quota error shape as non-blocking, and current hosted deploy plus smoke are both green on `4dfca61`.
+- Requested action: keep `TB-0055` as the only active harness item unless a new exact-head workflow-chain defect reproduces.
 
 ## Coverage Map
 
-- Exact-head GitHub evidence on `af944fe`:
-  - `QA` run `27653495600`: passed.
-  - `Deploy TrustedBums to DreamHost` run `27653495695`: failed after publish on Bing Webmaster URL quota exhaustion.
-  - `E2E Smoke` run `27653527364`: skipped because deploy did not finish green.
-- Current local green in this run:
-  - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`
-  - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:target-preflight`
-  - `corepack pnpm exec vitest run src/test/bumContactsMutationContract.test.ts src/test/opportunityClaimStakeholders.test.ts src/test/e2eSmokeRegression.test.ts`
-- Current local caveat:
-  - raw `corepack pnpm run qa:env` still fails in a fresh shell because required QA variables are not exported by default
-- Current exact-head source finding:
-  - `af944fe` still creates a manual represented-contact row after a detail-page claim for a suggested match; the local follow-up removes that side effect but is not committed or deployed
+- Exact-head GitHub evidence on `4dfca61`:
+  - `QA` run `27753046146`: passed.
+  - `Deploy TrustedBums to DreamHost` run `27753046130`: passed.
+  - `Visual UI Audit` run `27753060606`: passed.
+  - `E2E Smoke` run `27753099729`: passed.
+  - `E2E Smoke` deep jobs on `27753099729`: `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)` all passed.
+- Current exact-head hosted gaps:
+  - no newer standalone `Deep QA Hotfix Audit` run than `27092527987`, although deploy-triggered deep QA is current
+- Current local proof in this pass:
+  - raw `corepack pnpm run qa:env` failed with missing exported QA variables
+  - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env` passed
+  - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:target-preflight` passed
+  - `corepack pnpm exec vitest run src/test/opportunityClaimStakeholders.test.ts src/test/clientCommissionPlans.test.ts src/test/e2eSmokeRegression.test.ts src/test/uiVisualCleanup.test.ts src/test/scrumQueueRegression.test.ts` passed
+  - fixed-spec `tests/e2e/visual-ui-audit.spec.ts` passed the failed public/client-admin slices against `https://trustedbums.com` on `chromium` and `mobile-chrome`
+- Current live Supabase proof:
+  - project `vaoqvtxqvbptyxddpoju` is visible and healthy
+  - `claim_client_notification_previews` is `security_invoker=true`
+  - grants on `claim_client_notification_previews` are limited to `authenticated SELECT` plus internal `postgres` and `service_role` access
 
 ## Watchlist
 
-- Do not treat `QA` `27653495600` as release-ready proof for `af944fe`; exact-head deploy, smoke, visual, and Code Review are incomplete.
-- Do not treat the current worktree follow-up for the duplicate-contact bug as shipped proof. It is source evidence of the fix direction, not exact-head release evidence.
-- Do not blame the Bing quota failure on the delete-contact feature itself. Current local contact and claim contract tests stayed green; the release blocker is the post-publish workflow branch.
-- Do not reopen older closed QA items such as `TB-0054`, `TB-0086`, or `TB-0091` without current contradictory evidence; the live tracker currently keeps those closed.
+- Do not treat the stale standalone `Deep QA Hotfix Audit` run as a current blocker while deploy-triggered deep QA is green on `4dfca61`.
+- Keep raw-shell, sourced `.env.qa`, and hosted workflow env states separate in every QA handoff. The raw-shell failure is still a local shell-contract issue, not a hosted regression.
+- Keep `https://rcdl.tplinkdns.com` on the trust/release watchlist. Current runner checks still fail TLS on that fallback host even though `https://trustedbums.com` is healthy.
 
 ## Current Standards And Time-Sensitive Notes
 
-- Playwright still recommends testing user-visible behavior, keeping tests isolated, and avoiding third-party dependencies you do not control. That supports keeping the detail-page claim regression focused on the rendered contact outcome instead of source-shape trivia, while mocking external dependencies where appropriate. Sources: [Playwright Best Practices](https://playwright.dev/docs/best-practices).
-- Vitest still documents focused mocking and controlled test context patterns. That supports a narrow regression around the post-claim contact side effect instead of broad string-only assertions or overcoupled file scans. Source: [Vitest Mocking Guide](https://vitest.dev/guide/mocking.html).
-- GitHub Actions still applies `success()` by default and documents `!cancelled()` / status-condition control for steps and jobs that should continue despite a non-critical earlier failure. That supports treating quota-limited Bing Webmaster submission as a fail-soft post-publish step so hosted smoke can still run. Source: [GitHub Actions Expressions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions).
+- Playwright still recommends testing user-visible behavior and keeping tests isolated, which supports the current focused stakeholder and route-regression packs instead of implementation-detail assertions. Source: [Playwright Best Practices](https://playwright.dev/docs/best-practices).
+- GitHub Actions still applies a default `success()` status check unless a step or job uses an explicit status function, which is why the deploy-triggered smoke chain needs exact-head workflow conclusions to stay green when downstream proof depends on them. Source: [GitHub Actions Expressions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions).
+- Supabase still documents that views bypass RLS by default and that Postgres 15+ should use `security_invoker = true` when exposed roles need the underlying-table policies to apply. That remains the right validation frame for future claim-preview view changes. Source: [Supabase Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security).
 
 ## Access Requests And Evidence Gaps
 
-- Provide one exact-head Visual UI Audit run or an explicit release-policy note that visual evidence is intentionally deferred for this head.
-- Provide cleanup-safe authenticated browser proof for the duplicate-contact fix once it lands so QA can validate the fix on the deployed head rather than only by source review.
-- Clarify whether Bing Webmaster URL batch submission is a required release gate or a best-effort trust signal once the site publish and public health checks have already succeeded.
+- No current Visual UI access gap remains for `4dfca61`; rerun only after a future UI-affecting head.
+- Provide one cleanup-safe populated-state browser proof for the detail-page claim to My Contacts path on the current head so `TB-0106` stays closed on more than source and focused regression evidence.
+- Provide one current exact-head allow or deny role matrix for `claim_client_notification_previews` if that view is changed again or reused in a broader portal surface.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-17.
-- Files, docs, workflows, tracker rows, internet sources, and commands reviewed:
-  - current role prompt and shared rules in `docs/agents/automation-prompts/trusted-bums-daily-qa-test-engineer.toml`, `docs/agents/consultant-team-rules.md`, `docs/agents/company-wide-rules.md`, `docs/agents/consultant-access-needs.md`, and `docs/agents/business-access-rules.md`
-  - current QA, release, lead, access-needs, business-access, and edit-log docs
-  - `git status --short`
-  - `git rev-parse HEAD`
-  - `git log --oneline -5`
-  - `git show --stat --summary af944fe`
-  - `git show af944fe:src/pages/bum/BumOpportunityDetail.tsx`
-  - `git diff -- src/pages/bum/BumOpportunityDetail.tsx src/test/opportunityClaimStakeholders.test.ts`
+- Date of run: 2026-06-18.
+- Files, tests, routes, tracker rows, CI evidence, and internet sources reviewed:
+  - `docs/agents/automation-prompts/trusted-bums-daily-qa-test-engineer.toml`
+  - `docs/agents/consultant-team-rules.md`
+  - `docs/agents/company-wide-rules.md`
+  - `docs/agents/consultant-access-needs.md`
+  - `docs/agents/business-access-rules.md`
+  - `docs/business-workflow-qa-contract.md`
+  - `docs/qa-test-backlog.md`
+  - `docs/release-verification-backlog.md`
+  - `docs/qa-harness-reliability-backlog.md`
+  - `docs/security-review-backlog.md`
+  - `docs/product-ops-workflow-backlog.md`
+  - `docs/ux-optimization-backlog.md`
+  - `docs/codex-edit-log.md`
   - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json)
-  - `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 20 --json ...`
-  - `/Users/macdaddy/bin/gh-trustedbums run view 27653495695 --repo Pidpoddev/trustedbums --json ...`
-  - `/Users/macdaddy/bin/gh-trustedbums run view 27653495695 --repo Pidpoddev/trustedbums --log-failed`
-  - `/Users/macdaddy/bin/gh-trustedbums run view 27653495600 --repo Pidpoddev/trustedbums --json ...`
-  - `/Users/macdaddy/bin/gh-trustedbums run view 27653527364 --repo Pidpoddev/trustedbums --json ...`
+  - `git rev-parse HEAD`
+  - `git status --short`
+  - `git log --oneline --decorate -5`
+  - `git show --stat --summary --name-only HEAD`
+  - `gh run list --limit 20 --json ...`
+  - `gh run list --workflow "Visual UI Audit" --limit 8 --json ...`
+  - `gh run list --workflow "Deep QA Hotfix Audit" --limit 8 --json ...`
+  - `gh run view 27710960865 --json jobs,...`
+  - `gh run view 27711014094 --json jobs,...`
+  - `gh run download 27711014094 --dir /tmp/tb-e2e-27711014094`
   - raw `corepack pnpm run qa:env`
   - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`
   - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:target-preflight`
-  - `corepack pnpm exec vitest run src/test/bumContactsMutationContract.test.ts src/test/opportunityClaimStakeholders.test.ts src/test/e2eSmokeRegression.test.ts`
-  - live Supabase project confirmation and tracker SQL for `TB-0019`, `TB-0105`, and `TB-0106`
+  - `corepack pnpm exec vitest run src/test/opportunityClaimStakeholders.test.ts src/test/clientCommissionPlans.test.ts src/test/e2eSmokeRegression.test.ts src/test/uiVisualCleanup.test.ts src/test/scrumQueueRegression.test.ts`
+  - `curl -I -L --max-time 20 https://trustedbums.com`
+  - `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`
+  - `mcp__codex_apps__supabase._list_projects`
+  - `mcp__codex_apps__supabase._execute_sql` for tracker rows, tracker schema, `claim_client_notification_previews` grants, and `security_invoker` verification on project `vaoqvtxqvbptyxddpoju`
   - current official guidance reviewed:
     - [Playwright Best Practices](https://playwright.dev/docs/best-practices)
-    - [Vitest Mocking Guide](https://vitest.dev/guide/mocking.html)
     - [GitHub Actions Expressions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions)
+    - [Supabase Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)
+- Tracker closeout sweep completed in this run:
+  - revalidated `TB-0032`, `TB-0054`, `TB-0098`, `TB-0105`, `TB-0106`, `TB-0108`, and `TB-0110` as still closed on current head evidence
+  - reopened and reclosed `TB-0019` because the review marker and tracker row had drifted closed on older head `346a21a`; it now closes on `4dfca61` with matching hosted proof
 - Checks that could not fully close and why:
-  - exact-head deploy is not green because the post-publish Bing Webmaster URL batch step exhausted daily quota
-  - exact-head `E2E Smoke` skipped because it depends on a successful deploy workflow
-  - no current-head Visual UI Audit run was available in this session
-  - exact-head Code Review is stale because the current marker still points at older head `f0996c5`
+  - no newer standalone `Deep QA Hotfix Audit` run exists yet than `27092527987`, though deploy-triggered deep QA is current
+  - populated-state browser proof for current-head claim-contact deduplication was not regenerated in this pass

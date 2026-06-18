@@ -1,6 +1,6 @@
 # Trusted Bums Agent Operations Backlog
 
-_Last updated: 2026-06-15 by Codex automation alignment pass._
+_Last updated: 2026-06-17 by Codex failure-learning rule update._
 
 ## Executive Read
 
@@ -8,11 +8,16 @@ The active Trusted Bums automation stack is present and runnable from this proje
 
 The previous live-registry versus repo-snapshot automation drift has been fixed. Repo prompt snapshots now use the concrete project cwd instead of `"<PROJECT_ROOT>"`, the recurring specialist batch metadata matches the live registry schedule/model/reasoning profile, and the UX, Lead Developer Scrum, and Trust role names now match the live automation ids/names. The live QA Test Engineer automation prompt was also updated with the stricter post-development regression root-cause and producing-agent feedback rule.
 
-The remaining major mismatch is duplicate root-vs-`docs/agents` rule files drifting in both directions. `docs/consultant-team-rules.md`, `docs/company-wide-rules.md`, `docs/consultant-access-needs.md`, and `docs/business-access-rules.md` still need one authoritative copy strategy so different agents do not read materially different instructions depending on which path they hit first.
+The remaining major mismatch is duplicate root-vs-`docs/agents` rule files drifting in both directions. `docs/consultant-team-rules.md`, `docs/company-wide-rules.md`, `docs/consultant-access-needs.md`, and `docs/business-access-rules.md` still need one authoritative copy strategy so different agents do not read materially different instructions depending on which path they hit first. The root and agent-pack consultant rules now both carry the same failure-learning contract, so user-reported failures should trigger a systemic escaped-defect review instead of only an immediate patch.
 
 No recurring agent appears to be missing from the live registry. No pause/remove action is recommended today. The required follow-up is now the duplicated shared-rule doc reconciliation and the optional roster table.
 
 ## Active Agent Operations Fixes
+
+### Resolved 2026-06-17 - Add shared escaped-defect learning contract
+- Evidence: Ryan clarified that when something is not working, the agent system should learn from the failure and add a durable guardrail, clarify the business rule, or update the producing agent instead of only fixing the immediate symptom. `docs/consultant-team-rules.md`, `docs/agents/consultant-team-rules.md`, and `docs/agents/README.md` now require escaped-defect review, root-cause framing, a prevention path, and producing-agent feedback.
+- Why it matters: Go-live risk increases if repeated mistakes remain isolated chat fixes. The shared rule makes self-correction part of the done criteria for user-reported failures.
+- Verification: The new contract is present in both consultant-rule copies and the agent-pack README. Weekly Agent Operations should verify automation prompts and specialist backlogs continue to honor it when real failures occur.
 
 ### Resolved 2026-06-15 - Refresh recurring automation snapshot metadata to match the live registry
 - Evidence: `docs/agents/automation-prompts/*.toml` no longer contains `"<PROJECT_ROOT>"`, `CodexFiles`, or `/Volumes` references, and every snapshot `cwds` entry now points at `/Users/macdaddy/CodexWork/TrustedBums/trustedbums`. Recurring specialist snapshots were rebaselined to the live 3 AM `gpt-5.4` / high-reasoning batch profile where applicable, and UX, Lead Developer Scrum, and Trust naming now matches the live automation ids/names.

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const bumContactsSource = readFileSync("src/pages/bum/BumContacts.tsx", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 const portalContactsFunctionSource = readFileSync("supabase/functions/portal-contacts/index.ts", "utf8");
+const innerCircleMigrationSource = readFileSync("supabase/migrations/20260618100000_add_inner_circle_contacts.sql", "utf8");
 const qaAuthorizationCleanup = readFileSync("supabase/qa_authorization_cleanup.sql", "utf8");
 
 describe("Bum manual contact mutation contract", () => {
@@ -11,6 +12,8 @@ describe("Bum manual contact mutation contract", () => {
     expect(bumContactsSource).toContain('if (!contactForm.name.trim()) throw new Error("Contact name is required.");');
     expect(bumContactsSource).toContain("createBumRepresentedContact({");
     expect(bumContactsSource).toContain('trackAnalyticsEvent("trustedbums_contact_added"');
+    expect(bumContactsSource).toContain("isInnerCircle: contactForm.isInnerCircle");
+    expect(bumContactsSource).toContain("inner_circle: contactForm.isInnerCircle");
     expect(bumContactsSource).toContain('queryClient.setQueryData<BumRepresentedContactRecord[]>(["bum-represented-contacts", user?.id]');
     expect(bumContactsSource).toContain('queryClient.invalidateQueries({ queryKey: ["bum-represented-contacts", user?.id] })');
     expect(bumContactsSource).toContain('queryClient.invalidateQueries({ queryKey: ["portal-search", "bum-contacts", user?.id] })');
@@ -25,8 +28,23 @@ describe("Bum manual contact mutation contract", () => {
     expect(portalContactsFunctionSource).toContain('.from("bum_contacts")');
     expect(portalContactsFunctionSource).toContain('source_type: "MANUAL"');
     expect(portalContactsFunctionSource).toContain("bum_user_id: userId");
+    expect(portalContactsFunctionSource).toContain("is_inner_circle: payload.is_inner_circle ?? false");
     expect(portalContactsFunctionSource).toContain('status: "ACTIVE"');
     expect(portalContactsFunctionSource).toContain('return getContactDetail(userId, data.id)');
+  });
+
+  it("adds a capped Inner Circle designation to My Contacts", () => {
+    expect(innerCircleMigrationSource).toContain("add column if not exists is_inner_circle boolean not null default false");
+    expect(innerCircleMigrationSource).toContain("enforce_bum_inner_circle_limit");
+    expect(innerCircleMigrationSource).toContain("Inner Circle is limited to 20 contacts.");
+    expect(innerCircleMigrationSource).toContain("where is_inner_circle and source_type <> 'OPPORTUNITY_CLAIM'");
+    expect(bumContactsSource).toContain("Inner Circle is your private set of strongest trusted relationships.");
+    expect(bumContactsSource).toContain("maximum 20 contacts for now");
+    expect(bumContactsSource).toContain("{innerCircleCount}/20");
+    expect(bumContactsSource).toContain("contact.isInnerCircle");
+    expect(portalApiSource).toContain("isInnerCircle: boolean");
+    expect(portalContactsFunctionSource).toContain("isInnerCircle: Boolean(row.is_inner_circle)");
+    expect(portalContactsFunctionSource).toContain("if (\"isInnerCircle\" in patch) payload.is_inner_circle = patch.isInnerCircle === true;");
   });
 
   it("lets Bums delete contacts unless they are already attached to a Claim", () => {

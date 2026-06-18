@@ -156,9 +156,15 @@ function getWalkthroughSteps(role?: string, clientAccessRole?: string): Walkthro
       },
       {
         title: "Build your relationship map",
-        body: "Use Contacts, Prospective Clients, and Customer Leads to keep track of who you know and where Trusted Bums can create demand.",
+        body: "Start with your Inner Circle: up to 20 trusted direct relationships for now. Mark them in Contacts so they stay visible in My Contacts and on any Claims that use them.",
         route: "/bum/contacts",
         routeLabel: "Open Contacts",
+      },
+      {
+        title: "Grow beyond the Inner Circle",
+        body: "Prospective Clients and Customer Leads help you track the wider relationship map without blurring your strongest trusted contacts.",
+        route: "/bum/prospects",
+        routeLabel: "Open Prospective Clients",
       },
       {
         title: "Complete your Bum profile",

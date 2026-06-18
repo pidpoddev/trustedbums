@@ -23,6 +23,11 @@ interface ClaimRow {
   created_at: string;
   opportunity_registration_id: string | null;
   opportunity_registrations?: OpportunityRow | null;
+  opportunity_claim_contacts?: Array<{
+    is_inner_circle: boolean | null;
+    is_primary: boolean | null;
+    sort_order: number | null;
+  }> | null;
 }
 interface ProspectRecommendationRow {
   id: string;
@@ -85,6 +90,7 @@ interface BumContactRow {
   status: string;
   notes: string | null;
   metadata: Record<string, unknown> | null;
+  is_inner_circle: boolean;
   last_synced_at: string | null;
   created_at: string;
   updated_at: string;
@@ -109,6 +115,7 @@ type SourceContactInput = Pick<
   | "status"
   | "notes"
   | "metadata"
+  | "is_inner_circle"
   | "last_synced_at"
   | "created_at"
 >;
@@ -275,6 +282,7 @@ function mapContact(row: BumContactRow) {
     detailUrl: "/bum/contacts/" + row.id,
     linkedinUrl: row.linkedin_url,
     note: row.notes,
+    isInnerCircle: Boolean(row.is_inner_circle),
     opportunityRegistrationId: row.opportunity_registration_id,
     customerTargetId: row.customer_target_id,
     lastSyncedAt: row.last_synced_at,
@@ -287,7 +295,7 @@ async function buildSourceContacts(userId: string): Promise<SourceContactInput[]
   const [claimsResult, recommendationsResult, contactsResult, targetResponsesResult, extensionCapturesResult] = await Promise.all([
     supabaseAdmin
       .from("opportunity_claims")
-      .select("*, opportunity_registrations(id, target_account_name, company_id, companies(name))")
+      .select("*, opportunity_claim_contacts(is_inner_circle, is_primary, sort_order), opportunity_registrations(id, target_account_name, company_id, companies(name))")
       .eq("bum_user_id", userId)
       .order("created_at", { ascending: false })
       .returns<ClaimRow[]>(),
@@ -325,26 +333,34 @@ async function buildSourceContacts(userId: string): Promise<SourceContactInput[]
   const recommendationById = new Map(recommendations.map((recommendation) => [recommendation.id, recommendation]));
   const ownRecommendationIds = new Set(recommendations.map((recommendation) => recommendation.id));
 
-  const claimContacts: SourceContactInput[] = (claimsResult.data ?? []).map((claim) => ({
-    source_type: "OPPORTUNITY_CLAIM",
-    source_id: claim.id,
-    extension_page_capture_id: null,
-    opportunity_registration_id: claim.opportunity_registration_id,
-    customer_target_id: null,
-    full_name: claim.contact_name,
-    title: null,
-    email: claim.contact_email,
-    company_name: claim.contact_company || claim.opportunity_registrations?.companies?.name || claim.opportunity_registrations?.target_account_name || null,
-    linkedin_url: null,
-    relationship_strength: claim.relationship_strength,
-    status: claim.status,
-    notes: claim.note,
-    metadata: {
-      contextLabel: claim.opportunity_registrations?.target_account_name ? "Opportunity: " + claim.opportunity_registrations.target_account_name : "Opportunity claim",
-    },
-    last_synced_at: null,
-    created_at: claim.created_at,
-  }));
+  const claimContacts: SourceContactInput[] = (claimsResult.data ?? []).map((claim) => {
+    const primaryClaimContact = (claim.opportunity_claim_contacts ?? [])
+      .slice()
+      .sort((left, right) => (left.sort_order ?? 0) - (right.sort_order ?? 0))
+      .find((contact) => contact.is_primary) ?? claim.opportunity_claim_contacts?.[0];
+
+    return {
+      source_type: "OPPORTUNITY_CLAIM",
+      source_id: claim.id,
+      extension_page_capture_id: null,
+      opportunity_registration_id: claim.opportunity_registration_id,
+      customer_target_id: null,
+      full_name: claim.contact_name,
+      title: null,
+      email: claim.contact_email,
+      company_name: claim.contact_company || claim.opportunity_registrations?.companies?.name || claim.opportunity_registrations?.target_account_name || null,
+      linkedin_url: null,
+      relationship_strength: claim.relationship_strength,
+      status: claim.status,
+      notes: claim.note,
+      metadata: {
+        contextLabel: claim.opportunity_registrations?.target_account_name ? "Opportunity: " + claim.opportunity_registrations.target_account_name : "Opportunity claim",
+      },
+      is_inner_circle: Boolean(primaryClaimContact?.is_inner_circle),
+      last_synced_at: null,
+      created_at: claim.created_at,
+    };
+  });
 
   const prospectContacts: SourceContactInput[] = (contactsResult.data ?? [])
     .filter((contact) => contact.recommendation_id && ownRecommendationIds.has(contact.recommendation_id))
@@ -365,6 +381,7 @@ async function buildSourceContacts(userId: string): Promise<SourceContactInput[]
         status: recommendation?.status ?? "PROSPECT",
         notes: recommendation?.notes ?? null,
         metadata: { contextLabel: "Prospect recommendation", recommendationId: contact.recommendation_id },
+        is_inner_circle: false,
         last_synced_at: null,
         created_at: contact.created_at,
       };
@@ -389,6 +406,7 @@ async function buildSourceContacts(userId: string): Promise<SourceContactInput[]
       metadata: {
         contextLabel: response.customer_targets?.client_companies?.name ? "Client target for " + response.customer_targets.client_companies.name : "Client target response",
       },
+      is_inner_circle: false,
       last_synced_at: null,
       created_at: response.created_at,
     };
@@ -425,6 +443,7 @@ async function buildSourceContacts(userId: string): Promise<SourceContactInput[]
         selectedText: capture.selected_text,
         pageTitle: capture.page_title,
       },
+      is_inner_circle: false,
       last_synced_at: capture.created_at,
       created_at: capture.created_at,
     };
@@ -547,6 +566,7 @@ async function contactPayloadFromPatch(userId: string, patch: Record<string, unk
   if ("relationshipStrength" in patch) payload.relationship_strength = normalizeText(patch.relationshipStrength);
   if ("note" in patch) payload.notes = normalizeText(patch.note);
   if ("phoneNumbers" in patch) payload.phone_numbers = normalizePhoneNumbers(patch.phoneNumbers);
+  if ("isInnerCircle" in patch) payload.is_inner_circle = patch.isInnerCircle === true;
 
   if ("opportunityRegistrationId" in patch) {
     const opportunityRegistrationId = normalizeText(patch.opportunityRegistrationId);
@@ -610,6 +630,7 @@ async function createContact(userId: string, patch: Record<string, unknown>) {
       notes: payload.notes ?? null,
       opportunity_registration_id: payload.opportunity_registration_id ?? null,
       customer_target_id: payload.customer_target_id ?? null,
+      is_inner_circle: payload.is_inner_circle ?? false,
       status: "ACTIVE",
       metadata: payload.metadata ?? { contextLabel: "Contact" },
     })

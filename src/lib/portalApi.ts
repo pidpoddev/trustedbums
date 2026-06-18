@@ -614,6 +614,7 @@ export interface BumRepresentedContactRecord {
   detailUrl: string;
   linkedinUrl: string | null;
   note: string | null;
+  isInnerCircle: boolean;
   opportunityRegistrationId?: string | null;
   customerTargetId?: string | null;
   lastSyncedAt?: string | null;
@@ -642,6 +643,7 @@ export interface BumContactUpdateInput {
   linkedinUrl?: string | null;
   relationshipStrength?: string | null;
   note?: string | null;
+  isInnerCircle?: boolean;
   opportunityRegistrationId?: string | null;
   customerTargetId?: string | null;
 }
@@ -1310,6 +1312,7 @@ export interface OpportunityClaimContactRecord {
   buying_role: OpportunityClaimContactBuyingRole;
   relationship_strength: OpportunityClaimStrength;
   note: string | null;
+  is_inner_circle: boolean;
   is_primary: boolean;
   sort_order: number;
   created_at: string;
@@ -1370,6 +1373,7 @@ export interface OpportunityClaimInput {
     relationshipStrength: OpportunityClaimStrength;
     note?: string;
     isPrimary?: boolean;
+    isInnerCircle?: boolean;
   }>;
 }
 
@@ -4413,6 +4417,7 @@ function normalizedClaimContacts(input: OpportunityClaimInput, fallbackCompany: 
           relationshipStrength: input.relationshipStrength,
           note: input.note,
           isPrimary: true,
+          isInnerCircle: false,
         },
       ];
 
@@ -4427,6 +4432,7 @@ function normalizedClaimContacts(input: OpportunityClaimInput, fallbackCompany: 
       relationshipStrength: contact.relationshipStrength,
       note: contact.note?.trim() ?? "",
       isPrimary: Boolean(contact.isPrimary) || index === 0,
+      isInnerCircle: Boolean(contact.isInnerCircle),
       sortOrder: index,
     }))
     .filter((contact) => contact.contactName);
@@ -4445,6 +4451,62 @@ type NormalizedClaimContact = ReturnType<typeof normalizedClaimContacts>[number]
 
 function normalizeClaimContactKey(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase();
+}
+
+function innerCircleContactKeys(contact: {
+  contactName?: string | null;
+  contactCompany?: string | null;
+  contactEmail?: string | null;
+  linkedinUrl?: string | null;
+  full_name?: string | null;
+  company_name?: string | null;
+  email?: string | null;
+  linkedin_url?: string | null;
+}) {
+  const name = normalizeClaimContactKey(contact.contactName ?? contact.full_name);
+  const company = normalizeClaimContactKey(contact.contactCompany ?? contact.company_name);
+  const email = normalizeClaimContactKey(contact.contactEmail ?? contact.email);
+  const linkedin = normalizeClaimContactKey(contact.linkedinUrl ?? contact.linkedin_url);
+  return [
+    name && company ? `name-company:${name}:${company}` : "",
+    email ? `email:${email}` : "",
+    linkedin ? `linkedin:${linkedin}` : "",
+  ].filter(Boolean);
+}
+
+async function applyInnerCircleDesignations(userId: string, contacts: NormalizedClaimContact[]) {
+  const { data, error } = await supabase
+    .from("bum_contacts")
+    .select("full_name, company_name, email, linkedin_url")
+    .eq("bum_user_id", userId)
+    .eq("is_inner_circle", true)
+    .returns<Array<{ full_name: string; company_name: string | null; email: string | null; linkedin_url: string | null }>>();
+
+  if (error) {
+    throw error;
+  }
+
+  const existingInnerCircleContacts = data ?? [];
+  const existingKeys = new Set(existingInnerCircleContacts.flatMap((contact) => innerCircleContactKeys(contact)));
+  const newInnerCircleKeys = new Set<string>();
+
+  const contactsWithInnerCircle = contacts.map((contact) => {
+    const keys = innerCircleContactKeys(contact);
+    const matchesExistingInnerCircle = keys.some((key) => existingKeys.has(key));
+    const isInnerCircle = Boolean(contact.isInnerCircle) || matchesExistingInnerCircle;
+
+    if (contact.isInnerCircle && !matchesExistingInnerCircle && keys[0]) {
+      newInnerCircleKeys.add(keys[0]);
+    }
+
+    return { ...contact, isInnerCircle };
+  });
+
+  if (existingInnerCircleContacts.length + newInnerCircleKeys.size > 20) {
+    throw new Error("Inner Circle is limited to 20 contacts.");
+  }
+
+  return contactsWithInnerCircle;
 }
 
 function isSameClaimContact(claim: Pick<OpportunityClaimRecord, "contact_name" | "contact_company">, contact: NormalizedClaimContact) {
@@ -4616,7 +4678,7 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
     throw new Error("That opportunity already has an accepted intro request.");
   }
 
-  const claimContacts = normalizedClaimContacts(input, opportunity.target_account_name);
+  const claimContacts = await applyInnerCircleDesignations(user.id, normalizedClaimContacts(input, opportunity.target_account_name));
   const primaryContact = claimContacts.find((contact) => contact.isPrimary) ?? claimContacts[0];
   const claimNote = [
     toNullableString(input.note),
@@ -4674,6 +4736,7 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
         buying_role: contact.buyingRole,
         relationship_strength: contact.relationshipStrength,
         note: toNullableString(contact.note),
+        is_inner_circle: contact.isInnerCircle,
         is_primary: index === 0,
         sort_order: index,
       })),
@@ -4696,6 +4759,7 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
     contact_company: data.contact_company,
     relationship_strength: data.relationship_strength,
     contact_count: data.opportunity_claim_contacts.length,
+    inner_circle_contact_count: data.opportunity_claim_contacts.filter((contact) => contact.is_inner_circle).length,
   });
 
   await sendAdminEmail({
@@ -4710,7 +4774,7 @@ export async function createOpportunityClaim(user: AuthUser, input: OpportunityC
       contact_email: data.contact_email ?? "",
       relationship_strength: data.relationship_strength,
       introduced_contacts: (data.opportunity_claim_contacts ?? [])
-        .map((contact) => `${contact.contact_name} - ${contact.buying_role.replaceAll("_", " ").toLowerCase()}`)
+        .map((contact) => `${contact.contact_name} - ${contact.buying_role.replaceAll("_", " ").toLowerCase()}${contact.is_inner_circle ? " - Inner Circle" : ""}`)
         .join("; "),
       bum_name: user.name || user.email,
       admin_note: data.note ?? "",
@@ -6498,6 +6562,7 @@ async function listBumRepresentedContactsFromTables(userId: string) {
     detailUrl: claim.opportunity_registration_id ? "/bum/opportunities/" + claim.opportunity_registration_id : "/bum/claims",
     linkedinUrl: null,
     note: claim.note,
+    isInnerCircle: false,
     created_at: claim.created_at,
   }));
 
@@ -6518,6 +6583,7 @@ async function listBumRepresentedContactsFromTables(userId: string) {
         detailUrl: "/bum/prospects",
         linkedinUrl: contact.linkedin_url,
         note: recommendation?.notes ?? null,
+        isInnerCircle: false,
         created_at: contact.created_at,
       } satisfies BumRepresentedContactRecord;
     });
@@ -6538,6 +6604,7 @@ async function listBumRepresentedContactsFromTables(userId: string) {
       detailUrl: "/bum/opportunities?search=" + encodeURIComponent(targetName),
       linkedinUrl: null,
       note: normalized.note,
+      isInnerCircle: false,
       created_at: normalized.created_at,
     };
   });
@@ -6566,6 +6633,7 @@ async function listBumRepresentedContactsFromTables(userId: string) {
       detailUrl: extensionCaptureDetailUrl(capture, companyName),
       linkedinUrl: capture.source_url,
       note: capture.note ?? capture.selected_text,
+      isInnerCircle: false,
       created_at: capture.created_at,
     } satisfies BumRepresentedContactRecord;
   });

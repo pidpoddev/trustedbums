@@ -36,4 +36,11 @@ describe("first login walkthrough", () => {
     expect(walkthroughEventSource).toContain("trustedbums:first-login-walkthrough:disable-autostart");
     expect(walkthroughSource).toContain("FIRST_LOGIN_WALKTHROUGH_AUTOSTART_DISABLED_KEY");
   });
+
+  it("explains the Bum Inner Circle during setup", () => {
+    expect(walkthroughSource).toContain("Start with your Inner Circle");
+    expect(walkthroughSource).toContain("up to 20 trusted direct relationships for now");
+    expect(walkthroughSource).toContain("stay visible in My Contacts and on any Claims that use them");
+    expect(walkthroughSource).toContain("Grow beyond the Inner Circle");
+  });
 });

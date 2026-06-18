@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -60,6 +61,7 @@ interface ClaimContactDraft {
   linkedinUrl: string;
   buyingRole: OpportunityClaimContactBuyingRole;
   relationshipStrength: RelationshipStrength;
+  isInnerCircle: boolean;
   note: string;
 }
 
@@ -89,6 +91,7 @@ function makeClaimContactDraft(overrides: Partial<ClaimContactDraft> = {}): Clai
     linkedinUrl: "",
     buyingRole: "DECISION_MAKER",
     relationshipStrength: "MODERATE",
+    isInnerCircle: false,
     note: "",
     ...overrides,
   };
@@ -180,6 +183,7 @@ export default function BumOpportunityDetail() {
           linkedinUrl: claimContact.linkedinUrl,
           buyingRole: claimContact.buyingRole,
           relationshipStrength: claimContact.relationshipStrength,
+          isInnerCircle: claimContact.isInnerCircle,
           note: claimContact.note,
           isPrimary: index === 0,
         })),
@@ -192,6 +196,7 @@ export default function BumOpportunityDetail() {
         claim_contact_count: claim.opportunity_claim_contacts?.length ?? claimContacts.filter((contact) => contact.contactName.trim()).length,
         has_blocker: claim.opportunity_claim_contacts?.some((contact) => contact.buying_role === "BLOCKER") ?? claimContacts.some((contact) => contact.buyingRole === "BLOCKER" && contact.contactName.trim()),
         has_purchasing_leader: claim.opportunity_claim_contacts?.some((contact) => contact.buying_role === "PURCHASING_LEADER") ?? claimContacts.some((contact) => contact.buyingRole === "PURCHASING_LEADER" && contact.contactName.trim()),
+        inner_circle_contact_count: claim.opportunity_claim_contacts?.filter((contact) => contact.is_inner_circle).length ?? claimContacts.filter((contact) => contact.isInnerCircle && contact.contactName.trim()).length,
       });
       if (decisionMakerMatchForClaim) {
         queryClient.invalidateQueries({ queryKey: ["opportunity-contact-picker", user?.id] });
@@ -595,6 +600,7 @@ export default function BumOpportunityDetail() {
                           <div key={claimContact.id} className="rounded-md border bg-background p-3 text-sm">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-medium">{claimContact.contact_name}</span>
+                              {claimContact.is_inner_circle ? <StatusBadge label="Inner Circle" variant="success" /> : null}
                               <StatusBadge label={buyingRoleLabel(claimContact.buying_role)} variant={claimContact.buying_role === "BLOCKER" ? "warning" : "secondary"} />
                             </div>
                             <p className="mt-1 text-muted-foreground">
@@ -728,6 +734,19 @@ export default function BumOpportunityDetail() {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3 md:col-span-2">
+                      <Checkbox
+                        id={`claim-inner-circle-${claimContact.id}`}
+                        checked={claimContact.isInnerCircle}
+                        onCheckedChange={(checked) => updateClaimContact(claimContact.id, { isInnerCircle: checked === true })}
+                      />
+                      <div className="space-y-1">
+                        <Label htmlFor={`claim-inner-circle-${claimContact.id}`}>Inner Circle contact</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Use this only for your strongest trusted direct relationships. Inner Circle is capped at 20 contacts for now.
+                        </p>
+                      </div>
                     </div>
                   </div>
                   <div className="grid gap-2">

@@ -223,6 +223,7 @@ export default function ClientClaims() {
                           <div key={claimContact.id} className="rounded-lg border bg-background p-3 text-sm">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-medium text-foreground">{claimContact.contact_name}</span>
+                              {claimContact.is_inner_circle ? <StatusBadge label="Inner Circle" variant="success" /> : null}
                               <StatusBadge
                                 label={buyingRoleLabels[claimContact.buying_role]}
                                 variant={claimContact.buying_role === "BLOCKER" ? "warning" : "secondary"}

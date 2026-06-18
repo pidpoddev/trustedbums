@@ -1,17 +1,18 @@
 # Trusted Bums Agent Operating Pack
 
-_Last updated: 2026-06-15 by Codex._
+_Last updated: 2026-06-17 by Codex._
 
 This folder is the repo-shared source for Trusted Bums consultant agents, operating rules, and review gates. It exists so every developer can inspect the same expected behaviors instead of relying on one person's local Codex automation registry.
 
 ## Contents
 
-- `automation-prompts/`: snapshots of the Trusted Bums Codex automation prompts. These are reference definitions for daily UX, UI, content, B2B growth marketing, marketing graphics, accessibility, QA, QA harness reliability, release verification, security, performance, data, product ops, trust/reputation, lead developer, weekly agent operations, and on-demand Chief Marketing Officer, Technology Architect, legal/compliance, and decision-maker researcher agents.
+- `automation-prompts/`: snapshots of the Trusted Bums Codex automation prompts. These are reference definitions for daily UX, UI, content, B2B growth marketing, Bum Supply Leader, marketing graphics, accessibility, QA, QA harness reliability, release verification, security, performance, data, product ops, trust/reputation, lead developer, weekly agent operations, and on-demand CEO, Chief Marketing Officer, Technology Architect, legal/compliance, and decision-maker researcher agents.
 - `consultant-team-rules.md`: shared behavioral rules and handoff expectations for every specialist.
 - `company-wide-rules.md`: durable company, product, website, workflow, terminology, trust, and operating rules Ryan has clarified.
 - `../codex-edit-log.md`: running implementation log and next-run recheck queue that specialists should consult before preserving stale recommendations.
 - `../trusted-bums-gtm-agent-stack.md`: GTM agent stack map linking growth, creative, trust, data, product ops, QA, and implementation handoffs.
 - `../decision-maker-researcher.md`: public-web decision-maker research playbook, scoring model, LinkedIn boundary, and import-ready output schema.
+- `../ai-cmo-agent-backlog.md`: AI Chief Marketing Officer backlog for basic marketing strategy, public credibility, LinkedIn/company profile work, buyer-led positioning, and Growth ELT handoffs.
 - `../first-call-deck-playbook.md`: Chief Marketing Officer-owned workflow for customized prospect-specific First Call Decks.
 - `consultant-access-needs.md`: durable list of access, dashboard, connector, QA, and evidence gaps that limit consultant quality.
 - `../google-analytics-api.md`: local Google Analytics Data/Admin API setup for agent-safe aggregate reporting without automating the GA web UI.
@@ -19,9 +20,11 @@ This folder is the repo-shared source for Trusted Bums consultant agents, operat
 - `business-access-rules.md`: role and data access expectations used by Security, QA, Data, Product Ops, Lead Developer, and Code Review.
 - `code-review-agent.md`: pre-main Code Review Agent contract, GO/NO-GO output format, and Lead Developer handoff rules.
 - `../b2b-marketing-growth-backlog.md`: growth strategy backlog for increasing qualified Bums and Clients while preserving marketplace quality and trust.
+- `../bum-supply-leader-backlog.md`: Bum Supply Leader operating backlog for BlackCurrant relationship supply, Managing Bum / Opportunity Scout paths, candidate Bum/referrer ask packs, and supply scorecards.
 - `../release-verification-backlog.md`: release evidence, GO/NO-GO/HOLD/HOTFIX/ROLLBACK status, and cross-agent release follow-ups.
 - `../qa-harness-reliability-backlog.md`: QA workflow, Playwright, env-contract, artifact, and Deep QA reliability backlog.
 - `../agent-operations-backlog.md`: weekly automation, prompt, schedule, and source-of-truth synchronization audit.
+- `../ceo-agent-operating-backlog.md`: CEO Agent operating backlog for business-wide decisions, organizational design, engineering architecture fit, agent creation recommendations, automations/triggers, goal-agent proposals, human staffing recommendations, and marketplace proof priorities.
 - `../technology-architecture-backlog.md`: on-demand platform architecture review backlog for frontend, backend, data, integrations, delivery, observability, maintainability, and architecture decision gaps.
 
 ## Scrum Tracker Contract
@@ -29,6 +32,12 @@ This folder is the repo-shared source for Trusted Bums consultant agents, operat
 Every agent must create or update an Admin Tools Scrum Tracker item for any recommendation, bug, release blocker, QA gap, security finding, access blocker, or implementation follow-up it keeps active or closes. Agents must get the generated `TB-` tracking ID back and cite it in their handoff or backlog entry.
 
 Tracker entries live in `/admin/scrum` and `public.admin_scrum_items`. Set `added_by_agent` to the agent name, classify true defects with `item_type = BUG`, and use a stable `source_key` for imported git commits, GitHub runs, or backlog sections so repeated runs update the same item instead of creating duplicates. Before opening a new item, search existing open, blocked, fixed, and recently closed tracker rows by `source_key`, title, affected route/table/workflow, GitHub commit/run ID, backlog heading, and related `TB-` references. When the best action is to add context to another agent's existing ticket, update that existing `TB-` item with the additional evidence, affected agent, recommendation, or blocker and cite the same `TB-` number in the handoff.
+
+## Failure Learning Contract
+
+When Ryan reports that something is not working, every agent must treat the report as an escaped-defect review. The agent should still fix the immediate issue when it can, but the handoff is incomplete until it records the failed user job, why the failure got through the existing gates, and the durable prevention path.
+
+The durable prevention path must be one of: an executable guardrail in tests, CI, preflight, monitoring, or allow/deny coverage; a business-rule clarification request when expected behavior is not settled; a fail-closed or self-correcting product/code change; or an explicit accepted-risk note in the relevant backlog and tracker row. If the failure traces to a producing agent, that agent's prompt, backlog, acceptance criteria, or handoff must be updated in the same session. If ownership is unclear, update the broadest gate that can prevent recurrence.
 
 ## Shared Evidence Sources
 
@@ -65,6 +74,8 @@ Current rebaseline: merged `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2
 - Code Review Agent: owns exact-commit pre-main `GO` or `NO-GO`. It updates the local `.codex-review-decision.json` only after reviewing the exact head and does not replace Release Verification.
 - Release Verification Agent: owns post-main release verdicts: `GO`, `NO-GO`, `HOLD-DEPLOY`, `HOTFIX-FORWARD`, `ROLLBACK`, or `UNKNOWN`. It can hold a release even when Code Review has approved the commit.
 - Lead Developer Scrum: owns synthesis, engineering priority, sequencing, and recommendation classification such as `READY`, `BLOCKED BY ACCESS`, `BLOCKED BY ANOTHER SPECIALIST`, `NEEDS QA PROOF`, and `STALE`. It does not override Code Review or Release Verification.
+- CEO Agent: owns business-wide operating decisions, organizational design, marketplace proof priorities, engineering architecture fit questions, agent creation recommendations, automations/triggers, goal-agent proposals, and human staffing recommendations. It can assign proposed operating owners and escalation paths, but it does not override Code Review, Release Verification, Security, Legal/Compliance, or Ryan's explicit decisions.
+- ELT role handles: `CEO`, `Ops`, `Supply`, `Product`, `Growth`, `Risk`, `Finance`, and `Staff` are the short executive-seat names for go-live operating reviews. Specialist agents report into or support those seats; they are not all ELT members by default. Missing ELT seats should trigger an AI-agent hire recommendation unless a human or hybrid owner is required.
 - QA Test Engineer: owns product workflow coverage, role access coverage, and release-risk findings. It can require `HOLD` or `NEEDS QA PROOF` evidence but does not issue final release `GO`.
 - QA Harness Reliability Agent: owns workflow health, visual/deep/smoke reliability, Playwright helpers, artifact capture, and evidence durability.
 - Security Engineer: owns auth, RLS, Supabase grants/functions, secrets, and privileged-path review. Security findings can block or hold release readiness through Code Review, Lead Developer, or Release Verification.
@@ -77,10 +88,12 @@ Current rebaseline: merged `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2
 - Daily QA Test Engineer: product QA coverage, release-risk findings, business-access test matrix, and cross-agent failure feedback.
 - Daily QA Harness Reliability Agent: QA machinery health, flaky workflow diagnosis, Deep QA splitting, browser/session helpers, artifact capture, and `.env.qa` contract reliability.
 - Daily Release Verification Agent: release evidence status after QA or main changes, including GO/NO-GO/HOLD/HOTFIX/ROLLBACK recommendations.
-- Daily specialist agents: UX, UI, Content, Marketing Graphics, B2B Growth, Accessibility, Security, Performance, Data, Product Ops, Trust & Reputation.
+- Daily specialist agents: UX, UI, Content, Marketing Graphics, B2B Growth, Bum Supply Leader, Accessibility, Security, Performance, Data, Product Ops, Trust & Reputation.
 - Daily Lead Developer Scrum: synthesis, engineering priority, cross-specialist tradeoff classification, and implementation sequencing.
 - Weekly Agent Operations Steward: prompt/schedule/source-of-truth synchronization.
-- On-demand Chief Marketing Officer Agent: buyer-led marketing strategy, self-service sales influence, First Call Deck strategy, and prospect-specific deck generation.
+- On-demand CEO Agent: Co-CEO operating partner for go-live priorities, organizational design, marketplace liquidity, client/opportunity ownership, engineering architecture fit, agent hiring, automations/triggers, goal-agent proposals, and human staffing recommendations.
+- Recommended ELT AI-agent seats to create or map during go-live: `Ops Agent` for marketplace operations and BlackCurrant execution; `Supply Agent` for Bum supply, Managing Bums, Opportunity Scouts, and trusted-referrer paths; `Finance Agent` for unit economics, payout waterfalls, and scorecards; and `Staff Agent` for executive cadence, decision logs, action follow-up, and agent-performance reviews.
+- AI Chief Marketing Officer Agent: `Growth` ELT doer for basic marketing strategy, public credibility, buyer-led positioning, self-service sales influence, First Call Deck strategy, and prospect-specific deck generation. Public publishing, paid campaigns, customer/reference claims, and external outreach require Ryan or named human-owner approval.
 - On-demand Technology Architect Agent: platform architecture review, system map, cross-cutting technical recommendations, architecture decision records, and maintainability/release-safety risk analysis.
 - On-demand Code Review Agent: exact-commit pre-main GO/NO-GO review.
 - On-demand Legal/Compliance Reviewer: legal, finance, privacy, consent, agreement, commission, endorsement, and claims-sensitive review.

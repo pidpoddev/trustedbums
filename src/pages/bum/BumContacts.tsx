@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, ExternalLink, Mail, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
+import { Building2, ExternalLink, Mail, Phone, Plus, Search, Sparkles, Trash2, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +51,7 @@ const emptyContactForm = {
   phone: "",
   linkedinUrl: "",
   relationshipStrength: "",
+  isInnerCircle: false,
   note: "",
 };
 
@@ -71,6 +73,7 @@ function searchableText(contact: BumRepresentedContactRecord) {
     contact.contextLabel,
     contact.status,
     contact.relationshipStrength,
+    contact.isInnerCircle ? "inner circle" : "",
     contact.note,
   ]
     .filter(Boolean)
@@ -109,6 +112,7 @@ export default function BumContacts() {
       { OPPORTUNITY_CLAIM: 0, PROSPECT: 0, TARGET_RESPONSE: 0, EXTENSION_CAPTURE: 0, MANUAL: 0 },
     );
   }, [contacts]);
+  const innerCircleCount = useMemo(() => contacts.filter((contact) => contact.isInnerCircle).length, [contacts]);
 
   const addContactMutation = useMutation({
     mutationFn: () => {
@@ -121,6 +125,7 @@ export default function BumContacts() {
         phoneNumbers: contactForm.phone.trim() ? [contactForm.phone.trim()] : [],
         linkedinUrl: contactForm.linkedinUrl.trim(),
         relationshipStrength: contactForm.relationshipStrength,
+        isInnerCircle: contactForm.isInnerCircle,
         note: contactForm.note.trim(),
       });
     },
@@ -128,6 +133,7 @@ export default function BumContacts() {
       trackAnalyticsEvent("trustedbums_contact_added", {
         contact_source: "bum_contacts",
         relationship_strength: contactForm.relationshipStrength || "not_specified",
+        inner_circle: contactForm.isInnerCircle,
         has_email: Boolean(contactForm.email.trim()),
         has_phone: Boolean(contactForm.phone.trim()),
         has_linkedin: Boolean(contactForm.linkedinUrl.trim()),
@@ -140,7 +146,7 @@ export default function BumContacts() {
       queryClient.invalidateQueries({ queryKey: ["portal-search", "bum-contacts", user?.id] });
       setContactForm(emptyContactForm);
       setAddContactOpen(false);
-      toast({ title: "Contact added", description: "The contact is now in your Bum Contacts." });
+      toast({ title: "Contact added", description: "The contact is now in My Contacts." });
     },
     onError: (error) => {
       toast({ title: "Unable to add contact", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
@@ -167,7 +173,7 @@ export default function BumContacts() {
     },
   });
 
-  function updateContactForm(field: keyof typeof emptyContactForm, value: string) {
+  function updateContactForm<K extends keyof typeof emptyContactForm>(field: K, value: (typeof emptyContactForm)[K]) {
     setContactForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -175,7 +181,7 @@ export default function BumContacts() {
     <div className="space-y-6">
       <PageHeader
         title="Contacts"
-        description="See the people you represent across claims, prospect recommendations, client target responses, and LinkedIn captures."
+        description="See the people you represent across claims, prospect recommendations, client target responses, LinkedIn captures, and your Inner Circle."
       >
         <Button onClick={() => setAddContactOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -183,10 +189,14 @@ export default function BumContacts() {
         </Button>
       </PageHeader>
 
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid gap-3 md:grid-cols-6">
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Total contacts</p>
           <p className="mt-1 text-2xl font-semibold">{contacts.length}</p>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <p className="text-sm text-muted-foreground">Inner Circle</p>
+          <p className="mt-1 text-2xl font-semibold">{innerCircleCount}/20</p>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Claim contacts</p>
@@ -235,7 +245,7 @@ export default function BumContacts() {
             <div>
               <p className="font-medium">No represented contacts yet</p>
               <p className="text-sm text-muted-foreground">
-                Add a prospect, respond to a client target, claim an opportunity, or send a LinkedIn profile from the extension to start building your contact list.
+                Add up to 20 Inner Circle contacts first, then add prospects, target responses, claims, or LinkedIn captures as your network grows.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
@@ -263,6 +273,12 @@ export default function BumContacts() {
                 <div className="min-w-0 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-display text-lg font-semibold leading-tight">{contact.name}</h3>
+                    {contact.isInnerCircle ? (
+                      <Badge className="gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        Inner Circle
+                      </Badge>
+                    ) : null}
                     <Badge variant="secondary">{sourceLabels[contact.source]}</Badge>
                     <Badge variant="outline">{contact.status.replaceAll("_", " ")}</Badge>
                   </div>
@@ -410,6 +426,22 @@ export default function BumContacts() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="new-contact-inner-circle"
+                  checked={contactForm.isInnerCircle}
+                  onCheckedChange={(checked) => updateContactForm("isInnerCircle", checked === true)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="new-contact-inner-circle">Add to Inner Circle</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Inner Circle is your private set of strongest trusted relationships. Keep it focused: maximum 20 contacts for now.
+                  </p>
+                </div>
               </div>
             </div>
 

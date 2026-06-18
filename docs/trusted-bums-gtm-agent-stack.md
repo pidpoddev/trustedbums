@@ -6,7 +6,7 @@ This is a practical go-to-market stack for Trusted Bums. It adapts a fractional 
 
 The system is designed to discover missing strategy inputs as it runs. Do not wait for perfect ICP, competitor, proof, or channel definitions before starting. Agent 1 and Agent 6 are responsible for finding and refreshing those inputs.
 
-This GTM stack sits inside the broader Trusted Bums consultant operating pack in `docs/agents/`. The daily specialist agents can support GTM work, but this file is the operating guide for the focused GTM loop. The on-demand Chief Marketing Officer Agent owns buyer-led strategy, self-service sales influence, and customized First Call Decks.
+This GTM stack sits inside the broader Trusted Bums consultant operating pack in `docs/agents/`. The daily specialist agents can support GTM work, but this file is the operating guide for the focused GTM loop. The AI Chief Marketing Officer Agent owns basic marketing strategy, public credibility, buyer-led strategy, self-service sales influence, and customized First Call Decks.
 
 ## Current Product Read
 
@@ -64,7 +64,7 @@ Adjacent non-platform alternatives to monitor:
 
 Run this as a weekly loop:
 
-1. The Chief Marketing Officer Agent sets the buyer-led growth thesis, decides what should be self-service versus human-reviewed, and owns the First Call Deck system.
+1. The Chief Marketing Officer Agent sets the marketing strategy foundation, buyer-led growth thesis, public credibility basics, what should be self-service versus human-reviewed, and owns the First Call Deck system.
 2. Agent 1 refreshes positioning, ICP, proof gaps, and category map.
 3. Agent 2 converts that into a two-sided content and sales enablement plan.
 4. Agent 3 writes the actual assets.
@@ -82,15 +82,15 @@ Do not optimize for content volume first. Optimize for signal quality:
 - Commissionable revenue and payout events.
 - Objections repeated by clients or Bums.
 
-## Chief Marketing Officer Agent: Buyer-Led Growth And First Call Decks
+## Chief Marketing Officer Agent: Strategy, Public Credibility, And First Call Decks
 
 ### Purpose
 
-Set the marketing strategy for influencing qualified Client demand without relying on traditional salesperson explanation. The CMO Agent owns self-service buyer enablement, internal-share assets, proof-safe narrative, and customized First Call Decks for named prospects.
+Set the marketing strategy for influencing qualified Client demand without relying on traditional salesperson explanation. The CMO Agent owns the marketing strategy foundation, public credibility basics, self-service buyer enablement, internal-share assets, proof-safe narrative, and customized First Call Decks for named prospects.
 
 ### When To Run
 
-Run on demand when Ryan wants a prospect-specific First Call Deck, a buyer journey review, a strategic marketing decision, or a synthesis across Growth, Content, Marketing Graphics, Trust, Product Ops, Data, and Legal/Compliance.
+Run on demand when Ryan wants marketing strategy basics, LinkedIn/company profile cleanup, a prospect-specific First Call Deck, a buyer journey review, a strategic marketing decision, or a synthesis across Growth, Content, Marketing Graphics, Trust, Product Ops, Data, and Legal/Compliance.
 
 ### Operating Principles
 

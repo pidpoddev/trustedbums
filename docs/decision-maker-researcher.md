@@ -11,6 +11,7 @@ The researcher is designed for high-trust account access. It should help Trusted
 ## Operating Boundary
 
 - Use public, permission-friendly web sources: company leadership pages, team bios, press releases, SEC filings, annual reports, investor presentations, conference speaker pages, podcast transcripts, standards bodies, regulatory filings, government procurement records, reputable news, company blogs, public project announcements, and industry directories with terms that allow normal browsing.
+- The Org API is an approved evaluation candidate when Trusted Bums has a valid API key and credit budget. Use the official The Org API only, not third-party scrapers. Treat it as an org-chart and reporting-line source for decision-maker hypotheses, not as an automatic outreach or contact-enrichment engine.
 - Do not automate LinkedIn browsing, profile inspection, screenshotting, extraction, connection graph review, or activity review.
 - Do not try to disguise automation, bypass rate limits, defeat bot detection, access private pages, or use personal sessions for automated collection.
 - LinkedIn may be handled only as a human verification step: Trusted Bums can store a user-provided LinkedIn profile URL, manual "still at company" attestation, verification date, and reviewer name.
@@ -21,7 +22,7 @@ The researcher is designed for high-trust account access. It should help Trusted
 
 1. Read the opportunity context: client, target account, product/service, target account notes, deal trigger, geography rules, relationship-quality rules, and commission context.
 2. Define the buying committee for that client service before searching people.
-3. Search public sources for target-account people whose current role matches the buying committee.
+3. Search public sources for target-account people whose current role matches the buying committee. When The Org access is available and approved for the run, use it to identify org-chart hierarchy, managers, board section, reporting lines, and likely buyer functions by company domain.
 4. Capture source-backed evidence for both role fit and current-company fit.
 5. Score each person with the model below.
 6. Output a ranked shortlist and a "needs human verification" queue.
@@ -40,6 +41,21 @@ For BlackCurrant's AI data-center energy infrastructure offer, prioritize these 
 - Secondary influencer: Sustainability, ESG, Public Policy, Community Relations, and Permitting when project risk depends on them.
 
 For BlackCurrant, do not over-rank generic CEO or COO contacts. Energy leadership, data-center leaders, chief development officers, construction/design owners, power procurement owners, utility/grid owners, and infrastructure platform owners are more valuable than broad corporate executives unless the CEO/COO is directly evidenced as owning data-center development, power, or infrastructure delivery. A CEO/COO with only broad corporate authority should usually top out as Priority B.
+
+## The Org API Evaluation Path
+
+Use The Org API as a decision-maker research accelerator only after API access and a credit budget are available.
+
+Initial pilot:
+
+- Scope: run up to four BlackCurrant pilot accounts first: Crusoe, Vantage Data Centers, QTS/Blackstone, and CoreWeave/Oracle.
+- Goal: improve the buyer map and reporting-line hypothesis, not collect direct contact details for outreach.
+- Method: call the official org-chart endpoint by company domain; filter for data-center development, energy, power, construction, design, infrastructure operations, real estate, site selection, investor/board, and executive sponsor functions.
+- Enrichment: enrich only the few roles needed to resolve manager chain or function ambiguity. Do not bulk-enrich contacts.
+- Storage: store person name, title, company, manager or reporting context, section, source label, source URL or API source note, research date, score, and verification status. Do not store work email, phone, or LinkedIn URL unless a storage path and use case have been approved.
+- Verification: The Org rows are source-backed candidates, not outreach-ready contacts. Keep `current_company_verified` as `uncertain` unless confirmed by an official company source or another current reputable source.
+- Supply handoff: convert The Org findings into specific Bum asks: "Who knows this function or this manager chain well enough to be heard?" Then match against Inner Circle and Second Circle routes.
+- Cost control: record credits spent and stop the pilot if org charts do not materially improve the BlackCurrant account map.
 
 ## Scoring Model
 

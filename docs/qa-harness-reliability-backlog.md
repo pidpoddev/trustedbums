@@ -1,58 +1,87 @@
 # Trusted Bums QA Harness Reliability Backlog
 
-_Last updated: 2026-06-17 by Codex daily QA harness reliability automation._
+_Last updated: 2026-06-18 by Codex daily QA harness reliability automation._
 
 ## Executive Read
 
-Current `main` head `af944fe` does not have a newly reproduced auth-helper, navigation-helper, localStorage, or Deep QA shard defect. The exact-head harness chain failed before Playwright browser coverage could run:
+Current `main` head `57231bf75e9900c11aea964ec9999517a831d1ca` does not reproduce an active harness-chain failure. Exact-head hosted QA, deploy, smoke, and deploy-triggered deep QA are all green, and current smoke artifacts retain the preflight summaries that earlier harness runs were trying to restore.
 
-- GitHub `QA` run `27653495600` on `af944fe`: passed.
-- GitHub `Deploy TrustedBums to DreamHost` run `27653495695` on `af944fe`: published the site, passed live Bing crawler health plus IndexNow, then failed in `Submit sitemap and URLs to Bing Webmaster API` on daily quota exhaustion.
-- GitHub `E2E Smoke` run `27653527364` on `af944fe`: skipped because the deploy-triggered `workflow_run` gate only proceeds when deploy concludes `success`.
+- GitHub `QA` run `27710960865` on `57231bf`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27710961582` on `57231bf`: passed.
+- GitHub `E2E Smoke` run `27711014094` on `57231bf`: passed.
+- `27711014094` also passed `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
+- Downloaded `27711014094` artifacts include `qa-target-preflight-artifacts/summary.json` and `summary.txt`.
+- The latest non-current failed smoke run still supports a harness-only diagnosis instead of a product handoff: `E2E Smoke` `27706706707` on `4e96b9ca606d7956d002565724e0a481c1e86a34` passed `smoke`, `Deep QA (admin)`, and `Deep QA (bum)`, but `Deep QA (client)` failed before any protected route audit because `qa:target-preflight` logged `FAIL HTTPS: fetch failed`, then logged a second-order `FAIL App shell` only because no base HTML was available to inspect.
 
-Current-session local harness contract evidence stayed consistent against `https://trustedbums.com`:
+Current-session local harness contract evidence stayed consistent:
 
-- Raw `corepack pnpm run qa:env`: failed in a fresh shell because the QA variables were not exported.
+- Raw `corepack pnpm run qa:env`: failed because the shell did not have the required QA variables exported.
 - Sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`: passed.
-- Sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:target-preflight`: passed DNS, HTTPS, app shell, and Clerk checks.
-- `corepack pnpm exec vitest run src/test/qaTargetPreflight.test.ts src/test/e2eSmokeRegression.test.ts src/test/deepQaTriage.test.ts src/test/extensionApiContract.test.ts`: passed `31/31`.
+- Sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:target-preflight`: passed DNS, HTTPS, app shell, and Clerk checks against `https://trustedbums.com`.
 
-`TB-0054` is no longer an active harness fix. The live tracker row is already `CLOSED`, and fresh artifact downloads for GitHub `E2E Smoke` runs `27634435369` on `f0996c5` and `27653400898` on `12d777f` both contained downloadable `qa-target-preflight-artifacts/summary.json` and `summary.txt` for smoke plus all three deep shards. The active harness queue is now narrower:
-
-- `TB-0105`: make post-publish Bing Webmaster quota exhaustion fail soft so deploy-triggered smoke and deep QA still run on the same head;
-- `TB-0055`: keep raw-shell, sourced `.env.qa`, and hosted workflow env states separate in every handoff.
+`TB-0105` and `TB-0054` remain closed on current source and hosted evidence. The only active harness item carried forward here is `TB-0055`, because the raw-shell versus sourced-env versus hosted-workflow distinction still matters every run.
 
 ## Active Harness Fixes
 
-### P1 - [TB-0105] Keep post-publish Bing Webmaster quota exhaustion from aborting deploy-triggered smoke
-- Evidence: GitHub deploy run `27653495695` on `af944fe` completed DreamHost publish, live Bing health, and IndexNow before failing on `pnpm run bing:webmaster submit-urls`. The log ended with `Bing Webmaster API SubmitUrlBatch failed with HTTP 400: {"ErrorCode":2,"Message":"ERROR!!! You have exceeded your daily url submission quota : 100"}`. Current [`scripts/bing-webmaster-api.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/bing-webmaster-api.mjs) only treats quota errors as non-fatal when the message includes `Quota remaining for today`, so the real production error shape still exits `1`. GitHub `E2E Smoke` `27653527364` then skipped instead of producing exact-head smoke or deep artifacts.
-- Why it matters: This is a harness and workflow reliability defect, not a reproduced product regression. It blocks exact-head browser evidence after the site is already live and makes release triage spend time on workflow-chain fallout instead of product risk.
-- Recommendation: Broaden the quota parser in [`scripts/bing-webmaster-api.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/bing-webmaster-api.mjs) to recognize the real `exceeded your daily url submission quota` message, and/or make the post-publish Bing Webmaster URL batch step in [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml) fail soft once publish plus crawler-health checks have already succeeded.
-- Acceptance criteria: the next head can publish, record quota exhaustion as a non-blocking post-publish outcome when it happens, and still trigger exact-head `E2E Smoke` plus the `admin`, `client`, and `bum` deep shards.
-
 ### P2 - [TB-0055] Keep raw-shell, sourced `.env.qa`, and hosted workflow env states separate in every handoff
-- Evidence: Raw `corepack pnpm run qa:env` still fails in this shell because `QA_BASE_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `QA_ADMIN_EMAIL`, `QA_CLIENT_ADMIN_EMAIL`, `QA_CLIENT_FINANCE_EMAIL`, `QA_CLIENT_MEMBER_EMAIL`, and `QA_BUM_EMAIL` are not exported by default. After sourcing `.env.qa`, `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env` passes and sourced preflight passes against `https://trustedbums.com`. Hosted `QA` run `27653495600` also passed the same base contract on `af944fe`.
-- Why it matters: Collapsing raw shell, sourced `.env.qa`, and hosted workflow states into a single "QA env passed" claim still hides whether a failure belongs to local shell setup, `.env.qa` drift, or GitHub Actions configuration.
-- Recommendation: Keep every QA harness, QA test, and release handoff split into raw shell, sourced `.env.qa`, and hosted workflow states, and mention only the variable names that are missing in each state.
-- Acceptance criteria: future handoffs make it obvious which contract passed or failed in each environment without re-reading raw logs.
+- Evidence: raw `corepack pnpm run qa:env` still fails in this shell because `QA_BASE_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `QA_ADMIN_EMAIL`, `QA_CLIENT_ADMIN_EMAIL`, `QA_CLIENT_FINANCE_EMAIL`, `QA_CLIENT_MEMBER_EMAIL`, and `QA_BUM_EMAIL` are not exported by default. After sourcing `.env.qa`, `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env` passes, sourced preflight passes, and hosted `QA` `27710960865` also passed on the current head.
+- Why it matters: collapsing those three states into a single “QA env passed” sentence still hides whether the problem belongs to local shell setup, `.env.qa` drift, or GitHub Actions configuration.
+- Recommendation: keep raw shell, sourced `.env.qa`, and hosted workflow results split in every QA, release, and harness handoff, and mention only variable names when the raw shell is missing exports.
+- Acceptance criteria: future handoffs preserve all three env states distinctly without implying that a sourced or hosted pass means the raw shell was healthy.
 
 ## Deep QA Split Plan
 
 - Current split: `admin`, `client`, and `bum` shards in [`.github/workflows/e2e-smoke.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml) and [`.github/workflows/deep-qa-hotfix-audit.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deep-qa-hotfix-audit.yml).
-- Current role-split proof: the latest completed deploy-triggered smoke on current code lineage is GitHub `E2E Smoke` run `27653400898` on `12d777f`, which passed `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`. Downloaded artifacts from that run include suite-specific `qa-target-preflight-artifacts/*/summary.json` and `summary.txt`.
-- Current exact-head gap: `af944fe` has no exact-head smoke or deep browser evidence because the deploy workflow failed after publish and the `workflow_run` gate skipped the smoke workflow. Treat that as workflow-chain evidence loss, not as an auth-helper or navigation-helper regression.
-- Standalone workflow status: the standalone `Deep QA Hotfix Audit` workflow is still stale at run `27092527987` from 2026-06-07, so the deploy-triggered smoke workflow remains the fresher route for exact-head deep evidence when deploy itself concludes cleanly.
-- Escalation rule: keep the current role split as the default. Split a shard further by route or workflow only if a specific shard fails repeatedly after both `qa:target-preflight` and `qa:env` pass.
+- Current role-split proof: `E2E Smoke` run `27711014094` passed `smoke` plus all three deep shards on the exact current head.
+- Current artifact-retention proof: `27711014094` retained `qa-target-preflight-artifacts/summary.json` and `summary.txt`.
+- Failure-attribution rule: when `qa:target-preflight` fails before any protected route loads, classify the shard as a harness or target-availability problem first, not as a route-level product defect. Historical example: `Deep QA (client)` inside `27706706707` never reached route audit because HTTPS fetch failed during preflight; the paired `App shell` failure was derivative, not an independent client-route regression.
+- Standalone workflow status: the standalone `Deep QA Hotfix Audit` workflow is still stale at run `27092527987` on `850e507`, but that is no longer the freshest deep evidence surface because the deploy-triggered deep shards are current on `57231bf`.
+- Escalation rule: keep the current role split. Split a shard further only if a specific exact-head shard starts failing repeatedly after both sourced `qa:env` and sourced `qa:target-preflight` pass.
 
 ## Product Defect Handoffs
 
-- [TB-0106] Stop detail-page claims from duplicating My Contacts rows: current `af944fe` source still calls `createBumRepresentedContact()` after a suggested decision-maker-match claim succeeds in [`src/pages/bum/BumOpportunityDetail.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumOpportunityDetail.tsx), while My Contacts separately synthesizes `OPPORTUNITY_CLAIM` rows from `opportunity_claims`. That remains a product bug already handed to QA Test Engineer and Lead Developer, not a harness defect.
-- No new current-session product bug was reproduced inside the auth helpers, navigation helpers, localStorage bootstrap, or Deep QA shard logic. The current exact-head hosted chain stopped before Playwright browser execution.
+- No new current-session defect was reproduced inside the auth helpers, navigation helpers, localStorage bootstrap, artifact-upload path, or deep-QA shard orchestration.
+- The failed client deep shard on `4e96b9c` was not handed to QA Test Engineer or Lead Developer as a client-route bug because the shard failed in preflight before any protected client route or button audit began.
+- `TB-0019` was reopened by QA as a release-gate drift issue, not a harness defect.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-17
-- Workflows, artifacts, tests, helpers, scripts, env checks, GitHub runs, tracker rows, and commands reviewed: `docs/qa-harness-reliability-backlog.md`, `docs/qa-test-backlog.md`, `docs/release-verification-backlog.md`, `docs/lead-developer-recommendations.md`, `docs/codex-edit-log.md`, `package.json`, [`playwright.config.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/playwright.config.ts), [`.github/workflows/qa.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/qa.yml), [`.github/workflows/e2e-smoke.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml), [`.github/workflows/deep-qa-hotfix-audit.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deep-qa-hotfix-audit.yml), [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml), [`scripts/verify-qa-env.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-qa-env.mjs), [`scripts/qa-target-preflight.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/qa-target-preflight.mjs), [`scripts/bing-webmaster-api.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/bing-webmaster-api.mjs), [`tests/e2e/helpers/auth.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/auth.ts), [`tests/e2e/helpers/deepQa.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/deepQa.ts), [`tests/e2e/deep-workflow-hotfix-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/deep-workflow-hotfix-audit.spec.ts), [`src/test/qaTargetPreflight.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/qaTargetPreflight.test.ts), [`src/test/e2eSmokeRegression.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/e2eSmokeRegression.test.ts), [`src/test/deepQaTriage.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/deepQaTriage.test.ts), [`src/test/extensionApiContract.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/extensionApiContract.test.ts), `gh run list --limit 20 --json ...`, `gh run list --workflow 'Visual UI Audit' --limit 10 --json ...`, `gh run list --workflow 'Deep QA Hotfix Audit' --limit 10 --json ...`, `gh run view 27653495695 --json ...`, `gh run view 27653527364 --json ...`, `gh run view 27653400898 --json ...`, `gh run view 27653495695 --log`, `gh run download 27653400898`, `gh run download 27634435369`, raw `corepack pnpm run qa:env`, sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`, sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:target-preflight`, `corepack pnpm exec vitest run src/test/qaTargetPreflight.test.ts src/test/e2eSmokeRegression.test.ts src/test/deepQaTriage.test.ts src/test/extensionApiContract.test.ts`, live Supabase project confirmation for `vaoqvtxqvbptyxddpoju`, live tracker schema read for `public.admin_scrum_items`, and live tracker row reads for `TB-0054`, `TB-0055`, `TB-0105`, and `TB-0106`.
-- Hosted verification in this run: GitHub `QA` `27653495600` passed on exact head `af944fe`; deploy `27653495695` failed after publish on Bing Webmaster quota exhaustion; `E2E Smoke` `27653527364` skipped because deploy did not conclude `success`; and the latest completed deploy-triggered smoke on current code lineage, `27653400898` on `12d777f`, passed all smoke and deep suites with retained preflight artifacts.
-- Tracker refresh completed in this run: refreshed `TB-0055` to exact head `af944fe` and current env-contract evidence; added harness context to existing `TB-0105` instead of opening a duplicate; re-read `TB-0054` and `TB-0106`, which already matched the current evidence and did not need duplicate tracker rows.
-- Checks that could not run and why: no exact-head smoke or deep artifact exists for `af944fe` because deploy failed after publish; no new standalone `Deep QA Hotfix Audit` run was dispatched because the current blocker is deploy-chain reliability rather than a role-specific browser flake.
+- Date of run: 2026-06-18
+- Workflows, artifacts, tests, helpers, scripts, env checks, tracker rows, and commands reviewed:
+  - `docs/qa-harness-reliability-backlog.md`
+  - `docs/qa-test-backlog.md`
+  - `docs/release-verification-backlog.md`
+  - `docs/codex-edit-log.md`
+  - `package.json`
+  - [`playwright.config.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/playwright.config.ts)
+  - [`.github/workflows/qa.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/qa.yml)
+  - [`.github/workflows/e2e-smoke.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml)
+  - [`.github/workflows/deep-qa-hotfix-audit.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deep-qa-hotfix-audit.yml)
+  - [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml)
+  - [`scripts/verify-qa-env.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-qa-env.mjs)
+  - [`scripts/qa-target-preflight.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/qa-target-preflight.mjs)
+  - [`scripts/bing-webmaster-api.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/bing-webmaster-api.mjs)
+  - raw `corepack pnpm run qa:env`
+  - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`
+  - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:target-preflight`
+  - `gh run view 27710960865 --json jobs,...`
+  - `gh run view 27711014094 --json jobs,...`
+  - `gh run view 27706706707 --json jobs,...`
+  - `gh run view 27706706707 --job 81957955059 --log-failed`
+  - `gh run list --workflow "Deep QA Hotfix Audit" --limit 8 --json ...`
+  - `gh run download 27711014094 --dir /tmp/tb-e2e-27711014094`
+  - `gh run download 27706706707 --dir /tmp/tb-e2e-27706706707`
+  - `find /tmp/tb-e2e-27711014094 -maxdepth 5 -name 'summary.json' -o -name 'summary.txt'`
+  - `find /tmp/tb-e2e-27706706707 -maxdepth 5 -name 'summary.json' -o -name 'summary.txt' -o -name '*.md'`
+  - `mcp__codex_apps__supabase._execute_sql` for tracker rows `TB-0054`, `TB-0055`, `TB-0105`, and `TB-0106`
+- Hosted verification in this run:
+  - exact-head `QA` `27710960865` passed
+  - exact-head deploy `27710961582` passed
+  - exact-head `E2E Smoke` `27711014094` passed
+  - exact-head deploy-triggered `Deep QA (admin|client|bum)` all passed inside `27711014094`
+- Tracker status recheck completed in this run:
+  - `TB-0054` remains `CLOSED`
+  - `TB-0055` remains `OPEN`
+  - `TB-0105` remains `CLOSED`
+- Checks that could not run and why:
+  - no newer standalone `Deep QA Hotfix Audit` run exists yet than `27092527987`; this remained a stale-lane observation rather than a current harness blocker because deploy-triggered deep QA is current and green

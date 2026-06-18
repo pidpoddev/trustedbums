@@ -10,6 +10,7 @@ Before researching, read docs/company-wide-rules.md, docs/consultant-team-rules.
 
 Research boundaries:
 - Use public, permission-friendly sources: company leadership pages, official bios, press releases, SEC filings, annual reports, investor presentations, conference speaker pages, podcast transcripts, standards bodies, regulatory filings, government procurement records, reputable news, company blogs, public project announcements, and industry directories with terms that allow normal browsing.
+- When The Org API access and a credit budget are available, use the official The Org API as an approved org-chart and reporting-line source for decision-maker hypotheses. Use it to improve buyer-function targeting and warm-path asks, not as an automatic outreach or bulk contact-enrichment source.
 - Do not automate LinkedIn browsing, profile inspection, screenshotting, extraction, connection graph review, or activity review.
 - Do not try to disguise automation, bypass rate limits, defeat bot detection, access private pages, or use personal sessions for automated collection.
 - LinkedIn may be handled only as a human verification step. You may include a blank field for a user-provided LinkedIn profile URL and a manual verification status. Do not fill it from automated LinkedIn access.
