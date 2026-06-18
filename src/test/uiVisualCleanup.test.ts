@@ -15,6 +15,7 @@ const selectSource = readFileSync("src/components/ui/select.tsx", "utf8");
 const bumContactsSource = readFileSync("src/pages/bum/BumContacts.tsx", "utf8");
 const visualAuditSource = readFileSync("tests/e2e/visual-ui-audit.spec.ts", "utf8");
 const publicIndexSource = readFileSync("src/pages/Index.tsx", "utf8");
+const bumLandingSource = readFileSync("src/pages/BumLanding.tsx", "utf8");
 const reportsWorkspaceSource = readFileSync("src/components/reports/ReportsWorkspace.tsx", "utf8");
 const legalDocumentPageSource = readFileSync("src/pages/LegalDocumentPage.tsx", "utf8");
 
@@ -79,6 +80,9 @@ describe("UI visual cleanup guardrails", () => {
     expect(publicIndexSource).toContain("flex min-h-20 items-center justify-between gap-3 px-4 py-2 sm:px-6");
     expect(publicIndexSource).toContain("flex flex-wrap items-center justify-end gap-2 sm:gap-3");
     expect(publicIndexSource).toContain("rounded-full px-3 shadow-[0_0_28px_rgba(255,122,26,0.35)] sm:px-5");
+    expect(bumLandingSource).toContain("flex min-h-20 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2 sm:flex-nowrap sm:px-6");
+    expect(bumLandingSource).toContain("order-3 flex w-full flex-wrap items-center justify-between gap-2 sm:order-none sm:w-auto sm:justify-end sm:gap-3");
+    expect(bumLandingSource).toContain("rounded-full px-3 shadow-[0_0_28px_rgba(255,122,26,0.35)] sm:px-5");
   });
 
   it("uses mobile disclosure for dense report controls", () => {

@@ -95,7 +95,7 @@ The deep workflow hotfix audit is not optional in this workflow. It runs after s
 3. Sign in as admin and confirm `/dashboard` redirects to `/admin`.
 4. Confirm admin can open clients, bums, opportunities, credits, commission plans, payments, payouts, and live conversations.
 5. Sign in as client admin and confirm `/dashboard` redirects to `/client/dashboard`.
-6. If prompted, accept the current Partner Terms and confirm the user returns to the expected portal path.
+6. If prompted, accept the current Client Agreement and confirm the user returns to the expected portal path.
 7. Create a test opportunity as client admin/member and record the opportunity name.
 8. Confirm client finance can open payments and exports.
 9. Confirm client member cannot open payments or exports and is returned to the client dashboard.
@@ -141,7 +141,7 @@ Use this matrix when deciding what to retest for a change:
 | Terms gate | Terms version data, acceptance writes, client/bum routing |
 | Client portal | Opportunities, targets, requests, bum directory, trainings, profile |
 | Client finance | Payments and exports |
-| Bum portal | Prospects, opportunities, claims, earnings, profile completeness |
+| Bum portal | Prospective Clients, opportunities, claims, earnings, profile completeness |
 | Admin portal | Companies, bums, opportunities, credits, payouts, live conversations |
 | Agreements | Generated docs, accepted docs, download links, public assets |
 | Data imports | LinkedIn CSV, payment import, opportunity import |

@@ -10,7 +10,7 @@ It is written as a business operating model, not a code reference. The current p
 
 ## Source Basis
 
-This draft is based on the current Trusted Bums workspace, especially the public-site positioning, portal routes, Partner Terms, Bum Agreement, company-wide rules, business access rules, product-ops backlog, trust/reputation backlog, shared-mailbox operations, Chrome extension docs, application routes, and Supabase migration history.
+This draft is based on the current Trusted Bums workspace, especially the public-site positioning, portal routes, Client Agreement, Bum Agreement, company-wide rules, business access rules, product-ops backlog, trust/reputation backlog, shared-mailbox operations, Chrome extension docs, application routes, and Supabase migration history.
 
 Where the repository establishes a rule or workflow, this document describes it directly. Where the repository implies a business direction but does not capture Ryan's final intent, the document names the open question instead of pretending the decision has already been made.
 
@@ -228,7 +228,7 @@ Clients may participate through several company-scoped roles:
 - Client Finance: reviews finance-safe payment, invoice, and report data.
 - Client Member: participates in assigned operational workflows such as targets, trainings, intro requests, or reports.
 
-Client companies must accept the active Partner Terms before using portal features. The terms establish that Trusted Bums creates value through introductions, account access, relationship support, and business-development activity, and that client revenue from introduced or materially supported opportunities may trigger commission obligations.
+Client companies must accept the active Client Agreement before using portal features. The agreement establishes that Trusted Bums creates value through introductions, account access, relationship support, and business-development activity, and that client revenue from introduced or materially supported opportunities may trigger commission obligations.
 
 ### Bums
 
@@ -275,9 +275,9 @@ For verified business domains, the first user from an unclaimed client domain ma
 
 ### 2. Legal Acceptance
 
-Client users must accept the active Partner Terms before accessing core client portal features.
+Client users must accept the active Client Agreement before accessing core client portal features.
 
-The Partner Terms are central to the business model. They define:
+The Client Agreement is central to the business model. It defines:
 
 - Services: introductions, account strategy, relationship facilitation, opportunity support, meeting coordination, and business development.
 - Opportunity registration: an opportunity may be registered when Trusted Bums introduces, identifies, facilitates, supports, or materially advances a client-target relationship.
@@ -515,7 +515,7 @@ Trusted Bums' commercial model is commission-aligned. The company creates access
 
 The preferred economics, especially for Series A-oriented companies, lean toward royalty-like upside rather than upfront cash. The reasoning is that these companies may not make it without the access Trusted Bums helps create. If Trusted Bums helps open a customer relationship that changes the client's trajectory, Trusted Bums should share in that success over time.
 
-The Partner Terms establish that commissionable events may arise from:
+The Client Agreement establishes that commissionable events may arise from:
 
 - Introductions.
 - Account identification.
@@ -531,7 +531,7 @@ This is strategically important because the value of a warm introduction often c
 
 At the same time, the product supports custom terms, opportunity-specific commission plans, default client commission plans, and separate signed agreements. That flexibility is necessary because enterprise opportunities vary widely.
 
-The current best-example commission structure is:
+The current best-example Commission Plan is:
 
 - 10% of revenue for the first 3 years.
 - 5% of revenue for the next 2 years.
@@ -724,7 +724,7 @@ The business becomes stronger when it can prove:
 
 - It can reach accounts clients cannot reach alone.
 - Bums provide legitimate, high-quality relationship access.
-- Clients understand and accept the commission structure.
+- Clients understand and accept the Commission Plan.
 - Legal and finance records are clear enough to survive disputes.
 - Payouts are fair enough to retain high-quality Bums.
 - The platform protects sensitive data.

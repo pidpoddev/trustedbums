@@ -37,18 +37,20 @@ Success measure: A user can tell the difference between Customer, Client, Prospe
 
 ## Stories
 
+Status: The core terminology decisions in this review have been applied to the shipped product. Keep this file as a reference for approved terms, terms to avoid, and future copy audits.
+
 ### Story 1 - Standardize Agreements Workspace And Client Agreement Language
 
 As a Client user, I want every legal acceptance and legal-history surface to use the same terms so I know whether I am opening the Agreements workspace, reviewing the current Client Agreement, or looking at past agreement records.
 
-Recommended terms:
+Approved terms:
 
 - Use `Agreements` for the Client legal workspace that contains the current contract, FAQ, redline/amendment requests, and agreement records.
 - Use `Client Agreement` for the binding Client contract or document.
 - Use `Agreement records` for history.
 - Avoid `Partner Terms`, `Terms & Legal Agreements`, and singular `Client Agreement` where the whole workspace is meant.
 
-Candidate files:
+Implemented surfaces:
 
 - `src/layouts/ClientLayout.tsx`
 - `src/components/PortalGlobalSearch.tsx`
@@ -72,7 +74,7 @@ Acceptance criteria:
 
 As a Client, Bum, or Admin user, I want every possible deal path to appear as an Opportunity with an origin, stage, and Claim action so I do not have to understand separate entry points like Opportunities, Reverse Opportunities, Customer Leads, target responses, and intro requests.
 
-Recommended terms:
+Approved terms:
 
 - `Opportunity`: any possible commercial match or revenue path.
 - `Opportunity Origin`: who or what started it.
@@ -101,7 +103,7 @@ Recommended workspace direction:
 - A consistent `Create Claim` or `Request Claim` action wherever a Bum can claim the Opportunity.
 - Opportunity detail page shows origin, stage, eligible Claim actions, accepted Claims, meetings, Customer Payment Reports, and Commission Invoice records as they become relevant.
 
-Candidate files:
+Implemented surfaces:
 
 - `src/pages/client/ClientRequests.tsx`
 - `src/pages/client/ClientDashboard.tsx`
@@ -135,13 +137,13 @@ This should probably ship in two phases. Phase 1 is label cleanup and navigation
 
 As a Client Admin, I want role labels to make clear that I am assigning company-scoped Client roles, not platform-wide roles.
 
-Recommended terms:
+Approved terms:
 
 - `Client Admin`
 - `Client Finance`
 - `Client Member`
 
-Candidate files:
+Implemented surfaces:
 
 - `src/pages/client/ClientTeam.tsx`
 - `src/data/authData.ts`

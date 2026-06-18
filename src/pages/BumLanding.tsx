@@ -55,16 +55,16 @@ const BumLanding = () => {
   return (
     <div className="min-h-screen overflow-hidden bg-background">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#08111f]/95 text-white backdrop-blur-xl">
-        <div className="container mx-auto flex h-20 items-center justify-between px-6">
-          <BrandLogo to="/" theme="dark" imageClassName="h-16 md:h-[4.6rem]" />
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white" asChild>
+        <div className="container mx-auto flex min-h-20 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2 sm:flex-nowrap sm:px-6">
+          <BrandLogo to="/" theme="dark" imageClassName="h-12 sm:h-14 md:h-[4.6rem]" />
+          <div className="order-3 flex w-full flex-wrap items-center justify-between gap-2 sm:order-none sm:w-auto sm:justify-end sm:gap-3">
+            <Button variant="ghost" size="sm" className="px-2 text-white hover:bg-white/10 hover:text-white sm:px-3" asChild>
               <Link to="/">For Clients</Link>
             </Button>
             <AccessibilityMenu />
             {showSignedOutActions ? (
               <SignupIntentDialog lockedRole="BUM">
-                <Button size="sm" className="rounded-full px-5 shadow-[0_0_28px_rgba(255,122,26,0.35)]">
+                <Button size="sm" className="rounded-full px-3 shadow-[0_0_28px_rgba(255,122,26,0.35)] sm:px-5">
                   Apply as a Bum
                 </Button>
               </SignupIntentDialog>
