@@ -41,7 +41,7 @@ Closed items validated by current source, live Supabase state, or current hosted
 
 ### Bum represented contacts and detail-page claim flows
 - Current proof: exact-head source in [`src/pages/bum/BumOpportunityDetail.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumOpportunityDetail.tsx) now invalidates `bum-represented-contacts` after claim success without recreating the old manual `createBumRepresentedContact()` side effect, and [`src/test/opportunityClaimStakeholders.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/opportunityClaimStakeholders.test.ts) passed on the current head. Hosted `QA` `27710960865`, deploy `27710961582`, and deploy-triggered `E2E Smoke` `27711014094` are also green on the same head.
-- Missing allow or deny proof: one fresh deny check that a foreign Bum cannot read or mutate another Bum's represented contacts through the current live portal or direct Supabase surface, and one populated-state browser proof that a detail-page claim still yields only the claim-backed contact row on the exact head.
+- Missing allow or deny proof: one authenticated browser or direct-data proof that unrelated Bums and client-company users deny against another Bum's represented contacts through the current live portal or direct Supabase surface, and one populated-state browser proof that a detail-page claim still yields only the claim-backed contact row on the exact head.
 - Seed data needed: one Bum with a suggested decision-maker claim path, one foreign Bum deny case, and cleanup-safe represented contacts that can be created and removed without contaminating later runs.
 
 ### Claim notification preview view
@@ -88,7 +88,7 @@ Closed items validated by current source, live Supabase state, or current hosted
 
 - Do not treat the stale standalone `Deep QA Hotfix Audit` run as a current blocker while deploy-triggered deep QA is green on `4dfca61`.
 - Keep raw-shell, sourced `.env.qa`, and hosted workflow env states separate in every QA handoff. The raw-shell failure is still a local shell-contract issue, not a hosted regression.
-- Keep `https://rcdl.tplinkdns.com` on the trust/release watchlist. Current runner checks still fail TLS on that fallback host even though `https://trustedbums.com` is healthy.
+- Do not keep `https://rcdl.tplinkdns.com` on the QA, trust, release, or visual watchlist. Ryan retired that fallback host on 2026-06-18, so QA evidence should stay on `https://trustedbums.com` unless he explicitly names another deployed host.
 
 ## Current Standards And Time-Sensitive Notes
 
@@ -135,7 +135,7 @@ Closed items validated by current source, live Supabase state, or current hosted
   - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:target-preflight`
   - `corepack pnpm exec vitest run src/test/opportunityClaimStakeholders.test.ts src/test/clientCommissionPlans.test.ts src/test/e2eSmokeRegression.test.ts src/test/uiVisualCleanup.test.ts src/test/scrumQueueRegression.test.ts`
   - `curl -I -L --max-time 20 https://trustedbums.com`
-  - `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`
+  - `rg` verification that active QA, trust, release, and shared-rule docs no longer treat `https://rcdl.tplinkdns.com` as a required target
   - `mcp__codex_apps__supabase._list_projects`
   - `mcp__codex_apps__supabase._execute_sql` for tracker rows, tracker schema, `claim_client_notification_previews` grants, and `security_invoker` verification on project `vaoqvtxqvbptyxddpoju`
   - current official guidance reviewed:
