@@ -132,7 +132,11 @@ const interactionsByRole: Record<RoleKey, VisualInteraction[]> = {
       heading: "Opportunities",
       name: "client-opportunity-form-open",
       prepare: async (page) => {
-        await expect(page.getByLabel("Customer account name")).toBeVisible();
+        const customerAccountName = page.getByLabel("Customer account name");
+        if (!(await customerAccountName.isVisible({ timeout: 1_000 }).catch(() => false))) {
+          await page.getByRole("button", { name: /^New Opportunity$/i }).first().click();
+        }
+        await expect(customerAccountName).toBeVisible();
         await expect(page.getByRole("button", { name: /Publish Opportunity to Bums|Save Draft Opportunity/i })).toBeVisible();
       },
     },
@@ -399,7 +403,7 @@ test.describe("public visual UI audit", () => {
 
     await page.goto("/");
     await dismissConsentBanner(page);
-    await page.getByRole("button", { name: /^Create Client account$/i }).click();
+    await page.getByRole("banner").getByRole("button", { name: /^Create Client account$/i }).click();
     const signupDialog = page.getByRole("dialog", { name: "Create your Client account" });
     await expect(signupDialog).toBeVisible();
     await captureVisualState(page, testInfo, "public-signup-intent", { route: "/", name: "public-signup-intent" });

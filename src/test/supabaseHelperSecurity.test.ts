@@ -25,6 +25,10 @@ const claimNotificationPreviewMigration = readFileSync(
   "supabase/migrations/20260617113000_make_claim_notification_previews_security_invoker.sql",
   "utf8",
 );
+const adminScrumOwnerSyncSearchPathMigration = readFileSync(
+  "supabase/migrations/20260618093000_set_admin_scrum_owner_sync_search_path.sql",
+  "utf8",
+);
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 const duplicateCheckFunctionSource = readFileSync(
   "supabase/functions/customer-lead-duplicate-check/index.ts",
@@ -144,6 +148,12 @@ describe("Supabase helper function security", () => {
     );
     expect(claimNotificationPreviewMigration).toContain(
       "grant select on public.claim_client_notification_previews to authenticated;",
+    );
+  });
+
+  it("sets an explicit search path on the admin scrum owner sync trigger helper", () => {
+    expect(adminScrumOwnerSyncSearchPathMigration).toContain(
+      "alter function public.sync_admin_scrum_item_owner_fields() set search_path = public;",
     );
   });
 });
