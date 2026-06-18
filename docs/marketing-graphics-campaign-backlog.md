@@ -75,7 +75,7 @@ This run keeps the 2026-06-09 text-free SVG/PNG pack as the active asset set. No
 - The repo-local GA API path exists, but this shell did not have `GA4_PROPERTY_ID`, so no fresh route or outcome aggregates could be pulled in this run. Client-priority guidance therefore remains source-backed and hosted-proof-backed rather than traffic-backed.
 - Bing setup remains verified, but this run did not have `BING_WEBMASTER_API_KEY`, so no report-level Bing performance evidence could be pulled in-session.
 - Exact-head hosted proof on `57231bf` is clean on the primary host. GitHub `QA` run `27710960865`, DreamHost deploy run `27710961582`, and `E2E Smoke` run `27711014094` all completed successfully on June 17. `https://trustedbums.com` returned `HTTP/2 200` in this run and reported `Last-Modified: Wed, 17 Jun 2026 18:30:08 GMT`, matching the current deploy timestamp.
-- External DNS evidence remains partial. `https://trustedbums.com` returned `HTTP/2 200` with HSTS, CSP, and related baseline headers in this run, but `https://rcdl.tplinkdns.com` still fails TLS verification from this runner with `curl: (60) SSL certificate problem: unable to get local issuer certificate`.
+- External DNS evidence now stays anchored to `https://trustedbums.com`. The old `https://rcdl.tplinkdns.com` fallback host is retired and should not be used for campaign, release, TLS, or visual proof.
 
 ## Agent Inputs
 

@@ -75,9 +75,9 @@ Current release-evidence status is `GO` for pushed `main` head `4dfca6111781e0df
   - Reason: current admin-email KPIs still depend on capped list reads and open-heavy headline metrics.
   - Next owner: Lead Developer with Data review.
   - Implementation queue: yes, after `TB-0044` and `TB-0047`.
-- `TB-0024 Resolve or retire rcdl.tplinkdns.com`: `READY`.
-  - Reason: the primary host is healthy, but the required fallback host still fails TLS validation and should not remain a silent consultant default without repair or retirement.
-  - Next owner: Trust & Reputation Consultant with infrastructure owner review.
+- `TB-0024 Resolve or retire rcdl.tplinkdns.com`: `CLOSE`.
+  - Reason: Ryan selected retire. The fallback host is no longer a consultant, release, TLS, or visual-QA default; `https://trustedbums.com` remains the hosted evidence target.
+  - Next owner: Trust & Reputation Consultant to keep the tracker closed unless Ryan names a replacement fallback host.
   - Implementation queue: no.
 - `TB-0042 Refresh operator docs to match shipped terminology`: `READY`.
   - Reason: the live terminology wave is shipped, and the remaining content work is docs-only drift across operator references.

@@ -158,13 +158,13 @@ When adding a rule, include:
 - QA proof: `curl -sL` for `/`, `/privacy-policy`, and at least one `/legal/:slug` route should return different initial titles, descriptions, canonical URLs, and `og:url` values before JavaScript execution. Hosted DreamHost deploy checks should verify at least one generated trust route and one generated legal route.
 - Open questions: None.
 
-### Consultant local preview and external DNS checks use fixed targets
-- Rule: When consultant work needs a local preview or local route check from the Codex runner, use port `8080` only. When external DNS context is needed from the same runner, use `https://rcdl.tplinkdns.com` as the external target unless Ryan specifies a different host for that run.
+### Consultant local preview and hosted reachability checks use fixed targets
+- Rule: When consultant work needs a local preview or local route check from the Codex runner, use port `8080` only. When hosted reachability, DNS, or TLS context is needed from the runner, use `https://trustedbums.com` unless Ryan specifies a different host for that run.
 - Applies to: UX, UI, Content, QA, Trust & Reputation, Lead Developer, and any Codex-run local preview or external reachability check.
-- Why it matters: The runner needs predictable ports and a single known external host so evidence is comparable across specialist runs and local test setup does not drift.
-- Implementation notes: Do not start local preview servers on alternate ports during consultant runs. For GitHub-hosted `QA`, `E2E Smoke`, `Visual UI Audit`, and `Deep QA Hotfix Audit`, keep `QA_BASE_URL` on `https://trustedbums.com` unless Ryan explicitly asks to validate another deployed host. If a specialist needs external DNS or TLS context, record results against `rcdl.tplinkdns.com` and distinguish runner-local failures from confirmed production outages.
-- QA proof: Agent Inputs cite local preview checks on `127.0.0.1:8080` when used, and external reachability/TLS notes cite `rcdl.tplinkdns.com` unless the user explicitly overrides it.
-- Open questions: Whether `rcdl.tplinkdns.com` is expected to present a publicly trusted TLS chain from all consultant environments.
+- Why it matters: The runner needs predictable ports and a single primary hosted target so evidence is comparable across specialist runs and local test setup does not drift.
+- Implementation notes: Do not start local preview servers on alternate ports during consultant runs. For GitHub-hosted `QA`, `E2E Smoke`, `Visual UI Audit`, and `Deep QA Hotfix Audit`, keep `QA_BASE_URL` on `https://trustedbums.com` unless Ryan explicitly asks to validate another deployed host. `https://rcdl.tplinkdns.com` is retired and must not be used as a fallback DNS, TLS, release-QA, or visual-QA target.
+- QA proof: Agent Inputs cite local preview checks on `127.0.0.1:8080` when used, and hosted reachability/TLS notes cite `https://trustedbums.com` unless the user explicitly overrides it.
+- Open questions: None.
 
 ### Google Analytics is an approved source for specialist evidence
 - Rule: Trusted Bums agents may use the Google Analytics property for `https://trustedbums.com` when their work requires website traffic, funnel, source, campaign, or engagement evidence.
@@ -216,7 +216,7 @@ When adding a rule, include:
 - Rule: The UI consultant should use the GitHub Actions workflow named `Visual UI Audit` and its `visual-ui-audit` artifacts for visual QA evidence instead of attempting local Vite, local browser, or local Playwright visual checks.
 - Applies to: Daily UI consultant automation, `docs/ui-optimization-backlog.md`, `docs/consultant-team-rules.md`, `.github/workflows/visual-ui-audit.yml`, and UI visual evidence collection.
 - Why it matters: The GitHub workflow has the intended deployed target, role secrets, and artifact capture path, while local runs have repeatedly produced environment-specific blockers that weaken UI evidence.
-- Implementation notes: UI recommendations may still use source inspection, current rules, internet guidance, and narrow non-visual local checks such as lint or unit tests when useful. Fresh screenshot or route-render evidence should come from GitHub Visual QA runs or be recorded as an access or evidence gap. When dispatching hosted visual QA, default the target URL to `https://trustedbums.com`; use `https://rcdl.tplinkdns.com` only when the run is explicitly validating fallback DNS or TLS behavior.
+- Implementation notes: UI recommendations may still use source inspection, current rules, internet guidance, and narrow non-visual local checks such as lint or unit tests when useful. Fresh screenshot or route-render evidence should come from GitHub Visual QA runs or be recorded as an access or evidence gap. When dispatching hosted visual QA, default the target URL to `https://trustedbums.com`; do not use the retired `https://rcdl.tplinkdns.com` host.
 - QA proof: Agent Inputs should cite the relevant GitHub Visual QA run/artifact or explicitly state why GitHub Visual QA evidence was unavailable.
 - Open questions: None.
 

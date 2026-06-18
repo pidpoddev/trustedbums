@@ -50,7 +50,7 @@ Everything else that was a live release blocker in the older `af944fe` snapshot 
 ## Stale Or Informational Lanes
 
 - Standalone `Deep QA Hotfix Audit` is still stale on `850e507`. Keep it visible as a stale lane, but do not let it outweigh the newer deploy-triggered deep QA proof on `4dfca61`.
-- `https://rcdl.tplinkdns.com` still fails TLS validation from this runner and should remain a trust/infrastructure watch item, not the primary hosted release target.
+- `https://rcdl.tplinkdns.com` is retired and should not be used as a release, TLS, or hosted QA watch target. Keep release evidence on `https://trustedbums.com` unless Ryan explicitly names another deployed host.
 - Raw-shell `qa:env` still fails until `.env.qa` is exported; sourced `.env.qa` and hosted workflows remain healthy.
 
 ## Cross-Agent Follow-Ups
