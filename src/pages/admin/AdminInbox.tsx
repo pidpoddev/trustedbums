@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Clock, Mail, MessageSquare, RefreshCw, Reply, ReplyAll, Send, Users } from "lucide-react";
+import { CheckCircle2, Clock, Mail, MessageSquare, RefreshCw, Reply, ReplyAll, Send, UserCheck, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,13 @@ import { isConversationUnreadForUser, latestConversationMessageAt } from "@/lib/
 import { formatDateTimeForTimeZone } from "@/lib/timezone";
 import {
   getAdminSharedMailboxMessage,
+  claimAdminSharedMailboxMessage,
   listAdminSharedMailboxMessages,
   listConversationThreads,
   markConversationThreadRead,
   sendAdminSharedMailboxMessage,
   syncAdminSharedMailbox,
+  updateAdminSharedMailboxCategory,
   updateAdminSharedMailboxStatus,
   type AdminSharedMailboxCategory,
   type AdminSharedMailboxMessage,
@@ -105,6 +107,11 @@ function statusVariant(status: AdminSharedMailboxStatus) {
   return "info" as const;
 }
 
+function ownerLabel(ownerId: string | null, currentUserId?: string) {
+  if (!ownerId) return "Unowned";
+  return ownerId === currentUserId ? "You" : "Assigned";
+}
+
 export default function AdminInbox() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -126,7 +133,7 @@ export default function AdminInbox() {
   });
   const mailboxQuery = useQuery({
     queryKey: ["admin-shared-mailbox", statusFilter, categoryFilter],
-    queryFn: () => listAdminSharedMailboxMessages({ status: statusFilter, category: categoryFilter, top: 75 }),
+    queryFn: () => listAdminSharedMailboxMessages({ status: statusFilter, category: categoryFilter }),
     enabled: showExternalMail && user?.role === "ADMIN",
   });
   const selectedMessageQuery = useQuery({
@@ -157,7 +164,7 @@ export default function AdminInbox() {
   }, [conversations, conversationsQuery.isLoading, queryClient, user]);
 
   const syncMutation = useMutation({
-    mutationFn: () => syncAdminSharedMailbox({ top: 75, days: 45 }),
+    mutationFn: () => syncAdminSharedMailbox({ top: 100, days: 45 }),
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ["admin-shared-mailbox"] });
       toast({ title: "External mail synced", description: `${result.synced} of ${result.scanned} mailbox messages are available.` });
@@ -213,6 +220,34 @@ export default function AdminInbox() {
     },
     onError: (error) => {
       toast({ title: "Unable to update mailbox status", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const categoryMutation = useMutation({
+    mutationFn: (category: AdminSharedMailboxCategory) => updateAdminSharedMailboxCategory(selectedMailboxMessage!.id, category),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-shared-mailbox"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-shared-mailbox-message", selectedMailboxMessageId] }),
+      ]);
+      toast({ title: "Mailbox category updated" });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to update category", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: () => claimAdminSharedMailboxMessage(selectedMailboxMessage!.id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-shared-mailbox"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-shared-mailbox-message", selectedMailboxMessageId] }),
+      ]);
+      toast({ title: "Mailbox message claimed" });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to claim message", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     },
   });
 
@@ -334,6 +369,7 @@ export default function AdminInbox() {
                     <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{message.body_preview || "No preview available."}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       <Badge variant="secondary">{categoryLabel(message.category)}</Badge>
+                      <Badge variant={message.assigned_to ? "outline" : "secondary"}>{ownerLabel(message.assigned_to, user?.id)}</Badge>
                       <span>{formatDateTimeForTimeZone(message.received_at ?? message.sent_at ?? message.created_at, timeZone)}</span>
                     </div>
                   </button>
@@ -388,10 +424,14 @@ export default function AdminInbox() {
                 </div>
                 {selectedMailboxMessage ? (
                   <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" variant="outline" onClick={() => claimMutation.mutate()} disabled={claimMutation.isPending || selectedMailboxMessage.assigned_to === user?.id}>
+                      <UserCheck className="mr-2 h-4 w-4" />
+                      Claim
+                    </Button>
                     <Button type="button" size="sm" variant="outline" onClick={() => statusMutation.mutate("IN_PROGRESS")} disabled={statusMutation.isPending || selectedMailboxMessage.status === "IN_PROGRESS"}>
                       In progress
                     </Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => statusMutation.mutate("HANDLED")} disabled={statusMutation.isPending || selectedMailboxMessage.status === "HANDLED"}>
+                    <Button type="button" size="sm" variant="outline" onClick={() => statusMutation.mutate("HANDLED")} disabled={statusMutation.isPending || selectedMailboxMessage.status === "HANDLED" || selectedMailboxMessage.category === "uncategorized"}>
                       <CheckCircle2 className="mr-2 h-4 w-4" />
                       Handled
                     </Button>
@@ -411,8 +451,24 @@ export default function AdminInbox() {
                   <div className="flex flex-wrap items-center gap-2 text-sm">
                     <StatusBadge label={selectedMailboxMessage.status.replaceAll("_", " ")} variant={statusVariant(selectedMailboxMessage.status)} />
                     <Badge variant="secondary">{categoryLabel(selectedMailboxMessage.category)}</Badge>
+                    <Badge variant={selectedMailboxMessage.assigned_to ? "outline" : "secondary"}>{ownerLabel(selectedMailboxMessage.assigned_to, user?.id)}</Badge>
                     {selectedMailboxMessage.has_attachments ? <Badge variant="outline">Has attachments</Badge> : null}
                     <span className="text-muted-foreground">{formatDateTimeForTimeZone(selectedMailboxMessage.received_at ?? selectedMailboxMessage.sent_at ?? selectedMailboxMessage.created_at, timeZone)}</span>
+                  </div>
+
+                  <div className="grid gap-2 sm:max-w-xs">
+                    <Label htmlFor="mailbox-category">Category</Label>
+                    <Select
+                      value={selectedMailboxMessage.category}
+                      onValueChange={(value) => categoryMutation.mutate(value as AdminSharedMailboxCategory)}
+                      disabled={categoryMutation.isPending}
+                    >
+                      <SelectTrigger id="mailbox-category"><SelectValue /></SelectTrigger>
+                      <SelectContent>{categoryOptions.filter((option) => option.value !== "ALL").map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    {selectedMailboxMessage.category === "uncategorized" ? (
+                      <p className="text-xs text-muted-foreground">Choose a category before marking this message handled.</p>
+                    ) : null}
                   </div>
 
                   <div className="max-h-[460px] overflow-auto rounded-md border bg-muted/20 p-4 text-sm leading-6 whitespace-pre-wrap">

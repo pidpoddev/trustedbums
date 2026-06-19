@@ -42,6 +42,26 @@ function ageInDays(createdAt: string) {
   return Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000));
 }
 
+function activityAt(createdAt: string, updatedAt?: string | null) {
+  return updatedAt || createdAt;
+}
+
+function isOverdue(followUpDeadline?: string | null) {
+  return Boolean(followUpDeadline && new Date(followUpDeadline).getTime() < Date.now());
+}
+
+function isStaleHandoff({
+  createdAt,
+  updatedAt,
+  followUpDeadline,
+}: {
+  createdAt: string;
+  updatedAt?: string | null;
+  followUpDeadline?: string | null;
+}) {
+  return isOverdue(followUpDeadline) || ageInDays(activityAt(createdAt, updatedAt)) >= 3;
+}
+
 function ownerLabel(ownerId: string | null, currentUserId?: string) {
   if (!ownerId) return "Unowned";
   return ownerId === currentUserId ? "You" : "Assigned";
@@ -54,27 +74,33 @@ function priorityVariant(priority: HandoffPriority) {
   return "secondary" as const;
 }
 
-function isStale(createdAt: string) {
-  return ageInDays(createdAt) >= 3;
-}
-
 function OperationalBadges({
   priority,
   nextAction,
   createdAt,
+  updatedAt,
+  followUpDeadline,
   notificationError,
 }: {
   priority: HandoffPriority;
   nextAction: string | null;
   createdAt: string;
+  updatedAt?: string | null;
+  followUpDeadline?: string | null;
   notificationError?: string | null;
 }) {
+  const timeZone = useUserTimeZone();
+  const overdue = isOverdue(followUpDeadline);
+  const stale = isStaleHandoff({ createdAt, updatedAt, followUpDeadline });
+
   return (
     <div className="mt-2 flex max-w-xs flex-wrap gap-1.5">
       <Badge variant={priorityVariant(priority)}>{priority}</Badge>
-      {isStale(createdAt) ? <Badge variant="outline"><AlertTriangle className="mr-1 h-3 w-3" />Stale</Badge> : null}
+      {overdue ? <Badge variant="destructive"><AlertTriangle className="mr-1 h-3 w-3" />Overdue</Badge> : null}
+      {!overdue && stale ? <Badge variant="outline"><AlertTriangle className="mr-1 h-3 w-3" />Stale</Badge> : null}
       {notificationError ? <Badge variant="destructive"><BellOff className="mr-1 h-3 w-3" />Delivery issue</Badge> : null}
       {nextAction ? <Badge variant="outline" className="whitespace-normal text-left">{nextAction}</Badge> : null}
+      {followUpDeadline ? <Badge variant="outline">Due {formatDateTimeForTimeZone(followUpDeadline, timeZone)}</Badge> : null}
     </div>
   );
 }
@@ -104,6 +130,8 @@ function ContactRow({
           priority={submission.admin_priority}
           nextAction={submission.admin_next_action}
           createdAt={submission.created_at}
+          updatedAt={submission.updated_at}
+          followUpDeadline={submission.follow_up_deadline}
           notificationError={submission.notification_error}
         />
       </TableCell>
@@ -119,7 +147,7 @@ function ContactRow({
         <Badge variant={submission.admin_owner_id ? "outline" : "secondary"}>{ownerLabel(submission.admin_owner_id, user?.id)}</Badge>
       </TableCell>
       <TableCell className="min-w-[160px] text-xs text-muted-foreground">
-        {formatDateTimeForTimeZone(submission.created_at, timeZone)}
+        {formatDateTimeForTimeZone(activityAt(submission.created_at, submission.updated_at), timeZone)}
       </TableCell>
       <TableCell className="min-w-[170px]">
         <Select value={submission.status} onValueChange={(status) => onStatus(submission, status as ContactSubmissionStatus)}>
@@ -157,7 +185,7 @@ function TargetResponseRow({
       <TableCell>
         <p className="font-medium">{targetName}</p>
         <p className="text-xs text-muted-foreground">{response.customer_targets?.client_companies?.name ?? "Client pending"}</p>
-        <OperationalBadges priority={response.admin_priority} nextAction={response.admin_next_action} createdAt={response.created_at} />
+        <OperationalBadges priority={response.admin_priority} nextAction={response.admin_next_action} createdAt={response.created_at} updatedAt={response.updated_at} />
       </TableCell>
       <TableCell>
         <p>{response.contact_name}</p>
@@ -170,7 +198,7 @@ function TargetResponseRow({
         <Badge variant={response.admin_owner_id ? "outline" : "secondary"}>{ownerLabel(response.admin_owner_id, user?.id)}</Badge>
       </TableCell>
       <TableCell className="min-w-[160px] text-xs text-muted-foreground">
-        {formatDateTimeForTimeZone(response.created_at, timeZone)}
+        {formatDateTimeForTimeZone(activityAt(response.created_at, response.updated_at), timeZone)}
       </TableCell>
       <TableCell className="min-w-[170px]">
         <Select value={response.status} onValueChange={(status) => onStatus(response, status as TargetResponseStatus)}>
@@ -215,7 +243,7 @@ function IntroRequestRow({
       <TableCell>
         <p className="font-medium">{request.target_company_name}</p>
         <p className="text-xs text-muted-foreground">{request.client_companies?.name ?? "Client pending"}</p>
-        <OperationalBadges priority={request.admin_priority} nextAction={request.admin_next_action} createdAt={request.created_at} />
+        <OperationalBadges priority={request.admin_priority} nextAction={request.admin_next_action} createdAt={request.created_at} updatedAt={request.updated_at} />
       </TableCell>
       <TableCell>
         <p>{request.bum_profiles?.full_name ?? request.bum_profiles?.email ?? "Bum pending"}</p>
@@ -228,7 +256,7 @@ function IntroRequestRow({
         <Badge variant={request.admin_owner_id ? "outline" : "secondary"}>{ownerLabel(request.admin_owner_id, user?.id)}</Badge>
       </TableCell>
       <TableCell className="min-w-[160px] text-xs text-muted-foreground">
-        {formatDateTimeForTimeZone(request.created_at, timeZone)}
+        {formatDateTimeForTimeZone(activityAt(request.created_at, request.updated_at), timeZone)}
       </TableCell>
       <TableCell className="min-w-[170px]">
         <Select value={request.status} onValueChange={(status) => onStatus(request, status as ClientBumIntroRequestStatus)}>
@@ -298,19 +326,19 @@ export default function AdminHandoffs() {
     return (contactQuery.data ?? [])
       .filter((submission) => filter !== "OPEN" || openContactStatuses.has(submission.status))
       .filter((submission) => filter !== "URGENT" || submission.admin_priority === "URGENT" || submission.admin_priority === "HIGH")
-      .filter((submission) => filter !== "STALE" || isStale(submission.created_at))
+      .filter((submission) => filter !== "STALE" || isStaleHandoff({ createdAt: submission.created_at, updatedAt: submission.updated_at, followUpDeadline: submission.follow_up_deadline }))
       .filter((submission) => filter !== "MINE" || submission.admin_owner_id === user?.id)
       .filter((submission) => filter !== "UNOWNED" || !submission.admin_owner_id)
       .filter((submission) => filter !== "NOTIFICATION_FAILED" || Boolean(submission.notification_error))
       .filter((submission) => matchesSearch([submission.name, submission.email, submission.company_name, submission.message].filter(Boolean).join(" "), search))
-      .sort((left, right) => ageInDays(right.created_at) - ageInDays(left.created_at));
+      .sort((left, right) => ageInDays(activityAt(right.created_at, right.updated_at)) - ageInDays(activityAt(left.created_at, left.updated_at)));
   }, [contactQuery.data, filter, search, user?.id]);
 
   const targetResponses = useMemo(() => {
     return (targetResponseQuery.data ?? [])
       .filter((response) => filter !== "OPEN" || openTargetResponseStatuses.has(response.status))
       .filter((response) => filter !== "URGENT" || response.admin_priority === "URGENT" || response.admin_priority === "HIGH")
-      .filter((response) => filter !== "STALE" || isStale(response.created_at))
+      .filter((response) => filter !== "STALE" || isStaleHandoff({ createdAt: response.created_at, updatedAt: response.updated_at }))
       .filter((response) => filter !== "MINE" || response.admin_owner_id === user?.id)
       .filter((response) => filter !== "UNOWNED" || !response.admin_owner_id)
       .filter(() => filter !== "NOTIFICATION_FAILED")
@@ -321,14 +349,14 @@ export default function AdminHandoffs() {
         response.customer_targets?.target_companies?.name,
         response.customer_targets?.client_companies?.name,
       ].filter(Boolean).join(" "), search))
-      .sort((left, right) => ageInDays(right.created_at) - ageInDays(left.created_at));
+      .sort((left, right) => ageInDays(activityAt(right.created_at, right.updated_at)) - ageInDays(activityAt(left.created_at, left.updated_at)));
   }, [targetResponseQuery.data, filter, search, user?.id]);
 
   const introRequests = useMemo(() => {
     return (introRequestQuery.data ?? [])
       .filter((request) => filter !== "OPEN" || openIntroRequestStatuses.has(request.status))
       .filter((request) => filter !== "URGENT" || request.admin_priority === "URGENT" || request.admin_priority === "HIGH")
-      .filter((request) => filter !== "STALE" || isStale(request.created_at))
+      .filter((request) => filter !== "STALE" || isStaleHandoff({ createdAt: request.created_at, updatedAt: request.updated_at }))
       .filter((request) => filter !== "MINE" || request.admin_owner_id === user?.id)
       .filter((request) => filter !== "UNOWNED" || !request.admin_owner_id)
       .filter(() => filter !== "NOTIFICATION_FAILED")
@@ -338,7 +366,7 @@ export default function AdminHandoffs() {
         request.client_companies?.name,
         request.bum_profiles?.full_name,
       ].filter(Boolean).join(" "), search))
-      .sort((left, right) => ageInDays(right.created_at) - ageInDays(left.created_at));
+      .sort((left, right) => ageInDays(activityAt(right.created_at, right.updated_at)) - ageInDays(activityAt(left.created_at, left.updated_at)));
   }, [introRequestQuery.data, filter, search, user?.id]);
 
   const openCount =
@@ -357,9 +385,9 @@ export default function AdminHandoffs() {
     (introRequestQuery.data ?? []).filter((request) => request.admin_priority === "URGENT" || request.admin_priority === "HIGH").length;
 
   const staleCount =
-    (contactQuery.data ?? []).filter((submission) => isStale(submission.created_at)).length +
-    (targetResponseQuery.data ?? []).filter((response) => isStale(response.created_at)).length +
-    (introRequestQuery.data ?? []).filter((request) => isStale(request.created_at)).length;
+    (contactQuery.data ?? []).filter((submission) => isStaleHandoff({ createdAt: submission.created_at, updatedAt: submission.updated_at, followUpDeadline: submission.follow_up_deadline })).length +
+    (targetResponseQuery.data ?? []).filter((response) => isStaleHandoff({ createdAt: response.created_at, updatedAt: response.updated_at })).length +
+    (introRequestQuery.data ?? []).filter((request) => isStaleHandoff({ createdAt: request.created_at, updatedAt: request.updated_at })).length;
 
   const notificationFailedCount = (contactQuery.data ?? []).filter((submission) => submission.notification_error).length;
 
@@ -414,7 +442,7 @@ export default function AdminHandoffs() {
           <SelectContent>
             <SelectItem value="OPEN">Open only</SelectItem>
             <SelectItem value="URGENT">Urgent / high</SelectItem>
-            <SelectItem value="STALE">Stale</SelectItem>
+            <SelectItem value="STALE">Overdue / stale</SelectItem>
             <SelectItem value="MINE">Assigned to me</SelectItem>
             <SelectItem value="UNOWNED">Unowned</SelectItem>
             <SelectItem value="NOTIFICATION_FAILED">Delivery issue</SelectItem>
@@ -438,7 +466,7 @@ export default function AdminHandoffs() {
                 <TableHead>Response</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Last touch</TableHead>
                 <TableHead>Update</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -470,7 +498,7 @@ export default function AdminHandoffs() {
                 <TableHead>Bum</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Last touch</TableHead>
                 <TableHead>Update</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -502,7 +530,7 @@ export default function AdminHandoffs() {
                 <TableHead>Company</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Last touch</TableHead>
                 <TableHead>Update</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>

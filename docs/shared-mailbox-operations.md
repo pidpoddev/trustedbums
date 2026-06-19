@@ -34,12 +34,22 @@ The Microsoft app should not have practical read access to unrelated employee or
 - Client criteria replies may be summarized into structured opportunity-routing fields, but raw reply bodies should stay out of durable product docs unless a founder/admin explicitly approves storing the text.
 - Claim decision replies should not be treated as final product state until the reply-sync or admin review path verifies the decision token or claim ID and records the resulting claim status. A user-reported reply of `Approved` is an operations signal, not database proof by itself. The 2026-06-18 CoreWeave reply is the proof pattern: live product state showed `APPROVED` via `email_reply`, and the corresponding Bum notification delivery was `SENT`.
 
+## Category Handling
+
+| Category | Owner and due-state expectation | Raw body handling | Durable record expectation |
+| --- | --- | --- | --- |
+| `uncategorized` | Admin must claim or categorize during triage. Uncategorized messages cannot be marked handled or archived. | Raw body may be viewed by Admin only for triage. | Category update and status changes are audited before closeout. |
+| `dmarc` | Trust/Reputation or Admin reviews during domain-monitoring sweeps. | Prefer parsed aggregate facts and attachment metadata; raw body is not copied into product docs. | Parsed DMARC reports or review notes when a domain action is needed. |
+| `legal`, `privacy`, `abuse`, `complaint` | Admin or explicitly approved legal/ops owner handles the same business day when active. | Raw body is admin/legal-only; attachments remain metadata-only until a workflow-specific retention/redaction rule exists. | Audit event plus legal/privacy/abuse follow-up record when the message requires action. |
+| `support`, `question` | Admin owns response or routing, with next-business-day follow-up unless escalated. | Raw body may remain in the admin mailbox record for response context. | Reply/send event or linked support/action note. |
+| `client_criteria` | Admin/Product Ops converts approved criteria into structured routing fields. | Summarize into structured fields; do not copy raw body into product docs unless founder/admin approves. | Criteria update or opportunity-routing note with the approving operator. |
+
 ## Implementation Queue
 
 1. Store parsed DMARC aggregate results in an admin-only table for trend review.
 2. Extend the current DMARC reader into a shared inbox intake service. `20260612143000_add_admin_shared_mailbox_inbox.sql` adds admin-only shared mailbox messages and send-event tables, and `admin-shared-mailbox` syncs `bums@trustedbums.com` through mailbox-scoped Microsoft Graph access.
 3. Add categories for DMARC, legal, question, complaint, privacy, abuse, support, client criteria, and uncategorized. The shared mailbox sync now assigns these first-pass categories for admin triage.
-4. Add an Admin Portal shared inbox/reputation intake surface. `/admin/inbox` now gives admins a shared Inbox with an External mail switch, mailbox sync, compose, reply, reply-all, and handled/in-progress status actions.
+4. Add an Admin Portal shared inbox/reputation intake surface. `/admin/inbox` now gives admins a shared Inbox with an External mail switch, mailbox sync, compose, reply, reply-all, claim-to-owner, category, and handled/in-progress status actions.
 5. Add retention and redaction rules before storing attachments. Message bodies are stored only for the admin shared-mailbox workflow; attachments remain metadata-only in this slice.
 6. Add a client-criteria intake path that can turn approved client replies into structured opportunity-routing rules.
 7. Keep claim-decision reply handling observable after client-side junk-folder delivery. On 2026-06-18, Ryan relayed that Akshay found the CoreWeave test claim email in junk, did not see an accept/decline prompt in the Trusted Bums account, and replied `approved` by email. Follow-up live reads confirmed `sync-claim-decision-replies` processed the reply and sent the Bum next-step email. The remaining work is to retain safe header diagnostics for future decision replies and verify the local portal-link fix after release.

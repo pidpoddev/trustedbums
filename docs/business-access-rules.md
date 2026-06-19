@@ -264,7 +264,7 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
 - Roles: Admin, future explicitly approved operations or legal reviewers, mailbox-scoped Microsoft Graph integration.
 - Data needed: Mailbox category, status, sender and recipient metadata, body preview, raw body content when allowed, attachment metadata, handled state, optional assignment owner, send-event history, and audit events.
 - Allowed actions:
-  - Admins may sync, read, classify, reply, reply-all, compose, and update status for shared-mailbox messages in the approved operations mailbox.
+  - Admins may sync, read, classify, claim, reply, reply-all, compose, and update status for shared-mailbox messages in the approved operations mailbox.
   - Future operations or legal reviewers may gain category-limited access only after Product Ops, Security, and Legal/Compliance define that narrower role explicitly.
   - The system may store parsed operational facts from mailbox messages when Product Ops approves the target workflow and audit path.
 - Allowed when:
@@ -272,24 +272,29 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
   - Raw message bodies remain admin-only unless a narrower approved role is added with explicit category limits.
   - Attachments stay metadata-only unless a specific approved workflow requires durable attachment storage.
   - Categories such as `legal`, `privacy`, `abuse`, `complaint`, `support`, `question`, `client_criteria`, `dmarc`, and `uncategorized` drive who may see the message, what SLA applies, and whether the app should store metadata only, parsed facts, or the raw body.
-  - Status changes, replies, sends, future assignment changes, and any durable record creation write audit events.
+  - Uncategorized messages stay in triage and are categorized before they are marked `HANDLED` or `ARCHIVED`.
+  - `legal`, `privacy`, `abuse`, and `complaint` messages stay Admin or approved legal/ops only and should receive same-business-day owner follow-up when active.
+  - `support` and `question` messages may retain raw body content for Admin response context and should get next-business-day owner follow-up unless escalated.
+  - `dmarc` messages prefer parsed aggregate facts and attachment metadata over copied raw bodies.
+  - `client_criteria` messages are summarized into structured routing fields; raw reply bodies stay out of durable product docs unless founder/admin approves.
+  - Status changes, category changes, claims/assignment changes, replies, sends, and any durable record creation write audit events.
 - Denied when:
   - Client, Bum, public, pending, disabled, or unauthenticated users try to read or mutate shared-mailbox records.
   - The app stores raw attachments or broad raw mailbox content without an approved workflow-specific retention rule.
   - A mailbox workflow reads unrelated employee or tenant mailboxes instead of the approved shared mailbox.
   - A message is treated as routine support when its category requires tighter legal, privacy, or abuse handling.
+  - A workflow closes an `uncategorized` message without a category decision.
 - Sensitive fields: Raw body content, sender and recipient emails, message categories, legal or privacy request details, complaint or abuse details, attachment metadata, send history, and audit events.
 - Source of truth: `admin_shared_mailbox_messages`, `admin_shared_mailbox_send_events`, `supabase/functions/admin-shared-mailbox`, `src/pages/admin/AdminInbox.tsx`, `docs/shared-mailbox-operations.md`, and `audit_events`.
 - RLS/authorization owner: Security Engineer plus Product Ops, with Legal/Compliance review for legal, privacy, abuse, and complaint categories.
 - QA proof:
-  - Only Admin can sync, read, reply, compose, and update mailbox records through the route, function, and direct data path.
-  - Category and status changes are auditable.
+  - Only Admin can sync, read, claim, reply, compose, categorize, and update mailbox records through the route, function, and direct data path.
+  - Category, owner, and status changes are auditable.
+  - Uncategorized messages cannot be marked handled or archived.
   - Attachment handling stays metadata-only unless an approved workflow explicitly changes that rule.
   - Any future non-admin mailbox reviewer proves positive access for the approved categories and negative access for unapproved categories.
 - Open questions:
-  - Which categories need a response SLA or escalation target, and who owns each one?
-  - Should the current `assigned_to` field become a real operator-assignment workflow or be removed until Product Ops needs it?
-  - Which mailbox categories should remain metadata-only, and which may keep raw body content in the product?
+  - Should mailbox assignment grow a formal due-date column, or is claim plus category SLA enough until volume increases?
 
 ### Managing Bum Team Management And Team Payout Visibility
 - Roles: Admin, approved Managing Bum, invited or active member Bum, future finance reviewers where explicitly approved.

@@ -29,6 +29,10 @@ describe("admin shared mailbox inbox", () => {
     expect(functionSource).toContain("Only the approved shared mailbox can be opened here.");
     expect(functionSource).toContain("resolveAllowedClerkIssuer");
     expect(functionSource).toContain("This Clerk session was issued by an unapproved tenant.");
+    expect(functionSource).toContain('"claim_message"');
+    expect(functionSource).toContain('"update_category"');
+    expect(functionSource).toContain("admin_shared_mailbox_message_claimed");
+    expect(functionSource).toContain("Choose a mailbox category before closing an uncategorized message.");
     expect(functionSource).toContain("admin_shared_mailbox_synced");
     expect(functionSource).toContain("admin_shared_mailbox_message_sent");
   });
@@ -39,8 +43,12 @@ describe("admin shared mailbox inbox", () => {
     expect(portalApiSource).toContain("listAdminSharedMailboxMessages");
     expect(portalApiSource).toContain("sendAdminSharedMailboxMessage");
     expect(portalApiSource).toContain("updateAdminSharedMailboxStatus");
+    expect(portalApiSource).toContain("updateAdminSharedMailboxCategory");
+    expect(portalApiSource).toContain("claimAdminSharedMailboxMessage");
     expect(adminInboxSource).toContain("External mail");
     expect(adminInboxSource).toContain("bums@trustedbums.com");
+    expect(adminInboxSource).toContain("Mailbox message claimed");
+    expect(adminInboxSource).not.toContain("top: 75");
     expect(adminInboxSource).toContain('sendMutation.mutate("REPLY")');
     expect(adminInboxSource).toContain('sendMutation.mutate("REPLY_ALL")');
     expect(adminInboxSource).toContain('sendMutation.mutate("NEW")');

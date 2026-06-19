@@ -3781,6 +3781,15 @@ function assertClientFinanceAccess(user: AuthUser, action: string) {
   }
 }
 
+function shouldUseFinanceSafeProjection(user?: AuthUser) {
+  return user?.role === "CLIENT" && user.clientAccessRole === "CLIENT_FINANCE";
+}
+
+const CUSTOMER_PAYMENT_REPORT_SELECT =
+  "*, opportunity_claims(id, contact_name, contact_company, bum_user_id), opportunity_registrations(id, target_account_name, commission_rate), companies(id, name), profiles(id, full_name, email)";
+const CUSTOMER_PAYMENT_REPORT_FINANCE_SAFE_SELECT =
+  "id, opportunity_registration_id, company_id, source, customer_name, gross_amount, commissionable_amount, excluded_amount, currency, customer_payment_received_at, notes, status, created_at, updated_at, opportunity_registrations(id, target_account_name, commission_rate, commission_schedule_start_at), companies(id, name)";
+
 export async function listCustomerPaymentReports(user?: AuthUser) {
   if (user) {
     assertClientFinanceAccess(user, "You do not have access to customer payment reporting.");
@@ -3788,7 +3797,7 @@ export async function listCustomerPaymentReports(user?: AuthUser) {
 
   const { data, error } = await supabase
     .from("customer_payment_reports")
-    .select("*, opportunity_claims(id, contact_name, contact_company, bum_user_id), opportunity_registrations(id, target_account_name, commission_rate), companies(id, name), profiles(id, full_name, email)")
+    .select(shouldUseFinanceSafeProjection(user) ? CUSTOMER_PAYMENT_REPORT_FINANCE_SAFE_SELECT : CUSTOMER_PAYMENT_REPORT_SELECT)
     .order("customer_payment_received_at", { ascending: false })
     .order("created_at", { ascending: false })
     .returns<CustomerPaymentReportRecord[]>();
@@ -3888,6 +3897,11 @@ export async function createCustomerPaymentReport(user: AuthUser, input: Custome
   return data;
 }
 
+const CLAIM_INVOICE_SELECT =
+  "*, customer_payment_reports(id, customer_name, commissionable_amount, customer_payment_received_at), opportunity_claims(id, contact_name, contact_company, bum_user_id), opportunity_registrations(id, target_account_name), companies(id, name)";
+const CLAIM_INVOICE_FINANCE_SAFE_SELECT =
+  "id, customer_payment_report_id, opportunity_registration_id, company_id, invoice_number, invoice_amount, commission_rate, currency, status, generated_at, sent_at, paid_at, notes, created_at, updated_at, customer_payment_reports(id, customer_name, commissionable_amount, customer_payment_received_at), opportunity_registrations(id, target_account_name), companies(id, name)";
+
 export async function listClaimInvoices(user?: AuthUser) {
   if (user) {
     assertClientFinanceAccess(user, "You do not have access to generated claim invoices.");
@@ -3895,7 +3909,7 @@ export async function listClaimInvoices(user?: AuthUser) {
 
   const { data, error } = await supabase
     .from("claim_invoices")
-    .select("*, customer_payment_reports(id, customer_name, commissionable_amount, customer_payment_received_at), opportunity_claims(id, contact_name, contact_company, bum_user_id), opportunity_registrations(id, target_account_name), companies(id, name)")
+    .select(shouldUseFinanceSafeProjection(user) ? CLAIM_INVOICE_FINANCE_SAFE_SELECT : CLAIM_INVOICE_SELECT)
     .order("created_at", { ascending: false })
     .returns<ClaimInvoiceRecord[]>();
 
@@ -5897,6 +5911,14 @@ export async function sendAdminSharedMailboxMessage(input: AdminSharedMailboxSen
 
 export async function updateAdminSharedMailboxStatus(messageId: string, status: AdminSharedMailboxStatus) {
   return await invokeAdminSharedMailboxOperation<AdminSharedMailboxMessage>("update_status", { messageId, status });
+}
+
+export async function updateAdminSharedMailboxCategory(messageId: string, category: AdminSharedMailboxCategory) {
+  return await invokeAdminSharedMailboxOperation<AdminSharedMailboxMessage>("update_category", { messageId, category });
+}
+
+export async function claimAdminSharedMailboxMessage(messageId: string) {
+  return await invokeAdminSharedMailboxOperation<AdminSharedMailboxMessage>("claim_message", { messageId });
 }
 
 type ApiAccessKeysOperationResponse<T> = { data?: T; error?: string };

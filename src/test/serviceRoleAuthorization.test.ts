@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const configSource = readFileSync("supabase/config.toml", "utf8");
@@ -7,6 +7,14 @@ const profileBootstrapSource = readFileSync("supabase/functions/profile-bootstra
 const adminAccessRequestsSource = readFileSync("supabase/functions/admin-access-requests/index.ts", "utf8");
 const extensionApiSource = readFileSync("supabase/functions/extension-api-v1/index.ts", "utf8");
 const sendAdminEmailSource = readFileSync("supabase/functions/send-admin-email/index.ts", "utf8");
+const clerkVerifiedFunctionSources = readdirSync("supabase/functions", { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .filter((entry) => existsSync(`supabase/functions/${entry.name}/index.ts`))
+  .map((entry) => ({
+    slug: entry.name,
+    source: readFileSync(`supabase/functions/${entry.name}/index.ts`, "utf8"),
+  }))
+  .filter(({ source }) => source.includes("jose.jwtVerify") && source.includes("clerkFrontendApiUrl"));
 
 function functionConfigBlock(slug: string) {
   const pattern = new RegExp(`\\[functions\\.${slug}\\][\\s\\S]*?(?=\\n\\[functions\\.|\\n\\[|$)`);
@@ -37,6 +45,19 @@ describe("service-role edge function authorization contracts", () => {
       expect(source).toContain("getBearerToken");
       expect(source).toContain("Missing bearer token.");
       expect(source).toContain(".from(\"profiles\")");
+    }
+  });
+
+  it("pins Clerk-backed service-role verification to the configured issuer", () => {
+    expect(clerkVerifiedFunctionSources.length).toBeGreaterThan(10);
+
+    for (const { slug, source } of clerkVerifiedFunctionSources) {
+      expect(source, slug).toContain("resolveAllowedClerkIssuer");
+      expect(source, slug).toContain("This Clerk session was issued by an unapproved tenant.");
+      expect(source, slug).toContain("{ issuer: allowedIssuer }");
+      expect(source, slug).not.toContain("issuer?.trim() || clerkFrontendApiUrl?.trim()");
+      expect(source, slug).not.toContain("payload.iss ? { issuer: payload.iss } : undefined");
+      expect(source, slug).not.toContain("{ issuer: payload.iss }");
     }
   });
 

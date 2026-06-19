@@ -83,26 +83,32 @@ function parseJwtPayload(token: string) {
   };
 }
 
-function resolveClerkJwksUrl(issuer?: string) {
-  const candidate = issuer?.trim() || clerkFrontendApiUrl?.trim();
+function normalizeIssuer(value: string) {
+  return value.trim().replace(/\/+$/, "");
+}
 
-  if (!candidate) {
-    throw new Error("Unable to determine the Clerk JWKS endpoint for this session.");
+function resolveAllowedClerkIssuer(issuer?: string) {
+  const configuredIssuer = clerkFrontendApiUrl?.trim();
+
+  if (!configuredIssuer) {
+    throw new Error("The allowed Clerk issuer is not configured for lead duplicate checks.");
   }
 
-  return new URL("/.well-known/jwks.json", candidate).toString();
+  const allowedIssuer = normalizeIssuer(configuredIssuer);
+  if (issuer && normalizeIssuer(issuer) !== allowedIssuer) {
+    throw new Error("This Clerk session was issued by an unapproved tenant.");
+  }
+  return allowedIssuer;
 }
 
 async function getCurrentProfile(token: string) {
   const payload = parseJwtPayload(token);
+  const allowedIssuer = resolveAllowedClerkIssuer(payload.iss);
+  const jwksUrl = new URL("/.well-known/jwks.json", allowedIssuer).toString();
   const { payload: verifiedPayload } = await jose.jwtVerify(
     token,
-    jose.createRemoteJWKSet(new URL(resolveClerkJwksUrl(payload.iss))),
-    payload.iss
-      ? {
-          issuer: payload.iss,
-        }
-      : undefined,
+    jose.createRemoteJWKSet(new URL(jwksUrl)),
+    { issuer: allowedIssuer },
   );
   const currentUserId = (verifiedPayload as ClaimsResponse).sub?.trim();
 

@@ -34,11 +34,12 @@ describe("extension API contract", () => {
 
   it("fails closed for forged or wrong-issuer Clerk tokens", () => {
     expect(functionSource).toContain('throw new Error("The extension API Clerk issuer is not configured.")');
-    expect(functionSource).toContain('throw new Error("The current session token issuer is not trusted.")');
+    expect(functionSource).toContain('throw new Error("This Clerk session was issued by an unapproved tenant.")');
     expect(functionSource).toContain("jose.jwtVerify");
-    expect(functionSource).toContain("resolveClerkJwksUrl(payload.iss)");
-    expect(functionSource).toContain("{ issuer: payload.iss }");
+    expect(functionSource).toContain("resolveAllowedClerkIssuer(payload.iss)");
+    expect(functionSource).toContain("{ issuer: allowedIssuer }");
     expect(functionSource).not.toContain("issuer?.trim() || clerkFrontendApiUrl?.trim()");
+    expect(functionSource).not.toContain("{ issuer: payload.iss }");
   });
 
   it("rejects ambiguous capture destinations and rate-limits capture creation", () => {

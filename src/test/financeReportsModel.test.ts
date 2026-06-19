@@ -1,8 +1,11 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { adminFinanceColumns, buildAdminFinanceRows } from "@/pages/admin/adminReportsModel";
 import { buildBumEarningsRows, bumEarningsColumns } from "@/pages/bum/bumReportsModel";
 import { buildClientCombinedFinanceRows, buildClientFinanceReports } from "@/pages/client/clientReportsModel";
 import type { BumPayoutRecord, ClaimInvoiceRecord, CustomerPaymentReportRecord } from "@/lib/portalApi";
+
+const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 
 const paymentFixture = {
   id: "payment-1",
@@ -93,6 +96,22 @@ const approvedPayoutFixture = {
 } satisfies BumPayoutRecord;
 
 describe("finance report business dates", () => {
+  it("keeps Client Finance payment and invoice reads on finance-safe projections", () => {
+    const paymentSelect = portalApiSource.match(/const CUSTOMER_PAYMENT_REPORT_FINANCE_SAFE_SELECT =\n\s{2}"([^"]+)";/)?.[1] ?? "";
+    const invoiceSelect = portalApiSource.match(/const CLAIM_INVOICE_FINANCE_SAFE_SELECT =\n\s{2}"([^"]+)";/)?.[1] ?? "";
+
+    expect(portalApiSource).toContain("shouldUseFinanceSafeProjection(user)");
+    expect(portalApiSource).toContain('user.clientAccessRole === "CLIENT_FINANCE"');
+    expect(paymentSelect).not.toContain("opportunity_claims");
+    expect(paymentSelect).not.toContain("profiles(");
+    expect(paymentSelect).not.toContain("bum_user_id");
+    expect(paymentSelect).not.toContain("reported_by");
+    expect(invoiceSelect).not.toContain("opportunity_claims");
+    expect(invoiceSelect).not.toContain("profiles(");
+    expect(invoiceSelect).not.toContain("bum_user_id");
+    expect(invoiceSelect).not.toContain("generated_by");
+  });
+
   it("keys Client Finance report filters to business dates while keeping created-at as audit metadata", () => {
     const reports = buildClientFinanceReports({
       payments: [paymentFixture],

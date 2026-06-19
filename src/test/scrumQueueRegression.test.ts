@@ -64,9 +64,13 @@ describe("scrum implementation queue regression coverage", () => {
     expect(handoffsSource).toContain("admin_priority");
     expect(handoffsSource).toContain("admin_next_action");
     expect(handoffsSource).toContain("notification_error");
+    expect(handoffsSource).toContain("followUpDeadline");
+    expect(handoffsSource).toContain("function isStaleHandoff");
+    expect(handoffsSource).toContain("activityAt(createdAt, updatedAt)");
     expect(handoffsSource).toContain("Urgent / high");
     expect(handoffsSource).toContain("Assigned to me");
     expect(handoffsSource).toContain("Delivery issue");
+    expect(handoffsSource).toContain("Overdue / stale");
     expect(handoffsSource).not.toContain("Stale or notify failed");
   });
 

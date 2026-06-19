@@ -13,6 +13,16 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-18 - Implement no-info scrum batch for mailbox, Clerk issuer pinning, Client Finance reads, and handoff aging
+
+- Trigger: Ryan approved the no-info scrum batch covering `TB-0102`, `TB-0089`, `TB-0044`, `TB-0047`, and `TB-0051`.
+- Implementation branch: local `main`.
+- What changed: Updated the Admin Inbox and `admin-shared-mailbox` function so admins can load the current full shared-mailbox queue, claim messages to `assigned_to`, change categories, and cannot mark uncategorized messages handled or archived. Updated the shared-mailbox business rules and operations doc with category handling, raw-body posture, owner expectations, and audit expectations. Pinned Clerk issuer verification across Clerk-backed service-role Edge Functions so JWKS lookup and `jwtVerify` use the configured issuer rather than the token-supplied issuer. Added role-aware finance-safe selects for Client Finance payment reports and claim invoices while preserving richer Admin and Client Admin projections. Updated Admin Handoffs stale filtering/counts to use follow-up deadline when present and otherwise last-touch `updated_at` instead of raw create time.
+- Checks run: Supabase changelog scan; targeted source review; `corepack pnpm exec vitest run src/test/adminSharedMailbox.test.ts src/test/serviceRoleAuthorization.test.ts src/test/extensionApiContract.test.ts src/test/bumContactsMutationContract.test.ts src/test/financeReportsModel.test.ts src/test/scrumQueueRegression.test.ts src/test/clientIntakeQualification.test.ts`; `corepack pnpm run build`; `git diff --check`.
+- Results: Targeted tests passed `40/40`; production build passed. Build still reports the pre-existing `ClientOpportunityNew.tsx` React hook dependency warning.
+- Tracker expectation: `TB-0089` and `TB-0044` should be closeable on source plus test proof after push. `TB-0102` should be closeable if the team accepts current-full-list plus claim/category/SLA-doc proof as satisfying the live mailbox backlog control. `TB-0051` is partially addressed because stale logic now uses deadline/last-touch, but full due-date parity across target responses, intro requests, and reverse opportunities still needs schema/product work. `TB-0047` is partially helped by the finance-safe projection but the broad client-route hydration work remains open.
+- Recheck agents: Security Engineer, Product Ops Workflow Analyst, Data And Analytics Engineer, Performance Engineer, QA/Test Engineer, and Lead Developer.
+
 ### 2026-06-18 - Fix CoreWeave claim-review landing and approval notification follow-through
 
 - Trigger: Ryan asked what needed to be fixed after Akshay clicked the CoreWeave claim-review email, did not get an accept/decline prompt in the Trusted Bums account, and replied `approved`.

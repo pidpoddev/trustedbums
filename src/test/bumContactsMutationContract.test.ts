@@ -62,11 +62,13 @@ describe("Bum manual contact mutation contract", () => {
   });
 
   it("fails closed unless the portal contacts token issuer matches configured Clerk issuer", () => {
-    expect(portalContactsFunctionSource).toContain('const expectedIssuer = clerkFrontendApiUrl?.trim();');
-    expect(portalContactsFunctionSource).toContain('if (!expectedIssuer) throw new Error("The portal contacts Clerk issuer is not configured.");');
-    expect(portalContactsFunctionSource).toContain('if (!issuer || issuer.trim() !== expectedIssuer) throw new Error("The current session token issuer is not trusted.");');
-    expect(portalContactsFunctionSource).toContain('jose.createRemoteJWKSet(new URL(resolveClerkJwksUrl(payload.iss)))');
-    expect(portalContactsFunctionSource).toContain("{ issuer: payload.iss }");
+    expect(portalContactsFunctionSource).toContain("resolveAllowedClerkIssuer");
+    expect(portalContactsFunctionSource).toContain('throw new Error("The portal contacts Clerk issuer is not configured.")');
+    expect(portalContactsFunctionSource).toContain('throw new Error("This Clerk session was issued by an unapproved tenant.")');
+    expect(portalContactsFunctionSource).toContain('const jwksUrl = new URL("/.well-known/jwks.json", allowedIssuer).toString();');
+    expect(portalContactsFunctionSource).toContain("{ issuer: allowedIssuer }");
+    expect(portalContactsFunctionSource).not.toContain("issuer?.trim() || clerkFrontendApiUrl?.trim()");
+    expect(portalContactsFunctionSource).not.toContain("{ issuer: payload.iss }");
   });
 
   it("keeps manual contact mutation cleanup-safe for seeded QA runs", () => {

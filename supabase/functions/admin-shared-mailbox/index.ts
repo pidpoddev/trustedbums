@@ -27,7 +27,7 @@ interface GraphMessage {
   webLink?: string;
 }
 
-type MailboxOperation = "sync" | "list_messages" | "get_message" | "send_message" | "update_status";
+type MailboxOperation = "sync" | "list_messages" | "get_message" | "send_message" | "update_status" | "update_category" | "claim_message";
 type SendAction = "NEW" | "REPLY" | "REPLY_ALL";
 
 interface MailboxRequest {
@@ -159,6 +159,13 @@ function cleanEmail(value: unknown) {
 function cleanEmailList(value: unknown, max = 25) {
   if (!Array.isArray(value)) return [] as string[];
   return Array.from(new Set(value.map(cleanEmail).filter(Boolean) as string[])).slice(0, max);
+}
+
+function cleanCategory(value: unknown) {
+  const category = cleanText(value, 40);
+  const allowed = new Set(["dmarc", "legal", "question", "complaint", "privacy", "abuse", "support", "client_criteria", "uncategorized"]);
+  if (!allowed.has(category)) throw new Error("Choose a valid mailbox category.");
+  return category;
 }
 
 function graphRecipients(recipients: string[]) {
@@ -311,7 +318,7 @@ async function listMessages(mailbox: string, input: MailboxRequest) {
     .eq("mailbox", mailbox)
     .order("received_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
-    .limit(safeNumber(input.top, 50, 10, 100));
+    .limit(safeNumber(input.top, 500, 10, 500));
 
   if (input.status && input.status !== "ALL") query = query.eq("status", input.status);
   if (input.category && input.category !== "ALL") query = query.eq("category", input.category);
@@ -339,7 +346,23 @@ async function updateStatus(mailbox: string, input: MailboxRequest, profile: Pro
   const status = cleanText(input.status, 40);
   const allowed = new Set(["OPEN", "IN_PROGRESS", "HANDLED", "ARCHIVED"]);
   if (!allowed.has(status)) throw new Error("Choose a valid mailbox status.");
+
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from("admin_shared_mailbox_messages")
+    .select("id, category")
+    .eq("mailbox", mailbox)
+    .eq("id", messageId)
+    .maybeSingle<{ id: string; category: string | null }>();
+  if (existingError) throw existingError;
+  if (!existing) throw new Error("Shared mailbox message was not found.");
+  if ((status === "HANDLED" || status === "ARCHIVED") && existing.category === "uncategorized") {
+    throw new Error("Choose a mailbox category before closing an uncategorized message.");
+  }
+
   const patch: Record<string, unknown> = { status };
+  if (status === "IN_PROGRESS" || status === "HANDLED") {
+    patch.assigned_to = profile.id;
+  }
   if (status === "HANDLED") {
     patch.handled_by = profile.id;
     patch.handled_at = new Date().toISOString();
@@ -353,6 +376,37 @@ async function updateStatus(mailbox: string, input: MailboxRequest, profile: Pro
     .single();
   if (error) throw error;
   await auditMailboxEvent(profile, "admin_shared_mailbox_status_updated", messageId, { status, mailbox });
+  return data;
+}
+
+async function updateCategory(mailbox: string, input: MailboxRequest, profile: ProfileRow) {
+  const messageId = cleanText(input.messageId, 80);
+  if (!messageId) throw new Error("Choose a shared mailbox message.");
+  const category = cleanCategory(input.category);
+  const { data, error } = await supabaseAdmin
+    .from("admin_shared_mailbox_messages")
+    .update({ category })
+    .eq("mailbox", mailbox)
+    .eq("id", messageId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  await auditMailboxEvent(profile, "admin_shared_mailbox_category_updated", messageId, { category, mailbox });
+  return data;
+}
+
+async function claimMessage(mailbox: string, input: MailboxRequest, profile: ProfileRow) {
+  const messageId = cleanText(input.messageId, 80);
+  if (!messageId) throw new Error("Choose a shared mailbox message.");
+  const { data, error } = await supabaseAdmin
+    .from("admin_shared_mailbox_messages")
+    .update({ assigned_to: profile.id, status: "IN_PROGRESS" })
+    .eq("mailbox", mailbox)
+    .eq("id", messageId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  await auditMailboxEvent(profile, "admin_shared_mailbox_message_claimed", messageId, { mailbox, assigned_to: profile.id });
   return data;
 }
 
@@ -490,6 +544,10 @@ Deno.serve(async (request) => {
         return json(200, { data: await sendMessage(mailbox, input, currentProfile) });
       case "update_status":
         return json(200, { data: await updateStatus(mailbox, input, currentProfile) });
+      case "update_category":
+        return json(200, { data: await updateCategory(mailbox, input, currentProfile) });
+      case "claim_message":
+        return json(200, { data: await claimMessage(mailbox, input, currentProfile) });
       default:
         return json(400, { error: "Unknown shared mailbox operation." });
     }
