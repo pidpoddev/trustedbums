@@ -17,7 +17,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import { trackAnalyticsEvent } from "@/lib/analyticsEvents";
 import { formatDateForTimeZone } from "@/lib/timezone";
-import { createBumRepresentedContact, deleteBumRepresentedContact, listBumRepresentedContacts, type BumRepresentedContactRecord, type BumRepresentedContactSource } from "@/lib/portalApi";
+import {
+  archiveBumInnerCircleCompany,
+  createBumInnerCircleCompany,
+  createBumRepresentedContact,
+  deleteBumRepresentedContact,
+  listBumInnerCircleCompanies,
+  listBumRepresentedContacts,
+  type BumInnerCircleCompanyRecord,
+  type BumRepresentedContactRecord,
+  type BumRepresentedContactSource,
+} from "@/lib/portalApi";
 
 const sourceLabels: Record<BumRepresentedContactSource, string> = {
   OPPORTUNITY_CLAIM: "Claim",
@@ -53,6 +63,14 @@ const emptyContactForm = {
   relationshipStrength: "",
   isInnerCircle: false,
   note: "",
+};
+
+const emptyInnerCircleCompanyForm = {
+  companyName: "",
+  companyWebsite: "",
+  linkedinCompanyUrl: "",
+  relationshipContext: "",
+  notes: "",
 };
 
 function formatDate(value: string, timeZone: string) {
@@ -93,13 +111,21 @@ export default function BumContacts() {
   const timeZone = useUserTimeZone();
   const [query, setQuery] = useState("");
   const [addContactOpen, setAddContactOpen] = useState(false);
+  const [addCompanyOpen, setAddCompanyOpen] = useState(false);
   const [contactForm, setContactForm] = useState(emptyContactForm);
+  const [innerCircleCompanyForm, setInnerCircleCompanyForm] = useState(emptyInnerCircleCompanyForm);
   const contactsQuery = useQuery({
     queryKey: ["bum-represented-contacts", user?.id],
     queryFn: () => listBumRepresentedContacts(user!.id),
     enabled: Boolean(user?.id),
   });
+  const innerCircleCompaniesQuery = useQuery({
+    queryKey: ["bum-inner-circle-companies", user?.id],
+    queryFn: () => listBumInnerCircleCompanies(user!.id),
+    enabled: Boolean(user?.id && user?.role === "BUM"),
+  });
   const contacts = useMemo(() => contactsQuery.data ?? [], [contactsQuery.data]);
+  const innerCircleCompanies = useMemo(() => innerCircleCompaniesQuery.data ?? [], [innerCircleCompaniesQuery.data]);
   const filteredContacts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return contacts;
@@ -113,6 +139,56 @@ export default function BumContacts() {
     );
   }, [contacts]);
   const innerCircleCount = useMemo(() => contacts.filter((contact) => contact.isInnerCircle).length, [contacts]);
+
+  const addInnerCircleCompanyMutation = useMutation({
+    mutationFn: () => {
+      if (!user) throw new Error("Sign in before adding an Inner Circle company.");
+      if (!innerCircleCompanyForm.companyName.trim()) throw new Error("Company name is required.");
+      if (!innerCircleCompanyForm.relationshipContext.trim()) throw new Error("Explain why this company belongs in your Inner Circle.");
+      return createBumInnerCircleCompany(user, {
+        companyName: innerCircleCompanyForm.companyName,
+        companyWebsite: innerCircleCompanyForm.companyWebsite,
+        linkedinCompanyUrl: innerCircleCompanyForm.linkedinCompanyUrl,
+        relationshipContext: innerCircleCompanyForm.relationshipContext,
+        notes: innerCircleCompanyForm.notes,
+      });
+    },
+    onSuccess: (company) => {
+      trackAnalyticsEvent("trustedbums_inner_circle_company_added", {
+        company_source: "bum_contacts",
+        has_website: Boolean(innerCircleCompanyForm.companyWebsite.trim()),
+        has_linkedin: Boolean(innerCircleCompanyForm.linkedinCompanyUrl.trim()),
+      });
+      queryClient.setQueryData<BumInnerCircleCompanyRecord[]>(["bum-inner-circle-companies", user?.id], (current) => {
+        if (!current?.length) return [company];
+        return [company, ...current.filter((item) => item.id !== company.id)];
+      });
+      queryClient.invalidateQueries({ queryKey: ["bum-inner-circle-companies", user?.id] });
+      setInnerCircleCompanyForm(emptyInnerCircleCompanyForm);
+      setAddCompanyOpen(false);
+      toast({ title: "Inner Circle company added", description: "The company is separate from your 20 named Inner Circle contacts." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to add Inner Circle company", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const archiveInnerCircleCompanyMutation = useMutation({
+    mutationFn: (company: BumInnerCircleCompanyRecord) => {
+      if (!user) throw new Error("Sign in before removing an Inner Circle company.");
+      return archiveBumInnerCircleCompany(user, company.id);
+    },
+    onSuccess: (company) => {
+      queryClient.setQueryData<BumInnerCircleCompanyRecord[]>(["bum-inner-circle-companies", user?.id], (current) =>
+        (current ?? []).filter((item) => item.id !== company.id),
+      );
+      queryClient.invalidateQueries({ queryKey: ["bum-inner-circle-companies", user?.id] });
+      toast({ title: "Inner Circle company removed", description: "The company was removed from your active Inner Circle companies." });
+    },
+    onError: (error) => {
+      toast({ title: "Unable to remove Inner Circle company", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    },
+  });
 
   const addContactMutation = useMutation({
     mutationFn: () => {
@@ -183,10 +259,16 @@ export default function BumContacts() {
         title="Contacts"
         description="See the people you represent across claims, prospect recommendations, client target responses, LinkedIn captures, and your Inner Circle."
       >
-        <Button onClick={() => setAddContactOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add contact
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setAddCompanyOpen(true)} disabled={innerCircleCompanies.length >= 3}>
+            <Building2 className="mr-2 h-4 w-4" />
+            Add company
+          </Button>
+          <Button onClick={() => setAddContactOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add contact
+          </Button>
+        </div>
       </PageHeader>
 
       <div className="grid gap-3 md:grid-cols-6">
@@ -215,6 +297,68 @@ export default function BumContacts() {
           <p className="mt-1 text-2xl font-semibold">{countsBySource.EXTENSION_CAPTURE}</p>
         </div>
       </div>
+
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-display text-lg font-semibold">Inner Circle Companies</h2>
+                <Badge variant="secondary">{innerCircleCompanies.length}/3</Badge>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Account-level company context stays separate from the 20 named Inner Circle contacts.
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => setAddCompanyOpen(true)} disabled={innerCircleCompanies.length >= 3}>
+              <Building2 className="mr-2 h-4 w-4" />
+              Add company
+            </Button>
+          </div>
+          {innerCircleCompaniesQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading Inner Circle companies...</p>
+          ) : null}
+          {!innerCircleCompaniesQuery.isLoading && !innerCircleCompanies.length ? (
+            <p className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
+              Add up to 3 companies where you understand the people, politics, decision process, or internal context well enough to help route opportunities.
+            </p>
+          ) : null}
+          {innerCircleCompanies.length ? (
+            <div className="grid gap-3 md:grid-cols-3">
+              {innerCircleCompanies.map((company) => (
+                <div key={company.id} className="rounded-md border p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium">{company.company_name}</p>
+                      {company.company_website ? <p className="truncate text-sm text-muted-foreground">{company.company_website}</p> : null}
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      disabled={archiveInnerCircleCompanyMutation.isPending}
+                      onClick={() => archiveInnerCircleCompanyMutation.mutate(company)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Remove Inner Circle company</span>
+                    </Button>
+                  </div>
+                  <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{company.relationship_context}</p>
+                  {company.linkedin_company_url ? (
+                    <Button className="mt-3" variant="outline" size="sm" asChild>
+                      <a href={company.linkedin_company_url} target="_blank" rel="noreferrer">
+                        LinkedIn
+                        <ExternalLink className="ml-2 h-4 w-4" />
+                      </a>
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <div className="relative max-w-2xl">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -347,6 +491,93 @@ export default function BumContacts() {
           </Card>
         ))}
       </div>
+
+      <Dialog
+        open={addCompanyOpen}
+        onOpenChange={(open) => {
+          setAddCompanyOpen(open);
+          if (!open && !addInnerCircleCompanyMutation.isPending) {
+            setInnerCircleCompanyForm(emptyInnerCircleCompanyForm);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display">Add Inner Circle company</DialogTitle>
+            <DialogDescription>Add a company where your context is credible even when no named contact is ready yet.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="inner-circle-company-name">Company</Label>
+                <Input
+                  id="inner-circle-company-name"
+                  value={innerCircleCompanyForm.companyName}
+                  onChange={(event) => setInnerCircleCompanyForm((current) => ({ ...current, companyName: event.target.value }))}
+                  placeholder="Acme Corp"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="inner-circle-company-website">Website</Label>
+                <Input
+                  id="inner-circle-company-website"
+                  value={innerCircleCompanyForm.companyWebsite}
+                  onChange={(event) => setInnerCircleCompanyForm((current) => ({ ...current, companyWebsite: event.target.value }))}
+                  placeholder="https://company.com"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inner-circle-company-linkedin">LinkedIn company page</Label>
+              <Input
+                id="inner-circle-company-linkedin"
+                value={innerCircleCompanyForm.linkedinCompanyUrl}
+                onChange={(event) => setInnerCircleCompanyForm((current) => ({ ...current, linkedinCompanyUrl: event.target.value }))}
+                placeholder="https://www.linkedin.com/company/acme"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inner-circle-company-context">Relationship context</Label>
+              <Textarea
+                id="inner-circle-company-context"
+                rows={4}
+                value={innerCircleCompanyForm.relationshipContext}
+                onChange={(event) => setInnerCircleCompanyForm((current) => ({ ...current, relationshipContext: event.target.value }))}
+                placeholder="Why you understand this company, its politics, decision process, or people."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inner-circle-company-notes">Notes</Label>
+              <Textarea
+                id="inner-circle-company-notes"
+                rows={3}
+                value={innerCircleCompanyForm.notes}
+                onChange={(event) => setInnerCircleCompanyForm((current) => ({ ...current, notes: event.target.value }))}
+                placeholder="Optional context for future claims or route review."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAddCompanyOpen(false)} disabled={addInnerCircleCompanyMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => addInnerCircleCompanyMutation.mutate()}
+              disabled={
+                innerCircleCompanies.length >= 3 ||
+                !innerCircleCompanyForm.companyName.trim() ||
+                !innerCircleCompanyForm.relationshipContext.trim() ||
+                addInnerCircleCompanyMutation.isPending
+              }
+            >
+              Add company
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={addContactOpen}

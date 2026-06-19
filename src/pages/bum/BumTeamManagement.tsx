@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -56,6 +57,8 @@ export default function BumTeamManagement() {
   const userId = user?.id;
   const [teamInviteEmail, setTeamInviteEmail] = useState("");
   const [teamInviteName, setTeamInviteName] = useState("");
+  const [teamInviteReferralSource, setTeamInviteReferralSource] = useState("");
+  const [teamInviteTrustConfirmed, setTeamInviteTrustConfirmed] = useState(false);
   const [teamInviteNote, setTeamInviteNote] = useState("");
 
   const profileQuery = useQuery({
@@ -165,16 +168,21 @@ export default function BumTeamManagement() {
       inviteBum({
         email: teamInviteEmail,
         name: teamInviteName,
+        referralSource: teamInviteReferralSource,
+        trustConfirmed: teamInviteTrustConfirmed,
         note: teamInviteNote,
       }),
     onSuccess: async (result) => {
       trackAnalyticsEvent("trustedbums_bum_invited", {
         invite_source: "managing_bum_team",
         has_name: Boolean(teamInviteName.trim()),
+        has_referral_source: Boolean(teamInviteReferralSource.trim()),
         has_note: Boolean(teamInviteNote.trim()),
       });
       setTeamInviteEmail("");
       setTeamInviteName("");
+      setTeamInviteReferralSource("");
+      setTeamInviteTrustConfirmed(false);
       setTeamInviteNote("");
       await queryClient.invalidateQueries({ queryKey: ["bum-team-memberships", userId] });
       toast({
@@ -221,7 +229,7 @@ export default function BumTeamManagement() {
             <div>
               <CardTitle className="font-display">Invite Bum</CardTitle>
               <CardDescription>
-                Invite a Bum and they will be attached to your team when they create their Trusted Bums account.
+                Invite a Bum only after naming the referral source and confirming you trust them on your team.
               </CardDescription>
             </div>
           </div>
@@ -248,6 +256,30 @@ export default function BumTeamManagement() {
               />
             </div>
             <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="team-management-invite-referral-source">Referral source</Label>
+              <Input
+                id="team-management-invite-referral-source"
+                value={teamInviteReferralSource}
+                onChange={(event) => setTeamInviteReferralSource(event.target.value)}
+                placeholder="Who referred or vouched for this Bum?"
+              />
+            </div>
+            <div className="rounded-md border bg-muted/30 p-4 md:col-span-2">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="team-management-invite-trust-confirmed"
+                  checked={teamInviteTrustConfirmed}
+                  onCheckedChange={(checked) => setTeamInviteTrustConfirmed(checked === true)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="team-management-invite-trust-confirmed">Trust confirmation</Label>
+                  <p className="text-sm text-muted-foreground">
+                    This invite reflects on you as a Bum. Confirm you trust this person before sending.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2 md:col-span-2">
               <Label htmlFor="team-management-invite-note">Note</Label>
               <Textarea
                 id="team-management-invite-note"
@@ -261,7 +293,7 @@ export default function BumTeamManagement() {
           <div className="flex justify-end">
             <Button
               onClick={() => inviteTeamBumMutation.mutate()}
-              disabled={inviteTeamBumMutation.isPending || !teamInviteEmail.trim()}
+              disabled={inviteTeamBumMutation.isPending || !teamInviteEmail.trim() || !teamInviteReferralSource.trim() || !teamInviteTrustConfirmed}
             >
               <MailPlus className="mr-2 h-4 w-4" />
               {inviteTeamBumMutation.isPending ? "Sending..." : "Invite Bum"}

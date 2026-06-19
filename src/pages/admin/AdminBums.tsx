@@ -7,6 +7,7 @@ import { PaginationControls } from "@/components/PaginationControls";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -399,6 +400,8 @@ export default function AdminBums() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
+  const [inviteReferralSource, setInviteReferralSource] = useState("");
+  const [inviteTrustConfirmed, setInviteTrustConfirmed] = useState(false);
   const [inviteNote, setInviteNote] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
@@ -418,16 +421,26 @@ export default function AdminBums() {
   );
 
   const inviteMutation = useMutation({
-    mutationFn: () => inviteBum({ email: inviteEmail, name: inviteName, note: inviteNote }),
+    mutationFn: () =>
+      inviteBum({
+        email: inviteEmail,
+        name: inviteName,
+        referralSource: inviteReferralSource,
+        trustConfirmed: inviteTrustConfirmed,
+        note: inviteNote,
+      }),
     onSuccess: (result) => {
       trackAnalyticsEvent("trustedbums_bum_invited", {
         invite_source: "admin_bums",
         has_name: Boolean(inviteName.trim()),
+        has_referral_source: Boolean(inviteReferralSource.trim()),
         has_note: Boolean(inviteNote.trim()),
       });
       setInviteOpen(false);
       setInviteEmail("");
       setInviteName("");
+      setInviteReferralSource("");
+      setInviteTrustConfirmed(false);
       setInviteNote("");
       toast({ title: "Bum invited", description: `Clerk sent an invitation to ${result.email}.` });
     },
@@ -630,7 +643,7 @@ export default function AdminBums() {
           <DialogHeader>
             <DialogTitle>Invite Bum</DialogTitle>
             <DialogDescription>
-              Send a Clerk invitation that tags the new account as a Bum when they sign up.
+              Send a Clerk invitation only after confirming the referral source and trust standard for this Bum.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -654,6 +667,30 @@ export default function AdminBums() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="invite-bum-referral-source">Referral source</Label>
+              <Input
+                id="invite-bum-referral-source"
+                value={inviteReferralSource}
+                onChange={(event) => setInviteReferralSource(event.target.value)}
+                placeholder="Who referred or vouched for this Bum?"
+              />
+            </div>
+            <div className="rounded-md border bg-muted/30 p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="invite-bum-trust-confirmed"
+                  checked={inviteTrustConfirmed}
+                  onCheckedChange={(checked) => setInviteTrustConfirmed(checked === true)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="invite-bum-trust-confirmed">Trust confirmation</Label>
+                  <p className="text-sm text-muted-foreground">
+                    This invite reflects on the referrer as a Bum. Confirm they trust this person before sending.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="invite-bum-note">Internal note</Label>
               <Textarea
                 id="invite-bum-note"
@@ -666,7 +703,7 @@ export default function AdminBums() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setInviteOpen(false)} disabled={inviteMutation.isPending}>Cancel</Button>
-            <Button onClick={() => inviteMutation.mutate()} disabled={inviteMutation.isPending || !inviteEmail.trim()}>
+            <Button onClick={() => inviteMutation.mutate()} disabled={inviteMutation.isPending || !inviteEmail.trim() || !inviteReferralSource.trim() || !inviteTrustConfirmed}>
               {inviteMutation.isPending ? "Sending..." : "Send Invite"}
             </Button>
           </DialogFooter>

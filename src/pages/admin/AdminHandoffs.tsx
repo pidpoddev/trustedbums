@@ -14,13 +14,18 @@ import { claimContactSubmission, listContactSubmissions, updateContactSubmission
 import {
   claimClientBumIntroRequest,
   claimCustomerTargetResponse,
+  claimReverseOpportunityHandoff,
   listClientBumIntroRequests,
+  listAdminReverseOpportunities,
   listCustomerTargetResponses,
   updateClientBumIntroRequestStatus,
   updateCustomerTargetResponseStatus,
+  updateReverseOpportunityStatus,
   type ClientBumIntroRequestRecord,
   type ClientBumIntroRequestStatus,
   type CustomerTargetResponseRecord,
+  type ReverseOpportunityRecord,
+  type ReverseOpportunityStatus,
 } from "@/lib/portalApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -34,9 +39,11 @@ type HandoffPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 const contactStatuses: ContactSubmissionStatus[] = ["NEW", "REVIEWED", "INVITED", "REPLIED", "ESCALATED", "ARCHIVED"];
 const targetResponseStatuses: TargetResponseStatus[] = ["PROPOSED", "CONTACTED", "MEETING_SET", "ACCEPTED", "DECLINED"];
 const introRequestStatuses: ClientBumIntroRequestStatus[] = ["SUBMITTED", "IN_REVIEW", "INTRO_REQUESTED", "CLOSED"];
+const reverseOpportunityStatuses: ReverseOpportunityStatus[] = ["SUBMITTED", "OUTREACH_READY", "CLIENT_CONTACTED", "CLIENT_INTERESTED", "CONVERTED", "CLOSED_LOST"];
 const openContactStatuses = new Set<ContactSubmissionStatus>(["NEW", "REVIEWED"]);
 const openTargetResponseStatuses = new Set<TargetResponseStatus>(["PROPOSED", "CONTACTED"]);
 const openIntroRequestStatuses = new Set<ClientBumIntroRequestStatus>(["SUBMITTED", "IN_REVIEW", "INTRO_REQUESTED"]);
+const openReverseOpportunityStatuses = new Set<ReverseOpportunityStatus>(["SUBMITTED", "OUTREACH_READY", "CLIENT_CONTACTED", "CLIENT_INTERESTED"]);
 
 function ageInDays(createdAt: string) {
   return Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000));
@@ -276,6 +283,62 @@ function IntroRequestRow({
   );
 }
 
+function ReverseOpportunityRow({
+  opportunity,
+  onClaim,
+  onStatus,
+}: {
+  opportunity: ReverseOpportunityRecord;
+  onClaim: (opportunity: ReverseOpportunityRecord) => void;
+  onStatus: (opportunity: ReverseOpportunityRecord, status: ReverseOpportunityStatus) => void;
+}) {
+  const timeZone = useUserTimeZone();
+  const { user } = useAuth();
+
+  return (
+    <TableRow>
+      <TableCell>
+        <p className="font-medium">{opportunity.customer_company_name}</p>
+        <p className="text-xs text-muted-foreground">{opportunity.companies?.name ?? "Client pending"}</p>
+        <OperationalBadges
+          priority={opportunity.admin_priority}
+          nextAction={opportunity.admin_next_action}
+          createdAt={opportunity.created_at}
+          updatedAt={opportunity.updated_at}
+          followUpDeadline={opportunity.follow_up_deadline}
+        />
+      </TableCell>
+      <TableCell>
+        <p>{opportunity.customer_contact_name ?? "No contact named"}</p>
+        <p className="text-xs text-muted-foreground">{opportunity.profiles?.full_name ?? opportunity.profiles?.email ?? "Bum pending"}</p>
+      </TableCell>
+      <TableCell>
+        <StatusBadge label={opportunity.status} variant={openReverseOpportunityStatuses.has(opportunity.status) ? "warning" : "outline"} />
+      </TableCell>
+      <TableCell>
+        <Badge variant={opportunity.admin_owner_id ? "outline" : "secondary"}>{ownerLabel(opportunity.admin_owner_id, user?.id)}</Badge>
+      </TableCell>
+      <TableCell className="min-w-[160px] text-xs text-muted-foreground">
+        {formatDateTimeForTimeZone(activityAt(opportunity.created_at, opportunity.updated_at), timeZone)}
+      </TableCell>
+      <TableCell className="min-w-[170px]">
+        <Select value={opportunity.status} onValueChange={(status) => onStatus(opportunity, status as ReverseOpportunityStatus)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {reverseOpportunityStatuses.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell className="text-right">
+        <Button size="sm" variant="outline" onClick={() => onClaim(opportunity)} disabled={opportunity.admin_owner_id === user?.id}>
+          <UserCheck className="mr-2 h-4 w-4" />
+          Claim
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export default function AdminHandoffs() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -294,17 +357,24 @@ export default function AdminHandoffs() {
     queryFn: () => listClientBumIntroRequests(user!),
     enabled: user?.role === "ADMIN",
   });
+  const reverseOpportunityQuery = useQuery({
+    queryKey: ["admin-reverse-opportunities"],
+    queryFn: listAdminReverseOpportunities,
+    enabled: user?.role === "ADMIN",
+  });
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ["admin-contact-submissions"] });
     await queryClient.invalidateQueries({ queryKey: ["admin-customer-target-responses"] });
     await queryClient.invalidateQueries({ queryKey: ["admin-client-bum-intro-requests"] });
+    await queryClient.invalidateQueries({ queryKey: ["admin-reverse-opportunities"] });
     await queryClient.invalidateQueries({ queryKey: ["admin-audit-events"] });
   };
 
   const contactClaimMutation = useMutation({ mutationFn: (submission: ContactSubmissionRecord) => claimContactSubmission(user!, submission.id), onSuccess: invalidate });
   const targetClaimMutation = useMutation({ mutationFn: (response: CustomerTargetResponseRecord) => claimCustomerTargetResponse(user!, response.id), onSuccess: invalidate });
   const introClaimMutation = useMutation({ mutationFn: (request: ClientBumIntroRequestRecord) => claimClientBumIntroRequest(user!, request.id), onSuccess: invalidate });
+  const reverseOpportunityClaimMutation = useMutation({ mutationFn: (opportunity: ReverseOpportunityRecord) => claimReverseOpportunityHandoff(user!, opportunity.id), onSuccess: invalidate });
 
   const contactStatusMutation = useMutation({
     mutationFn: ({ submission, status }: { submission: ContactSubmissionRecord; status: ContactSubmissionStatus }) =>
@@ -319,6 +389,11 @@ export default function AdminHandoffs() {
   const introStatusMutation = useMutation({
     mutationFn: ({ request, status }: { request: ClientBumIntroRequestRecord; status: ClientBumIntroRequestStatus }) =>
       updateClientBumIntroRequestStatus(user!, request.id, status),
+    onSuccess: invalidate,
+  });
+  const reverseOpportunityStatusMutation = useMutation({
+    mutationFn: ({ opportunity, status }: { opportunity: ReverseOpportunityRecord; status: ReverseOpportunityStatus }) =>
+      updateReverseOpportunityStatus(user!, opportunity.id, status),
     onSuccess: invalidate,
   });
 
@@ -369,30 +444,53 @@ export default function AdminHandoffs() {
       .sort((left, right) => ageInDays(activityAt(right.created_at, right.updated_at)) - ageInDays(activityAt(left.created_at, left.updated_at)));
   }, [introRequestQuery.data, filter, search, user?.id]);
 
+  const reverseOpportunities = useMemo(() => {
+    return (reverseOpportunityQuery.data ?? [])
+      .filter((opportunity) => filter !== "OPEN" || openReverseOpportunityStatuses.has(opportunity.status))
+      .filter((opportunity) => filter !== "URGENT" || opportunity.admin_priority === "URGENT" || opportunity.admin_priority === "HIGH")
+      .filter((opportunity) => filter !== "STALE" || isStaleHandoff({ createdAt: opportunity.created_at, updatedAt: opportunity.updated_at, followUpDeadline: opportunity.follow_up_deadline }))
+      .filter((opportunity) => filter !== "MINE" || opportunity.admin_owner_id === user?.id)
+      .filter((opportunity) => filter !== "UNOWNED" || !opportunity.admin_owner_id)
+      .filter(() => filter !== "NOTIFICATION_FAILED")
+      .filter((opportunity) => matchesSearch([
+        opportunity.customer_company_name,
+        opportunity.customer_contact_name,
+        opportunity.customer_need_summary,
+        opportunity.expected_product_service,
+        opportunity.companies?.name,
+        opportunity.profiles?.full_name,
+      ].filter(Boolean).join(" "), search))
+      .sort((left, right) => ageInDays(activityAt(right.created_at, right.updated_at)) - ageInDays(activityAt(left.created_at, left.updated_at)));
+  }, [reverseOpportunityQuery.data, filter, search, user?.id]);
+
   const openCount =
     (contactQuery.data ?? []).filter((submission) => openContactStatuses.has(submission.status)).length +
     (targetResponseQuery.data ?? []).filter((response) => openTargetResponseStatuses.has(response.status)).length +
-    (introRequestQuery.data ?? []).filter((request) => openIntroRequestStatuses.has(request.status)).length;
+    (introRequestQuery.data ?? []).filter((request) => openIntroRequestStatuses.has(request.status)).length +
+    (reverseOpportunityQuery.data ?? []).filter((opportunity) => openReverseOpportunityStatuses.has(opportunity.status)).length;
 
   const unownedCount =
     (contactQuery.data ?? []).filter((submission) => !submission.admin_owner_id).length +
     (targetResponseQuery.data ?? []).filter((response) => !response.admin_owner_id).length +
-    (introRequestQuery.data ?? []).filter((request) => !request.admin_owner_id).length;
+    (introRequestQuery.data ?? []).filter((request) => !request.admin_owner_id).length +
+    (reverseOpportunityQuery.data ?? []).filter((opportunity) => !opportunity.admin_owner_id).length;
 
   const urgentCount =
     (contactQuery.data ?? []).filter((submission) => submission.admin_priority === "URGENT" || submission.admin_priority === "HIGH").length +
     (targetResponseQuery.data ?? []).filter((response) => response.admin_priority === "URGENT" || response.admin_priority === "HIGH").length +
-    (introRequestQuery.data ?? []).filter((request) => request.admin_priority === "URGENT" || request.admin_priority === "HIGH").length;
+    (introRequestQuery.data ?? []).filter((request) => request.admin_priority === "URGENT" || request.admin_priority === "HIGH").length +
+    (reverseOpportunityQuery.data ?? []).filter((opportunity) => opportunity.admin_priority === "URGENT" || opportunity.admin_priority === "HIGH").length;
 
   const staleCount =
     (contactQuery.data ?? []).filter((submission) => isStaleHandoff({ createdAt: submission.created_at, updatedAt: submission.updated_at, followUpDeadline: submission.follow_up_deadline })).length +
     (targetResponseQuery.data ?? []).filter((response) => isStaleHandoff({ createdAt: response.created_at, updatedAt: response.updated_at })).length +
-    (introRequestQuery.data ?? []).filter((request) => isStaleHandoff({ createdAt: request.created_at, updatedAt: request.updated_at })).length;
+    (introRequestQuery.data ?? []).filter((request) => isStaleHandoff({ createdAt: request.created_at, updatedAt: request.updated_at })).length +
+    (reverseOpportunityQuery.data ?? []).filter((opportunity) => isStaleHandoff({ createdAt: opportunity.created_at, updatedAt: opportunity.updated_at, followUpDeadline: opportunity.follow_up_deadline })).length;
 
   const notificationFailedCount = (contactQuery.data ?? []).filter((submission) => submission.notification_error).length;
 
-  const isLoading = contactQuery.isLoading || targetResponseQuery.isLoading || introRequestQuery.isLoading;
-  const isError = contactQuery.isError || targetResponseQuery.isError || introRequestQuery.isError;
+  const isLoading = contactQuery.isLoading || targetResponseQuery.isLoading || introRequestQuery.isLoading || reverseOpportunityQuery.isLoading;
+  const isError = contactQuery.isError || targetResponseQuery.isError || introRequestQuery.isError || reverseOpportunityQuery.isError;
 
   const showError = (error: unknown) => {
     toast({
@@ -483,6 +581,38 @@ export default function AdminHandoffs() {
             </TableBody>
           </Table>
           {!targetResponses.length ? <p className="py-6 text-sm text-muted-foreground">No target responses match this view.</p> : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Customer opportunities</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead>Bum</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Owner</TableHead>
+                <TableHead>Last touch</TableHead>
+                <TableHead>Update</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {reverseOpportunities.map((opportunity) => (
+                <ReverseOpportunityRow
+                  key={opportunity.id}
+                  opportunity={opportunity}
+                  onClaim={(item) => reverseOpportunityClaimMutation.mutate(item, { onError: showError })}
+                  onStatus={(item, status) => reverseOpportunityStatusMutation.mutate({ opportunity: item, status }, { onError: showError })}
+                />
+              ))}
+            </TableBody>
+          </Table>
+          {!reverseOpportunities.length ? <p className="py-6 text-sm text-muted-foreground">No customer opportunities match this view.</p> : null}
         </CardContent>
       </Card>
 

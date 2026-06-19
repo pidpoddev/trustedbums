@@ -20,6 +20,7 @@ import {
   getOwnClientCompany,
   listOwnApiAccessKeys,
   refreshOwnApiAccessKey,
+  requestClientCompanyIdentityChange,
   revokeOwnApiAccessKey,
   updateOwnClientCompanyProfile,
   updateOwnClientDealRegistrationConfig,
@@ -241,8 +242,11 @@ export default function ClientProfile() {
         throw new Error("Sign in before updating your company profile.");
       }
 
-      return updateOwnClientCompanyProfile(user, {
-        name: companyName,
+      const currentLegalName = companyQuery.data?.name?.trim() || user.companyName?.trim() || "";
+      const requestedLegalName = companyName.trim();
+      const legalNameReviewRequired = Boolean(currentLegalName && requestedLegalName && requestedLegalName !== currentLegalName);
+      const company = await updateOwnClientCompanyProfile(user, {
+        name: legalNameReviewRequired ? currentLegalName : requestedLegalName,
         website,
         linkedin_company_url: linkedinCompanyUrl,
         description,
@@ -250,8 +254,17 @@ export default function ClientProfile() {
         target_regions: textToList(targetRegions),
         ideal_customer_profile: idealCustomerProfile,
       });
+
+      if (legalNameReviewRequired) {
+        await requestClientCompanyIdentityChange(user, {
+          requestedCompanyName: requestedLegalName,
+          reviewNote: "Requested from Client Company Profile.",
+        });
+      }
+
+      return { company, legalNameReviewRequired };
     },
-    onSuccess: async (company) => {
+    onSuccess: async ({ company, legalNameReviewRequired }) => {
       clearClientProfileDraft(user?.clientId);
       setCompanyName(company.name ?? "");
       setWebsite(company.website ?? "");
@@ -267,8 +280,10 @@ export default function ClientProfile() {
       await queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
       await refreshUser();
       toast({
-        title: "Company profile saved",
-        description: "Your company matching profile was updated from live database records.",
+        title: legalNameReviewRequired ? "Company profile saved; legal name sent for review" : "Company profile saved",
+        description: legalNameReviewRequired
+          ? "Trusted Bums Admin will review the legal name change before it appears live."
+          : "Your company matching profile was updated from live database records.",
       });
     },
     onError: (error) => {
@@ -384,10 +399,12 @@ export default function ClientProfile() {
                 <div className="space-y-2">
                   <Label htmlFor="client-company-name">Company Name</Label>
                   <Input id="client-company-name" value={companyName} onChange={(event) => { markDirty(); setCompanyName(event.target.value); }} disabled={isLoading} />
+                  <p className="text-xs text-muted-foreground">After setup, legal company name changes are sent to Trusted Bums Admin for review.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="client-company-website">Website</Label>
                   <Input id="client-company-website" value={website} onChange={(event) => { markDirty(); setWebsite(event.target.value); }} disabled={isLoading} placeholder="https://yourcompany.com" />
+                  <p className="text-xs text-muted-foreground">Approved company domains are managed in Team settings and require admin review.</p>
                 </div>
               </div>
               <div className="space-y-2">

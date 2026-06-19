@@ -4,7 +4,7 @@ import * as jose from "jsr:@panva/jose@6";
 import { normalizeInvitationRedirectUrl } from "../_shared/invitationRedirect.ts";
 
 type ClientAccessRole = "CLIENT_ADMIN" | "CLIENT_FINANCE" | "CLIENT_LEGAL" | "CLIENT_IT" | "CLIENT_MEMBER";
-type Action = "list" | "invite" | "update_role" | "disable_member" | "request_domain" | "approve_request" | "deny_request";
+type Action = "list" | "invite" | "update_role" | "disable_member" | "request_domain" | "request_identity_change" | "approve_request" | "deny_request";
 
 interface ClaimsResponse { sub?: string }
 interface CompanyRow { id: string; name: string }
@@ -166,6 +166,16 @@ async function getCurrentProfile(token: string) {
 function assertClientAdmin(profile: ProfileRow) {
   if (profile.role !== "CLIENT" || !profile.company_id || profile.client_access_role !== "CLIENT_ADMIN") {
     throw new Error("Only client admins can manage their company team.");
+  }
+}
+
+function assertActiveClient(profile: ProfileRow) {
+  if (profile.role !== "CLIENT" || !profile.company_id) {
+    throw new Error("Only active client users can manage their company profile.");
+  }
+
+  if (profile.access_status === "DISABLED" || profile.disabled_at) {
+    throw new Error("Disabled client users cannot request company profile changes.");
   }
 }
 
@@ -566,6 +576,81 @@ async function requestDomain(currentProfile: ProfileRow, body: Record<string, un
   return { requested: true, requestId: write.data.id, team: await listTeam(currentProfile.company_id) };
 }
 
+async function requestIdentityChange(currentProfile: ProfileRow, body: Record<string, unknown>) {
+  assertActiveClient(currentProfile);
+  if (!currentProfile.companies) throw new Error("Your profile is not linked to a client company.");
+
+  const requestedCompanyName = cleanString(body.requestedCompanyName);
+  const requestedDomain = normalizeDomain(cleanString(body.requestedDomain));
+  const reviewNote = cleanString(body.reviewNote);
+  const currentCompanyName = currentProfile.companies.name?.trim() ?? "";
+  const nameChanged = Boolean(requestedCompanyName && requestedCompanyName !== currentCompanyName);
+
+  if (!nameChanged && !requestedDomain) {
+    throw new Error("Choose a legal company name or domain to send for Trusted Bums Admin review.");
+  }
+
+  if (requestedDomain) {
+    const { data: existingApproved, error: approvedError } = await supabaseAdmin
+      .from("company_domains")
+      .select("id, company_id")
+      .eq("domain", requestedDomain)
+      .maybeSingle<{ id: string; company_id: string }>();
+    if (approvedError) throw approvedError;
+    if (existingApproved?.company_id === currentProfile.company_id) throw new Error("That domain is already approved for your company.");
+    if (existingApproved) throw new Error("That domain is already assigned to another company.");
+  }
+
+  const payload = {
+    requester_profile_id: currentProfile.id,
+    company_id: currentProfile.company_id,
+    email: currentProfile.email ?? "",
+    email_domain: getEmailDomain(currentProfile.email ?? "") ?? null,
+    requested_company_name: nameChanged ? requestedCompanyName : currentCompanyName,
+    requested_domain: requestedDomain,
+    requested_role: null,
+    request_type: "COMPANY_IDENTITY_CHANGE",
+    status: "pending",
+    evidence: {
+      source: "client_profile_identity_review",
+      currentCompanyName,
+      requestedCompanyName: nameChanged ? requestedCompanyName : null,
+      requestedDomain,
+      reviewNote,
+    },
+    requested_by: currentProfile.id,
+  };
+
+  const { data: existingRequest, error: existingRequestError } = await supabaseAdmin
+    .from("client_company_access_requests")
+    .select("id")
+    .eq("requester_profile_id", currentProfile.id)
+    .eq("company_id", currentProfile.company_id)
+    .eq("request_type", "COMPANY_IDENTITY_CHANGE")
+    .eq("status", "pending")
+    .maybeSingle<{ id: string }>();
+  if (existingRequestError) throw existingRequestError;
+
+  const write = existingRequest
+    ? await supabaseAdmin.from("client_company_access_requests").update(payload).eq("id", existingRequest.id).select("id").single<{ id: string }>()
+    : await supabaseAdmin.from("client_company_access_requests").insert(payload).select("id").single<{ id: string }>();
+  if (write.error) throw write.error;
+
+  await supabaseAdmin.from("audit_events").insert({
+    company_id: currentProfile.company_id,
+    user_id: currentProfile.id,
+    event_type: "client_company_identity_change_requested",
+    entity_type: "client_company_access_requests",
+    entity_id: write.data.id,
+    event_data: {
+      requestedCompanyName: nameChanged ? requestedCompanyName : null,
+      requestedDomain,
+    },
+  });
+
+  return { requested: true, requestId: write.data.id, team: await listTeam(currentProfile.company_id) };
+}
+
 async function reviewAccessRequest(currentProfile: ProfileRow, body: Record<string, unknown>, status: "approved" | "denied") {
   if (!currentProfile.company_id || !currentProfile.companies) throw new Error("Your profile is not linked to a client company.");
   const requestId = cleanString(body.requestId);
@@ -638,9 +723,14 @@ Deno.serve(async (request: Request) => {
 
   try {
     const currentProfile = await getCurrentProfile(getBearerToken(request));
-    assertClientAdmin(currentProfile);
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const action = cleanString(body.action) as Action | null;
+
+    if (action === "request_identity_change") {
+      return json(200, await requestIdentityChange(currentProfile, body));
+    }
+
+    assertClientAdmin(currentProfile);
 
     if (action === "list") {
       return json(200, await listTeam(currentProfile.company_id!));

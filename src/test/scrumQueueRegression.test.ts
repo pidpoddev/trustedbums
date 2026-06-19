@@ -67,6 +67,11 @@ describe("scrum implementation queue regression coverage", () => {
     expect(handoffsSource).toContain("followUpDeadline");
     expect(handoffsSource).toContain("function isStaleHandoff");
     expect(handoffsSource).toContain("activityAt(createdAt, updatedAt)");
+    expect(handoffsSource).toContain("listAdminReverseOpportunities");
+    expect(handoffsSource).toContain("ReverseOpportunityRow");
+    expect(handoffsSource).toContain("Customer opportunities");
+    expect(handoffsSource).toContain("claimReverseOpportunityHandoff");
+    expect(handoffsSource).toContain("openReverseOpportunityStatuses");
     expect(handoffsSource).toContain("Urgent / high");
     expect(handoffsSource).toContain("Assigned to me");
     expect(handoffsSource).toContain("Delivery issue");

@@ -333,32 +333,41 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
 
 ### Extension Page Captures And Bum Represented Contacts
 - Roles: Bum, Admin, Client Admin, Client Member where explicitly participating, Client Finance by exception only.
-- Data needed: Captured source URL, capture type, page title, selected text, notes, destination opportunity or target, derived represented contact details, source workflow, status, timestamps, and audit trail.
+- Data needed: Captured source URL, capture type, page title, selected text, notes, destination opportunity or target, derived represented contact details, Inner Circle tier flag, up to 3 Inner Circle company designations, source workflow, status, timestamps, and audit trail.
 - Allowed actions:
   - Bums may create captures and represented contacts only for destinations they are allowed to access.
   - Bums may read and update their own represented contacts.
+  - Bums may mark up to 20 of their own direct represented contacts as `Inner Circle` for trusted-route workflows.
+  - Bums may mark up to 3 companies as `Inner Circle` companies when they have credible past-work, relationship-map, political, decision-process, or internal-context knowledge, even if no named contact is ready to claim yet.
   - Admins may troubleshoot captures and represented contacts across the marketplace.
   - Client users may see only sanitized, workflow-approved outputs that have been converted into a company-visible target, opportunity, intro request, or conversation.
 - Allowed when:
   - The capture is tied to an accepted or explicitly assigned opportunity or target relationship for the Bum.
   - The represented contact is owned by the Bum or is being reviewed by Admin for support or compliance.
-  - A client-facing view shows derived workflow context that Product Ops has approved for that client company, not raw private capture notes by default.
+  - `Inner Circle` contact entries name a person; account-only relationship claims belong in the separate limited `Inner Circle` company path.
+  - `Inner Circle` is Bum-private by default, Admin-readable for support or compliance, and may be shown to a client only inside the same Bum's approved claim or converted workflow context when that contact is part of the route being reviewed.
+  - A client-facing view shows only the derived workflow context that Product Ops has approved for that client company, not raw private capture notes or a broad relationship inventory by default.
 - Denied when:
   - A Bum tries to capture against or read a target/opportunity they are not entitled to access.
   - A different Bum tries to read or mutate another Bum's represented contact.
+  - A Bum tries to use an account-only placeholder as one of the 20 named `Inner Circle` contacts instead of the 3-company path.
+  - A client-facing surface exposes a Bum's `Inner Circle` inventory outside the specific approved claim or converted workflow where that contact was used.
   - Client Finance, unrelated client users, or other companies try to read raw capture text, raw notes, source URLs, or unrelated represented contacts.
   - Public or unauthenticated users try to read or write captures or represented contacts.
-- Sensitive fields: Selected text, source URL, personal contact details, LinkedIn URLs, notes, relationship strength, extension metadata, destination IDs, and audit events.
+- Sensitive fields: Selected text, source URL, personal contact details, LinkedIn URLs, notes, relationship strength, Inner Circle designation, Inner Circle company designation and rationale, extension metadata, destination IDs, and audit events.
 - Source of truth: `extension_page_captures`, `bum_contacts`, `extension-api-v1`, `portal-contacts`, linked opportunities, linked customer targets, and linked handoff workflows.
 - RLS/authorization owner: Security Engineer plus Product Ops, with extension API and portal QA coverage.
 - QA proof:
   - Owning Bum can create a capture and manage the resulting represented contact for an allowed destination.
+  - Owning Bum can mark at most 20 direct contacts as `Inner Circle`, and claim-created contacts inherit the label only from that same Bum's approved relationship context.
+  - Owning Bum can mark at most 3 companies as `Inner Circle` companies without converting those companies into named-contact claims.
   - Another Bum and unrelated client roles cannot read or mutate that contact.
-  - Client company visibility is limited to approved converted workflow outputs.
+  - Client company visibility is limited to approved converted workflow outputs and the specific `Inner Circle` labels intentionally surfaced on the related claim.
   - Admin can troubleshoot with audit trail.
   - Extension `/context` and `/page-captures` prove one allowed and one denied case.
 - Open questions:
-  - Which converted capture fields, if any, are safe for Client Admin or Client Member views?
+  - Which converted capture fields, if any, are safe for Client Admin or Client Member views? Until decided, client-facing output should be limited to the linked workflow context already approved elsewhere, not raw capture rows.
+  - Should `Second Circle` remain a docs or research-only construct until a separate product object and access rule exist?
   - What retention period applies to raw selected text and source URLs?
 
 ### Payments, Invoices, Payouts, And Reports

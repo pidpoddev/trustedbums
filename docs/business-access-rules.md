@@ -230,19 +230,22 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
   - Client IT may manage only the approved technical setup fields for the client company, including beta deal-registration provider metadata, auth method, field-mapping notes, webhook or polling configuration, fallback workflow, and future SSO-readiness notes.
   - Client Legal may review agreement records and submit legal redline or amendment requests, but does not gain general company-profile, finance, or opportunity-management authority by default.
   - Client Finance may review finance-safe company outputs such as payment reports, invoices, exports, and finance summaries, but does not gain company-profile, legal, or team-management write authority by default.
-  - Client Members may read only the company-profile context needed for their assigned workflow and may not mutate team roles, company identity, or beta integration settings by default.
+  - Active same-company client users may edit ordinary company-profile details that help Bums understand fit, but not locked identity fields.
+  - Client Members may read and edit ordinary company-profile context needed for their assigned workflow, but may not mutate team roles, legal company name, approved domains, or beta integration settings by default.
   - Admins may approve related domains, repair or override client-role assignments, disable or restore client access, and decide when a beta deal-registration setup is operationally approved versus merely configured.
 - Allowed when:
   - A Client Admin invitation or role change stays inside the same approved client company and domain boundary and the resulting role is one of `CLIENT_ADMIN`, `CLIENT_FINANCE`, `CLIENT_LEGAL`, `CLIENT_IT`, or `CLIENT_MEMBER`.
   - A same-domain client access request is reviewed by a Client Admin from that same company.
   - A related-domain request remains pending until Admin verifies the domain belongs to, aliases, or is contractually controlled by the client company.
-  - Company-profile edits are limited to the fields and roles explicitly approved for that field set. Client-wide identity, matching, domain, and integration fields must not stay broadly editable just because the user is a generic `CLIENT`.
+  - Ordinary company-profile edits may be made by any active user in the same client company.
+  - Legal company name and approved company domain are locked after they are set and require Trusted Bums Admin review before client-requested changes take effect.
+  - Beta integration fields remain limited to the approved technical role matrix and do not become editable just because a user can edit ordinary company profile details.
   - Beta deal-registration configuration stores provider metadata and secret references only; raw API secrets remain server-side; and the workflow is labeled beta until Admin or Product Ops confirms the client-specific connector is repeatable and operationally owned.
   - Any approval, denial, role reassignment, disablement, related-domain approval, or beta-state change creates an audit event with actor, target user or company, old value, new value, and reason or readiness category.
 - Denied when:
   - Client Legal, Client Finance, or Client Member users try to manage team roles, approve access requests, disable users, or change related-domain authority.
   - Any client user stores raw API keys, passwords, or tokens in company profile or deal-registration fields.
-  - A generic client user without the approved role tries to change company identity, company matching fields, domain ownership, or beta integration readiness.
+  - A generic client user tries to change legal company name, approved domain ownership, or beta integration readiness without the approved review path.
   - A beta deal-registration setup is described as live automation before the connector path, fallback path, owner, and auditability are all explicitly approved.
   - A Client Admin approves a related-domain request, cross-company request, or other Admin-only access exception.
 - Sensitive fields: Company identity and matching fields, approved company domains, domain-proof notes, client role assignments, disabled status, deal-registration provider metadata, auth method, credential references, webhook or polling settings, fallback contact path, legal-review notes, and audit events.
@@ -254,9 +257,8 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
   - Client Legal can submit legal requests but cannot mutate team-management, finance, or company-profile ownership fields outside the approved legal scope.
   - Client Finance and Client Member cannot mutate company-profile ownership fields, team roles, related-domain requests, or beta integration settings.
   - Related-domain requests remain Admin-only until approval, and same-domain access stays company-scoped.
-  - Production-safe QA proves that users without the approved role cannot update company-profile fields simply by navigating to `/client/profile` or calling the underlying data path directly.
+  - Production-safe QA proves ordinary same-company users can edit approved profile fields while legal name, approved domain, team role, related-domain, and beta integration changes stay blocked without the approved role or Admin review path.
 - Open questions:
-  - Which company-profile fields should remain editable by all client roles, if any, versus only `CLIENT_ADMIN` and `CLIENT_IT`?
   - What exact readiness evidence must Admin or Product Ops record before a beta deal-registration setup can move from configured to operationally enabled?
   - Should Client Legal have read-only access to integration notes that affect agreement obligations, or should those stay Admin plus Client IT only?
 
@@ -453,33 +455,42 @@ Every new or changed Supabase data workflow must include RLS/authorization proof
 
 ### Extension Page Captures And Bum Represented Contacts
 - Roles: Bum, Admin, Client Admin, Client Member where explicitly participating, Client Finance by exception only.
-- Data needed: Captured source URL, capture type, page title, selected text, notes, destination opportunity or target, derived represented contact details, source workflow, status, timestamps, and audit trail.
+- Data needed: Captured source URL, capture type, page title, selected text, notes, destination opportunity or target, derived represented contact details, Inner Circle tier flag, up to 3 Inner Circle company designations, source workflow, status, timestamps, and audit trail.
 - Allowed actions:
   - Bums may create captures and represented contacts only for destinations they are allowed to access.
   - Bums may read and update their own represented contacts.
+  - Bums may mark up to 20 of their own direct represented contacts as `Inner Circle` for trusted-route workflows.
+  - Bums may mark up to 3 companies as `Inner Circle` companies when they have credible past-work, relationship-map, political, decision-process, or internal-context knowledge, even if no named contact is ready to claim yet.
   - Admins may troubleshoot captures and represented contacts across the marketplace.
   - Client users may see only sanitized, workflow-approved outputs that have been converted into a company-visible target, opportunity, intro request, or conversation.
 - Allowed when:
   - The capture is tied to an accepted or explicitly assigned opportunity or target relationship for the Bum.
   - The represented contact is owned by the Bum or is being reviewed by Admin for support or compliance.
-  - A client-facing view shows derived workflow context that Product Ops has approved for that client company, not raw private capture notes by default.
+  - `Inner Circle` contact entries name a person; account-only relationship claims belong in the separate limited `Inner Circle` company path.
+  - `Inner Circle` is Bum-private by default, Admin-readable for support or compliance, and may be shown to a client only inside the same Bum's approved claim or converted workflow context when that contact is part of the route being reviewed.
+  - A client-facing view shows only the derived workflow context that Product Ops has approved for that client company, not raw private capture notes or a broad relationship inventory by default.
   - Raw `extension_page_captures` remain Bum/Admin scoped unless a separate converted projection or workflow object explicitly allows selected fields for the client company.
 - Denied when:
   - A Bum tries to capture against or read a target/opportunity they are not entitled to access.
   - A different Bum tries to read or mutate another Bum's represented contact.
+  - A Bum tries to use an account-only placeholder as one of the 20 named `Inner Circle` contacts instead of the 3-company path.
+  - A client-facing surface exposes a Bum's `Inner Circle` inventory outside the specific approved claim or converted workflow where that contact was used.
   - Client Finance, unrelated client users, or other companies try to read raw capture text, raw notes, source URLs, or unrelated represented contacts.
   - Public or unauthenticated users try to read or write captures or represented contacts.
-- Sensitive fields: Selected text, source URL, personal contact details, LinkedIn URLs, notes, relationship strength, extension metadata, destination IDs, and audit events.
+- Sensitive fields: Selected text, source URL, personal contact details, LinkedIn URLs, notes, relationship strength, Inner Circle designation, Inner Circle company designation and rationale, extension metadata, destination IDs, and audit events.
 - Source of truth: `extension_page_captures`, `bum_contacts`, `extension-api-v1`, `portal-contacts`, linked opportunities, linked customer targets, and linked handoff workflows.
 - RLS/authorization owner: Security Engineer plus Product Ops, with extension API and portal QA coverage.
 - QA proof:
   - Owning Bum can create a capture and manage the resulting represented contact for an allowed destination.
+  - Owning Bum can mark at most 20 direct contacts as `Inner Circle`, and claim-created contacts inherit the label only from that same Bum's approved relationship context.
+  - Owning Bum can mark at most 3 companies as `Inner Circle` companies without converting those companies into named-contact claims.
   - Another Bum and unrelated client roles cannot read or mutate that contact.
-  - Client company visibility is limited to approved converted workflow outputs.
+  - Client company visibility is limited to approved converted workflow outputs and the specific `Inner Circle` labels intentionally surfaced on the related claim.
   - Admin can troubleshoot with audit trail.
   - Extension `/context` and `/page-captures` prove one allowed and one denied case.
 - Open questions:
   - Which converted capture fields, if any, are safe for Client Admin or Client Member views? Until decided, client-facing output should be limited to the linked workflow context already approved elsewhere, not raw capture rows.
+  - Should `Second Circle` remain a docs or research-only construct until a separate product object and access rule exist?
   - What retention period applies to raw selected text and source URLs?
 
 ### Payments, Invoices, Payouts, And Reports

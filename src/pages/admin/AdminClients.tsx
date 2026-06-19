@@ -84,7 +84,7 @@ function requestTypeLabel(type: ClientCompanyAccessRequestRecord["request_type"]
 }
 
 function requestNeedsProof(type: ClientCompanyAccessRequestRecord["request_type"]) {
-  return type === "PUBLIC_EMAIL_COMPANY" || type === "RELATED_DOMAIN";
+  return type === "PUBLIC_EMAIL_COMPANY" || type === "RELATED_DOMAIN" || type === "COMPANY_IDENTITY_CHANGE";
 }
 
 function requestedRoleLabel(role: ClientCompanyAccessRequestRecord["requested_role"]) {
@@ -105,6 +105,14 @@ function accessReviewPreview(request: ClientCompanyAccessRequestRecord) {
       `Add related domain: ${request.requested_domain ?? "Missing requested domain"}`,
       `Attach domain to: ${request.companies?.name ?? request.requested_company_name ?? "selected client company"}`,
       "Leave company access authority unchanged unless a separate request updates it",
+    ];
+  }
+
+  if (request.request_type === "COMPANY_IDENTITY_CHANGE") {
+    return [
+      `Review legal company name: ${request.requested_company_name ?? request.companies?.name ?? "No name change requested"}`,
+      `Review approved domain: ${request.requested_domain ?? "No domain change requested"}`,
+      "Apply only after Trusted Bums Admin verifies company identity and authority",
     ];
   }
 
@@ -722,7 +730,7 @@ export default function AdminClients() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Required for public-email company and related-domain reviews.
+                    Required for public-email company, related-domain, and company identity reviews.
                   </p>
                 </div>
               ) : null}

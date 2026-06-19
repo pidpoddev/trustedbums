@@ -5,6 +5,7 @@ const bumContactsSource = readFileSync("src/pages/bum/BumContacts.tsx", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 const portalContactsFunctionSource = readFileSync("supabase/functions/portal-contacts/index.ts", "utf8");
 const innerCircleMigrationSource = readFileSync("supabase/migrations/20260618100000_add_inner_circle_contacts.sql", "utf8");
+const innerCircleCompanyMigrationSource = readFileSync("supabase/migrations/20260619120000_add_identity_review_inner_circle_companies_reverse_handoffs.sql", "utf8");
 const qaAuthorizationCleanup = readFileSync("supabase/qa_authorization_cleanup.sql", "utf8");
 
 describe("Bum manual contact mutation contract", () => {
@@ -45,6 +46,21 @@ describe("Bum manual contact mutation contract", () => {
     expect(portalApiSource).toContain("isInnerCircle: boolean");
     expect(portalContactsFunctionSource).toContain("isInnerCircle: Boolean(row.is_inner_circle)");
     expect(portalContactsFunctionSource).toContain("if (\"isInnerCircle\" in patch) payload.is_inner_circle = patch.isInnerCircle === true;");
+  });
+
+  it("keeps Inner Circle companies separate from named Inner Circle contacts", () => {
+    expect(innerCircleCompanyMigrationSource).toContain("create table if not exists public.bum_inner_circle_companies");
+    expect(innerCircleCompanyMigrationSource).toContain("enforce_bum_inner_circle_company_limit");
+    expect(innerCircleCompanyMigrationSource).toContain("Inner Circle companies are limited to 3 active companies.");
+    expect(innerCircleCompanyMigrationSource).toContain("relationship_context text not null");
+    expect(bumContactsSource).toContain("Inner Circle Companies");
+    expect(bumContactsSource).toContain("{innerCircleCompanies.length}/3");
+    expect(bumContactsSource).toContain("createBumInnerCircleCompany");
+    expect(bumContactsSource).toContain("archiveBumInnerCircleCompany");
+    expect(bumContactsSource).toContain("Account-level company context stays separate from the 20 named Inner Circle contacts.");
+    expect(portalApiSource).toContain("BumInnerCircleCompanyRecord");
+    expect(portalApiSource).toContain(".from(\"bum_inner_circle_companies\")");
+    expect(portalApiSource).toContain("bum_inner_circle_company_added");
   });
 
   it("lets Bums delete contacts unless they are already attached to a Claim", () => {

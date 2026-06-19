@@ -13,6 +13,10 @@ describe("Managing Bum invites", () => {
     expect(inviteBumFunctionSource).toContain("const isAdminInvite = currentProfile.is_admin || currentProfile.role === \"ADMIN\";");
     expect(inviteBumFunctionSource).toContain("const isManagingBumInvite = Boolean(managingBumProfile?.is_managing_bum);");
     expect(inviteBumFunctionSource).toContain("Only Admins and Managing Bums can invite Bums.");
+    expect(inviteBumFunctionSource).toContain("Add the referral source before inviting this Bum.");
+    expect(inviteBumFunctionSource).toContain("Confirm the referrer trusts this Bum before sending the invite.");
+    expect(inviteBumFunctionSource).toContain("referralSource: input.referralSource");
+    expect(inviteBumFunctionSource).toContain("referrerTrustConfirmed: input.trustConfirmed");
   });
 
   it("stores pending team attachments by invite email", () => {
@@ -50,5 +54,8 @@ describe("Managing Bum invites", () => {
     expect(teamManagementSource).toContain("if (!profileQuery.isLoading && !isManagingBum)");
     expect(teamManagementSource).toContain("Invite Bum");
     expect(teamManagementSource).toContain("inviteBum({");
+    expect(teamManagementSource).toContain("referralSource: teamInviteReferralSource");
+    expect(teamManagementSource).toContain("trustConfirmed: teamInviteTrustConfirmed");
+    expect(teamManagementSource).toContain("This invite reflects on you as a Bum.");
   });
 });

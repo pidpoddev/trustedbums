@@ -648,6 +648,27 @@ export interface BumContactUpdateInput {
   customerTargetId?: string | null;
 }
 
+export interface BumInnerCircleCompanyRecord {
+  id: string;
+  bum_user_id: string;
+  company_name: string;
+  company_website: string | null;
+  linkedin_company_url: string | null;
+  relationship_context: string;
+  notes: string | null;
+  status: "ACTIVE" | "ARCHIVED";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BumInnerCircleCompanyInput {
+  companyName: string;
+  companyWebsite?: string | null;
+  linkedinCompanyUrl?: string | null;
+  relationshipContext: string;
+  notes?: string | null;
+}
+
 interface ExtensionPageCaptureRecord {
   id: string;
   created_by: string;
@@ -711,6 +732,10 @@ export interface ReverseOpportunityRecord {
   expected_timeline: string | null;
   notes: string | null;
   converted_opportunity_registration_id: string | null;
+  admin_owner_id: string | null;
+  admin_next_action: string | null;
+  admin_priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+  follow_up_deadline: string | null;
   created_at: string;
   updated_at: string;
   companies?: Pick<CompanyRecord, "id" | "name" | "website" | "relationship_stage" | "linkedin_company_url"> | null;
@@ -1703,6 +1728,8 @@ export interface BumInviteInput {
   email: string;
   name?: string;
   note?: string;
+  referralSource: string;
+  trustConfirmed: boolean;
 }
 
 export interface BumInviteResult {
@@ -1767,6 +1794,12 @@ export interface ClientTeamDomainInput {
   domain: string;
 }
 
+export interface ClientCompanyIdentityChangeInput {
+  requestedCompanyName?: string;
+  requestedDomain?: string;
+  reviewNote?: string;
+}
+
 export interface ClientTeamReviewRequestInput {
   requestId: string;
   clientAccessRole?: ClientAccessRole;
@@ -1782,7 +1815,7 @@ export interface ClientCompanyAccessRequestRecord {
   requested_company_name: string | null;
   requested_domain: string | null;
   requested_role: ClientAccessRole | "BUM" | null;
-  request_type: "AUTO_DOMAIN_CLAIM" | "SAME_DOMAIN_ACCESS" | "PUBLIC_EMAIL_COMPANY" | "RELATED_DOMAIN" | "BUM_SIGNUP";
+  request_type: "AUTO_DOMAIN_CLAIM" | "SAME_DOMAIN_ACCESS" | "PUBLIC_EMAIL_COMPANY" | "RELATED_DOMAIN" | "BUM_SIGNUP" | "COMPANY_IDENTITY_CHANGE";
   status: "pending" | "approved" | "denied" | "cancelled";
   evidence: Record<string, unknown>;
   requested_by: string | null;
@@ -6025,7 +6058,9 @@ export async function updateOwnClientCompanyProfile(
     throw new Error("Only client users linked to a company can update company profile details.");
   }
 
-  const name = input.name.trim();
+  const existingCompany = await getOwnClientCompany(user);
+  const requestedName = input.name.trim();
+  const existingName = existingCompany.name?.trim() ?? "";
   const website = toNullableString(input.website);
   const linkedinCompanyUrl = normalizeLinkedInCompanyUrl(input.linkedin_company_url);
   const description = toNullableString(input.description);
@@ -6033,9 +6068,15 @@ export async function updateOwnClientCompanyProfile(
   const targetRegions = toUniqueTrimmedArray(input.target_regions);
   const idealCustomerProfile = toNullableString(input.ideal_customer_profile);
 
-  if (!name) {
+  if (!requestedName && !existingName) {
     throw new Error("Company name is required.");
   }
+
+  if (existingName && requestedName && requestedName !== existingName) {
+    throw new Error("Legal company name changes require Trusted Bums Admin review.");
+  }
+
+  const name = existingName || requestedName;
 
   const { error } = await supabase
     .from("companies")
@@ -6727,6 +6768,87 @@ export async function resyncBumRepresentedContact(contactId: string) {
   return payload;
 }
 
+export async function listBumInnerCircleCompanies(userId: string) {
+  const { data, error } = await supabase
+    .from("bum_inner_circle_companies")
+    .select("*")
+    .eq("bum_user_id", userId)
+    .eq("status", "ACTIVE")
+    .order("created_at", { ascending: false })
+    .returns<BumInnerCircleCompanyRecord[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function createBumInnerCircleCompany(user: AuthUser, input: BumInnerCircleCompanyInput) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can add Inner Circle companies.");
+  }
+
+  const companyName = input.companyName.trim();
+  const relationshipContext = input.relationshipContext.trim();
+
+  if (!companyName) {
+    throw new Error("Company name is required.");
+  }
+
+  if (!relationshipContext) {
+    throw new Error("Explain why this company belongs in your Inner Circle.");
+  }
+
+  const { data, error } = await supabase
+    .from("bum_inner_circle_companies")
+    .insert({
+      bum_user_id: user.id,
+      company_name: companyName,
+      company_website: toNullableString(input.companyWebsite),
+      linkedin_company_url: normalizeLinkedInCompanyUrl(input.linkedinCompanyUrl),
+      relationship_context: relationshipContext,
+      notes: toNullableString(input.notes),
+      status: "ACTIVE",
+    })
+    .select("*")
+    .single<BumInnerCircleCompanyRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "bum_inner_circle_company_added", "bum_inner_circle_companies", data.id, {
+    company_name: data.company_name,
+  });
+
+  return data;
+}
+
+export async function archiveBumInnerCircleCompany(user: AuthUser, companyId: string) {
+  if (user.role !== "BUM") {
+    throw new Error("Only Bums can remove Inner Circle companies.");
+  }
+
+  const { data, error } = await supabase
+    .from("bum_inner_circle_companies")
+    .update({ status: "ARCHIVED" })
+    .eq("id", companyId)
+    .eq("bum_user_id", user.id)
+    .select("*")
+    .single<BumInnerCircleCompanyRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "bum_inner_circle_company_archived", "bum_inner_circle_companies", data.id, {
+    company_name: data.company_name,
+  });
+
+  return data;
+}
+
 export async function createReverseOpportunity(user: AuthUser, input: ReverseOpportunityInput) {
   if (user.role !== "BUM") {
     throw new Error("Only Bums can submit customer leads.");
@@ -6917,6 +7039,34 @@ export async function updateReverseOpportunityStatus(
 
   await createAuditEvent(user, "reverse_opportunity_status_changed", "reverse_opportunities", data.id, {
     status,
+  });
+
+  return data;
+}
+
+export async function claimReverseOpportunityHandoff(user: AuthUser, reverseOpportunityId: string) {
+  if (user.role !== "ADMIN") {
+    throw new Error("Only admins can claim customer opportunity handoffs.");
+  }
+
+  const { data, error } = await supabase
+    .from("reverse_opportunities")
+    .update({
+      admin_owner_id: user.id,
+      admin_next_action: "Review customer opportunity and route the client follow-up.",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", reverseOpportunityId)
+    .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
+    .single<ReverseOpportunityRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  await createAuditEvent(user, "reverse_opportunity_handoff_claimed", "reverse_opportunities", data.id, {
+    admin_owner_id: user.id,
+    status: data.status,
   });
 
   return data;
@@ -8362,6 +8512,17 @@ export async function requestClientCompanyDomain(user: AuthUser, input: ClientTe
 
   return invokeClientTeamFunction<ClientTeamResponse & { requested?: boolean; requestId?: string | null }>({
     action: "request_domain",
+    ...input,
+  });
+}
+
+export async function requestClientCompanyIdentityChange(user: AuthUser, input: ClientCompanyIdentityChangeInput) {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only active client users can request company identity review.");
+  }
+
+  return invokeClientTeamFunction<ClientTeamResponse & { requested?: boolean; requestId?: string | null }>({
+    action: "request_identity_change",
     ...input,
   });
 }

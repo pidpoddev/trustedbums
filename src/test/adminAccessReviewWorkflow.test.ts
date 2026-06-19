@@ -18,7 +18,7 @@ describe("admin access-request proof-backed workflow", () => {
     expect(adminClientsSource).toContain("accessReviewPreview(selectedRequest)");
     expect(adminClientsSource).toContain("selectedRequestNeedsProof && !reviewProofCategory");
     expect(adminClientsSource).toContain("reviewNoteRequired && !reviewNote.trim()");
-    expect(adminClientsSource).toContain("Required for public-email company and related-domain reviews.");
+    expect(adminClientsSource).toContain("Required for public-email company, related-domain, and company identity reviews.");
   });
 
   it("sends proof metadata through the admin access request API", () => {
@@ -33,6 +33,7 @@ describe("admin access-request proof-backed workflow", () => {
     expect(adminAccessRequestsSource).toContain("proofRequiredRequestTypes");
     expect(adminAccessRequestsSource).toContain("\"PUBLIC_EMAIL_COMPANY\"");
     expect(adminAccessRequestsSource).toContain("\"RELATED_DOMAIN\"");
+    expect(adminAccessRequestsSource).toContain("\"COMPANY_IDENTITY_CHANGE\"");
     expect(adminAccessRequestsSource).toContain("requiresProofCategory(requestType) && !evidence.proofCategory");
     expect(adminAccessRequestsSource).toContain("(requiresProofCategory(requestType) || action === \"deny\") && !evidence.reviewNote");
     expect(adminAccessRequestsSource).toContain("Choose a proof category before reviewing this access request.");
@@ -43,5 +44,9 @@ describe("admin access-request proof-backed workflow", () => {
     expect(adminAccessRequestsSource).toContain("proofCategory: evidence.proofCategory");
     expect(adminAccessRequestsSource).toContain("reviewNote: evidence.reviewNote");
     expect(adminAccessRequestsSource).toContain("resultingState");
+    expect(adminAccessRequestsSource).toContain("if (accessRequest.request_type === \"COMPANY_IDENTITY_CHANGE\")");
+    expect(adminAccessRequestsSource).toContain(".from(\"company_domains\")");
+    expect(portalApiSource).toContain("requestClientCompanyIdentityChange");
+    expect(portalApiSource).toContain("request_identity_change");
   });
 });

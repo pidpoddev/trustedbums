@@ -7,7 +7,7 @@ interface ProfileRow { id: string; role: string | null; is_admin: boolean }
 type Action = "list" | "approve" | "deny";
 type ReviewEvidence = { proofCategory: string | null; reviewNote: string | null };
 
-const proofRequiredRequestTypes = new Set(["PUBLIC_EMAIL_COMPANY", "RELATED_DOMAIN"]);
+const proofRequiredRequestTypes = new Set(["PUBLIC_EMAIL_COMPANY", "RELATED_DOMAIN", "COMPANY_IDENTITY_CHANGE"]);
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
@@ -212,6 +212,39 @@ async function approveRequest(admin: ProfileRow, requestId: string, evidence: Re
     approvedDomain = domain;
   }
 
+  if (accessRequest.request_type === "COMPANY_IDENTITY_CHANGE") {
+    if (!companyId) throw new Error("Company identity change requests need a company.");
+    const nextCompanyName = cleanString(accessRequest.requested_company_name);
+    const nextDomain = normalizeDomain(accessRequest.requested_domain);
+
+    if (nextCompanyName) {
+      const { error: companyUpdateError } = await supabaseAdmin
+        .from("companies")
+        .update({ name: nextCompanyName })
+        .eq("id", companyId);
+      if (companyUpdateError) throw companyUpdateError;
+    }
+
+    if (nextDomain) {
+      const { data: existingDomain, error: existingDomainError } = await supabaseAdmin
+        .from("company_domains")
+        .select("id, company_id")
+        .eq("domain", nextDomain)
+        .maybeSingle<{ id: string; company_id: string }>();
+      if (existingDomainError) throw existingDomainError;
+      if (existingDomain && existingDomain.company_id !== companyId) {
+        throw new Error("That domain is already assigned to another company.");
+      }
+      if (!existingDomain) {
+        const { error: domainError } = await supabaseAdmin
+          .from("company_domains")
+          .insert({ company_id: companyId, domain: nextDomain, is_primary: false });
+        if (domainError) throw domainError;
+      }
+      approvedDomain = nextDomain;
+    }
+  }
+
   if (accessRequest.requester_profile_id && (accessRequest.request_type === "PUBLIC_EMAIL_COMPANY" || accessRequest.request_type === "SAME_DOMAIN_ACCESS")) {
     if (!companyId) throw new Error("Client access requests need a company.");
     const { error: profileError } = await supabaseAdmin
@@ -264,7 +297,7 @@ async function approveRequest(admin: ProfileRow, requestId: string, evidence: Re
       resultingState: {
         companyId,
         approvedDomain,
-        role: accessRequest.request_type === "BUM_SIGNUP" ? "BUM" : "CLIENT",
+        role: accessRequest.request_type === "BUM_SIGNUP" ? "BUM" : accessRequest.request_type === "COMPANY_IDENTITY_CHANGE" ? null : "CLIENT",
         clientAccessRole: accessRequest.requested_role ?? null,
       },
     },

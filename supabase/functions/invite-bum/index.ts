@@ -147,6 +147,8 @@ async function createClerkInvitation(input: {
   email: string;
   name?: string;
   note?: string;
+  referralSource: string;
+  trustConfirmed: boolean;
   redirectUrl?: string;
   invitedBy: string;
   managingBumUserId?: string | null;
@@ -174,6 +176,8 @@ async function createClerkInvitation(input: {
         invitedBy: input.invitedBy,
         invitedName: input.name || undefined,
         inviteNote: input.note || undefined,
+        referralSource: input.referralSource,
+        referrerTrustConfirmed: input.trustConfirmed,
         managingBumUserId: input.managingBumUserId || undefined,
       },
     }),
@@ -212,6 +216,7 @@ async function createPendingTeamMembership(input: {
   invitedBy: string;
   email: string;
   note?: string;
+  referralSource: string;
   clerkInvitationId?: string | null;
   managerCommissionPercent: number;
 }) {
@@ -233,7 +238,7 @@ async function createPendingTeamMembership(input: {
     manager_commission_percent: input.managerCommissionPercent,
     invite_email: input.email,
     clerk_invitation_id: input.clerkInvitationId ?? null,
-    notes: input.note || null,
+    notes: [input.note, `Referral source: ${input.referralSource}`].filter(Boolean).join("\n\n") || null,
   };
 
   if (existingProfile?.role === "BUM") {
@@ -305,11 +310,15 @@ Deno.serve(async (request: Request) => {
       email?: string;
       name?: string;
       note?: string;
+      referralSource?: string;
+      trustConfirmed?: boolean;
       redirectUrl?: string;
     };
     const email = body.email?.trim().toLowerCase() ?? "";
     const name = body.name?.trim() ?? "";
     const note = body.note?.trim() ?? "";
+    const referralSource = body.referralSource?.trim() ?? "";
+    const trustConfirmed = body.trustConfirmed === true;
     const redirectUrl = normalizeInvitationRedirectUrl(body.redirectUrl, request, {
       allowedOrigins: invitationRedirectAllowedOrigins,
       fallbackUrl: invitationRedirectFallbackUrl,
@@ -320,10 +329,20 @@ Deno.serve(async (request: Request) => {
       return json(400, { error: "Enter a valid Bum email address." });
     }
 
+    if (!referralSource) {
+      return json(400, { error: "Add the referral source before inviting this Bum." });
+    }
+
+    if (!trustConfirmed) {
+      return json(400, { error: "Confirm the referrer trusts this Bum before sending the invite." });
+    }
+
     const invitation = await createClerkInvitation({
       email,
       name,
       note,
+      referralSource,
+      trustConfirmed,
       redirectUrl,
       invitedBy: currentProfile.id,
       managingBumUserId: isManagingBumInvite ? currentProfile.id : null,
@@ -335,6 +354,7 @@ Deno.serve(async (request: Request) => {
         invitedBy: currentProfile.id,
         email,
         note,
+        referralSource,
         clerkInvitationId: invitation.id ?? null,
         managerCommissionPercent: Number(managingBumProfile.managing_bum_commission_percent ?? 0),
       });
@@ -349,6 +369,8 @@ Deno.serve(async (request: Request) => {
         email,
         name: name || null,
         note: note || null,
+        referralSource,
+        referrerTrustConfirmed: trustConfirmed,
         status: invitation.status ?? null,
         managingBumUserId: isManagingBumInvite ? currentProfile.id : null,
       },
