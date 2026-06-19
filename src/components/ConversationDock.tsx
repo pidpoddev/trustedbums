@@ -165,7 +165,7 @@ export function ConversationDock({ showLauncher = true }: ConversationDockProps)
   }
 
   return (
-    <div className="fixed bottom-3 right-3 z-40 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-3 sm:bottom-4 sm:right-4 sm:max-w-[calc(100vw-2rem)]">
+    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-3 z-40 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-3 sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:right-4 sm:max-w-[calc(100vw-2rem)]">
       {isOpen ? (
         <div
           className={cn(

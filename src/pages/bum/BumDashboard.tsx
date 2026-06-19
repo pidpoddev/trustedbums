@@ -227,7 +227,7 @@ export default function BumDashboard() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Prospected Clients" value={prospectsQuery.data?.length ?? 0} icon={Building2} to="/bum/prospects" />
+        <StatCard title="Prospective Clients" value={prospectsQuery.data?.length ?? 0} icon={Building2} to="/bum/prospects" />
         <StatCard title="Customer Leads" value={reverseOpportunitiesQuery.data?.length ?? 0} icon={Sparkles} to="/bum/reverse-opportunities" />
         <StatCard title="Open Opportunities" value={opportunitiesQuery.data?.length ?? 0} icon={Briefcase} to="/bum/opportunities" />
         <StatCard title="Claims" value={myClaims.length} icon={Handshake} to="/bum/claims" />
@@ -266,7 +266,7 @@ export default function BumDashboard() {
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
         <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">
           <CardHeader>
-            <CardTitle className="font-display">Bring in a new client prospect</CardTitle>
+            <CardTitle className="font-display">Bring in a new Prospective Client</CardTitle>
             <CardDescription>
               Add a company, attach the key contact, and tell admin whether you want to invite them personally or want Trusted Bums to handle it.
             </CardDescription>
@@ -276,7 +276,7 @@ export default function BumDashboard() {
               We will dedupe by business domain and keep overlap visible when multiple Bums know the same company.
             </div>
             <Button asChild>
-              <Link to="/bum/prospects">Add Prospected Client</Link>
+              <Link to="/bum/prospects">Add Prospective Client</Link>
             </Button>
           </CardContent>
         </Card>

@@ -13,6 +13,16 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-19 - Close next-five scrum batch with provenance, issuer, copy, and mobile fixes
+
+- Trigger: Ryan asked to do the next five scrum items: `TB-0019`, `TB-0089`, `TB-0040`, `TB-0060`, and `TB-0027`.
+- Implementation branch: local `main` after `3fd4be3cf2e23d9b88ea4f24696c8eac7903da2b`, pending final closeout commit and hosted workflow proof.
+- What changed: Added a Supabase release-provenance script and DreamHost deploy gate, cleaned stale `Prospective Client` terminology across Bum/Admin/Client visible surfaces, added source guardrails against the stale terminology strings, increased authenticated-shell mobile bottom spacing, and moved the floating conversation dock onto safe-area bottom offsets.
+- Live Supabase proof: redeployed and verified `extension-api-v1` version `7`, `portal-contacts` version `5`, `profile-bootstrap` version `5`, `admin-access-requests` version `5`, and `bum-extension-download` version `3` with the allowed Clerk issuer path; refreshed additional configured functions including `customer-lead-duplicate-check` v2, `sync-clerk-users` v3, `clerk-impersonation` v8, `submit-feedback` v3, `sync-teams-attendees` v3, `clerk-user-tools` v2, `send-admin-email` v9, `api-access-keys` v2, `dmarc-reports` v4, and `schedule-teams-meeting` v8. Live migration ledger latest is `20260619120328 add_identity_review_inner_circle_companies_reverse_handoffs`.
+- Checks run: Supabase docs/changelog review; live Edge Function inventory and source reads; live migration-ledger SQL; targeted Vitest for UI cleanup, conversation dock layout, and deployment provenance; full `pnpm run test` (`62` files, `250` tests); `pnpm run build` with one existing non-blocking `react-hooks/exhaustive-deps` warning in `ClientOpportunityNew.tsx`; `node --check` for the provenance script; local `pnpm run release:provenance` correctly failed without `SUPABASE_ACCESS_TOKEN`.
+- Tracker expectation: close `TB-0019`, `TB-0089`, `TB-0040`, `TB-0060`, and `TB-0027` after the final commit is pushed, the local Code Review marker names that exact commit, and the hosted closeout proof is attached.
+- Recheck agents: Code Review Agent, Release Verification Agent, Security Engineer, Content Copyeditor, UI/UX, Accessibility, and Lead Developer.
+
 ### 2026-06-19 - Close founder-decision scrum batch with live proof
 
 - Trigger: Ryan asked to complete `TB-0102`, `TB-0097`, `TB-0038`, `TB-0113`/`TB-0103`, and `TB-0051` after approving the remaining founder decisions.

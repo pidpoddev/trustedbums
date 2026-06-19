@@ -13,6 +13,11 @@ const tooltipSource = readFileSync("src/components/ui/tooltip.tsx", "utf8");
 const adminScrumTrackerSource = readFileSync("src/pages/admin/AdminScrumTracker.tsx", "utf8");
 const selectSource = readFileSync("src/components/ui/select.tsx", "utf8");
 const bumContactsSource = readFileSync("src/pages/bum/BumContacts.tsx", "utf8");
+const bumDashboardSource = readFileSync("src/pages/bum/BumDashboard.tsx", "utf8");
+const bumReportsSource = readFileSync("src/pages/bum/BumReports.tsx", "utf8");
+const bumReverseOpportunitiesSource = readFileSync("src/pages/bum/BumReverseOpportunities.tsx", "utf8");
+const adminOpportunitiesSource = readFileSync("src/pages/admin/AdminOpportunities.tsx", "utf8");
+const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 const visualAuditSource = readFileSync("tests/e2e/visual-ui-audit.spec.ts", "utf8");
 const publicIndexSource = readFileSync("src/pages/Index.tsx", "utf8");
 const bumLandingSource = readFileSync("src/pages/BumLanding.tsx", "utf8");
@@ -28,7 +33,8 @@ describe("UI visual cleanup guardrails", () => {
   });
 
   it("keeps the mobile chat launcher safe where it remains enabled", () => {
-    expect(conversationDockSource).toContain("bottom-3 right-3 z-40");
+    expect(conversationDockSource).toContain("bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-3 z-40");
+    expect(conversationDockSource).toContain("sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)]");
     expect(conversationDockSource).toContain("h-11 rounded-full px-3");
     expect(conversationDockSource).toContain("sr-only sm:not-sr-only");
     expect(conversationDockSource).toContain("showLauncher = true");
@@ -74,6 +80,27 @@ describe("UI visual cleanup guardrails", () => {
   it("uses short mobile-safe search placeholders", () => {
     expect(contactSubmissionsSource).toContain('placeholder="Search contacts"');
     expect(clientTargetsSource).toContain('placeholder="Search targets"');
+  });
+
+  it("keeps Prospective Client wording consistent across visible sourcing surfaces", () => {
+    const visibleSources = [
+      bumContactsSource,
+      bumDashboardSource,
+      bumReportsSource,
+      bumReverseOpportunitiesSource,
+      adminOpportunitiesSource,
+      clientTargetsSource,
+      portalApiSource,
+    ].join("\n");
+
+    expect(visibleSources).toContain("Prospective Client");
+    expect(visibleSources).not.toContain("Prospected Client");
+    expect(visibleSources).not.toContain("Prospected Clients");
+    expect(visibleSources).not.toContain("client prospect");
+    expect(visibleSources).not.toContain("Client Prospect");
+    expect(visibleSources).not.toContain("Prospect client");
+    expect(visibleSources).not.toContain("Prospect contacts");
+    expect(visibleSources).not.toContain("prospect client company name");
   });
 
   it("keeps public mobile header actions readable at narrow widths", () => {

@@ -12,7 +12,7 @@ describe("conversation dock layout", () => {
     for (const layoutPath of floatingDockLayouts) {
       const source = readFileSync(layoutPath, "utf8");
 
-      expect(source, layoutPath).toContain("p-4 pb-32 sm:p-6 sm:pb-28");
+      expect(source, layoutPath).toContain("p-4 pb-44 sm:p-6 sm:pb-36");
       expect(source, layoutPath).toContain("<ConversationDock />");
     }
   });
@@ -20,12 +20,12 @@ describe("conversation dock layout", () => {
   it("moves the Bum chat launcher into Inbox while keeping programmatic conversation opens available", () => {
     expect(bumLayoutSource).toContain('{ title: "Inbox", url: "/bum/live-conversations"');
     expect(bumLayoutSource).toContain("<ConversationDock showLauncher={false} />");
-    expect(bumLayoutSource).toContain("p-4 sm:p-6");
+    expect(bumLayoutSource).toContain("p-4 pb-24 sm:p-6 sm:pb-28");
   });
 
   it("moves the Client chat launcher into Inbox while keeping programmatic conversation opens available", () => {
     expect(clientLayoutSource).toContain('{ title: "Inbox", url: "/client/live-conversations"');
     expect(clientLayoutSource).toContain("<ConversationDock showLauncher={false} />");
-    expect(clientLayoutSource).toContain("p-4 sm:p-6");
+    expect(clientLayoutSource).toContain("p-4 pb-24 sm:p-6 sm:pb-28");
   });
 });

@@ -6869,7 +6869,7 @@ export async function createReverseOpportunity(user: AuthUser, input: ReverseOpp
     }
   } else {
     if (!input.prospect_client_name?.trim()) {
-      throw new Error("Add the prospect client company name.");
+      throw new Error("Add the prospective client company name.");
     }
 
     vendorCompany = await ensureCompany({

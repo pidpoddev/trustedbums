@@ -763,7 +763,7 @@ export default function BumReverseOpportunities() {
                     <StatusBadge label={opportunityStageLabel(stageFromReverseOpportunityStatus(record.status))} variant="info" />
                     <StatusBadge label={statusLabel(record.status)} variant={statusVariant(record.status)} />
                     <StatusBadge
-                      label={record.client_mode === "EXISTING_CLIENT" ? "Existing client" : "Prospect client"}
+                      label={record.client_mode === "EXISTING_CLIENT" ? "Existing client" : "Prospective Client"}
                       variant="secondary"
                     />
                   </div>

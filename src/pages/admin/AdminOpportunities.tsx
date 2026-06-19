@@ -855,7 +855,7 @@ export default function AdminOpportunities() {
                           variant={reverseOpportunityVariant(opportunity.status)}
                         />
                         <StatusBadge
-                          label={opportunity.client_mode === "EXISTING_CLIENT" ? "Existing client" : "Prospect client"}
+                          label={opportunity.client_mode === "EXISTING_CLIENT" ? "Existing client" : "Prospective Client"}
                           variant="secondary"
                         />
                       </div>

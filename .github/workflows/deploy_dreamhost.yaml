@@ -65,6 +65,12 @@ jobs:
           grep -q '<title>Privacy</title>' dist/privacy-policy/index.html
           grep -q 'href="https://trustedbums.com/legal/terms-of-service/"' dist/legal/terms-of-service/index.html
 
+      - name: Verify Supabase release provenance
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: vaoqvtxqvbptyxddpoju
+        run: pnpm run release:provenance
+
       - name: Deploy to DreamHost via SSH
         uses: easingthemes/ssh-deploy@main
         env:

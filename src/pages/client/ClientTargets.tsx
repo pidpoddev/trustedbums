@@ -300,7 +300,7 @@ export default function ClientTargets() {
     <div className="space-y-6">
       <PageHeader
         title="Target Accounts"
-        description="Track the customer companies you want to sell into without mixing them with Trusted Bums client prospects."
+        description="Track the customer companies you want to sell into without mixing them with Trusted Bums Prospective Clients."
       >
         <Button type="button" onClick={() => setIsAddTargetOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />

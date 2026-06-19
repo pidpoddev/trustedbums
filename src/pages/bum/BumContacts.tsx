@@ -285,7 +285,7 @@ export default function BumContacts() {
           <p className="mt-1 text-2xl font-semibold">{countsBySource.OPPORTUNITY_CLAIM}</p>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Prospect contacts</p>
+          <p className="text-sm text-muted-foreground">Prospective Client contacts</p>
           <p className="mt-1 text-2xl font-semibold">{countsBySource.PROSPECT}</p>
         </div>
         <div className="rounded-lg border bg-card p-4">

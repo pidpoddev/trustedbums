@@ -144,7 +144,7 @@ export default function AdminLayout() {
             <PortalGlobalSearch />
             <PortalHeaderActions />
           </header>
-          <div className="p-4 pb-32 sm:p-6 sm:pb-28">
+          <div className="p-4 pb-44 sm:p-6 sm:pb-36">
             <Outlet />
           </div>
           <ConversationDock />

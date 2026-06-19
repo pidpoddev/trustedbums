@@ -133,10 +133,10 @@ export default function BumReports() {
       },
       {
         id: "prospect-client-submissions",
-        title: "Prospect client submissions",
+        title: "Prospective Client submissions",
         description: "Companies you recommended as potential Trusted Bums clients.",
-        category: "Prospecting",
-        dataLabel: "prospect rows",
+        category: "Prospective Clients",
+        dataLabel: "Prospective Client rows",
         rows: prospects.map((prospect) => ({
           company: prospect.companies?.name,
           website: prospect.companies?.website,
@@ -154,7 +154,7 @@ export default function BumReports() {
         ],
         dateKey: "createdAt",
         groupByKey: "status",
-        groupByLabel: "prospect status",
+        groupByLabel: "Prospective Client status",
         valueLabel: "Prospective Clients",
       },
       {

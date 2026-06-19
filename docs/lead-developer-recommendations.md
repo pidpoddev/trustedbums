@@ -10,13 +10,14 @@ Current release status is `HOTFIX-FORWARD` for `main` head `a17a85639a1b24dfda36
   - Exact-head hosted proof is now green on `a17a856`: GitHub `QA` `27798687806`, DreamHost deploy `27798687708`, `E2E Smoke` `27798711531`, and `Visual UI Audit` `27810878263` all completed `success`.
   - The specialist wave correctly kept `TB-0044`, `TB-0048`, `TB-0108`, `TB-0111`, `TB-0029`, `TB-0032`, and `TB-0082` out of the active lead queue on current evidence.
   - Live Supabase review re-anchored the real current blockers: `TB-0027` release-control-plane drift, `TB-0089` stale live issuer-pinning deployment, `TB-0102` live mailbox function drift, `TB-0113` staged `Inner Circle` launch, `TB-0051` unfinished handoff parity, `TB-0097` broad company-profile ownership, `TB-0047` route-shape debt, `TB-0046` admin-email KPI debt, `TB-0024` external-host drift, and access-blocked `TB-0023`.
+  - This closeout batch implemented the next five lead items: exact-head Code Review refresh prep for `TB-0019`, live Clerk issuer redeploy proof for `TB-0089`, `Prospective Client` wording cleanup for `TB-0040`, mobile support-zone spacing for `TB-0060`, and release-chain Supabase provenance for `TB-0027`.
 - Current priorities:
-  1. Restore same-head Supabase deployment parity for the exact-head hotfix wave under `TB-0027`, `TB-0089`, and `TB-0102`.
-  2. Gate staged workflow/schema work before it is treated as live: `TB-0113` and `TB-0097`.
-  3. Finish operator queue discipline under `TB-0051`, then move to `TB-0047` and `TB-0046`.
+  1. Push the closeout commit and attach hosted workflow proof to `TB-0019`, `TB-0027`, `TB-0040`, `TB-0060`, and `TB-0089`.
+  2. Keep `TB-0024` and `TB-0023` separate because they still need external-host/Auth-setting decisions.
+  3. Then move to the remaining lead queue: `TB-0047`, `TB-0046`, and any fresh hosted failures from the closeout push.
 - Current blockers:
-  - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) is still stale on `4dfca6111781e0df4b9b6ee14dd811c0d90ac787`, so exact-head Code Review is open again under `TB-0019`.
-  - [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml) proves static-site deploy only; it does not deploy or verify matching Supabase Edge Function revisions, which is why `TB-0027` is now a real release blocker.
+  - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) must be refreshed to the final closeout commit immediately before push for `TB-0019`.
+  - [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml) now verifies Supabase function provenance before DreamHost upload; the remaining blocker is proving the GitHub `SUPABASE_ACCESS_TOKEN` secret exists by watching the next hosted deploy.
   - `https://rcdl.tplinkdns.com` remains unhealthy from this runner, so `TB-0024` stays open until the host is repaired or the contract changes everywhere at once.
   - `TB-0023` remains blocked by missing live Auth-setting visibility even though current security advisors still flag leaked-password protection disabled.
 - Recommended next actions:
@@ -27,22 +28,22 @@ Current release status is `HOTFIX-FORWARD` for `main` head `a17a85639a1b24dfda36
 
 ## Recommendation Classification
 
-- `TB-0027 Same-head Supabase function deployment parity`: `READY`.
-  - Reason: hosted app proof is green on `a17a856`, but live `extension-api-v1`, `portal-contacts`, and `admin-shared-mailbox` still do not match repo head.
+- `TB-0027 Same-head Supabase function deployment parity`: `READY TO CLOSE AFTER PUSH`.
+  - Reason: the deploy workflow now runs a Supabase provenance script, local syntax checks pass, local execution correctly refuses to run without `SUPABASE_ACCESS_TOKEN`, and live migration/function proof exists. The next hosted deploy must prove the GitHub secret.
   - Next owner: Lead Developer plus Release Verification.
-  - Implementation queue: yes.
-- `TB-0089 Redeploy the issuer-pinned Clerk verifier to the live privileged function set`: `READY`.
-  - Reason: repo head now uses the pinned issuer helper in the affected functions, but sampled live deployed source still shows the older token-selected issuer path on multiple privileged functions.
+  - Implementation queue: closeout.
+- `TB-0089 Redeploy the issuer-pinned Clerk verifier to the live privileged function set`: `READY TO CLOSE AFTER PUSH`.
+  - Reason: sampled live function source now shows the allowed-issuer Clerk verifier on `extension-api-v1` v7, `portal-contacts` v5, `profile-bootstrap` v5, `admin-access-requests` v5, and `bum-extension-download` v3.
   - Next owner: Lead Developer with Security review.
-  - Implementation queue: yes.
-- `TB-0102 Shared mailbox controls are source-only until the live function catches up`: `READY`.
-  - Reason: live SQL still shows `100` mailbox rows, all `OPEN`, with `47` `uncategorized` and `100` unassigned, while live `admin-shared-mailbox` version `2` still lacks `claim_message` and `update_category`.
+  - Implementation queue: closeout.
+- `TB-0102 Shared mailbox controls and live triage`: `CLOSED IN CLOSEOUT`.
+  - Reason: live `admin-shared-mailbox` is version `3`, and the `100` live messages were triaged into explicit work queues with `0` unassigned, `0` uncategorized, and `0` `OPEN`.
   - Next owner: Lead Developer with Product Ops, Security, and Legal/Compliance review.
-  - Implementation queue: yes.
-- `TB-0019 Refresh exact-head Code Review for a17a856`: `READY`.
-  - Reason: the exact-head hosted chain is green, but the current review marker still points at `4dfca61`.
-  - Next owner: Code Review Agent.
   - Implementation queue: no.
+- `TB-0019 Refresh exact-head Code Review`: `READY TO CLOSE AFTER FINAL COMMIT REVIEW`.
+  - Reason: local source, live Supabase proof, full unit tests, and build are ready for Code Review; the marker must name the final closeout commit before push.
+  - Next owner: Code Review Agent.
+  - Implementation queue: closeout.
 - `TB-0018 Exact-head hosted visual proof`: `STALE`.
   - Reason: GitHub `Visual UI Audit` `27810878263` completed `success` on `a17a856`, so the earlier reopen from the release/QA pass is no longer current-head truth.
   - Next owner: none unless a newer visual head lands.
@@ -75,18 +76,18 @@ Current release status is `HOTFIX-FORWARD` for `main` head `a17a85639a1b24dfda36
   - Reason: live security advisors still flag the control, but current sessions still lack direct Auth-setting visibility.
   - Next owner: Security Engineer plus the Supabase Auth settings owner.
   - Implementation queue: no.
-- `TB-0060 Shared mobile support-zone overlap`: `READY`.
-  - Reason: exact-head visual proof confirms the privacy/chat stack still overlaps live mobile authenticated surfaces.
+- `TB-0060 Shared mobile support-zone overlap`: `READY TO CLOSE AFTER PUSH`.
+  - Reason: authenticated shell content now reserves larger mobile bottom padding, the floating chat dock uses safe-area bottom offsets, and the layout guardrail tests pass.
   - Next owner: Lead Developer with UI, UX, and Accessibility review.
-  - Implementation queue: later.
+  - Implementation queue: closeout.
 - `TB-0065 Reduce first-layer mobile consent-banner footprint`: `READY`.
   - Reason: the first-visit mobile consent layer still pushes the primary Client CTA below the fold.
   - Next owner: UX Consultant with Lead Developer and Trust/Legal review.
   - Implementation queue: later.
-- `TB-0040 Restore Prospective Client wording across Bum-side prospecting surfaces`: `READY`.
-  - Reason: current Bum dashboard, reports, and contacts still regress to `Prospected Client`, `client prospect`, and generic `Prospect` wording.
+- `TB-0040 Restore Prospective Client wording across Bum-side prospecting surfaces`: `READY TO CLOSE AFTER PUSH`.
+  - Reason: Bum dashboard, reports, contacts, reverse-opportunity badges, admin opportunity badges, Client target helper text, and validation copy now use `Prospective Client`; the terminology guardrail test rejects stale strings.
   - Next owner: Content Copyeditor with Lead Developer review.
-  - Implementation queue: later.
+  - Implementation queue: closeout.
 - BlackCurrant unowned opportunity volume and relationship supply: `BLOCKED BY ACCESS`.
   - Reason: company-wide rules still treat the `~80` unhandled opportunities as a P0 operating problem, but this lead pass still had no CRM export or live owner-state evidence to prove the queue is moving.
   - Next owner: CEO, Ops, Supply, and Staff with CRM access.

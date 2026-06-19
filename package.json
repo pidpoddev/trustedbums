@@ -19,6 +19,7 @@
     "bing:health": "node scripts/bing-webmaster-api.mjs health",
     "bing:indexnow": "node scripts/bing-webmaster-api.mjs indexnow",
     "bing:webmaster": "node scripts/bing-webmaster-api.mjs",
+    "release:provenance": "node scripts/verify-supabase-release-provenance.mjs",
     "indexnow:submit": "node scripts/submit-indexnow.mjs",
     "qa:go-live": "playwright test tests/e2e/go-live-client-bum-workflow.spec.ts --project=chromium",
     "qa:deep": "playwright test tests/e2e/deep-workflow-hotfix-audit.spec.ts --project=chromium",

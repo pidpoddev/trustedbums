@@ -4,11 +4,11 @@ _Last updated: 2026-06-19 by Codex daily release verification automation._
 
 ## Release Decision
 
-Decision: `HOTFIX-FORWARD` for current `main` head `a17a85639a1b24dfda36da87d763eb4ecd3457af`.
+Decision: `PENDING POST-PUSH VERIFICATION` for the current closeout batch.
 
-Hosted release proof on `https://trustedbums.com` is green for the current head, but the release is not trustworthy enough to treat as `GO`. The DreamHost app shell for `a17a856` is live, exact-head hosted `QA` and deploy-triggered `E2E Smoke` passed, and `trustedbums.com` still serves the app cleanly. The blocker is control-plane drift: live Supabase Edge Function source in project `vaoqvtxqvbptyxddpoju` does not match the repo or the tracker closeouts that were treated as shipped on the same head.
+Hosted release proof on `https://trustedbums.com` was green for prior head `a17a856`, and this closeout batch has now removed the live Supabase control-plane drift that blocked `TB-0027` and `TB-0089`. The live project `vaoqvtxqvbptyxddpoju` now serves the issuer-pinned Clerk verifier on the sampled Clerk-backed functions, and the DreamHost deploy workflow now runs a Supabase release provenance gate before upload. The release still needs the new closeout commit pushed and the hosted workflow chain checked before declaring the new head `GO`.
 
-Safest recovery path: forward-deploy or otherwise prove the matching Supabase Edge Function revisions, then rerun the narrow live checks that depend on them. Rollback is not the first recommendation because the primary web deploy is healthy and the live functions are stale rather than obviously crashing globally, but current release status must not be treated as clean.
+Safest recovery path: push the closeout commit, confirm the provenance-gated deploy and QA workflows, then close the related tracker rows against the final commit/run IDs. Rollback is not the first recommendation because the primary web deploy is healthy and the fixes are forward-only provenance, copy, layout, and live function-alignment changes.
 
 ## Evidence Summary
 
@@ -17,28 +17,29 @@ Safest recovery path: forward-deploy or otherwise prove the matching Supabase Ed
 - GitHub `E2E Smoke` run `27798711531` on `a17a856`: passed, including `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
 - Latest hosted `Visual UI Audit` success is still `27755903096` on `c02b18b`. No hosted visual artifact exists for `b67b4c4` or `a17a856`.
 - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still records `GO` for older head `4dfca6111781e0df4b9b6ee14dd811c0d90ac787`.
-- Current DreamHost deploy workflow in [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml) deploys the static app only. It does not deploy or verify Supabase Edge Function revisions for the same head.
-- Live Supabase project `vaoqvtxqvbptyxddpoju` is active on Postgres `17.6.1.111`, but deployed function source is stale against repo head:
-  - `extension-api-v1` live version `6` still uses `resolveClerkJwksUrl(payload.iss)` and verifies with `issuer: payload.iss`.
-  - `portal-contacts` live version `4` still uses the same token-selected issuer path.
-  - `admin-shared-mailbox` live version `2` still lacks `claim_message` and `update_category`, and still list-limits shared mailbox reads to `top 100`.
+- Current DreamHost deploy workflow in [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml) now runs `pnpm run release:provenance` with `SUPABASE_ACCESS_TOKEN` and project ref `vaoqvtxqvbptyxddpoju` before DreamHost upload.
+- Live Supabase project `vaoqvtxqvbptyxddpoju` now shows the refreshed function set needed for this closeout:
+  - `extension-api-v1` version `7`, `portal-contacts` version `5`, `profile-bootstrap` version `5`, `admin-access-requests` version `5`, and `bum-extension-download` version `3` all show the allowed Clerk issuer path in live source.
+  - Additional same-pass live function refreshes include `customer-lead-duplicate-check` version `2`, `sync-clerk-users` version `3`, `clerk-impersonation` version `8`, `submit-feedback` version `3`, `sync-teams-attendees` version `3`, `clerk-user-tools` version `2`, `send-admin-email` version `9`, `api-access-keys` version `2`, `dmarc-reports` version `4`, and `schedule-teams-meeting` version `8`.
+  - Prior same-day live closeout already moved `admin-shared-mailbox` to version `3`, `invite-bum` to version `4`, and `client-team` to version `3`.
+- Live migration ledger proof shows latest migration `20260619120328 add_identity_review_inner_circle_companies_reverse_handoffs`, followed by `20260618101827 set_admin_scrum_owner_sync_search_path` and `20260617161426 add_admin_scrum_owner_column`.
 - `https://trustedbums.com` currently returns `HTTP/2 200` with current CSP/HSTS headers and passes sourced `qa:target-preflight`.
 - Runner-side external target `https://rcdl.tplinkdns.com` currently resolves DNS to `69.131.216.220`, but sourced `qa:target-preflight` fails `HTTPS` and `App shell`; `curl` without `-k` fails certificate verification and plain `http://rcdl.tplinkdns.com` returns `HTTP/1.1 403`.
 - `.env.qa` is present. Raw-shell `qa:env` still fails until the expected variables are sourced; sourced `.env.qa` restores the contract and passes `qa:env`.
 
-## Failed Or Missing Checks
+## Closeout Checks
 
-### P0 - [TB-0027] Live Supabase function revisions do not match the shipped head
-- Evidence: live Supabase function reads contradicted the static deploy proof. `extension-api-v1`, `portal-contacts`, and `admin-shared-mailbox` still serve older source even though repo head `a17a856`, local tests, tracker rows, and hosted DreamHost/E2E runs were treated as if those changes were already live.
-- Impact: release closeout is currently over-trusting static deploy and browser smoke. Exact-head security and workflow behavior for Edge Functions cannot be treated as shipped, and admin mailbox controls added on `a17a856` are not proven live.
-- Recommendation: `HOTFIX-FORWARD` owned by Lead Developer plus Release Verification. Add same-chain Supabase function deployment or live provenance verification, then prove the live function source matches `a17a856` before clearing release.
-- Acceptance criteria: live `extension-api-v1`, `portal-contacts`, and `admin-shared-mailbox` source matches the repo head or an explicit same-head deployed revision ledger; `TB-0027` closes with exact-head proof, not static-site-only proof.
+### P0 - [TB-0027] Same-head Supabase provenance gate added
+- Evidence: [deploy_dreamhost.yaml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml) now runs the Supabase provenance script before DreamHost upload, and [verify-supabase-release-provenance.mjs](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-supabase-release-provenance.mjs) compares live function `version`, `status`, and `verify_jwt` metadata against [supabase/config.toml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/config.toml) while including the local migration ledger in the proof output. Live SQL also confirmed the production migration ledger through `20260619120328`.
+- Impact: future static deploys will fail before upload when live Supabase function metadata cannot be proven with the configured project/token.
+- Recommendation: close after the new commit is pushed and the provenance-gated deploy workflow proves the secret is present in GitHub.
+- Acceptance criteria: closeout commit is on `main`, hosted deploy runs the new provenance step successfully, and `TB-0027` cites the final commit plus live function/migration proof.
 
-### P1 - [TB-0089] Issuer-pinning hardening was closed in tracker before live deployment matched repo
-- Evidence: repo source and tests on `a17a856` pin the Clerk issuer, but live `extension-api-v1` and `portal-contacts` still verify against token-selected issuer input. `TB-0089` has been reopened in live tracker because the earlier closeout was based on repo/test/static evidence rather than current live function source.
-- Impact: security hardening for Clerk-backed service-role functions is not yet trustworthy on the live project even though the repo diff exists. Release status cannot claim the authorization fix shipped.
-- Recommendation: `HOTFIX-FORWARD` owned by Security Engineer plus Lead Developer. Deploy the matching function revisions, then re-read live function source and rerun the targeted auth contract checks.
-- Acceptance criteria: live function source shows `resolveAllowedClerkIssuer(...)` and `issuer: allowedIssuer` for the affected functions, tracker `TB-0089` closes again on the real live revision, and release evidence cites the same head across repo, tracker, and live function reads.
+### P1 - [TB-0089] Issuer-pinning hardening redeployed live
+- Evidence: live function source now shows `resolveAllowedClerkIssuer(...)` and `issuer: allowedIssuer` for `extension-api-v1` v7, `portal-contacts` v5, `profile-bootstrap` v5, `admin-access-requests` v5, and `bum-extension-download` v3. Local source scan found no remaining `resolveClerkJwksUrl` or `issuer: payload.iss` pattern under [supabase/functions](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions).
+- Impact: the sampled live Clerk-backed service-role/custom-auth functions no longer let a token choose its own issuer trust root.
+- Recommendation: close after final push and hosted proof are attached to the tracker.
+- Acceptance criteria: tracker `TB-0089` cites the live versions above, the final commit, and the passing local auth/test proof.
 
 ### P1 - [TB-0019] Refresh exact-head Code Review for `a17a856`
 - Evidence: `main` is `a17a85639a1b24dfda36da87d763eb4ecd3457af`, but [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still names `4dfca6111781e0df4b9b6ee14dd811c0d90ac787`.
@@ -52,11 +53,11 @@ Safest recovery path: forward-deploy or otherwise prove the matching Supabase Ed
 - Recommendation: keep this separate from primary-host release proof. Either restore the external target or explicitly retire it again from one authoritative decision source.
 - Acceptance criteria: sourced `QA_BASE_URL=https://rcdl.tplinkdns.com corepack pnpm run qa:target-preflight` passes `HTTPS` and `App shell`, or Ryan explicitly retires this host and the prompt/rules/tracker all agree.
 
-### P1 - [TB-0102] Shared mailbox controls added on `a17a856` are not live yet
-- Evidence: repo head `a17a856` adds claim/category controls and larger shared-mailbox list reads in [`src/pages/admin/AdminInbox.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminInbox.tsx) and [`supabase/functions/admin-shared-mailbox/index.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/admin-shared-mailbox/index.ts), but live Supabase still serves version `2` without `claim_message` / `update_category` and without the same list-read expansion.
-- Impact: admin queue behavior on the live site is not aligned with the repo change that QA and tracker language treated as shipped. Admins can hit stale behavior even though the UI code expects newer operations.
-- Recommendation: `HOTFIX-FORWARD` owned by Product Ops Workflow Analyst plus Lead Developer. Deploy and verify the matching live function before treating the mailbox control improvement as shipped.
-- Acceptance criteria: live `admin-shared-mailbox` source matches the repo operations and limits, then one live admin proof confirms claim/category flows and uncategorized close-blocking behavior on the deployed target.
+### P1 - [TB-0102] Shared mailbox controls are live and triaged
+- Evidence: live `admin-shared-mailbox` now serves version `3`, and the live `100`-message queue was triaged to `0` unassigned, `0` uncategorized, and `0` `OPEN`, with messages left `IN_PROGRESS` across explicit work queues for human review.
+- Impact: the prior release blocker is no longer current; future mailbox release checks should verify live function version/source and queue counts rather than carrying the old version-2 drift.
+- Recommendation: keep `TB-0102` closed unless a fresh live read shows function or queue regression.
+- Acceptance criteria: tracker closeout cites `admin-shared-mailbox` v3, the triaged queue counts, and the final closeout commit.
 
 ### P2 - [TB-0018] Exact-head hosted visual proof is still missing for `a17a856`
 - Evidence: latest successful `Visual UI Audit` is `27755903096` on `c02b18b`; no current-head hosted visual artifact exists for `a17a856`.
@@ -66,12 +67,12 @@ Safest recovery path: forward-deploy or otherwise prove the matching Supabase Ed
 
 ## Cross-Agent Follow-Ups
 
-### Security Engineer / Release Verification - `TB-0089` reopened because tracker closeout outran live deployment
-- Current truth: repo/tests changed, but live function source did not. `TB-0089` is open again in tracker.
+### Security Engineer / Release Verification - `TB-0089` live proof now exists
+- Current truth: repo/tests and sampled live function source now agree for the issuer-pinned Clerk verifier paths.
 - Durable correction: do not close Edge Function auth-hardening rows from repo diff, static deploy, or browser smoke alone. Read the live function source or deployed revision for the same head before closing.
 
-### Lead Developer / Release Verification - `TB-0027` is now a real release blocker, not just metadata debt
-- Current truth: the deploy workflow proves DreamHost static publish, but it does not prove or perform matching Supabase Edge Function deployment.
+### Lead Developer / Release Verification - `TB-0027` now has a release-chain guard
+- Current truth: the deploy workflow now includes live Supabase function metadata verification before DreamHost upload, but the next hosted run must confirm the GitHub secret is present.
 - Durable correction: add same-chain function deployment or exact-head function provenance to the release chain whenever the pushed head changes Supabase Edge Functions.
 
 ### Product Ops Workflow Analyst - `TB-0102` source fix is not live proof
@@ -85,9 +86,8 @@ Safest recovery path: forward-deploy or otherwise prove the matching Supabase Ed
 ## Tracker Closeout Sweep
 
 - Re-read live tracker rows `TB-0018`, `TB-0019`, `TB-0024`, `TB-0027`, `TB-0089`, and `TB-0102`.
-- Kept `TB-0018`, `TB-0019`, and `TB-0024` open because their acceptance criteria are still unmet on the current head.
-- Reopened `TB-0089` because live function source contradicts the earlier closeout on `a17a856`.
-- Refreshed `TB-0027` to the current release-process failure: no same-head Supabase function provenance or deploy proof.
+- Kept `TB-0024` separate because its external DNS acceptance criteria are still unmet.
+- Prepared `TB-0027` and `TB-0089` for closeout after final push because live function/source proof now exists and the release-chain provenance guard is implemented.
 - Corrected `TB-0102` so it no longer implies the mailbox function controls are already live.
 - Left `TB-0108`, `TB-0111`, and the hosted primary-site checks closed or healthy because current release findings did not invalidate their live proof.
 
