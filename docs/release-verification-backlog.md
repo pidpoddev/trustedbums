@@ -1,99 +1,76 @@
 # Trusted Bums Release Verification Backlog
 
-_Last updated: 2026-06-19 by Codex daily release verification automation._
+_Last updated: 2026-06-20 by Codex daily release verification automation._
 
 ## Release Decision
 
-Decision: `PENDING POST-PUSH VERIFICATION` for the current closeout batch.
+Decision: `HOTFIX-FORWARD` for current head `e231cc07ee6959bc8eac9d04ed3b68b80d76f6c4`.
 
-Hosted release proof on `https://trustedbums.com` was green for prior head `a17a856`, and this closeout batch has now removed the live Supabase control-plane drift that blocked `TB-0027` and `TB-0089`. The live project `vaoqvtxqvbptyxddpoju` now serves the issuer-pinned Clerk verifier on the sampled Clerk-backed functions, and the DreamHost deploy workflow now runs a Supabase release provenance gate before upload. The release still needs the new closeout commit pushed and the hosted workflow chain checked before declaring the new head `GO`.
+Exact-head hosted proof on `https://trustedbums.com` is green on `e231cc0`, and the currently deployed primary host is healthy, but the release still needs a hotfix-forward closeout because two same-head gates are broken:
 
-Safest recovery path: push the closeout commit, confirm the provenance-gated deploy and QA workflows, then close the related tracker rows against the final commit/run IDs. Rollback is not the first recommendation because the primary web deploy is healthy and the fixes are forward-only provenance, copy, layout, and live function-alignment changes.
+- [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still approves older head `b2c6c44`.
+- Production Supabase still lacks `public.companies.deal_registration_config`, and the live migration ledger is also missing the current-head `20260620012000_add_route_advisor_indexes.sql` row.
+
+Safest recovery path: prove or apply the missing live schema and migration parity on the current head, refresh exact-head Code Review, and then close the tracker rows against the same commit and run IDs. Rollback is not the first recommendation because the primary web deploy is healthy and the current evidence points to release-proof drift rather than a broad browser-surface outage.
 
 ## Evidence Summary
 
-- GitHub `QA` run `27798687806` on `a17a856`: passed.
-- GitHub `Deploy TrustedBums to DreamHost` run `27798687708` on `a17a856`: passed.
-- GitHub `E2E Smoke` run `27798711531` on `a17a856`: passed, including `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
-- Latest hosted `Visual UI Audit` success is still `27755903096` on `c02b18b`. No hosted visual artifact exists for `b67b4c4` or `a17a856`.
-- [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still records `GO` for older head `4dfca6111781e0df4b9b6ee14dd811c0d90ac787`.
-- Current DreamHost deploy workflow in [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml) now runs `pnpm run release:provenance` with `SUPABASE_ACCESS_TOKEN` and project ref `vaoqvtxqvbptyxddpoju` before DreamHost upload.
-- Live Supabase project `vaoqvtxqvbptyxddpoju` now shows the refreshed function set needed for this closeout:
-  - `extension-api-v1` version `7`, `portal-contacts` version `5`, `profile-bootstrap` version `5`, `admin-access-requests` version `5`, and `bum-extension-download` version `3` all show the allowed Clerk issuer path in live source.
-  - Additional same-pass live function refreshes include `customer-lead-duplicate-check` version `2`, `sync-clerk-users` version `3`, `clerk-impersonation` version `8`, `submit-feedback` version `3`, `sync-teams-attendees` version `3`, `clerk-user-tools` version `2`, `send-admin-email` version `9`, `api-access-keys` version `2`, `dmarc-reports` version `4`, and `schedule-teams-meeting` version `8`.
-  - Prior same-day live closeout already moved `admin-shared-mailbox` to version `3`, `invite-bum` to version `4`, and `client-team` to version `3`.
-- Live migration ledger proof shows latest migration `20260619120328 add_identity_review_inner_circle_companies_reverse_handoffs`, followed by `20260618101827 set_admin_scrum_owner_sync_search_path` and `20260617161426 add_admin_scrum_owner_column`.
-- `https://trustedbums.com` currently returns `HTTP/2 200` with current CSP/HSTS headers and passes sourced `qa:target-preflight`.
-- Runner-side external target `https://rcdl.tplinkdns.com` currently resolves DNS to `69.131.216.220`, but sourced `qa:target-preflight` fails `HTTPS` and `App shell`; `curl` without `-k` fails certificate verification and plain `http://rcdl.tplinkdns.com` returns `HTTP/1.1 403`.
-- `.env.qa` is present. Raw-shell `qa:env` still fails until the expected variables are sourced; sourced `.env.qa` restores the contract and passes `qa:env`.
+- GitHub `QA` run `27857690007` on `e231cc0`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27857689995` on `e231cc0`: passed.
+- GitHub `Visual UI Audit` run `27857691601` on `e231cc0`: passed.
+- GitHub `E2E Smoke` run `27857708006` on `e231cc0`: passed, including `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
+- GitHub workflow history shows no standalone `Deep QA Hotfix Audit` run on `e231cc0`; current deep-QA evidence comes from the deploy-triggered shards inside `E2E Smoke` `27857708006`.
+- [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still records `GO` for `b2c6c440f0301020a108d017f2817cc983c06b3b`.
+- Current source uses `deal_registration_config` in [`src/pages/client/ClientProfile.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [`src/pages/admin/AdminClients.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminClients.tsx), and [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts).
+- Current repo migrations [`supabase/migrations/20260611195500_add_client_deal_registration_config.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260611195500_add_client_deal_registration_config.sql) and [`supabase/migrations/20260620012000_add_route_advisor_indexes.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260620012000_add_route_advisor_indexes.sql) are both absent from the live migration ledger, and live SQL still shows `companies.deal_registration_config` missing while the latest visible production migration row remains `20260619120328`.
+- Current release provenance guard in [`scripts/verify-supabase-release-provenance.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-supabase-release-provenance.mjs) checks live function metadata and prints local migration filenames. It does not compare local migrations to the live ledger or assert that required columns exist. That means the workflow can look provenance-gated while a live schema gap still escapes.
+- Live Supabase function inventory still shows `send-admin-email` active at version `10`, so this run did not reproduce the earlier same-head function drift story on the current release lane.
+- Raw shell `qa:env` still fails with missing exported QA variables, while sourced `.env.qa` `qa:env` and sourced `qa:target-preflight` on `https://trustedbums.com` pass without printing secrets.
+- Runner-side external target `https://rcdl.tplinkdns.com` still fails sourced `qa:target-preflight` for `HTTPS` and `App shell`. Keep that as `TB-0024`, separate from primary-host release proof.
+- Tracker closeout sweep found no new closure work beyond what is already live in `public.admin_scrum_items`: `TB-0018`, `TB-0055`, and `TB-0112` are closed on `e231cc0`; `TB-0019`, `TB-0024`, and `TB-0097` remain open.
 
-## Closeout Checks
+## Failed Or Missing Checks
 
-### P0 - [TB-0027] Same-head Supabase provenance gate added
-- Evidence: [deploy_dreamhost.yaml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml) now runs the Supabase provenance script before DreamHost upload, and [verify-supabase-release-provenance.mjs](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-supabase-release-provenance.mjs) compares live function `version`, `status`, and `verify_jwt` metadata against [supabase/config.toml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/config.toml) while including the local migration ledger in the proof output. Live SQL also confirmed the production migration ledger through `20260619120328`.
-- Impact: future static deploys will fail before upload when live Supabase function metadata cannot be proven with the configured project/token.
-- Recommendation: close after the new commit is pushed and the provenance-gated deploy workflow proves the secret is present in GitHub.
-- Acceptance criteria: closeout commit is on `main`, hosted deploy runs the new provenance step successfully, and `TB-0027` cites the final commit plus live function/migration proof.
+### P1 - [TB-0097] Same-head schema parity is still missing
+- Evidence: exact-head source and current repo migration expect `companies.deal_registration_config`, but live production still lacks the column; the live migration ledger is also missing repo rows `20260611195500` and `20260620012000`.
+- Impact: the client beta setup and company-profile governance lane cannot be called released, even though the static site and exact-head hosted workflows are green.
+- Recommendation: prove or apply the missing schema on the live project before the next GO claim, then run the intended role matrix on the same head.
+- Acceptance criteria: production has `companies.deal_registration_config`, current-head role QA proves `CLIENT_ADMIN` and `CLIENT_IT` setup behavior and deny-paths, and `TB-0097` closes with exact-head commit and run IDs.
 
-### P1 - [TB-0089] Issuer-pinning hardening redeployed live
-- Evidence: live function source now shows `resolveAllowedClerkIssuer(...)` and `issuer: allowedIssuer` for `extension-api-v1` v7, `portal-contacts` v5, `profile-bootstrap` v5, `admin-access-requests` v5, and `bum-extension-download` v3. Local source scan found no remaining `resolveClerkJwksUrl` or `issuer: payload.iss` pattern under [supabase/functions](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions).
-- Impact: the sampled live Clerk-backed service-role/custom-auth functions no longer let a token choose its own issuer trust root.
-- Recommendation: close after final push and hosted proof are attached to the tracker.
-- Acceptance criteria: tracker `TB-0089` cites the live versions above, the final commit, and the passing local auth/test proof.
+### P1 - [TB-0019] Refresh exact-head Code Review for `e231cc0`
+- Evidence: exact-head hosted proof is green, but the Code Review marker still names `b2c6c44`.
+- Impact: release evidence is mixed-surface and stale across commits.
+- Recommendation: keep release non-`GO` until Code Review refreshes on `e231cc0`.
+- Acceptance criteria: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) names `e231cc0...`, and `TB-0019` closes with matching exact-head hosted proof.
 
-### P1 - [TB-0019] Refresh exact-head Code Review for `a17a856`
-- Evidence: `main` is `a17a85639a1b24dfda36da87d763eb4ecd3457af`, but [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still names `4dfca6111781e0df4b9b6ee14dd811c0d90ac787`.
-- Impact: even if the live function drift is fixed, the current release still lacks exact-head Code Review closure.
-- Recommendation: keep release non-`GO` until Code Review refreshes on `a17a856`.
-- Acceptance criteria: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) names `a17a856...`, and `TB-0019` closes with matching exact-head hosted proof.
+### P1 - [TB-0024] Runner-side external DNS target still fails independent proof
+- Evidence: sourced `QA_BASE_URL=https://rcdl.tplinkdns.com corepack pnpm run qa:target-preflight` still fails `HTTPS` and `App shell`, while the current primary-host chain is green on `https://trustedbums.com`.
+- Impact: external-host trust evidence remains unhealthy, but it should not overwrite primary-host release truth.
+- Recommendation: keep `TB-0024` open separately until the host is repaired or retired from the authoritative contract.
+- Acceptance criteria: sourced `qa:target-preflight` passes on `https://rcdl.tplinkdns.com`, or Ryan explicitly retires the host and the prompt, rules, and tracker all agree.
 
-### P1 - [TB-0024] Runner-side external DNS target `rcdl.tplinkdns.com` still fails HTTPS and app-shell proof
-- Evidence: sourced `qa:target-preflight` now resolves DNS for `rcdl.tplinkdns.com`, but still fails `HTTPS` and `App shell`; direct `curl` without `-k` fails certificate validation, and plain `http` returns `403`.
-- Impact: external-target trust and runner-side fallback-host checks remain unhealthy. This does not negate the primary-host hosted runs on `https://trustedbums.com`, but it blocks any claim that the named external DNS target is healthy.
-- Recommendation: keep this separate from primary-host release proof. Either restore the external target or explicitly retire it again from one authoritative decision source.
-- Acceptance criteria: sourced `QA_BASE_URL=https://rcdl.tplinkdns.com corepack pnpm run qa:target-preflight` passes `HTTPS` and `App shell`, or Ryan explicitly retires this host and the prompt/rules/tracker all agree.
-
-### P1 - [TB-0102] Shared mailbox controls are live and triaged
-- Evidence: live `admin-shared-mailbox` now serves version `3`, and the live `100`-message queue was triaged to `0` unassigned, `0` uncategorized, and `0` `OPEN`, with messages left `IN_PROGRESS` across explicit work queues for human review.
-- Impact: the prior release blocker is no longer current; future mailbox release checks should verify live function version/source and queue counts rather than carrying the old version-2 drift.
-- Recommendation: keep `TB-0102` closed unless a fresh live read shows function or queue regression.
-- Acceptance criteria: tracker closeout cites `admin-shared-mailbox` v3, the triaged queue counts, and the final closeout commit.
-
-### P2 - [TB-0018] Exact-head hosted visual proof is still missing for `a17a856`
-- Evidence: latest successful `Visual UI Audit` is `27755903096` on `c02b18b`; no current-head hosted visual artifact exists for `a17a856`.
-- Impact: visible admin/client surface changes since `c02b18b` still lack exact-head screenshot proof.
-- Recommendation: rerun hosted `Visual UI Audit` after the control-plane hotfix, or document an explicit reuse rule tied to unchanged visible surfaces if that is truly defensible.
-- Acceptance criteria: hosted `Visual UI Audit` succeeds on `a17a856`, or Release/UI records an explicit reuse note that matches the changed surface set.
+### Closed on current head
+- `TB-0018` is closed: exact-head visual proof exists on `27857691601`.
+- `TB-0055` is closed: env-evidence split remains guarded and documented.
+- `TB-0112` is closed: deploy-triggered deep shards now retain preflight summaries on `27857708006`.
 
 ## Cross-Agent Follow-Ups
 
-### Security Engineer / Release Verification - `TB-0089` live proof now exists
-- Current truth: repo/tests and sampled live function source now agree for the issuer-pinned Clerk verifier paths.
-- Durable correction: do not close Edge Function auth-hardening rows from repo diff, static deploy, or browser smoke alone. Read the live function source or deployed revision for the same head before closing.
+### Release Verification Agent - local migration filenames are not schema provenance
+- Current truth: the provenance script can pass while required live schema and migration ledger rows are still missing.
+- Durable correction: when the reviewed range touches schema-backed UI/API behavior or migrations, compare live schema expectations or the live migration ledger to the repo before closing the item.
 
-### Lead Developer / Release Verification - `TB-0027` now has a release-chain guard
-- Current truth: the deploy workflow now includes live Supabase function metadata verification before DreamHost upload, but the next hosted run must confirm the GitHub secret is present.
-- Durable correction: add same-chain function deployment or exact-head function provenance to the release chain whenever the pushed head changes Supabase Edge Functions.
+### Lead Developer - do not promote `GO` from exact-head hosted green alone
+- Current truth: the web deploy and deep QA chain are green on `e231cc0`, but live schema parity is still incomplete.
+- Durable correction: exact-head hosted success plus live function metadata is not enough when current routes or APIs depend on new columns.
 
-### Product Ops Workflow Analyst - `TB-0102` source fix is not live proof
-- Current truth: the shared-mailbox UI and repo function changed on `a17a856`, but live `admin-shared-mailbox` still serves the older behavior.
-- Durable correction: keep source-only or hosted-web proof separate from live function proof before narrowing operational queue items that depend on Supabase functions.
-
-### QA Harness Reliability / QA Test Engineer - green hosted smoke did not detect the live function drift
-- Current truth: hosted `QA` and deploy-triggered `E2E Smoke` are still valuable, but they did not catch stale live function source on the same head.
-- Durable correction: keep using hosted proof, but treat live function-source verification as a separate release surface whenever the commit range touches `supabase/functions/`.
-
-## Tracker Closeout Sweep
-
-- Re-read live tracker rows `TB-0018`, `TB-0019`, `TB-0024`, `TB-0027`, `TB-0089`, and `TB-0102`.
-- Kept `TB-0024` separate because its external DNS acceptance criteria are still unmet.
-- Prepared `TB-0027` and `TB-0089` for closeout after final push because live function/source proof now exists and the release-chain provenance guard is implemented.
-- Corrected `TB-0102` so it no longer implies the mailbox function controls are already live.
-- Left `TB-0108`, `TB-0111`, and the hosted primary-site checks closed or healthy because current release findings did not invalidate their live proof.
+### Product Ops Workflow Analyst - keep the client beta setup lane open until schema and role proof both land
+- Current truth: the client profile and beta setup workflow still cannot be considered operationally real while the live column is absent.
+- Durable correction: do not close workflow governance items from source wording or static deploy proof when the live schema is still missing.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-19 (`America/New_York`).
+- Date of run: 2026-06-20 (`America/New_York`).
 - Docs, files, and workflows reviewed:
   - `docs/agents/automation-prompts/trusted-bums-daily-release-verification-agent.toml`
   - `docs/agents/consultant-team-rules.md`
@@ -104,45 +81,36 @@ Safest recovery path: push the closeout commit, confirm the provenance-gated dep
   - `docs/security-review-backlog.md`
   - `docs/trust-reputation-backlog.md`
   - `docs/lead-developer-recommendations.md`
-  - `docs/production-go-live.md`
+  - `docs/release-verification-backlog.md`
+  - `docs/product-ops-workflow-backlog.md`
   - `docs/codex-edit-log.md`
   - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json)
-  - [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml)
-  - [`src/pages/admin/AdminInbox.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminInbox.tsx)
-  - [`src/pages/admin/AdminHandoffs.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminHandoffs.tsx)
+  - [`scripts/verify-supabase-release-provenance.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-supabase-release-provenance.mjs)
+  - [`supabase/migrations/20260611195500_add_client_deal_registration_config.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260611195500_add_client_deal_registration_config.sql)
+  - [`supabase/migrations/20260620012000_add_route_advisor_indexes.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260620012000_add_route_advisor_indexes.sql)
+  - [`src/pages/client/ClientProfile.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx)
+  - [`src/pages/admin/AdminClients.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminClients.tsx)
   - [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts)
-  - [`supabase/functions/admin-shared-mailbox/index.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/admin-shared-mailbox/index.ts)
-  - [`supabase/functions/extension-api-v1/index.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/extension-api-v1/index.ts)
-  - [`supabase/functions/portal-contacts/index.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/portal-contacts/index.ts)
-  - [`src/test/serviceRoleAuthorization.test.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/serviceRoleAuthorization.test.ts)
 - GitHub evidence reviewed:
-  - `gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 25 --json ...`
-  - `gh-trustedbums run view 27798687806 --repo Pidpoddev/trustedbums --json ...`
-  - `gh-trustedbums run view 27798687708 --repo Pidpoddev/trustedbums --json ...`
-  - `gh-trustedbums run view 27798711531 --repo Pidpoddev/trustedbums --json ...`
-  - `gh-trustedbums run list --workflow "Visual UI Audit" --limit 10 --json ...`
-  - `gh-trustedbums run list --workflow "Deep QA Hotfix Audit" --limit 10 --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 40 --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run view 27857690007 --repo Pidpoddev/trustedbums --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run view 27857689995 --repo Pidpoddev/trustedbums --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run view 27857691601 --repo Pidpoddev/trustedbums --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run view 27857708006 --repo Pidpoddev/trustedbums --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --workflow "Deep QA Hotfix Audit" --limit 12 --json ...`
 - Local checks reviewed:
-  - `git rev-parse HEAD`
-  - `git status --short`
-  - `git log --oneline --decorate -n 12`
-  - `git show --stat --summary --name-only HEAD`
-  - `git diff c02b18b..a17a856 -- ...`
   - raw `corepack pnpm run qa:env`
-  - sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`
-  - sourced `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://trustedbums.com corepack pnpm run qa:target-preflight`
-  - sourced `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://rcdl.tplinkdns.com corepack pnpm run qa:target-preflight`
+  - sourced `.env.qa` `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`
+  - sourced `.env.qa` `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://trustedbums.com corepack pnpm run qa:target-preflight`
+  - sourced `.env.qa` `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://rcdl.tplinkdns.com corepack pnpm run qa:target-preflight`
   - `curl -I -L --max-time 20 https://trustedbums.com`
   - `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`
   - `curl -I -L --max-time 20 http://rcdl.tplinkdns.com`
 - Live Supabase checks reviewed for project `vaoqvtxqvbptyxddpoju`:
-  - project inventory and database version
-  - Edge Function inventory
-  - deployed source for `extension-api-v1`, `portal-contacts`, and `admin-shared-mailbox`
-  - last-24-hour edge-function logs sample
-  - tracker schema read plus tracker-row refreshes for `TB-0027`, `TB-0089`, and `TB-0102`
+  - project health and URL
+  - edge-function inventory plus live `send-admin-email` source read
+  - live SQL for `information_schema.columns`, `supabase_migrations.schema_migrations`, and tracker rows
 - Checks that could not fully close and why:
-  - no exact-head hosted `Visual UI Audit` exists yet for `a17a856`
-  - no exact-head Code Review marker exists yet for `a17a856`
-  - no live Supabase advisor tool was callable in this session, so current release posture relies on direct function-source reads and tracker truth rather than a fresh advisor sweep
-  - no same-session seeded live auth matrix was run against the stale live functions, so the current blocker is based on direct live source mismatch rather than a new live exploit repro
+  - no exact-head Code Review marker exists yet for `e231cc0`
+  - no live schema parity exists yet for `companies.deal_registration_config`
+  - no standalone `Deep QA Hotfix Audit` run exists on `e231cc0`; current deep-QA evidence comes from deploy-triggered `E2E Smoke` shards instead

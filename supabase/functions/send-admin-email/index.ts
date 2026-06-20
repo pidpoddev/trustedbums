@@ -211,6 +211,23 @@ async function countRows(table: string, column?: string, value?: string) {
   return count ?? 0;
 }
 
+function boundedPage(payload: Record<string, unknown>) {
+  const requestedLimit = Math.trunc(numberValue(payload.limit, 25));
+  const requestedOffset = Math.trunc(numberValue(payload.offset, 0));
+  const limit = Math.min(Math.max(requestedLimit, 1), 100);
+  const offset = Math.max(requestedOffset, 0);
+  return { limit, offset, to: offset + limit - 1 };
+}
+
+function pagedResponse<T>(rows: T[] | null, count: number | null, limit: number, offset: number) {
+  return {
+    rows: rows ?? [],
+    total: count ?? 0,
+    limit,
+    offset,
+  };
+}
+
 async function getAdminEmailMetrics() {
   const [
     totalDeliveries,
@@ -346,19 +363,34 @@ async function handleAdminEmailOperation(operation: AdminEmailOperation, payload
       return json(200, { data: await getAdminEmailMetrics() });
     }
     case "list_deliveries": {
-      const { data, error } = await supabaseAdmin.from("admin_email_deliveries").select("*").order("created_at", { ascending: false }).limit(50);
+      const page = boundedPage(payload);
+      const { data, error, count } = await supabaseAdmin
+        .from("admin_email_deliveries")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(page.offset, page.to);
       if (error) throw error;
-      return json(200, { data: data ?? [] });
+      return json(200, { data: pagedResponse(data, count, page.limit, page.offset) });
     }
     case "list_engagement": {
-      const { data, error } = await supabaseAdmin.from("admin_email_engagement_summary").select("*").order("engagement_score", { ascending: false }).limit(50);
+      const page = boundedPage(payload);
+      const { data, error, count } = await supabaseAdmin
+        .from("admin_email_engagement_summary")
+        .select("*", { count: "exact" })
+        .order("engagement_score", { ascending: false })
+        .range(page.offset, page.to);
       if (error) throw error;
-      return json(200, { data: data ?? [] });
+      return json(200, { data: pagedResponse(data, count, page.limit, page.offset) });
     }
     case "list_campaigns": {
-      const { data, error } = await supabaseAdmin.from("admin_email_campaigns").select("*").order("created_at", { ascending: false }).limit(50);
+      const page = boundedPage(payload);
+      const { data, error, count } = await supabaseAdmin
+        .from("admin_email_campaigns")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(page.offset, page.to);
       if (error) throw error;
-      return json(200, { data: data ?? [] });
+      return json(200, { data: pagedResponse(data, count, page.limit, page.offset) });
     }
     case "list_trigger_rules": {
       const { data, error } = await supabaseAdmin.from("admin_email_trigger_rules").select("*, admin_email_templates(id, name, slug)").order("created_at", { ascending: false });

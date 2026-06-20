@@ -84,7 +84,7 @@ function companyWebsiteSubtitle(website?: string | null) {
 }
 
 function prospectCompanyName(prospect: ProspectRecommendationRecord) {
-  return prospect.companies?.name ?? "Prospect";
+  return prospect.companies?.name ?? "Prospective Client";
 }
 
 function contactResultHref(contact: BumRepresentedContactRecord) {
@@ -369,7 +369,7 @@ export function PortalGlobalSearch() {
     ].map((prospect) => result({
       id: "prospect:" + prospect.id,
       icon: "client",
-      category: "Prospect",
+      category: "Prospective Client",
       title: prospectCompanyName(prospect),
       subtitle: [prospect.profiles?.full_name ?? prospect.profiles?.email, prospect.status].filter(Boolean).join(" · "),
       href: user.role === "ADMIN" ? "/admin/clients" : "/bum/prospects",

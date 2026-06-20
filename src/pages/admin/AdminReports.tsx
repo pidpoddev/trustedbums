@@ -179,7 +179,7 @@ export default function AdminReports() {
           })),
           ...prospects.map((prospect) => ({
             bum: prospect.profiles?.full_name ?? prospect.profiles?.email,
-            type: "Prospect",
+            type: "Prospective Client",
             status: statusLabel(prospect.status),
             availability: "",
             value: 1,

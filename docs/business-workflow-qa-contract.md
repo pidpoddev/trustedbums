@@ -64,6 +64,12 @@ These are release-blocking workflow scenarios. Deep QA must prove them with real
 - Once a claim exists, restricted opportunity fields and delete actions are blocked with a clear explanation.
 - Client sees claim details and the redacted client notification preview after a claim notification is sent.
 
+### Client Profile And Beta Setup
+- Client Admin can update ordinary same-company profile fields that are intended to be self-service.
+- Legal company-name or approved-domain changes route through the Admin-reviewed identity-change path instead of applying silently.
+- Only the intended elevated roles can update deal-registration beta setup, and unrelated same-company roles are denied in both UI and backend.
+- Deal-registration beta setup persists after refresh, writes the expected audit event, and survives the current production schema rather than only working in source or local migrations.
+
 ### Bum Claim Lifecycle
 - Bum can open the opportunities list and each opportunity detail.
 - Bum can request a claim for an open opportunity.

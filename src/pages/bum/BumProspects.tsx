@@ -61,17 +61,17 @@ export default function BumProspects() {
       await queryClient.invalidateQueries({ queryKey: ["bum-prospects", user?.id] });
       await queryClient.invalidateQueries({ queryKey: ["bum-prospect-contacts", user?.id] });
       toast({
-        title: "Prospect saved",
+        title: "Prospective Client saved",
         description:
           recommendation.companies?.relationship_stage === "CLIENT"
             ? "This company already exists as a client, so your relationship was added to the existing company."
-            : "Your prospect and key contact were added for admin review.",
+            : "Your Prospective Client and key contact were added for admin review.",
       });
       setForm(initialForm);
     },
     onError: (error) => {
       toast({
-        title: "Unable to save prospect",
+        title: "Unable to save Prospective Client",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
@@ -214,7 +214,7 @@ export default function BumProspects() {
             <div className="flex justify-end">
               <Button disabled={createMutation.isPending}>
                 <Plus className="mr-2 h-4 w-4" />
-                Save prospect
+                Save Prospective Client
               </Button>
             </div>
           </form>
@@ -286,7 +286,7 @@ export default function BumProspects() {
         {!recommendationsQuery.isLoading && !(recommendationsQuery.data ?? []).length ? (
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground">
-              No prospects submitted yet. Add the first target company above.
+              No Prospective Clients submitted yet. Add the first target company above.
             </CardContent>
           </Card>
         ) : null}

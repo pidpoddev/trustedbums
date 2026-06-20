@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const dialogSource = readFileSync("src/components/ui/dialog.tsx", "utf8");
 const feedbackSource = readFileSync("src/components/SubmitFeedbackButton.tsx", "utf8");
 const conversationDockSource = readFileSync("src/components/ConversationDock.tsx", "utf8");
+const consentManagerSource = readFileSync("src/components/ConsentManager.tsx", "utf8");
 const headerActionsSource = readFileSync("src/components/PortalHeaderActions.tsx", "utf8");
 const bumOpportunitiesSource = readFileSync("src/pages/bum/BumOpportunities.tsx", "utf8");
 const adminCreditsSource = readFileSync("src/pages/admin/AdminCredits.tsx", "utf8");
@@ -13,10 +14,13 @@ const tooltipSource = readFileSync("src/components/ui/tooltip.tsx", "utf8");
 const adminScrumTrackerSource = readFileSync("src/pages/admin/AdminScrumTracker.tsx", "utf8");
 const selectSource = readFileSync("src/components/ui/select.tsx", "utf8");
 const bumContactsSource = readFileSync("src/pages/bum/BumContacts.tsx", "utf8");
+const bumProspectsSource = readFileSync("src/pages/bum/BumProspects.tsx", "utf8");
 const bumDashboardSource = readFileSync("src/pages/bum/BumDashboard.tsx", "utf8");
 const bumReportsSource = readFileSync("src/pages/bum/BumReports.tsx", "utf8");
 const bumReverseOpportunitiesSource = readFileSync("src/pages/bum/BumReverseOpportunities.tsx", "utf8");
 const adminOpportunitiesSource = readFileSync("src/pages/admin/AdminOpportunities.tsx", "utf8");
+const adminReportsSource = readFileSync("src/pages/admin/AdminReports.tsx", "utf8");
+const portalGlobalSearchSource = readFileSync("src/components/PortalGlobalSearch.tsx", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 const visualAuditSource = readFileSync("tests/e2e/visual-ui-audit.spec.ts", "utf8");
 const publicIndexSource = readFileSync("src/pages/Index.tsx", "utf8");
@@ -38,6 +42,11 @@ describe("UI visual cleanup guardrails", () => {
     expect(conversationDockSource).toContain("h-11 rounded-full px-3");
     expect(conversationDockSource).toContain("sr-only sm:not-sr-only");
     expect(conversationDockSource).toContain("showLauncher = true");
+  });
+
+  it("keeps the collapsed privacy control away from the mobile chat corner", () => {
+    expect(consentManagerSource).toContain("bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 z-40");
+    expect(consentManagerSource).toContain("sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:left-auto sm:right-4");
   });
 
   it("keeps mobile account menus opaque and viewport-bound", () => {
@@ -85,10 +94,13 @@ describe("UI visual cleanup guardrails", () => {
   it("keeps Prospective Client wording consistent across visible sourcing surfaces", () => {
     const visibleSources = [
       bumContactsSource,
+      bumProspectsSource,
       bumDashboardSource,
       bumReportsSource,
       bumReverseOpportunitiesSource,
       adminOpportunitiesSource,
+      adminReportsSource,
+      portalGlobalSearchSource,
       clientTargetsSource,
       portalApiSource,
     ].join("\n");
@@ -100,6 +112,8 @@ describe("UI visual cleanup guardrails", () => {
     expect(visibleSources).not.toContain("Client Prospect");
     expect(visibleSources).not.toContain("Prospect client");
     expect(visibleSources).not.toContain("Prospect contacts");
+    expect(visibleSources).not.toContain("Prospect saved");
+    expect(visibleSources).not.toContain("Unable to save prospect");
     expect(visibleSources).not.toContain("prospect client company name");
   });
 

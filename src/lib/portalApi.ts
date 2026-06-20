@@ -325,6 +325,18 @@ export interface AdminEmailDeliveryRecord {
   created_at: string;
 }
 
+export interface AdminEmailListPage<T> {
+  rows: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AdminEmailListOptions {
+  limit?: number;
+  offset?: number;
+}
+
 export interface ClaimClientNotificationPreviewRecord {
   opportunity_claim_id: string;
   template_slug: string | null;
@@ -6161,16 +6173,23 @@ export async function getAdminEmailMetrics() {
   return await invokeAdminEmailOperation<AdminEmailMetricsRecord>("get_metrics");
 }
 
-export async function listAdminEmailDeliveries() {
-  return await invokeAdminEmailOperation<AdminEmailDeliveryRecord[]>("list_deliveries");
+function adminEmailListPayload(options?: AdminEmailListOptions) {
+  return {
+    limit: options?.limit ?? 25,
+    offset: options?.offset ?? 0,
+  };
 }
 
-export async function listAdminEmailEngagementSummary() {
-  return await invokeAdminEmailOperation<AdminEmailEngagementSummaryRecord[]>("list_engagement");
+export async function listAdminEmailDeliveries(options?: AdminEmailListOptions) {
+  return await invokeAdminEmailOperation<AdminEmailListPage<AdminEmailDeliveryRecord>>("list_deliveries", adminEmailListPayload(options));
 }
 
-export async function listAdminEmailCampaigns() {
-  return await invokeAdminEmailOperation<AdminEmailCampaignRecord[]>("list_campaigns");
+export async function listAdminEmailEngagementSummary(options?: AdminEmailListOptions) {
+  return await invokeAdminEmailOperation<AdminEmailListPage<AdminEmailEngagementSummaryRecord>>("list_engagement", adminEmailListPayload(options));
+}
+
+export async function listAdminEmailCampaigns(options?: AdminEmailListOptions) {
+  return await invokeAdminEmailOperation<AdminEmailListPage<AdminEmailCampaignRecord>>("list_campaigns", adminEmailListPayload(options));
 }
 
 export async function listAdminEmailTriggerRules() {

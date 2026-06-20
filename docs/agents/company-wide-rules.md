@@ -158,12 +158,12 @@ When adding a rule, include:
 - QA proof: `curl -sL` for `/`, `/privacy-policy`, and at least one `/legal/:slug` route should return different initial titles, descriptions, canonical URLs, and `og:url` values before JavaScript execution. Hosted DreamHost deploy checks should verify at least one generated trust route and one generated legal route.
 - Open questions: None.
 
-### Consultant local preview and external DNS checks use fixed targets
-- Rule: When consultant work needs a local preview or local route check from the Codex runner, use port `8080` only. When external DNS context is needed from the runner, use `https://rcdl.tplinkdns.com` unless Ryan specifies a different host for that run.
+### Consultant local preview and public trust checks use fixed targets
+- Rule: When consultant work needs a local preview or local route check from the Codex runner, use port `8080` only. Use `https://trustedbums.com` as the default public trust, release, QA, and visual-review target unless Ryan specifies a different host for that run.
 - Applies to: UX, UI, Content, QA, Trust & Reputation, Lead Developer, and any Codex-run local preview or external reachability check.
 - Why it matters: The runner needs predictable ports and a single known external host so evidence is comparable across specialist runs and local test setup does not drift.
-- Implementation notes: Do not start local preview servers on alternate ports during consultant runs. For GitHub-hosted `QA`, `E2E Smoke`, `Visual UI Audit`, and `Deep QA Hotfix Audit`, keep `QA_BASE_URL` on `https://trustedbums.com` unless Ryan explicitly asks to validate another deployed host. Keep runner-side `rcdl.tplinkdns.com` DNS/TLS/app-shell results separate from hosted `https://trustedbums.com` release evidence.
-- QA proof: Agent Inputs cite local preview checks on `127.0.0.1:8080` when used, runner-side DNS/TLS notes cite `https://rcdl.tplinkdns.com` unless the user explicitly overrides it, and hosted workflow evidence cites the actual `QA_BASE_URL` used.
+- Implementation notes: Do not start local preview servers on alternate ports during consultant runs. For GitHub-hosted `QA`, `E2E Smoke`, `Visual UI Audit`, and `Deep QA Hotfix Audit`, keep `QA_BASE_URL` on `https://trustedbums.com` unless Ryan explicitly asks to validate another deployed host. The retired `https://rcdl.tplinkdns.com` host should not be used as a required review surface unless Ryan explicitly reintroduces it.
+- QA proof: Agent Inputs cite local preview checks on `127.0.0.1:8080` when used, and hosted workflow evidence cites the actual `QA_BASE_URL` used.
 - Open questions: None.
 
 ### Google Analytics is an approved source for specialist evidence

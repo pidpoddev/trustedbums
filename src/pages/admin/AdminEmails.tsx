@@ -197,27 +197,64 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : typeof error === "string" ? error : "Unable to load this email data.";
 }
 
+const EMAIL_RESULTS_PAGE_SIZE = 25;
+
+function ResultsPager({
+  limit,
+  offset,
+  rowCount,
+  total,
+  onOffsetChange,
+}: {
+  limit: number;
+  offset: number;
+  rowCount: number;
+  total: number;
+  onOffsetChange: (offset: number) => void;
+}) {
+  const start = total > 0 ? offset + 1 : 0;
+  const end = total > 0 ? Math.min(offset + rowCount, total) : 0;
+  const previousOffset = Math.max(offset - limit, 0);
+  const nextOffset = offset + limit;
+
+  return (
+    <div className="flex flex-col gap-2 border-t px-3 py-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+      <span>{start}-{end} of {total}</span>
+      <div className="flex gap-2">
+        <Button type="button" size="sm" variant="outline" disabled={offset === 0} onClick={() => onOffsetChange(previousOffset)}>Previous</Button>
+        <Button type="button" size="sm" variant="outline" disabled={nextOffset >= total} onClick={() => onOffsetChange(nextOffset)}>Next</Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminEmails() {
   const { user } = useAuth();
   const { toast } = useToast();
   const timeZone = useUserTimeZone();
   const queryClient = useQueryClient();
   const canLoadAdminEmailData = user?.role === "ADMIN";
+  const [deliveriesOffset, setDeliveriesOffset] = useState(0);
+  const [engagementOffset, setEngagementOffset] = useState(0);
+  const [campaignsOffset, setCampaignsOffset] = useState(0);
 
   const templatesQuery = useQuery({ queryKey: ["admin-email-templates", user?.id], queryFn: listAdminEmailTemplates, enabled: canLoadAdminEmailData });
   const metricsQuery = useQuery({ queryKey: ["admin-email-metrics", user?.id], queryFn: getAdminEmailMetrics, enabled: canLoadAdminEmailData });
-  const deliveriesQuery = useQuery({ queryKey: ["admin-email-deliveries", user?.id], queryFn: listAdminEmailDeliveries, enabled: canLoadAdminEmailData });
-  const engagementQuery = useQuery({ queryKey: ["admin-email-engagement", user?.id], queryFn: listAdminEmailEngagementSummary, enabled: canLoadAdminEmailData });
-  const campaignsQuery = useQuery({ queryKey: ["admin-email-campaigns", user?.id], queryFn: listAdminEmailCampaigns, enabled: canLoadAdminEmailData });
+  const deliveriesQuery = useQuery({ queryKey: ["admin-email-deliveries", user?.id, deliveriesOffset], queryFn: () => listAdminEmailDeliveries({ limit: EMAIL_RESULTS_PAGE_SIZE, offset: deliveriesOffset }), enabled: canLoadAdminEmailData });
+  const engagementQuery = useQuery({ queryKey: ["admin-email-engagement", user?.id, engagementOffset], queryFn: () => listAdminEmailEngagementSummary({ limit: EMAIL_RESULTS_PAGE_SIZE, offset: engagementOffset }), enabled: canLoadAdminEmailData });
+  const campaignsQuery = useQuery({ queryKey: ["admin-email-campaigns", user?.id, campaignsOffset], queryFn: () => listAdminEmailCampaigns({ limit: EMAIL_RESULTS_PAGE_SIZE, offset: campaignsOffset }), enabled: canLoadAdminEmailData });
   const triggerRulesQuery = useQuery({ queryKey: ["admin-email-trigger-rules", user?.id], queryFn: listAdminEmailTriggerRules, enabled: canLoadAdminEmailData });
   const schedulesQuery = useQuery({ queryKey: ["admin-email-schedules", user?.id], queryFn: listAdminEmailSchedules, enabled: canLoadAdminEmailData });
   const brandQuery = useQuery({ queryKey: ["admin-email-brand", user?.id], queryFn: getAdminEmailBrandSettings, enabled: canLoadAdminEmailData });
   const companiesQuery = useQuery({ queryKey: ["admin-email-companies", user?.id], queryFn: () => listCompanies({ includeInactive: true }), enabled: canLoadAdminEmailData });
 
   const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
-  const deliveries = deliveriesQuery.data ?? [];
-  const engagement = engagementQuery.data ?? [];
-  const campaigns = campaignsQuery.data ?? [];
+  const deliveriesPage = deliveriesQuery.data;
+  const engagementPage = engagementQuery.data;
+  const campaignsPage = campaignsQuery.data;
+  const deliveries = deliveriesPage?.rows ?? [];
+  const engagement = engagementPage?.rows ?? [];
+  const campaigns = campaignsPage?.rows ?? [];
   const schedules = schedulesQuery.data ?? [];
   const triggerRules = triggerRulesQuery.data ?? [];
   const companies = companiesQuery.data ?? [];
@@ -680,10 +717,10 @@ export default function AdminEmails() {
 
         <TabsContent value="results" className="space-y-4">
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card><CardHeader><CardTitle className="font-display">Campaigns</CardTitle></CardHeader><CardContent><div className="max-h-80 overflow-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Status</TableHead><TableHead>Recipients</TableHead><TableHead>Sent</TableHead></TableRow></TableHeader><TableBody>{campaigns.map((campaign) => <TableRow key={campaign.id}><TableCell><p className="font-medium">{campaign.name}</p><p className="text-xs text-muted-foreground">{campaign.template_slug}</p></TableCell><TableCell><Badge variant={campaign.status === "SENT" ? "default" : campaign.status === "FAILED" ? "destructive" : "secondary"}>{campaign.status}</Badge></TableCell><TableCell>{campaign.recipient_count}</TableCell><TableCell>{campaign.sent_at ? formatDateTimeForTimeZone(campaign.sent_at, timeZone) : "-"}</TableCell></TableRow>)}{!campaigns.length ? <TableRow><TableCell colSpan={4} className="text-sm text-muted-foreground">No campaigns yet.</TableCell></TableRow> : null}</TableBody></Table></div></CardContent></Card>
-            <Card><CardHeader><CardTitle className="flex items-center gap-2 font-display"><MousePointerClick className="h-5 w-5" />Most engaged</CardTitle></CardHeader><CardContent><div className="max-h-80 overflow-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>Person</TableHead><TableHead>Role</TableHead><TableHead>Score</TableHead><TableHead>Last</TableHead></TableRow></TableHeader><TableBody>{engagement.slice(0, 10).map((row) => <TableRow key={row.recipient_email}><TableCell><p>{row.full_name ?? row.recipient_email}</p><p className="text-xs text-muted-foreground">{row.company_name ?? row.recipient_email}</p></TableCell><TableCell>{row.role ?? "-"}</TableCell><TableCell>{row.engagement_score}</TableCell><TableCell>{row.last_engaged_at ? formatDateTimeForTimeZone(row.last_engaged_at, timeZone) : "-"}</TableCell></TableRow>)}{!engagement.length ? <TableRow><TableCell colSpan={4} className="text-sm text-muted-foreground">No tracked engagement yet.</TableCell></TableRow> : null}</TableBody></Table></div></CardContent></Card>
+            <Card><CardHeader><CardTitle className="font-display">Campaigns</CardTitle></CardHeader><CardContent><div className="overflow-hidden rounded-md border"><div className="max-h-80 overflow-auto"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Status</TableHead><TableHead>Recipients</TableHead><TableHead>Sent</TableHead></TableRow></TableHeader><TableBody>{campaigns.map((campaign) => <TableRow key={campaign.id}><TableCell><p className="font-medium">{campaign.name}</p><p className="text-xs text-muted-foreground">{campaign.template_slug}</p></TableCell><TableCell><Badge variant={campaign.status === "SENT" ? "default" : campaign.status === "FAILED" ? "destructive" : "secondary"}>{campaign.status}</Badge></TableCell><TableCell>{campaign.recipient_count}</TableCell><TableCell>{campaign.sent_at ? formatDateTimeForTimeZone(campaign.sent_at, timeZone) : "-"}</TableCell></TableRow>)}{!campaigns.length ? <TableRow><TableCell colSpan={4} className="text-sm text-muted-foreground">No campaigns yet.</TableCell></TableRow> : null}</TableBody></Table></div><ResultsPager limit={campaignsPage?.limit ?? EMAIL_RESULTS_PAGE_SIZE} offset={campaignsPage?.offset ?? campaignsOffset} rowCount={campaigns.length} total={campaignsPage?.total ?? campaigns.length} onOffsetChange={setCampaignsOffset} /></div></CardContent></Card>
+            <Card><CardHeader><CardTitle className="flex items-center gap-2 font-display"><MousePointerClick className="h-5 w-5" />Most engaged</CardTitle></CardHeader><CardContent><div className="overflow-hidden rounded-md border"><div className="max-h-80 overflow-auto"><Table><TableHeader><TableRow><TableHead>Person</TableHead><TableHead>Role</TableHead><TableHead>Score</TableHead><TableHead>Last</TableHead></TableRow></TableHeader><TableBody>{engagement.map((row) => <TableRow key={row.recipient_email}><TableCell><p>{row.full_name ?? row.recipient_email}</p><p className="text-xs text-muted-foreground">{row.company_name ?? row.recipient_email}</p></TableCell><TableCell>{row.role ?? "-"}</TableCell><TableCell>{row.engagement_score}</TableCell><TableCell>{row.last_engaged_at ? formatDateTimeForTimeZone(row.last_engaged_at, timeZone) : "-"}</TableCell></TableRow>)}{!engagement.length ? <TableRow><TableCell colSpan={4} className="text-sm text-muted-foreground">No tracked engagement yet.</TableCell></TableRow> : null}</TableBody></Table></div><ResultsPager limit={engagementPage?.limit ?? EMAIL_RESULTS_PAGE_SIZE} offset={engagementPage?.offset ?? engagementOffset} rowCount={engagement.length} total={engagementPage?.total ?? engagement.length} onOffsetChange={setEngagementOffset} /></div></CardContent></Card>
           </div>
-          <Card><CardHeader><CardTitle className="font-display">Recent deliveries</CardTitle></CardHeader><CardContent><div className="overflow-auto rounded-md border"><Table><TableHeader><TableRow><TableHead>Recipient</TableHead><TableHead>Email</TableHead><TableHead>Status</TableHead><TableHead>Engagement</TableHead><TableHead>Created</TableHead></TableRow></TableHeader><TableBody>{deliveries.map((delivery) => <TableRow key={delivery.id}><TableCell>{delivery.recipient_email}</TableCell><TableCell>{delivery.template_slug ?? "Custom"}{delivery.is_test ? <Badge className="ml-2" variant="secondary">Test</Badge> : null}</TableCell><TableCell><Badge variant={delivery.status === "SENT" ? "default" : delivery.status === "FAILED" ? "destructive" : "secondary"}>{delivery.status}</Badge></TableCell><TableCell><div className="flex gap-2 text-xs"><span className={delivery.opened_at ? "text-foreground" : "text-muted-foreground"}>open</span><span className={delivery.clicked_at ? "text-foreground" : "text-muted-foreground"}>click</span><span>{delivery.engagement_score}</span></div></TableCell><TableCell>{formatDateTimeForTimeZone(delivery.created_at, timeZone)}</TableCell></TableRow>)}{!deliveriesQuery.isLoading && !deliveries.length ? <TableRow><TableCell colSpan={5} className="text-sm text-muted-foreground">No email deliveries have been logged yet.</TableCell></TableRow> : null}</TableBody></Table></div></CardContent></Card>
+          <Card><CardHeader><CardTitle className="font-display">Recent deliveries</CardTitle></CardHeader><CardContent><div className="overflow-hidden rounded-md border"><div className="overflow-auto"><Table><TableHeader><TableRow><TableHead>Recipient</TableHead><TableHead>Email</TableHead><TableHead>Status</TableHead><TableHead>Engagement</TableHead><TableHead>Created</TableHead></TableRow></TableHeader><TableBody>{deliveries.map((delivery) => <TableRow key={delivery.id}><TableCell>{delivery.recipient_email}</TableCell><TableCell>{delivery.template_slug ?? "Custom"}{delivery.is_test ? <Badge className="ml-2" variant="secondary">Test</Badge> : null}</TableCell><TableCell><Badge variant={delivery.status === "SENT" ? "default" : delivery.status === "FAILED" ? "destructive" : "secondary"}>{delivery.status}</Badge></TableCell><TableCell><div className="flex gap-2 text-xs"><span className={delivery.opened_at ? "text-foreground" : "text-muted-foreground"}>open signal</span><span className={delivery.clicked_at ? "text-foreground" : "text-muted-foreground"}>click</span><span>{delivery.engagement_score}</span></div></TableCell><TableCell>{formatDateTimeForTimeZone(delivery.created_at, timeZone)}</TableCell></TableRow>)}{!deliveriesQuery.isLoading && !deliveries.length ? <TableRow><TableCell colSpan={5} className="text-sm text-muted-foreground">No email deliveries have been logged yet.</TableCell></TableRow> : null}</TableBody></Table></div><ResultsPager limit={deliveriesPage?.limit ?? EMAIL_RESULTS_PAGE_SIZE} offset={deliveriesPage?.offset ?? deliveriesOffset} rowCount={deliveries.length} total={deliveriesPage?.total ?? deliveries.length} onOffsetChange={setDeliveriesOffset} /></div></CardContent></Card>
         </TabsContent>
       </Tabs>
     </div>

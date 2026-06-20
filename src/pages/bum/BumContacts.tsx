@@ -31,7 +31,7 @@ import {
 
 const sourceLabels: Record<BumRepresentedContactSource, string> = {
   OPPORTUNITY_CLAIM: "Claim",
-  PROSPECT: "Prospect",
+  PROSPECT: "Prospective Client",
   TARGET_RESPONSE: "Target response",
   EXTENSION_CAPTURE: "LinkedIn capture",
   MANUAL: "Contact",
@@ -389,7 +389,7 @@ export default function BumContacts() {
             <div>
               <p className="font-medium">No represented contacts yet</p>
               <p className="text-sm text-muted-foreground">
-                Add up to 20 Inner Circle contacts first, then add prospects, target responses, claims, or LinkedIn captures as your network grows.
+                Add up to 20 Inner Circle contacts first, then add Prospective Clients, target responses, claims, or LinkedIn captures as your network grows.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">

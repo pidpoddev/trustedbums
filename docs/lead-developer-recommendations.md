@@ -1,195 +1,187 @@
 # Trusted Bums Lead Developer Recommendations
 
-_Last updated: 2026-06-19 by Codex daily lead developer automation._
+_Last updated: 2026-06-20 by Codex daily lead developer automation._
 
 ## Executive Read
 
-Current release status is `HOTFIX-FORWARD` for `main` head `a17a85639a1b24dfda36da87d763eb4ecd3457af`.
+Current release status is `HOTFIX-FORWARD` for `main` head `e231cc07ee6959bc8eac9d04ed3b68b80d76f6c4`.
 
 - Completed work:
-  - Exact-head hosted proof is now green on `a17a856`: GitHub `QA` `27798687806`, DreamHost deploy `27798687708`, `E2E Smoke` `27798711531`, and `Visual UI Audit` `27810878263` all completed `success`.
-  - The specialist wave correctly kept `TB-0044`, `TB-0048`, `TB-0108`, `TB-0111`, `TB-0029`, `TB-0032`, and `TB-0082` out of the active lead queue on current evidence.
-  - Live Supabase review re-anchored the real current blockers: `TB-0027` release-control-plane drift, `TB-0089` stale live issuer-pinning deployment, `TB-0102` live mailbox function drift, `TB-0113` staged `Inner Circle` launch, `TB-0051` unfinished handoff parity, `TB-0097` broad company-profile ownership, `TB-0047` route-shape debt, `TB-0046` admin-email KPI debt, `TB-0024` external-host drift, and access-blocked `TB-0023`.
-  - This closeout batch implemented the next five lead items: exact-head Code Review refresh prep for `TB-0019`, live Clerk issuer redeploy proof for `TB-0089`, `Prospective Client` wording cleanup for `TB-0040`, mobile support-zone spacing for `TB-0060`, and release-chain Supabase provenance for `TB-0027`.
+  - Exact-head hosted proof is green on `e231cc0`: GitHub `QA` `27857690007`, DreamHost deploy `27857689995`, `Visual UI Audit` `27857691601`, and `E2E Smoke` `27857708006` all completed `success`.
+  - The overnight specialist wave correctly removed stale lead work from the active queue. Live tracker or exact-head backlog truth now keeps `TB-0027`, `TB-0047`, `TB-0051`, `TB-0065`, `TB-0089`, `TB-0102`, and `TB-0113` out of the current implementation queue.
+  - Current lead-critical open items are now narrower: `TB-0097` same-head schema parity for `deal_registration_config`, `TB-0019` stale Code Review marker, `TB-0060` authenticated-mobile privacy-control overlap, `TB-0040` remaining `Prospect` wording seam, `TB-0046` bounded admin-email drilldowns, `TB-0049` remaining advisor debt, `TB-0052` finance exception readiness, `TB-0024` runner-side external DNS drift, and access-blocked `TB-0023`.
 - Current priorities:
-  1. Push the closeout commit and attach hosted workflow proof to `TB-0019`, `TB-0027`, `TB-0040`, `TB-0060`, and `TB-0089`.
-  2. Keep `TB-0024` and `TB-0023` separate because they still need external-host/Auth-setting decisions.
-  3. Then move to the remaining lead queue: `TB-0047`, `TB-0046`, and any fresh hosted failures from the closeout push.
+  1. Restore same-head release truth by proving or applying the missing production schema and migration-ledger parity behind `TB-0097`.
+  2. Refresh exact-head Code Review on `e231cc0` for `TB-0019` immediately after schema parity is proven.
+  3. Keep the next implementation wave small and current-head only: `TB-0060`, `TB-0040`, and `TB-0046`, then `TB-0049` and `TB-0052`.
 - Current blockers:
-  - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) must be refreshed to the final closeout commit immediately before push for `TB-0019`.
-  - [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml) now verifies Supabase function provenance before DreamHost upload; the remaining blocker is proving the GitHub `SUPABASE_ACCESS_TOKEN` secret exists by watching the next hosted deploy.
-  - `https://rcdl.tplinkdns.com` remains unhealthy from this runner, so `TB-0024` stays open until the host is repaired or the contract changes everywhere at once.
-  - `TB-0023` remains blocked by missing live Auth-setting visibility even though current security advisors still flag leaked-password protection disabled.
+  - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still approves older head `b2c6c44`, so release evidence is mixed-surface until `TB-0019` is refreshed.
+  - Production Supabase still lacks `public.companies.deal_registration_config`, and the live migration ledger is missing repo rows `20260611195500` and `20260620012000`, so `TB-0097` remains the real release blocker even though hosted proof is green.
+  - `https://rcdl.tplinkdns.com` still fails runner-side TLS or app-shell proof, so `TB-0024` stays separate from primary-host release evidence.
+  - `TB-0023` still lacks direct Auth-settings visibility for leaked-password protection.
 - Recommended next actions:
-  1. Hotfix-forward the matching live Supabase function set for `a17a856`, then record same-head live provenance for the affected functions.
-  2. Refresh exact-head Code Review on `a17a856`.
-  3. Keep `TB-0018` closed as stale because exact-head visual proof now exists, but do not promote release back to `GO` until live function parity is proven.
-  4. Make one authoritative `rcdl.tplinkdns.com` decision and mirror it into prompt, rules, and tracker together.
+  1. Hotfix-forward or otherwise prove the missing live schema and migration parity on project `vaoqvtxqvbptyxddpoju`, then rerun the intended `CLIENT_ADMIN` and `CLIENT_IT` role proof on the same head.
+  2. Refresh exact-head Code Review on `e231cc0` before any `GO` claim.
+  3. After release truth is clean, implement the remaining narrow product-facing queue in this order: `TB-0060`, `TB-0040`, `TB-0046`, `TB-0049`, `TB-0052`.
 
 ## Recommendation Classification
 
-- `TB-0027 Same-head Supabase function deployment parity`: `READY TO CLOSE AFTER PUSH`.
-  - Reason: the deploy workflow now runs a Supabase provenance script, local syntax checks pass, local execution correctly refuses to run without `SUPABASE_ACCESS_TOKEN`, and live migration/function proof exists. The next hosted deploy must prove the GitHub secret.
-  - Next owner: Lead Developer plus Release Verification.
-  - Implementation queue: closeout.
-- `TB-0089 Redeploy the issuer-pinned Clerk verifier to the live privileged function set`: `READY TO CLOSE AFTER PUSH`.
-  - Reason: sampled live function source now shows the allowed-issuer Clerk verifier on `extension-api-v1` v7, `portal-contacts` v5, `profile-bootstrap` v5, `admin-access-requests` v5, and `bum-extension-download` v3.
-  - Next owner: Lead Developer with Security review.
-  - Implementation queue: closeout.
-- `TB-0102 Shared mailbox controls and live triage`: `CLOSED IN CLOSEOUT`.
-  - Reason: live `admin-shared-mailbox` is version `3`, and the `100` live messages were triaged into explicit work queues with `0` unassigned, `0` uncategorized, and `0` `OPEN`.
-  - Next owner: Lead Developer with Product Ops, Security, and Legal/Compliance review.
-  - Implementation queue: no.
-- `TB-0019 Refresh exact-head Code Review`: `READY TO CLOSE AFTER FINAL COMMIT REVIEW`.
-  - Reason: local source, live Supabase proof, full unit tests, and build are ready for Code Review; the marker must name the final closeout commit before push.
-  - Next owner: Code Review Agent.
-  - Implementation queue: closeout.
-- `TB-0018 Exact-head hosted visual proof`: `STALE`.
-  - Reason: GitHub `Visual UI Audit` `27810878263` completed `success` on `a17a856`, so the earlier reopen from the release/QA pass is no longer current-head truth.
-  - Next owner: none unless a newer visual head lands.
-  - Implementation queue: no.
-- `TB-0113 Gate Inner Circle launch behind live schema and explicit visibility rules`: `BLOCKED BY ANOTHER SPECIALIST`.
-  - Reason: source now exposes `Inner Circle`, but live schema still lacks `bum_contacts.is_inner_circle`, `opportunity_claim_contacts.is_inner_circle`, and the related staged workflow proof.
-  - Next owner: Product Ops, Bum Supply, Security, and Lead Developer after deployment parity is restored.
-  - Implementation queue: later.
-- `TB-0097 Gate company profile ownership and beta role launch`: `READY`.
-  - Reason: generic client users still have too-broad company-profile write authority, while the narrower `CLIENT_IT`/`CLIENT_LEGAL` launch is ahead of live schema truth.
-  - Next owner: Lead Developer with Product Ops and Security review.
-  - Implementation queue: yes, after the hotfix-forward wave.
-- `TB-0051 Finish owner/next-step parity across admin handoff lanes`: `READY`.
-  - Reason: live `contact_submissions` still has one `NEW` row with no owner, next action, or deadline, and reverse opportunities are still outside the same parity model.
-  - Next owner: Lead Developer with Product Ops review.
+- `TB-0097 Same-head schema parity for client profile and beta setup`: `READY`.
+  - Reason: exact-head source depends on `companies.deal_registration_config`, but live production still lacks the column and the matching migration-ledger rows.
+  - Next owner: Lead Developer with Product Ops, Release Verification, and QA follow-through.
   - Implementation queue: yes.
-- `TB-0047 Move high-traffic client and Bum routes off broad first-render hydration`: `READY`.
-  - Reason: live telemetry still centers `/client/dashboard`, `/bum/dashboard`, `/bum/profile`, `/client/opportunities/new`, `/bum/live-conversations`, `/client/opportunities`, and `/bum/opportunities` while the live datasets remain small.
-  - Next owner: Lead Developer with Performance and Data review.
-  - Implementation queue: yes, after workflow/control-plane recovery.
-- `TB-0046 Make admin-email metrics aggregate-first`: `READY`.
-  - Reason: current admin email KPIs still depend on capped list reads, recipient-level summary rows, and open-heavy headline metrics even though live delivery/event counts are growing.
+- `TB-0019 Refresh exact-head Code Review for e231cc0`: `BLOCKED BY ANOTHER SPECIALIST`.
+  - Reason: hosted proof is current, but the pre-main review marker is still pinned to `b2c6c44`.
+  - Next owner: Code Review Agent.
+  - Implementation queue: no.
+- `TB-0060 Re-home the authenticated-mobile Privacy choices control`: `READY`.
+  - Reason: current exact-head visual proof still shows the fixed privacy launcher intruding into live authenticated mobile content after the earlier chat-launcher cleanup narrowed the defect.
+  - Next owner: Lead Developer with UI, Accessibility, and UX review.
+  - Implementation queue: yes.
+- `TB-0040 Finish the remaining Prospect wording seam`: `READY`.
+  - Reason: current head still shows `Prospect` microcopy in Bum contacts, Bum prospects, portal search, and admin reports even though the broader terminology cleanup already shipped.
+  - Next owner: Lead Developer with Content Copyeditor review.
+  - Implementation queue: yes.
+- `TB-0046 Keep admin-email KPIs aggregate-first and add bounded drilldowns`: `READY`.
+  - Reason: the headline KPI fix is shipped, but the default drilldowns are still recipient-heavy and capped at `50` rows.
   - Next owner: Lead Developer with Data review.
-  - Implementation queue: yes, after `TB-0047`.
-- `TB-0024 Resolve or retire rcdl.tplinkdns.com from one authoritative source`: `BLOCKED BY ANOTHER SPECIALIST`.
-  - Reason: current contract still names `https://rcdl.tplinkdns.com`, but runner checks still fail TLS/app-shell expectations.
+  - Implementation queue: yes.
+- `TB-0049 Clear the remaining route-adjacent advisor debt`: `READY`.
+  - Reason: `TB-0047` is already closed, but live advisors still show policy fan-out and foreign-key debt around route-adjacent, mailbox, admin-email, API-access-key, and finance paths.
+  - Next owner: Lead Developer with Performance and Security review.
+  - Implementation queue: yes.
+- `TB-0052 Prepare finance exception handling before live exception volume arrives`: `READY`.
+  - Reason: finance-safe reads exist, but there is still no owned workflow for dispute, hold, reversal, or allocation-rescue states once real volume appears.
+  - Next owner: Lead Developer with Product Ops review.
+  - Implementation queue: later.
+- `TB-0024 Resolve or retire rcdl.tplinkdns.com from the cross-agent contract`: `BLOCKED BY ANOTHER SPECIALIST`.
+  - Reason: runner-side trust checks still fail on the named external target while the primary host is healthy.
   - Next owner: Trust & Reputation, Release Verification, Agent Operations, and the infrastructure owner.
   - Implementation queue: no.
-- `TB-0023 Enable leaked-password protection or record an explicit waiver`: `BLOCKED BY ACCESS`.
-  - Reason: live security advisors still flag the control, but current sessions still lack direct Auth-setting visibility.
+- `TB-0023 Enable leaked-password protection or record a current waiver`: `BLOCKED BY ACCESS`.
+  - Reason: security evidence remains source-backed plus partial-live because the current session still lacks direct Auth-settings visibility.
   - Next owner: Security Engineer plus the Supabase Auth settings owner.
   - Implementation queue: no.
-- `TB-0060 Shared mobile support-zone overlap`: `READY TO CLOSE AFTER PUSH`.
-  - Reason: authenticated shell content now reserves larger mobile bottom padding, the floating chat dock uses safe-area bottom offsets, and the layout guardrail tests pass.
-  - Next owner: Lead Developer with UI, UX, and Accessibility review.
-  - Implementation queue: closeout.
-- `TB-0065 Reduce first-layer mobile consent-banner footprint`: `READY`.
-  - Reason: the first-visit mobile consent layer still pushes the primary Client CTA below the fold.
-  - Next owner: UX Consultant with Lead Developer and Trust/Legal review.
-  - Implementation queue: later.
-- `TB-0040 Restore Prospective Client wording across Bum-side prospecting surfaces`: `READY TO CLOSE AFTER PUSH`.
-  - Reason: Bum dashboard, reports, contacts, reverse-opportunity badges, admin opportunity badges, Client target helper text, and validation copy now use `Prospective Client`; the terminology guardrail test rejects stale strings.
-  - Next owner: Content Copyeditor with Lead Developer review.
-  - Implementation queue: closeout.
+- `TB-0027`, `TB-0089`, and `TB-0102` older control-plane drift items: `STALE`.
+  - Reason: the current head no longer reproduces the old live function-drift story as the primary blocker; the active release problem is schema parity plus stale Code Review, not the prior function drift batch.
+  - Next owner: none unless fresh same-head live evidence reopens them.
+  - Implementation queue: no.
+- `TB-0047`, `TB-0051`, `TB-0065`, and `TB-0113` prior lead items: `STALE`.
+  - Reason: current tracker or specialist truth already closes them on current-head evidence, so they should not remain in the lead queue.
+  - Next owner: none unless newer evidence contradicts the closeout.
+  - Implementation queue: no.
 - BlackCurrant unowned opportunity volume and relationship supply: `BLOCKED BY ACCESS`.
-  - Reason: company-wide rules still treat the `~80` unhandled opportunities as a P0 operating problem, but this lead pass still had no CRM export or live owner-state evidence to prove the queue is moving.
+  - Reason: company-wide rules still treat the queue as a P0 operating risk, but this lead pass still had no CRM or owner-state export to narrow it truthfully.
   - Next owner: CEO, Ops, Supply, and Staff with CRM access.
-  - Implementation queue: no engineering implementation until the owner-state truth is visible.
+  - Implementation queue: no engineering implementation until owner-state truth is visible.
 
 ## Recommended Implementation Queue
 
-### P0 - Restore same-head Supabase release parity on `a17a856`
+### P0 - Restore same-head schema parity and release truth on `e231cc0`
 - Classification: `READY`.
-- Source: [docs/release-verification-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/release-verification-backlog.md), [docs/security-review-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/security-review-backlog.md), [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml), live function inventory, and live deployed source for `extension-api-v1`, `portal-contacts`, and `admin-shared-mailbox`.
-- Why now: this is the real release blocker. Static-host evidence is green, but the live control plane is behind the repo on the same head.
-- Recommended fix: deploy the matching live Supabase function set for the current head, capture the exact deployed revision/provenance, and keep `TB-0027`, `TB-0089`, and `TB-0102` synchronized to the same exact-head proof instead of closing them from mixed surfaces.
-- Likely files/routes: [supabase/functions/extension-api-v1/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/extension-api-v1/index.ts), [supabase/functions/portal-contacts/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/portal-contacts/index.ts), [supabase/functions/admin-shared-mailbox/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/admin-shared-mailbox/index.ts), [supabase/config.toml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/config.toml), release/security docs, and any deploy scripts or ledgers used to prove function parity.
-- Dependencies/risks: do not let a repo-side auth cleanup or workflow improvement get marked shipped until the live function source matches the same head.
-- Acceptance criteria: live function reads show the exact current issuer-pinned verifier for the affected privileged functions and the current mailbox operations for `admin-shared-mailbox`; release proof cites the same head across repo, tracker, and live control-plane surfaces.
-- Validation: live function-source reads on project `vaoqvtxqvbptyxddpoju`, tracker refreshes for `TB-0027`/`TB-0089`/`TB-0102`, exact-head hosted `QA`, deploy, `E2E Smoke`, and refreshed Code Review.
+- Source: [docs/release-verification-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/release-verification-backlog.md), [docs/qa-test-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-test-backlog.md), [docs/product-ops-workflow-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/product-ops-workflow-backlog.md), live SQL on project `vaoqvtxqvbptyxddpoju`, and current exact-head tracker rows for `TB-0019` and `TB-0097`.
+- Why now: this is the real release blocker. The primary host, browser smoke, and visual proof are green, but the live schema behind the client beta setup flow is not current.
+- Recommended fix: apply or prove the missing `deal_registration_config` schema change and missing migration-ledger rows on production, then rerun the intended role proof and refresh exact-head Code Review before any `GO` claim.
+- Likely files/routes: [supabase/migrations/20260611195500_add_client_deal_registration_config.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260611195500_add_client_deal_registration_config.sql), [supabase/migrations/20260620012000_add_route_advisor_indexes.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260620012000_add_route_advisor_indexes.sql), [`scripts/verify-supabase-release-provenance.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-supabase-release-provenance.mjs), [src/pages/client/ClientProfile.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [src/pages/admin/AdminClients.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminClients.tsx), [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), release docs, and the Code Review marker.
+- Dependencies/risks: do not promote release back to `GO` from hosted green alone. The current escape was a live-schema gap surviving a provenance check that only printed local migration filenames.
+- Acceptance criteria: live SQL shows `public.companies.deal_registration_config`, the live migration ledger contains the missing repo rows, exact-head role proof passes for `CLIENT_ADMIN` and `CLIENT_IT` with deny-path checks for unrelated client roles, and [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) is refreshed to `e231cc0`.
+- Validation: live SQL against `information_schema.columns` and `supabase_migrations.schema_migrations`, exact-head hosted `QA` or smoke follow-up as needed, refreshed Code Review marker, and same-head tracker closeout notes for `TB-0019` and `TB-0097`.
 
-### P1 - Treat the shared mailbox as a live queue after function parity exists
+### P1 - Clear the remaining authenticated-mobile privacy-control overlap
 - Classification: `READY`.
-- Source: [docs/product-ops-workflow-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/product-ops-workflow-backlog.md), [docs/shared-mailbox-operations.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/shared-mailbox-operations.md), [docs/business-access-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md), live SQL counts, and [src/pages/admin/AdminInbox.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminInbox.tsx).
-- Why now: the mailbox is the strongest current live operations gap once the control-plane deploy catches up.
-- Recommended fix: after the live function matches repo head, prove claim/category/close-guard behavior in production, then add durable owner, next-step, and due-state discipline so the queue stops relying on operator memory.
-- Likely files/routes: [src/pages/admin/AdminInbox.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminInbox.tsx), [supabase/functions/admin-shared-mailbox/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/admin-shared-mailbox/index.ts), [docs/shared-mailbox-operations.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/shared-mailbox-operations.md), and [docs/business-access-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md).
-- Dependencies/risks: mailbox retention, raw-body handling, assignment visibility, and legal/privacy categories all need Product Ops, Security, and Legal/Compliance alignment.
-- Acceptance criteria: all live mailbox rows are reachable from the UI, admins can claim and categorize messages, uncategorized messages cannot be closed, and live queue counts no longer show `100` open plus `100` unassigned as the steady state.
-- Validation: live admin walkthrough, direct SQL count recheck, and admin-only allow/deny proof.
+- Source: [docs/ui-optimization-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/ui-optimization-backlog.md), [docs/accessibility-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/accessibility-backlog.md), exact-head `Visual UI Audit` `27857691601`, and current tracker row `TB-0060`.
+- Why now: this is the sharpest remaining product-facing exact-head defect after release truth. The defect is current, visual, cross-role, and already narrowed to one controllable surface.
+- Recommended fix: make the `Privacy choices` control route-aware on authenticated mobile shells so it uses an intentional support lane or menu surface instead of a fixed bottom-right overlap.
+- Likely files/routes: [src/components/ConsentManager.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/ConsentManager.tsx), [src/layouts/AdminLayout.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/layouts/AdminLayout.tsx), [src/layouts/ClientLayout.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/layouts/ClientLayout.tsx), [src/layouts/BumLayout.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/layouts/BumLayout.tsx), [src/components/ConversationDock.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/ConversationDock.tsx), [src/test/uiVisualCleanup.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/uiVisualCleanup.test.ts), and [src/test/conversationDockLayout.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/conversationDockLayout.test.ts).
+- Dependencies/risks: admin still has both privacy and chat surfaces to coordinate; client and Bum shells now primarily need privacy-control clearance only.
+- Acceptance criteria: fresh exact-head mobile screenshots for `/admin`, `/admin/scrum`, `/admin/handoffs`, `/client/opportunities/new`, and one Bum workflow route show no privacy-chip overlap with tabs, filters, queue transitions, cards, or form controls.
+- Validation: targeted layout tests plus a fresh hosted `Visual UI Audit` artifact review on the implementing head.
 
-### P1 - Gate staged workflow/schema work before it becomes operator truth
-- Classification: `READY` for `TB-0097`; `BLOCKED BY ANOTHER SPECIALIST` for `TB-0113` until deploy parity lands.
-- Source: [docs/product-ops-workflow-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/product-ops-workflow-backlog.md), [docs/business-access-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md), [src/pages/client/ClientProfile.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [src/components/FirstLoginWalkthrough.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/FirstLoginWalkthrough.tsx), [src/pages/bum/BumContacts.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumContacts.tsx), and [supabase/migrations/20260618100000_add_inner_circle_contacts.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260618100000_add_inner_circle_contacts.sql).
-- Why now: current source exposes `Inner Circle`, `CLIENT_IT`, `CLIENT_LEGAL`, and beta deal-registration workflow language ahead of live schema truth and finalized access rules.
-- Recommended fix: keep `Inner Circle` staged until live columns, trigger enforcement, and visibility rules are all present; separately narrow generic client-company profile writes before additional client roles become operational.
-- Likely files/routes: [src/pages/client/ClientProfile.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [src/components/FirstLoginWalkthrough.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/FirstLoginWalkthrough.tsx), [src/pages/bum/BumContacts.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumContacts.tsx), [docs/business-access-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/business-access-rules.md), and the supporting migrations/functions.
-- Dependencies/risks: Product Ops, Bum Supply, Security, QA, and Lead Developer all need the same visibility and role matrix before launch.
-- Acceptance criteria: production has the required columns and trigger behavior, the business-access rule explicitly defines `Inner Circle` visibility and client role ownership, and the current-head role matrix proves only the intended users can see or change the staged data.
-- Validation: live schema inspection, allow/deny QA, and one production-safe workflow proof for `Inner Circle` plus narrowed company-profile ownership.
-
-### P2 - Finish queue parity, route-shape cleanup, and aggregate-first admin email KPIs
+### P1 - Finish the remaining Prospective Client terminology cleanup
 - Classification: `READY`.
-- Source: [docs/product-ops-workflow-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/product-ops-workflow-backlog.md), [docs/performance-engineering-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/performance-engineering-backlog.md), [docs/data-analytics-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/data-analytics-backlog.md), live queue counts, live telemetry, and current portal/admin source.
-- Why now: these are the next durable improvements once release truth and staged-workflow governance are no longer blocking lead attention.
-- Recommended fix: finish owner/next-action parity across admin handoff lanes, then narrow broad client/Bum route-start payloads, then move admin email summary cards to aggregate-first helpers rather than capped recipient-level list reads.
-- Likely files/routes: [src/pages/admin/AdminHandoffs.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminHandoffs.tsx), [src/components/admin/ContactSubmissionsPanel.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/admin/ContactSubmissionsPanel.tsx), [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [src/pages/client/ClientDashboard.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientDashboard.tsx), [src/pages/bum/BumDashboard.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumDashboard.tsx), [src/pages/admin/AdminEmails.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminEmails.tsx), and [supabase/functions/send-admin-email/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/send-admin-email/index.ts).
-- Dependencies/risks: route-shape work must preserve role-boundary contracts; admin email KPI work must not widen raw recipient-level access; queue-parity work still needs Product Ops, Security, Data, and QA review.
-- Acceptance criteria: the live contact lane no longer has an unowned `NEW` row with no next action or deadline, hotspot routes stop broad-list hydration for first render, and admin-email headline metrics come from aggregate-safe helpers instead of capped raw lists.
-- Validation: direct SQL queue recheck, targeted role tests, telemetry recheck, and response-shape tests for finance-safe/admin-only paths.
+- Source: [docs/content-copyeditor-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/content-copyeditor-backlog.md), current `TB-0040`, and current exact-head source review.
+- Why now: the broader terminology migration is already shipped, so the remaining work is small, exact, and cheap to close cleanly.
+- Recommended fix: replace the remaining visible `Prospect` strings on Bum sourcing and admin-report surfaces with the agreed `Prospective Client` language, then extend the copy guardrail to cover the residual seams.
+- Likely files/routes: [src/pages/bum/BumContacts.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumContacts.tsx), [src/pages/bum/BumProspects.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumProspects.tsx), [src/components/PortalGlobalSearch.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/PortalGlobalSearch.tsx), [src/pages/admin/AdminReports.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminReports.tsx), and [src/test/uiVisualCleanup.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/uiVisualCleanup.test.ts).
+- Dependencies/risks: preserve object-model meaning and avoid introducing new mismatches between user-facing labels and internal enum names.
+- Acceptance criteria: the remaining visible `Prospect` wording seam is gone on exact head, and the terminology guardrail rejects regressions on the covered sourcing surfaces.
+- Validation: targeted terminology grep plus focused Vitest on current copy guardrails.
+
+### P2 - Finish the remaining admin-email reporting and backend debt
+- Classification: `READY`.
+- Source: [docs/data-analytics-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/data-analytics-backlog.md), [docs/performance-engineering-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/performance-engineering-backlog.md), live tracker rows `TB-0046` and `TB-0049`, and current source on admin email plus route-summary paths.
+- Why now: the high-confidence user-facing defects are narrower than they were yesterday, so the next engineering-quality wins are bounded reporting cleanup and the remaining low-risk advisor debt.
+- Recommended fix: keep admin-email headline cards aggregate-first, add bounded drilldowns and filters, then clear the retained advisor warnings in small route-reviewed batches rather than reopening the already-closed `TB-0047` work.
+- Likely files/routes: [supabase/functions/send-admin-email/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/send-admin-email/index.ts), [src/pages/admin/AdminEmails.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminEmails.tsx), [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), and the next advisor or index migrations under [supabase/migrations](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations).
+- Dependencies/risks: keep recipient-level data deliberate and admin-only; do not conflate remaining planner or RLS advisor cleanup with the already-closed route-hydration fix.
+- Acceptance criteria: admin-email KPI cards stay independent of capped recipient lists, drilldowns are bounded and filtered, and the next performance pass still keeps `TB-0047` closed while narrowing `TB-0049`.
+- Validation: focused admin-email tests, live advisor review, and exact-head hosted regression proof when implementation lands.
+
+### P2 - Prepare finance exception handling before real exception volume arrives
+- Classification: `READY`.
+- Source: [docs/product-ops-workflow-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/product-ops-workflow-backlog.md) and live tracker row `TB-0052`.
+- Why now: the current live finance volume is still zero, which makes this the right moment to shape the exception lane before it becomes an operator fire drill.
+- Recommended fix: define the admin-owned dispute, hold, reversal, failed-payment, and allocation-rescue workflow while preserving Client Finance as a finance-safe reporting role rather than an override role.
+- Likely files/routes: [src/pages/client/ClientPayments.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientPayments.tsx), [src/pages/client/ClientExports.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientExports.tsx), [src/pages/bum/BumEarnings.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumEarnings.tsx), [src/pages/admin/AdminHandoffs.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminHandoffs.tsx), and the supporting finance-safe projections in [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts).
+- Dependencies/risks: keep business-access rules aligned so Client Finance stays finance-safe while Admin owns exception rescue and overrides.
+- Acceptance criteria: the first real finance exception has an owner, next action, due date, and reason, and the access model still limits Client Finance to finance-safe context.
+- Validation: business-access review, focused role tests, and a seeded exception walkthrough when the first safe QA scenario exists.
 
 ## Fix Playbooks
 
-- Release hotfix-forward playbook:
-  - Treat `TB-0027` as the umbrella item for same-head Supabase function parity.
-  - Deploy the current function set first, then refresh Code Review and tracker closeouts on the same head.
-  - Keep exact-head hosted proof, live function reads, and tracker notes citing the same SHA.
-- Shared mailbox playbook:
-  - Do not narrow `TB-0102` from repo code alone.
-  - Prove live `claim_message`, `update_category`, and uncategorized close-blocking behavior before queue cleanup claims.
-  - Mirror final mailbox-owner/category rules into ops and access docs before treating the workflow as stable.
-- Governance launch playbook:
-  - Keep `Inner Circle` and narrower client-role launches staged until live schema, visibility rules, and role QA exist together.
-  - Separate company identity/matching edits from beta technical setup ownership before `CLIENT_IT` or `CLIENT_LEGAL` become real live roles.
+- Release recovery playbook:
+  - Treat `TB-0097` plus `TB-0019` as the real current release gate.
+  - Fix or prove the live schema first, then refresh exact-head Code Review, then close release truth on the same SHA and run set.
+  - Do not reuse the older `TB-0027` or `TB-0089` story as shorthand for the current blocker unless fresh same-head live evidence reproduces it.
+- UI cleanup playbook:
+  - Keep the remaining authenticated-mobile overlap work isolated to `TB-0060`.
+  - Use hosted visual proof to confirm the privacy-chip placement fix instead of inferring closure from local spacing changes alone.
+- Reporting and backend debt playbook:
+  - Keep `TB-0046` and `TB-0049` separate: one is admin-email operator clarity, the other is remaining backend advisor debt.
+  - Preserve `TB-0047` as closed unless fresh telemetry or exact-head source actually reopens the route-hydration defect.
 
 ## Cross-Backlog Dependencies
 
-- `TB-0027` is the lead umbrella for the current release problem. `TB-0089` and `TB-0102` are concrete live examples of the same control-plane drift.
-- `TB-0018` is stale now that exact-head visual proof exists, but `TB-0019` is still open and release cannot return to `GO` until Code Review matches the same head as the hosted and live evidence.
-- `TB-0113` depends on both deploy/schema parity and the access-language work already started in Product Ops and business-access rules.
-- `TB-0051`, `TB-0047`, and `TB-0046` are still the next engineering-quality stack after release and governance recovery: operator parity first, route-shape cleanup second, aggregate-first admin-email reporting third.
-- UI, UX, accessibility, and content all narrowed correctly. Their remaining items (`TB-0060`, `TB-0065`, `TB-0040`) stay behind the control-plane and operator queue work unless Ryan explicitly reprioritizes them.
-- Company-wide rules still keep the BlackCurrant owner-state and relationship-supply problem visible, but the current lead run still lacks CRM proof to narrow that risk.
+- `TB-0097` is the umbrella current-head release blocker. Release Verification, QA, Product Ops, and Lead Developer all now point at the same missing live schema rather than at the older function-parity story.
+- `TB-0019` is now a pure gate item. Even after schema parity lands, release cannot return to `GO` until Code Review is refreshed to `e231cc0`.
+- `TB-0060` now absorbs the exact-head accessibility-impacting UI issue. UX no longer has an active item on current head, and Accessibility specifically points back to the same shared placement defect instead of a duplicate ticket.
+- `TB-0040` is narrower than the prior terminology family and should stay that way. Do not reopen the earlier broad copy queue if the remaining fix is only the sourced `Prospect` seam.
+- `TB-0046`, `TB-0049`, and `TB-0052` are the next engineering-quality stack after release recovery: admin-email drilldown discipline first, remaining advisor debt second, finance exception readiness third.
+- `TB-0024` and `TB-0023` remain real but separate. Neither should be used to overwrite primary-host release truth, and neither currently belongs in the product implementation queue.
+- Company-wide BlackCurrant opportunity ownership risk remains visible, but the current lead pass still lacks CRM truth to turn it into a narrower engineering recommendation.
 
 ## Release Verification Handoff
 
 - Current verdict: `HOTFIX-FORWARD`.
-- Current exact-head hosted evidence on `a17a856`:
-  - GitHub `QA` `27798687806`: passed.
-  - DreamHost deploy `27798687708`: passed.
-  - `E2E Smoke` `27798711531`: passed, including deploy-triggered deep admin/client/bum shards.
-  - `Visual UI Audit` `27810878263`: passed.
+- Current exact-head hosted evidence on `e231cc0`:
+  - GitHub `QA` `27857690007`: passed.
+  - DreamHost deploy `27857689995`: passed.
+  - `Visual UI Audit` `27857691601`: passed.
+  - `E2E Smoke` `27857708006`: passed, including deploy-triggered `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)` shards.
 - Current release blockers:
-  - live Supabase function drift against repo head under `TB-0027`
-  - exact-head Code Review drift under `TB-0019`
+  - missing production schema or migration-ledger parity for `TB-0097`
+  - stale Code Review marker for `TB-0019`
 - Current non-blocking but active watch items:
-  - `TB-0024` external DNS host remains unhealthy and should stay separate from primary-host release proof.
-  - `TB-0023` remains access-blocked until Auth-setting visibility exists or an explicit waiver is recorded.
+  - `TB-0024` runner-side external DNS host remains unhealthy and should stay separate from primary-host release proof
+  - `TB-0023` remains access-blocked until Auth-setting visibility exists or an explicit waiver is recorded
 
 ## Consultant Quality And Access Audit
 
-- Release Verification made the most important catch of the day: static DreamHost success and browser smoke were over-crediting release truth when the live Supabase control plane had not caught up.
-- Security properly narrowed the active queue. The real open item is not repo-side issuer pinning anymore; it is live deployment parity for the privileged function set, plus the separate Auth-settings visibility gap.
-- Product Ops did the right thing by splitting source-only workflow improvements from live operational truth. `TB-0102` and `TB-0113` are sharper because they now distinguish repo progress from live schema/function state.
-- UI, UX, accessibility, and content all improved the signal quality of the lead queue. Exact-head visual proof is complete, the shared mobile support-zone issue is still real, the first-visit consent-banner weight issue is still real, and the reopened Bum-side terminology drift is now specific.
-- Access gaps remain concentrated in live Supabase Auth settings, same-head function deployment provenance, CRM/opportunity-owner truth, owner dashboards for search/reputation analytics, and richer authenticated AT/browser evidence rather than in basic repo or hosted reachability.
+- Release Verification and QA made the key current-head correction: exact-head hosted green is necessary but not sufficient when live schema-backed routes depend on new columns.
+- Product Ops improved the lead signal materially by closing stale queue items instead of carrying them forward. The active workflow queue is now really `TB-0097` plus `TB-0052`, not yesterday's larger bundle.
+- Security correctly kept `TB-0023` as the only active security item and demoted the older function-drift story to watchlist status on this head.
+- UI, Accessibility, and Content all sharpened the remaining product-facing work: one exact-head placement defect (`TB-0060`) and one exact-head wording seam (`TB-0040`) survived current hosted proof.
+- The remaining access gaps are now concentrated in live Supabase Auth settings, dependable non-rate-limited Supabase SQL, CRM or owner-state truth for BlackCurrant, and richer authenticated operator walkthroughs rather than in basic hosted reachability.
 
 ## Team Rule Updates
 
-- Updated [docs/consultant-team-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/consultant-team-rules.md) and [docs/agents/consultant-team-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/agents/consultant-team-rules.md) so any run touching `supabase/functions/`, `supabase/config.toml`, or live-schema-changing migrations now requires same-head live function/schema provenance before closing release, security, QA, or workflow items.
-- No company-wide, business-access, trust, or access-needs edits were required from the lead pass itself; the current specialist refreshes already updated those docs where the underlying rules changed.
-- No commit or push was attempted in this run because the worktree already contains broad same-day specialist backlog changes outside the lead-document scope.
+- No shared-rule, company-wide, business-access, or access-needs edit was required from the lead pass itself.
+- The current shared rules already capture the main escaped-defect lesson from this run: local migration filenames are not live schema proof, and exact-head hosted green does not close release when schema-backed routes depend on missing production objects.
+- This run updated [docs/lead-developer-recommendations.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/lead-developer-recommendations.md) and [docs/codex-edit-log.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/codex-edit-log.md) only. No commit or push was attempted because the worktree already contains broad same-day specialist documentation changes outside the lead-document scope.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-19.
+- Date of run: 2026-06-20.
 - Shared rules and lead docs reviewed:
   - [docs/company-wide-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/company-wide-rules.md)
   - [docs/consultant-team-rules.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/consultant-team-rules.md)
@@ -209,24 +201,24 @@ Current release status is `HOTFIX-FORWARD` for `main` head `a17a85639a1b24dfda36
   - [docs/accessibility-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/accessibility-backlog.md)
   - [docs/content-copyeditor-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/content-copyeditor-backlog.md)
   - [docs/b2b-marketing-growth-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/b2b-marketing-growth-backlog.md)
-  - [docs/marketing-graphics-campaign-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/marketing-graphics-campaign-backlog.md)
   - [docs/trust-reputation-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/trust-reputation-backlog.md)
 - Current repo, workflow, Supabase, and external checks reviewed:
   - `git rev-parse HEAD`
   - `git status --short`
-  - `find docs -maxdepth 1 -type f -name '*.md' ...`
+  - `git log --oneline --decorate -5`
   - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json)
-  - [`.github/workflows/deploy_dreamhost.yaml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deploy_dreamhost.yaml)
-  - `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 12 --json ...`
-  - live Supabase project/url checks, security advisors, live function inventory, deployed source reads for `extension-api-v1`, `portal-contacts`, and `admin-shared-mailbox`, and direct SQL for mailbox counts, missing staged columns, contact-submission parity, and client-role counts
-  - targeted repo grep on [supabase/functions/extension-api-v1/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/extension-api-v1/index.ts), [supabase/functions/portal-contacts/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/portal-contacts/index.ts), [supabase/functions/admin-shared-mailbox/index.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/functions/admin-shared-mailbox/index.ts), [src/pages/client/ClientProfile.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [src/components/FirstLoginWalkthrough.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/FirstLoginWalkthrough.tsx), [src/pages/bum/BumContacts.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumContacts.tsx), and [supabase/migrations/20260618100000_add_inner_circle_contacts.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260618100000_add_inner_circle_contacts.sql)
+  - `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 12 --json databaseId,workflowName,headSha,status,conclusion,displayTitle,createdAt,updatedAt`
+  - live Supabase SQL for `information_schema.columns`, `supabase_migrations.schema_migrations`, tracker-row reads, and tracker schema inspection on project `vaoqvtxqvbptyxddpoju`
+  - targeted source review of [src/pages/client/ClientProfile.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [src/pages/admin/AdminClients.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminClients.tsx), [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), [src/components/ConsentManager.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/ConsentManager.tsx), [src/pages/bum/BumContacts.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumContacts.tsx), [src/pages/bum/BumProspects.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumProspects.tsx), [src/components/PortalGlobalSearch.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/PortalGlobalSearch.tsx), [src/pages/admin/AdminReports.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminReports.tsx), [src/pages/admin/AdminEmails.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminEmails.tsx), and [`scripts/verify-supabase-release-provenance.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-supabase-release-provenance.mjs)
 - Current official guidance reviewed:
-  - [Supabase Securing Edge Functions](https://supabase.com/docs/guides/functions/auth)
-  - [Supabase Authorization headers](https://supabase.com/docs/guides/functions/auth-headers)
+  - [Supabase Database Migrations](https://supabase.com/docs/guides/deployment/database-migrations)
+  - [Supabase Password Security](https://supabase.com/docs/guides/auth/password-security)
   - [Supabase Function Configuration](https://supabase.com/docs/guides/functions/function-configuration)
-  - [Clerk User metadata](https://clerk.com/docs/guides/users/extending)
+  - [Supabase Authorization headers](https://supabase.com/docs/guides/functions/auth-headers)
   - [Supabase breaking change: tables not exposed automatically to Data API](https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically)
+  - [Apple Mail Privacy Protection](https://support.apple.com/guide/iphone/use-mail-privacy-protection-iphf084865c7/ios)
 - Checks that could not fully run and why:
-  - no fresh CRM or opportunity-owner export was available to clear the BlackCurrant owner-state warning
-  - no live Supabase Auth settings view was available to resolve `TB-0023`
-  - this run did not deploy code or rerun live tracker closeouts itself; it verified and synthesized the overnight specialist evidence plus current live control-plane state
+  - no direct live Supabase Auth-settings view was available to resolve `TB-0023`
+  - no CRM or opportunity-owner export was available to narrow the BlackCurrant queue
+  - no current production-safe role walkthrough was rerun for `TB-0097` because the live schema blocker already prevents a truthful pass
+  - Supabase MCP access is still session-variable and can return `RATE_LIMITED` after initial successful reads, so this run did not attempt live tracker writes or broader same-session SQL after the evidence needed for the lead refresh was confirmed

@@ -1,56 +1,54 @@
 # Trusted Bums QA Harness Reliability Backlog
 
-_Last updated: 2026-06-20 by Codex TB-0112/TB-0055 implementation pass._
+_Last updated: 2026-06-20 by Codex daily QA harness reliability automation._
 
 ## Executive Read
 
-Current local head now implements the narrow harness fixes for `TB-0112` and adds a source guard for the `TB-0055` evidence split. Deploy-triggered Deep QA shards in [e2e-smoke.yml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml) now run `pnpm run qa:target-preflight` before `pnpm run qa:env && pnpm run qa:deep`, using each shard's existing `qa-target-preflight-artifacts/${{ matrix.deep_suite }}` output directory. The raw-shell versus sourced `.env.qa` versus hosted env states remain explicitly separate in this backlog and are now guarded by [scrumFiveBatch.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumFiveBatch.test.ts).
+Current `main` head `e231cc07ee6959bc8eac9d04ed3b68b80d76f6c4` has no open harness-only tracker items.
 
-- GitHub `QA` run `27798687806` on `a17a856`: passed.
-- GitHub `Deploy TrustedBums to DreamHost` run `27798687708` on `a17a856`: passed.
-- GitHub `E2E Smoke` run `27798711531` on `a17a856`: passed.
-- `27798711531` also passed `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
-- Downloaded smoke artifacts from `27798711531` retain `qa-target-preflight-artifacts/summary.json` and `summary.txt`.
-- Downloaded deploy-triggered deep artifacts from `27798711531` do not contain their own `summary.json` or `summary.txt`; the deep jobs set `QA_TARGET_PREFLIGHT_OUTPUT_DIR`, but they do not run `pnpm run qa:target-preflight` before `pnpm run qa:deep`.
-- Raw `pnpm run qa:env`: failed because the shell did not have the required QA variables exported.
-- Sourced `QA_EXTENSION_API_EXPECTATION=skip pnpm run qa:env`: passed.
-- Sourced `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://trustedbums.com pnpm run qa:target-preflight`: passed DNS, HTTPS, app shell, and Clerk checks.
-- Sourced `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://rcdl.tplinkdns.com pnpm run qa:target-preflight`: resolved DNS to `69.131.216.220`, then failed `HTTPS`; the paired `App shell` miss was derivative because no trusted base HTML was available to inspect. `curl` without `-k` failed local certificate verification, and `curl -k` returned `HTTP 403` with `Rejected request from RFC1918 IP to public server address`. That remains `TB-0024` external-target contract or infrastructure evidence, not a harness defect.
+- GitHub `QA` run `27857690007` on `e231cc0`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27857689995` on `e231cc0`: passed.
+- GitHub `Visual UI Audit` run `27857691601` on `e231cc0`: passed.
+- GitHub `E2E Smoke` run `27857708006` on `e231cc0`: passed, including `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
+- Downloaded smoke artifacts from `27857708006` retain `qa-target-preflight-artifacts/summary.json` and `summary.txt`.
+- Downloaded deploy-triggered deep artifacts from `27857708006` now each retain their own suite-scoped `summary.json` and `summary.txt` under `qa-target-preflight-artifacts/admin`, `client`, and `bum`, so `TB-0112` is closed on current head.
+- The raw-shell versus sourced `.env.qa` versus hosted env states remain explicitly separate in this backlog and are still guarded by [scrumFiveBatch.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumFiveBatch.test.ts); future handoffs must keep hosted workflow results split from local env states.
+- raw `pnpm run qa:env`: failed because the shell did not have the required QA variables exported.
+- Sourced `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`: passed.
+- Sourced `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://trustedbums.com corepack pnpm run qa:target-preflight`: passed DNS, HTTPS, app shell, and Clerk checks.
+- Sourced `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://rcdl.tplinkdns.com corepack pnpm run qa:target-preflight`: passed DNS, then failed `HTTPS` and `App shell`. That remains `TB-0024` external-target contract or infrastructure evidence, not a harness defect.
+- The latest standalone `Deep QA Hotfix Audit` workflow run is still stale at `27092527987` on `850e507`, but that is no longer the freshest deep evidence surface because deploy-triggered deep shards are current and green on `e231cc0`.
 
-`TB-0054` remains closed. The active harness queue in this backlog is now `TB-0055` plus new `TB-0112`.
+`TB-0055` and `TB-0112` are both `CLOSED` on current head. No replacement harness defect was reproduced in current code, current artifacts, or current local preflight.
 
 ## Active Harness Fixes
 
-### P2 - [TB-0112] Add per-shard preflight summaries to deploy-triggered Deep QA
-- Evidence: Implemented locally on 2026-06-20. [`.github/workflows/e2e-smoke.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml) now runs each deploy-triggered deep shard with `pnpm run qa:target-preflight && pnpm run qa:env && pnpm run qa:deep`, while keeping `QA_TARGET_PREFLIGHT_OUTPUT_DIR` suite-scoped as `qa-target-preflight-artifacts/${{ matrix.deep_suite }}`.
-- Why it matters: if a single deep shard later fails because the target, TLS chain, app shell, or auth bootstrap drifted after smoke already passed, the shard artifact cannot prove whether the failure belongs to target availability or route-level product behavior. That raises the risk of false product handoffs.
-- Recommendation: Push the workflow change, then verify the next deploy-triggered `E2E Smoke` run includes suite-scoped preflight summaries in each `deep-qa-hotfix-audit-*` artifact.
-- Acceptance criteria: each deploy-triggered deep artifact contains suite-scoped preflight summaries, and a failed shard can be classified from its own artifact without relying only on the earlier smoke-stage summary.
-
-### P2 - [TB-0055] Keep raw-shell, sourced `.env.qa`, and hosted workflow env states separate in every handoff
-- Evidence: The backlog keeps the three states split and [scrumFiveBatch.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumFiveBatch.test.ts) now guards that wording so future handoffs do not collapse raw shell, sourced `.env.qa`, and hosted workflow evidence into one generic QA statement. Historical raw `pnpm run qa:env` still fails in a bare shell when QA secrets are not exported; sourced `.env.qa` and hosted workflow proof must continue to be reported separately.
-- Why it matters: collapsing those three states into one “QA env passed” sentence still hides whether the problem belongs to local shell setup, `.env.qa` drift, or GitHub Actions configuration.
-- Recommendation: keep raw shell, sourced `.env.qa`, and hosted workflow results split in every QA, release, and harness handoff, and mention only variable names when the raw shell is missing exports.
-- Acceptance criteria: future handoffs preserve all three env states distinctly without implying that a sourced or hosted pass means the raw shell was healthy.
+### No open harness-only tracker items on exact head `e231cc0`
+- Evidence: live tracker rows `TB-0055` and `TB-0112` are both `CLOSED` on `e231cc0`, exact-head hosted `QA`, deploy, visual, and deploy-triggered deep QA are all green, and the downloaded `27857708006` artifacts prove suite-scoped preflight summaries exist for `admin`, `client`, and `bum`.
+- Why it matters: carrying forward already-closed harness work would turn the backlog into stale prose and make future product failures harder to classify.
+- Recommendation: preserve the current harness guardrails already in source: suite-scoped preflight before dependent deep shards, current-session route reuse, bounded auth bootstrap, chrome-error rejection, and the raw-shell versus sourced `.env.qa` versus hosted env states wording split. Reopen the backlog only when a newer exact-head run reproduces a harness-only defect with artifact or log evidence.
+- Acceptance criteria: any future harness reopen cites a current or newer exact-head run, reproduces on the current helper or workflow path, and has a matching tracker row before it is carried forward here.
 
 ## Deep QA Split Plan
 
 - Current split: `admin`, `client`, and `bum` shards in [`.github/workflows/e2e-smoke.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml) and [`.github/workflows/deep-qa-hotfix-audit.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deep-qa-hotfix-audit.yml).
-- Current exact-head proof: `E2E Smoke` run `27798711531` passed `smoke` plus all three deep shards on `a17a856`.
-- Current artifact proof: smoke-stage artifact retention is still good on `27798711531`; deploy-triggered deep jobs still need `TB-0112` so each shard has its own preflight summary.
-- Failure-attribution rule: when `qa:target-preflight` fails before any protected route loads, classify the shard as a harness or target-availability problem first, not as a route-level product defect. On 2026-06-19, `https://rcdl.tplinkdns.com` demonstrated the same rule: `HTTPS` failed first, and the `App shell` miss was only second-order.
-- Standalone workflow status: the standalone `Deep QA Hotfix Audit` workflow is still stale at run `27092527987` on `850e507`, but that is no longer the freshest deep evidence surface because deploy-triggered deep shards are current and green on `a17a856`.
+- Current exact-head proof: `E2E Smoke` run `27857708006` passed `smoke` plus all three deep shards on `e231cc0`.
+- Current artifact proof: smoke-stage artifact retention is still good on `27857708006`, and deploy-triggered deep jobs now retain their own suite-scoped preflight summaries and deep-QA reports.
+- Failure-attribution rule: when `qa:target-preflight` fails before any protected route loads, classify the shard as a harness or target-availability problem first, not as a route-level product defect. The current `https://rcdl.tplinkdns.com` failure still demonstrates the same rule: `HTTPS` failed first, and the `App shell` miss was only second-order.
+- Standalone workflow status: the standalone `Deep QA Hotfix Audit` workflow is still stale at run `27092527987` on `850e507`, but it is not an active blocker while deploy-triggered deep shards remain current and exact-head green.
+- Historical regression note: intermediate head `207331093565b490a7eeab0c042bf25b23a12a63` briefly failed admin Deep QA run `27857294287` because `/admin/emails` rendered visible text `0 failed`, which the visible-error heuristic treated as a P1 signal. Current head `e231cc0` changed the page copy in [AdminEmails.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminEmails.tsx), and exact-head `27857708006` cleared the issue. Treat that as a resolved product wording defect, not a current harness drift item.
 - Escalation rule: keep the current role split. Split a shard further only if a specific exact-head shard starts failing repeatedly after smoke-stage preflight and suite-local reproduction both pass.
 
 ## Product Defect Handoffs
 
-- No new exact-head product defect was reproduced inside the auth helpers, navigation helpers, localStorage bootstrap, or deep-QA route audits during this run.
-- `TB-0024` stayed with QA Test Engineer, Release Verification, Lead Developer, and Infrastructure as an external-target contract or infrastructure issue. Do not hand it to product engineering as a route regression unless `https://trustedbums.com` or a shard-local preflight starts failing too.
+- No open exact-head product defect was reproduced inside the auth helpers, navigation helpers, localStorage bootstrap, deep-QA route partitioning, `.env.qa` contract checks, or artifact capture path during this run.
+- Resolved historical handoff: intermediate head `2073310` surfaced a short-lived product wording defect on `/admin/emails` (`Visible error after safe button exploration: 0 failed`) in admin Deep QA run `27857294287`. Current head `e231cc0` fixed that copy, and exact-head run `27857708006` cleared it. QA Test Engineer and Lead Developer already have the current-head closure evidence in the exact-head QA and release ledgers, so no open harness-side follow-up remains.
+- `TB-0024` stays with QA Test Engineer, Release Verification, Lead Developer, and Infrastructure as an external-target contract or infrastructure issue. Do not hand it to product engineering as a route regression unless `https://trustedbums.com` or a shard-local preflight starts failing too.
 
 ## Agent Inputs
 
-- Date of run: 2026-06-19
-- Workflows, artifacts, tests, helpers, scripts, env checks, tracker rows, and commands reviewed:
+- Date of run: 2026-06-20 (`America/New_York`).
+- Workflows, artifacts, tests, helpers, scripts, tracker rows, env checks, and commands reviewed:
   - `docs/qa-harness-reliability-backlog.md`
   - `docs/qa-test-backlog.md`
   - `docs/release-verification-backlog.md`
@@ -58,43 +56,43 @@ Current local head now implements the narrow harness fixes for `TB-0112` and add
   - `docs/codex-edit-log.md`
   - `package.json`
   - [`playwright.config.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/playwright.config.ts)
-  - [`.github/workflows/qa.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/qa.yml)
-  - [`.github/workflows/e2e-smoke.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml)
-  - [`.github/workflows/deep-qa-hotfix-audit.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deep-qa-hotfix-audit.yml)
-  - [`tests/e2e/helpers/auth.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/auth.ts)
-  - [`tests/e2e/authenticated-role-smoke.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/authenticated-role-smoke.spec.ts)
-  - [`tests/e2e/visual-ui-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/visual-ui-audit.spec.ts)
   - [`scripts/verify-qa-env.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-qa-env.mjs)
   - [`scripts/qa-target-preflight.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/qa-target-preflight.mjs)
-  - raw `pnpm run qa:env`
-  - sourced `QA_EXTENSION_API_EXPECTATION=skip pnpm run qa:env`
-  - sourced `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://trustedbums.com pnpm run qa:target-preflight`
-  - sourced `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://rcdl.tplinkdns.com pnpm run qa:target-preflight`
-  - `curl -I -L --max-time 20 https://rcdl.tplinkdns.com`
-  - `curl -k -I -L --max-time 20 https://rcdl.tplinkdns.com`
-  - `curl -k --max-time 20 -L https://rcdl.tplinkdns.com`
-  - `gh run list --limit 24 --json ...`
-  - `gh run list --workflow "Visual UI Audit" --limit 6 --json ...`
-  - `gh run list --workflow "Deep QA Hotfix Audit" --limit 8 --json ...`
-  - `gh run view 27798711531 --json jobs,...`
-  - `gh run view 27798711531 --job 82264090453 --log`
-  - `gh run view 27798711531 --job 82264536822 --log`
-  - `gh run view 27798711531 --job 82264536817 --log`
-  - `gh run download 27798711531 --dir /tmp/tb-e2e-a17a856-XT9PgT`
-  - `find /tmp/tb-e2e-a17a856-XT9PgT -maxdepth 8 -name 'summary.json' -o -name 'summary.txt'`
-  - `mcp__codex_apps__supabase._get_project`
-  - `mcp__codex_apps__supabase._get_project_url`
-  - `mcp__codex_apps__supabase._execute_sql` for tracker refreshes `TB-0024`, `TB-0055`, and new `TB-0112`
+  - [`tests/e2e/helpers/auth.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/auth.ts)
+  - [`tests/e2e/helpers/deepQa.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/deepQa.ts)
+  - [`tests/e2e/deep-workflow-hotfix-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/deep-workflow-hotfix-audit.spec.ts)
+  - [`tests/e2e/portal-interaction-audit.spec.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/portal-interaction-audit.spec.ts)
+  - [`.github/workflows/e2e-smoke.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml)
+  - [`.github/workflows/deep-qa-hotfix-audit.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deep-qa-hotfix-audit.yml)
+  - [Admin emails](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminEmails.tsx)
+  - `git rev-parse HEAD`
+  - `git log --oneline -12`
+  - raw `corepack pnpm run qa:env`
+  - sourced `.env.qa` `QA_EXTENSION_API_EXPECTATION=skip corepack pnpm run qa:env`
+  - sourced `.env.qa` `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://trustedbums.com corepack pnpm run qa:target-preflight`
+  - sourced `.env.qa` `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://rcdl.tplinkdns.com corepack pnpm run qa:target-preflight`
+  - `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --limit 30 --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run list --repo Pidpoddev/trustedbums --workflow "Deep QA Hotfix Audit" --limit 10 --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run view 27857708006 --repo Pidpoddev/trustedbums --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run view 27857294287 --repo Pidpoddev/trustedbums --json ...`
+  - `/Users/macdaddy/bin/gh-trustedbums run view 27857294287 --repo Pidpoddev/trustedbums --job 82447421055 --log`
+  - `/Users/macdaddy/bin/gh-trustedbums run download 27857708006 --repo Pidpoddev/trustedbums --dir /tmp/tb-e2e-e231cc0-Wn8bBl`
+  - `/Users/macdaddy/bin/gh-trustedbums run download 27857294287 --repo Pidpoddev/trustedbums --dir /tmp/tb-e2e-2073310-aQrnl5`
+  - `find /tmp/tb-e2e-e231cc0-Wn8bBl -maxdepth 6 ...`
+  - `find /tmp/tb-e2e-2073310-aQrnl5 -maxdepth 6 ...`
+  - Supabase changelog skim: `curl -fsSL https://supabase.com/changelog.md`
+  - `mcp__codex_apps__supabase._list_projects`
+  - `mcp__codex_apps__supabase._execute_sql` for tracker row and schema reads on `public.admin_scrum_items`
 - Hosted verification in this run:
-  - exact-head `QA` `27798687806` passed
-  - exact-head deploy `27798687708` passed
-  - exact-head `E2E Smoke` `27798711531` passed
-  - exact-head deploy-triggered `Deep QA (admin|client|bum)` all passed inside `27798711531`
+  - exact-head `QA` `27857690007` passed
+  - exact-head deploy `27857689995` passed
+  - exact-head `Visual UI Audit` `27857691601` passed
+  - exact-head `E2E Smoke` `27857708006` passed
+  - exact-head deploy-triggered `Deep QA (admin|client|bum)` all passed inside `27857708006`
 - Tracker status recheck completed in this run:
-  - `TB-0054` remains `CLOSED`
-  - `TB-0055` remains `OPEN` and was refreshed to exact head `a17a856`
-  - `TB-0112` was opened for missing per-shard preflight summaries in deploy-triggered deep QA
-  - `TB-0024` remains `OPEN` with corrected HTTPS and certificate evidence; it is not counted as a harness defect here
-- Checks that could not run and why:
-  - no newer standalone `Deep QA Hotfix Audit` run exists than `27092527987`, so the standalone lane remained a stale-lane observation rather than a current blocker
-  - no new GitHub workflow dispatch was needed in this automation run because exact-head `QA`, deploy, and deploy-triggered deep evidence already existed for `a17a856`
+  - `TB-0055` is `CLOSED` on exact head `e231cc0`
+  - `TB-0112` is `CLOSED` on exact head `e231cc0`
+  - `TB-0024` remains `OPEN` and separate from harness defects
+- Checks that could not fully close and why:
+  - no newer standalone `Deep QA Hotfix Audit` run exists than `27092527987`, so the standalone lane remains a stale-lane observation rather than an exact-head blocker
+  - no new GitHub workflow dispatch was needed in this automation run because exact-head `QA`, deploy, visual, and deploy-triggered deep evidence already exist for `e231cc0`
