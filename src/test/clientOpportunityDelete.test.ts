@@ -18,7 +18,7 @@ describe("client opportunity deletion", () => {
     expect(portalApiSource).toContain("export async function deleteOwnOpportunityRegistration");
     expect(portalApiSource).toContain(".from(\"opportunity_registrations\")");
     expect(portalApiSource).toContain(".delete()");
-    expect(portalApiSource).toContain(".select(\"id\")");
+    expect(portalApiSource).toContain(".select(\"id, target_account_name\")");
     expect(portalApiSource).toContain("Unable to delete this opportunity because no matching row was removed.");
     expect(portalApiSource).toContain("Opportunity was deleted, but the audit event could not be recorded.");
   });

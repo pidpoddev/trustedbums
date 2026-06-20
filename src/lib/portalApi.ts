@@ -3167,8 +3167,8 @@ export async function deleteOwnOpportunityRegistration(user: AuthUser, opportuni
     .delete()
     .eq("id", opportunity.id)
     .eq("company_id", user.clientId)
-    .select("id")
-    .maybeSingle<Pick<OpportunityRegistration, "id">>();
+    .select("id, target_account_name")
+    .maybeSingle<Pick<OpportunityRegistration, "id" | "target_account_name">>();
 
   if (error) {
     throw error;

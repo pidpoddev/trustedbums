@@ -68,12 +68,17 @@ async function deleteUnclaimedOpportunity(page: Page, account: QaAccount, target
   });
 
   const deleteResponsePromise = page.waitForResponse(
-    (response) => response.url().includes("/rest/v1/opportunity_registrations") && response.request().method() === "DELETE",
+    (response) =>
+      response.url().includes("/rest/v1/opportunity_registrations") &&
+      response.url().includes("select=id") &&
+      response.request().method() === "DELETE",
     { timeout: 20_000 },
   );
   await opportunityRow.getByRole("button", { name: /delete/i }).click();
   const deleteResponse = await deleteResponsePromise;
-  expect(deleteResponse.ok(), await deleteResponse.text().catch(() => `DELETE returned ${deleteResponse.status()}`)).toBe(true);
+  const deletePayload = await deleteResponse.text().catch(() => "");
+  expect(deleteResponse.ok(), deletePayload || `DELETE returned ${deleteResponse.status()}`).toBe(true);
+  expect(deletePayload, "Client delete must return the deleted QA opportunity row instead of silently deleting zero rows.").toContain(targetAccount);
 
   await expect(page.getByText(targetAccount).first()).toBeHidden({ timeout: 20_000 });
   await page.reload();
