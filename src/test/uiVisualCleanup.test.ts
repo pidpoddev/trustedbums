@@ -46,7 +46,8 @@ describe("UI visual cleanup guardrails", () => {
 
   it("keeps the collapsed privacy control away from the mobile chat corner", () => {
     expect(consentManagerSource).toContain("bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 z-40");
-    expect(consentManagerSource).toContain("sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:left-auto sm:right-4");
+    expect(consentManagerSource).toContain("sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:left-4");
+    expect(consentManagerSource).not.toContain("sm:right-4");
   });
 
   it("keeps mobile account menus opaque and viewport-bound", () => {

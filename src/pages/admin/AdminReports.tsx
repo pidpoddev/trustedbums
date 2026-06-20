@@ -41,7 +41,7 @@ export default function AdminReports() {
   const reverseOpportunitiesQuery = useQuery({ queryKey: ["admin-reports-reverse-opportunities"], queryFn: listAdminReverseOpportunities });
   const termsAcceptancesQuery = useQuery({ queryKey: ["admin-reports-terms-acceptances"], queryFn: listTermsAcceptances });
   const auditQuery = useQuery({ queryKey: ["admin-reports-audit-events"], queryFn: listAuditEvents });
-  const emailDeliveriesQuery = useQuery({ queryKey: ["admin-reports-email-deliveries"], queryFn: listAdminEmailDeliveries });
+  const emailDeliveriesQuery = useQuery({ queryKey: ["admin-reports-email-deliveries"], queryFn: () => listAdminEmailDeliveries({ limit: 100, offset: 0 }) });
 
   const recommendations = useMemo<RecommendedReport[]>(() => {
     const companies = companiesQuery.data ?? [];
@@ -57,7 +57,7 @@ export default function AdminReports() {
     const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
     const termsAcceptances = termsAcceptancesQuery.data ?? [];
     const auditEvents = auditQuery.data ?? [];
-    const emailDeliveries = emailDeliveriesQuery.data ?? [];
+    const emailDeliveries = emailDeliveriesQuery.data?.rows ?? [];
 
     return [
       {

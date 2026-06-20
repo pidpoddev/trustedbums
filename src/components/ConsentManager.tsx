@@ -143,7 +143,7 @@ export function ConsentManager() {
           type="button"
           variant="outline"
           size="sm"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 z-40 min-h-9 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:left-auto sm:right-4"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 z-40 min-h-9 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:left-4"
           aria-label="Privacy choices"
           title="Privacy choices"
           onClick={() => {

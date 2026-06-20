@@ -5,6 +5,7 @@ const e2eSmokeWorkflow = readFileSync(".github/workflows/e2e-smoke.yml", "utf8")
 const qaHarnessBacklog = readFileSync("docs/qa-harness-reliability-backlog.md", "utf8");
 const consentManager = readFileSync("src/components/ConsentManager.tsx", "utf8");
 const adminEmails = readFileSync("src/pages/admin/AdminEmails.tsx", "utf8");
+const adminReports = readFileSync("src/pages/admin/AdminReports.tsx", "utf8");
 const portalApi = readFileSync("src/lib/portalApi.ts", "utf8");
 const sendAdminEmail = readFileSync("supabase/functions/send-admin-email/index.ts", "utf8");
 
@@ -45,5 +46,11 @@ describe("scrum batch implementation guardrails", () => {
     expect(adminEmails).toContain("open signal");
     expect(adminEmails).not.toContain("Tracked engagement");
     expect(adminEmails).not.toContain("opens / clicks");
+  });
+
+  it("keeps reports compatible with paged admin email results", () => {
+    expect(adminReports).toContain("listAdminEmailDeliveries({ limit: 100, offset: 0 })");
+    expect(adminReports).toContain("emailDeliveriesQuery.data?.rows ?? []");
+    expect(adminReports).not.toContain("emailDeliveriesQuery.data ?? []");
   });
 });
