@@ -1,6 +1,6 @@
 # Trusted Bums Performance Engineering Backlog
 
-_Last updated: 2026-06-19 by Codex TB-0047 implementation pass._
+_Last updated: 2026-06-20 by Codex TB-0049 safe-index pass._
 
 ## Executive Read
 
@@ -20,10 +20,9 @@ Live Supabase telemetry narrowed the active queue to `TB-0047` and `TB-0049`, bu
 - Recommendation: Push the implementation, attach hosted QA/deploy evidence to the tracker, then watch follow-up field telemetry for transfer and LCP movement on the current client and Bum hotspots.
 - Acceptance criteria: Source-level route-shape acceptance is met locally and guarded by `src/test/highTrafficRouteHydration.test.ts`. Close after the commit is pushed, hosted checks pass, and tracker evidence links include the pushed commit plus relevant CI run IDs.
 
-### P2 - [TB-0049] Clear route-adjacent advisor debt before finance, meetings, saved items, and mailbox workloads fill in
-- Evidence: Current Supabase performance advisors are callable and still flag route-adjacent debt. The active subset remains unindexed foreign keys on `audit_events.company_id`, `bum_contacts.customer_target_id`, and `bum_saved_items` relationships, plus multiple-permissive-policy warnings on `opportunity_registrations`, `profiles`, `reverse_opportunities`, `teams_meetings`, `terms_assignments`, and `training_materials`. `claim_invoices` and `customer_payment_reports` still have no live rows yet, but their finance-path helpers still boot client routes. The new Inner Circle and Bum-contact work also raises the importance of the existing `bum_contacts` warning, while current Bum marketplace routes still depend on `bum_saved_items`. Newer advisor noise also remains on `admin_email_*`, `admin_shared_mailbox_*`, and `api_access_keys`, but those warnings are still lower priority than the route-adjacent subset because current user-facing load already depends on the latter.
+- Evidence: A first low-risk index-only slice was applied live on 2026-06-20 and mirrored in `supabase/migrations/20260620012000_add_route_advisor_indexes.sql`. The live database now has covering btree indexes for `audit_events.company_id`, `bum_contacts.customer_target_id`, `bum_saved_items.client_company_id`, `bum_saved_items.customer_target_id`, and `bum_saved_items.opportunity_registration_id`. No RLS, grants, policies, table definitions, or destructive schema changes were made. The broader item stays open because Supabase advisors still need a separate business-rule review for multiple-permissive-policy warnings on `opportunity_registrations`, `profiles`, `reverse_opportunities`, `teams_meetings`, `terms_assignments`, and `training_materials`, plus separate prioritization for the remaining finance-path, admin-email, shared-mailbox, and API-access-key index warnings.
 - Why it matters: Route shape is still the primary bottleneck, but once finance, meetings, saved items, and mailbox traffic fill in, the remaining FK and permissive-policy debt will become the next avoidable source of planner cost and route latency.
-- Recommendation: Clear or explicitly waive the route-adjacent advisor items first, starting with `opportunity_registrations`, `profiles`, `reverse_opportunities`, `teams_meetings`, `audit_events`, `bum_contacts`, `bum_saved_items`, and the finance-path warnings. Keep the admin-email, shared-mailbox, and API-access-key index debt out of the active performance queue unless traces show direct user-facing impact.
+- Recommendation: Treat the five applied FK indexes as closed sub-work, then review the remaining policy/RLS warnings with explicit access rules before changing them. Keep the admin-email, shared-mailbox, and API-access-key index debt out of the active performance queue unless traces show direct user-facing impact.
 - Acceptance criteria: The route-adjacent FK and permissive-policy warnings are either cleared or explicitly waived with business-rule justification, and the next performance pass no longer needs to carry the same route-linked advisor findings as open debt.
 
 ## Measurement Notes
@@ -47,6 +46,10 @@ Live Supabase telemetry narrowed the active queue to `TB-0047` and `TB-0049`, bu
   - Live table counts grounding the source review were `opportunity_registrations 83`, `customer_targets 81`, `opportunity_claims 1`, `opportunity_claim_contacts 1`, `bum_contacts 2`, and `0` current rows each for `customer_target_responses`, `reverse_opportunities`, `teams_meetings`, `customer_payment_reports`, and `claim_invoices`.
   - Live performance advisors still report route-adjacent FK and permissive-policy debt plus newer admin-email, shared-mailbox, and API-access-key index debt.
   - Current tracker rows `TB-0047` and `TB-0049` were refreshed to exact head `a17a856`; `TB-0048` remains closed.
+- Live Supabase TB-0049 safe-index checks on 2026-06-20:
+  - Project `vaoqvtxqvbptyxddpoju` returned `ACTIVE_HEALTHY` on PostgreSQL `17.6.1.111`.
+  - Added and verified live btree indexes: `audit_events_company_id_idx`, `bum_contacts_customer_target_id_idx`, `bum_saved_items_client_company_id_idx`, `bum_saved_items_customer_target_id_idx`, and `bum_saved_items_opportunity_registration_id_idx`.
+  - Catalog proof showed each index valid and ready on the intended table/column. No RLS, policy, grant, or destructive schema changes were applied in this pass.
 
 ## Watchlist
 
