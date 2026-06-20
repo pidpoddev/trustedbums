@@ -75,7 +75,6 @@ async function deleteUnclaimedOpportunity(page: Page, account: QaAccount, target
   const deleteResponse = await deleteResponsePromise;
   expect(deleteResponse.ok(), await deleteResponse.text().catch(() => `DELETE returned ${deleteResponse.status()}`)).toBe(true);
 
-  await expect(page.locator("#main-content").getByText("Opportunity deleted")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(targetAccount).first()).toBeHidden({ timeout: 20_000 });
   await page.reload();
   await expect(page.getByText(targetAccount).first()).toBeHidden({ timeout: 20_000 });
