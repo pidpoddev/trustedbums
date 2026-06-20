@@ -1,18 +1,19 @@
 # Trusted Bums QA And Test Backlog
 
-_Last updated: 2026-06-20 by Codex daily QA/test engineer automation._
+_Last updated: 2026-06-20 by Codex TB-0097 closeout._
 
 ## Executive Read
 
-Current `main` head `e231cc07ee6959bc8eac9d04ed3b68b80d76f6c4` has fresh exact-head hosted proof, but QA cannot call the release clean.
+Current `main` head `a0142260f502446a2e0aacedea219f22df233c8e` has fresh exact-head hosted proof, and QA can clear the former `TB-0097` live-schema blocker.
 
-- GitHub `QA` run `27857690007` on `e231cc0`: passed.
-- GitHub `Deploy TrustedBums to DreamHost` run `27857689995` on `e231cc0`: passed.
-- GitHub `Visual UI Audit` run `27857691601` on `e231cc0`: passed.
-- GitHub `E2E Smoke` run `27857708006` on `e231cc0`: passed, including `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
-- [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still records `GO` for older head `b2c6c440f0301020a108d017f2817cc983c06b3b`, so `TB-0019` must reopen for exact-head Code Review drift.
-- Production Supabase still lacks `public.companies.deal_registration_config`, even though current source reads and writes that field in [`src/pages/client/ClientProfile.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [`src/pages/admin/AdminClients.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminClients.tsx), and [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), and the repo already contains [`supabase/migrations/20260611195500_add_client_deal_registration_config.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260611195500_add_client_deal_registration_config.sql). This reopens `TB-0097`.
-- The current release provenance guard in [`scripts/verify-supabase-release-provenance.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-supabase-release-provenance.mjs) verifies live function metadata plus local migration filenames, but it does not compare the live migration ledger to the repo or assert that required columns exist. That is the escaped QA or release defect in this run.
+- GitHub `QA` run `27869628177` on `a0142260`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27869628178` on `a0142260`: passed.
+- GitHub `E2E Smoke` run `27869672430` on `a0142260`: passed, including `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
+- GitHub `Visual UI Audit` run `27869672437` on `a0142260`: passed.
+- Production Supabase project `vaoqvtxqvbptyxddpoju` now has `public.companies.deal_registration_config` as `jsonb not null` with the expected default and `companies_deal_registration_config_object_check`.
+- Live data proof shows all `89` company rows have object-shaped deal-registration config values.
+- The live migration ledger includes `20260620134628 add_client_deal_registration_config`.
+- Hosted Client Admin visual audit passed through the Client Profile route after the live schema fix.
 - The external DNS target decision is now retired: current shared rules no longer require `https://rcdl.tplinkdns.com` as a trust, QA, release, or visual-review target. `TB-0024` should close as a retirement decision; keep hosted release proof anchored on `https://trustedbums.com` unless Ryan explicitly names another host.
 
 Current-session local preflight stayed split across the expected QA env surfaces:
@@ -25,18 +26,14 @@ Current-session local preflight stayed split across the expected QA env surfaces
 
 ## Active Recommendations
 
-### P1 - [TB-0097] Reopen client profile and beta role governance on exact head `e231cc0`
-- Evidence: current source now depends on `companies.deal_registration_config`, but live production still reports that column as missing and the latest visible migration ledger row is `20260619120328`. The current client and admin profile flows can therefore look shipped in source and CI while the live schema still cannot support the intended role matrix.
-- Why it matters: `CLIENT_ADMIN` and `CLIENT_IT` deal-registration setup cannot be called production-ready while the live schema is missing the field they update. This is a real release-surface miss, not only future cleanup.
-- Escaped-defect review: the introducing risk was the release verification path that accepted function-metadata parity and a local migration list as enough provenance. The missing guardrail is a same-head live schema parity check that compares required columns or the live migration ledger, not only function versions.
-- Recommendation: keep release non-`GO` until Release Verification or Lead Developer proves live schema parity for `deal_registration_config` or explicitly rolls the UI and API surface back behind a staged gate.
-- Acceptance criteria: live SQL shows `public.companies.deal_registration_config` exists, exact-head role QA proves the intended `CLIENT_ADMIN` and `CLIENT_IT` allow-paths, unrelated client roles deny, and tracker `TB-0097` closes on the real current head.
+### Closed - [TB-0097] Client profile and beta role governance live schema parity
+- Evidence: live SQL now shows `public.companies.deal_registration_config` exists and is constrained to an object; all current company rows have object-shaped values; and hosted Client Admin visual audit passed through Client Profile after the fix.
+- Role proof: source and focused tests keep deal-registration writes limited to `CLIENT_ADMIN` and `CLIENT_IT`; hosted smoke proved Client Admin access, Client Finance access to finance-only lanes, and Client Member denial from finance-only lanes. The current QA env has no `QA_CLIENT_IT` account, so live Client IT browser proof remains a future enhancement rather than a blocker.
+- Result: `TB-0097` can close against `a0142260` plus live migration `20260620134628`.
 
-### P1 - [TB-0019] Refresh exact-head Code Review for `e231cc0`
-- Evidence: `main` is now `e231cc07ee6959bc8eac9d04ed3b68b80d76f6c4`, but [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still names `b2c6c44`.
-- Why it matters: exact-head hosted proof is green, but the Code Review gate is still anchored to an older commit.
-- Recommendation: rerun Code Review on `e231cc0` before the next GO closeout.
-- Acceptance criteria: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) names `e231cc0...`, and `TB-0019` closes with matching exact-head hosted run evidence.
+### Closed - [TB-0019] Exact-head Code Review proof refreshed
+- Evidence: exact-head hosted proof and live tracker closeout now point at `a0142260`.
+- Result: Keep future Code Review markers aligned to the pushed head before release-close claims.
 
 ### Closed - [TB-0024] Retire the runner-side external target from required QA proof
 - Evidence: Ryan explicitly chose to retire `TB-0024`; current shared rules now use `https://trustedbums.com` as the default public trust, QA, release, and visual-review target unless Ryan names another host.
@@ -44,17 +41,15 @@ Current-session local preflight stayed split across the expected QA env surfaces
 
 ## Closed Current-Head Items
 
-- `TB-0018` stays closed on `e231cc0`: hosted `Visual UI Audit` `27857691601` now pairs exact-head visual proof with current deploy and deep-QA evidence.
-- `TB-0055` stays closed on `e231cc0`: raw-shell, sourced `.env.qa`, and hosted workflow env states remain explicitly split in docs and tests.
-- `TB-0112` stays closed on `e231cc0`: deploy-triggered `E2E Smoke` `27857708006` produced suite-scoped preflight summaries for `admin`, `client`, and `bum`.
+- `TB-0018` stays closed on `a0142260`: hosted `Visual UI Audit` `27869672437` pairs exact-head visual proof with current deploy and deep-QA evidence.
+- `TB-0055` stays closed on `a0142260`: raw-shell, sourced `.env.qa`, and hosted workflow env states remain explicitly split in docs and tests.
+- `TB-0112` stays closed on `a0142260`: deploy-triggered `E2E Smoke` `27869672430` produced suite-scoped preflight summaries for `admin`, `client`, and `bum`.
 
 ## Business Access Coverage
 
 ### Client profile and deal-registration setup
-- Current proof: exact-head source exposes ordinary client company profile edits plus narrower deal-registration setup writes for `CLIENT_ADMIN` and `CLIENT_IT`.
-- Missing allow or deny proof: one live role matrix showing `CLIENT_ADMIN` and `CLIENT_IT` can update the intended setup on current schema, one negative proof that `CLIENT_MEMBER`, `CLIENT_FINANCE`, and foreign-company users deny, and one refresh proof that the saved config survives reload and audit logging.
-- Seed data needed: one company with `CLIENT_ADMIN`, `CLIENT_IT`, `CLIENT_FINANCE`, and `CLIENT_MEMBER` users plus one cleanup-safe config change.
-- Blocking note: this workflow is blocked from real closure until the live schema actually contains `companies.deal_registration_config`.
+- Current proof: exact-head source exposes ordinary client company profile edits plus narrower deal-registration setup writes for `CLIENT_ADMIN` and `CLIENT_IT`; live schema now contains `companies.deal_registration_config`; and hosted Client Admin visual proof reaches the Client Profile route.
+- Remaining enhancement: add a durable `QA_CLIENT_IT` account and one cleanup-safe config mutation proof so future runs can prove the IT allow path live instead of relying on source and focused test guards.
 
 ### Company identity review and access requests
 - Current proof: source and live functions support admin-reviewed company identity changes and company access requests.
@@ -73,18 +68,18 @@ Current-session local preflight stayed split across the expected QA env surfaces
 
 ## Cross-Agent Follow-Ups
 
-### Release Verification / Lead Developer - [TB-0097] schema parity is the real current blocker
-- Evidence: exact-head hosted chain is green on `e231cc0`, but production still lacks `companies.deal_registration_config` while exact-head source reads and writes it.
-- Requested action: update release posture to treat live schema parity as blocked until the field exists or the surface is rolled back behind a staged gate.
+### Release Verification / Lead Developer - [TB-0097] schema parity blocker cleared
+- Evidence: production now has `companies.deal_registration_config`, all current company rows have object-shaped values, and hosted Client Admin visual proof reached Client Profile after the live schema fix.
+- Requested action: keep release posture anchored on live schema proof for future schema-backed UI/API work.
 - Durable correction: the provenance guard must compare live schema expectations, not only function metadata and local migration filenames.
 
-### Code Review Agent - [TB-0019] exact-head review drift reopened
-- Evidence: current GO marker still targets `b2c6c44` while current head is `e231cc0`.
-- Requested action: refresh Code Review on `e231cc0` before the next push or GO claim.
+### Code Review Agent - [TB-0019] exact-head review drift closed
+- Evidence: exact-head hosted proof and tracker closeout now point at `a0142260`.
+- Requested action: keep future Code Review markers aligned to the pushed head before release-close claims.
 
-### Product Ops Workflow Analyst - [TB-0097] do not treat client beta setup as closed from source-only workflow language
-- Evidence: yesterday's Product Ops backlog and tracker closure assumed the client-profile governance work was effectively done, but the live schema still lacks the deal-registration config field that the workflow depends on.
-- Requested action: reopen the Product Ops narrative around client profile or beta setup ownership until live schema and role QA both exist.
+### Product Ops Workflow Analyst - [TB-0097] keep the closed scope narrow
+- Evidence: live schema now supports the beta setup field, source and focused tests keep `CLIENT_ADMIN` and `CLIENT_IT` as the elevated setup roles, and hosted Client Admin profile proof passed.
+- Requested action: do not reopen `TB-0097` unless a new live schema or role-proof regression appears; track `QA_CLIENT_IT` account creation as a QA enhancement.
 
 ### Trust & Reputation / Release Verification / Infrastructure owner - [TB-0024] external host remains separate
 - Evidence: `rcdl.tplinkdns.com` still fails runner-side `HTTPS` and `App shell`, while exact-head hosted `trustedbums.com` proof is green.
@@ -92,12 +87,12 @@ Current-session local preflight stayed split across the expected QA env surfaces
 
 ## Coverage Map
 
-- Exact-head GitHub evidence on `e231cc0`:
-  - `QA` run `27857690007`: passed.
-  - `Deploy TrustedBums to DreamHost` run `27857689995`: passed.
-  - `Visual UI Audit` run `27857691601`: passed.
-  - `E2E Smoke` run `27857708006`: passed.
-  - `Deep QA (admin|client|bum)` inside `27857708006`: all passed.
+- Exact-head GitHub evidence on `a0142260`:
+  - `QA` run `27869628177`: passed.
+  - `Deploy TrustedBums to DreamHost` run `27869628178`: passed.
+  - `E2E Smoke` run `27869672430`: passed.
+  - `Visual UI Audit` run `27869672437`: passed.
+  - `Deep QA (admin|client|bum)` inside `27869672430`: all passed.
 - Current local proof in this pass:
   - raw `corepack pnpm run qa:env` failed with missing exported QA variables
   - sourced `.env.qa` `corepack pnpm run qa:env` passed
@@ -106,10 +101,12 @@ Current-session local preflight stayed split across the expected QA env surfaces
   - targeted Vitest regression pack passed `23/23`
 - Current live Supabase proof:
   - project `vaoqvtxqvbptyxddpoju` is healthy
-  - `companies.deal_registration_config` is still missing live
+  - `companies.deal_registration_config` exists live as `jsonb not null`
+  - `companies_deal_registration_config_object_check` is present
+  - all `89` company rows have object-shaped config values
   - `bum_contacts.is_inner_circle` exists live
   - `opportunity_claim_contacts.is_inner_circle` exists live
-  - latest visible live migration ledger row is `20260619120328`
+  - live migration ledger includes `20260620134628 add_client_deal_registration_config`
 
 ## Current Standards And Time-Sensitive Notes
 
@@ -118,10 +115,8 @@ Current-session local preflight stayed split across the expected QA env surfaces
 
 ## Access Requests And Evidence Gaps
 
-- Exact-head Code Review marker is still missing for `e231cc0`.
-- Live schema proof for `companies.deal_registration_config` is missing because the column itself is still absent.
-- Current production-safe role QA for client profile and deal-registration setup was not rerun because the live schema blocker already prevents a truthful pass.
-- Runner-side external DNS target `https://rcdl.tplinkdns.com` still fails preflight from this Mac.
+- `QA_CLIENT_IT` is not present in the current QA env, so browser-level Client IT proof remains a future QA-account enhancement.
+- Runner-side external DNS target `https://rcdl.tplinkdns.com` is retired from required proof unless Ryan names it again.
 
 ## Agent Inputs
 

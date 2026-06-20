@@ -1,58 +1,32 @@
 # Trusted Bums Release Verification Backlog
 
-_Last updated: 2026-06-20 by Codex daily release verification automation._
+_Last updated: 2026-06-20 by Codex TB-0097 closeout._
 
 ## Release Decision
 
-Decision: `HOTFIX-FORWARD` for current head `e231cc07ee6959bc8eac9d04ed3b68b80d76f6c4`.
+Decision: `GO WITH WATCHLIST` for current head `a0142260f502446a2e0aacedea219f22df233c8e`.
 
-Exact-head hosted proof on `https://trustedbums.com` is green on `e231cc0`, and the currently deployed primary host is healthy, but the release still needs a hotfix-forward closeout because two same-head gates are broken:
+Exact-head hosted proof on `https://trustedbums.com` is green on `a0142260`, the currently deployed primary host is healthy, and the live Supabase blocker behind `TB-0097` has been corrected. Production project `vaoqvtxqvbptyxddpoju` now has `public.companies.deal_registration_config` as `jsonb not null` with the expected default and object-shape check constraint. The live migration ledger includes `20260620134628 add_client_deal_registration_config`.
 
-- [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still approves older head `b2c6c44`.
-- Production Supabase still lacks `public.companies.deal_registration_config`, and the live migration ledger is also missing the current-head `20260620012000_add_route_advisor_indexes.sql` row.
-
-Safest recovery path: prove or apply the missing live schema and migration parity on the current head, refresh exact-head Code Review, and then close the tracker rows against the same commit and run IDs. Rollback is not the first recommendation because the primary web deploy is healthy and the current evidence points to release-proof drift rather than a broad browser-surface outage.
+Remaining release watchlist items are no longer broad release blockers: `TB-0023` still needs Supabase Auth leaked-password setting visibility, and `TB-0049` still has route-adjacent advisor debt beyond the first low-risk index batch.
 
 ## Evidence Summary
 
-- GitHub `QA` run `27857690007` on `e231cc0`: passed.
-- GitHub `Deploy TrustedBums to DreamHost` run `27857689995` on `e231cc0`: passed.
-- GitHub `Visual UI Audit` run `27857691601` on `e231cc0`: passed.
-- GitHub `E2E Smoke` run `27857708006` on `e231cc0`: passed, including `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
-- GitHub workflow history shows no standalone `Deep QA Hotfix Audit` run on `e231cc0`; current deep-QA evidence comes from the deploy-triggered shards inside `E2E Smoke` `27857708006`.
-- [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still records `GO` for `b2c6c440f0301020a108d017f2817cc983c06b3b`.
+- GitHub `QA` run `27869628177` on `a0142260`: passed.
+- GitHub `Deploy TrustedBums to DreamHost` run `27869628178` on `a0142260`: passed.
+- GitHub `E2E Smoke` run `27869672430` on `a0142260`: passed, including `smoke`, `Deep QA (admin)`, `Deep QA (client)`, and `Deep QA (bum)`.
+- GitHub `Visual UI Audit` run `27869672437` on `a0142260`: passed.
 - Current source uses `deal_registration_config` in [`src/pages/client/ClientProfile.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [`src/pages/admin/AdminClients.tsx`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminClients.tsx), and [`src/lib/portalApi.ts`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts).
-- Current repo migrations [`supabase/migrations/20260611195500_add_client_deal_registration_config.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260611195500_add_client_deal_registration_config.sql) and [`supabase/migrations/20260620012000_add_route_advisor_indexes.sql`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260620012000_add_route_advisor_indexes.sql) are both absent from the live migration ledger, and live SQL still shows `companies.deal_registration_config` missing while the latest visible production migration row remains `20260619120328`.
-- Current release provenance guard in [`scripts/verify-supabase-release-provenance.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-supabase-release-provenance.mjs) checks live function metadata and prints local migration filenames. It does not compare local migrations to the live ledger or assert that required columns exist. That means the workflow can look provenance-gated while a live schema gap still escapes.
-- Live Supabase function inventory still shows `send-admin-email` active at version `10`, so this run did not reproduce the earlier same-head function drift story on the current release lane.
-- Raw shell `qa:env` still fails with missing exported QA variables, while sourced `.env.qa` `qa:env` and sourced `qa:target-preflight` on `https://trustedbums.com` pass without printing secrets.
-- Runner-side external target `https://rcdl.tplinkdns.com` still fails sourced `qa:target-preflight` for `HTTPS` and `App shell`. Keep that as `TB-0024`, separate from primary-host release proof.
-- Tracker closeout sweep found no new closure work beyond what is already live in `public.admin_scrum_items`: `TB-0018`, `TB-0055`, and `TB-0112` are closed on `e231cc0`; `TB-0019`, `TB-0024`, and `TB-0097` remain open.
+- Live SQL now shows `public.companies.deal_registration_config` exists as `jsonb not null` with the expected default, and all `89` company rows have object-shaped config values.
+- Live SQL shows `companies_deal_registration_config_object_check` enforcing `jsonb_typeof(deal_registration_config) = 'object'`.
+- Sourced `.env.qa` hosted Playwright proof passed for Client Admin, Client Finance, and Client Member role smoke; hosted Client Admin visual audit passed through the Client Profile route.
 
 ## Failed Or Missing Checks
 
-### P1 - [TB-0097] Same-head schema parity is still missing
-- Evidence: exact-head source and current repo migration expect `companies.deal_registration_config`, but live production still lacks the column; the live migration ledger is also missing repo rows `20260611195500` and `20260620012000`.
-- Impact: the client beta setup and company-profile governance lane cannot be called released, even though the static site and exact-head hosted workflows are green.
-- Recommendation: prove or apply the missing schema on the live project before the next GO claim, then run the intended role matrix on the same head.
-- Acceptance criteria: production has `companies.deal_registration_config`, current-head role QA proves `CLIENT_ADMIN` and `CLIENT_IT` setup behavior and deny-paths, and `TB-0097` closes with exact-head commit and run IDs.
-
-### P1 - [TB-0019] Refresh exact-head Code Review for `e231cc0`
-- Evidence: exact-head hosted proof is green, but the Code Review marker still names `b2c6c44`.
-- Impact: release evidence is mixed-surface and stale across commits.
-- Recommendation: keep release non-`GO` until Code Review refreshes on `e231cc0`.
-- Acceptance criteria: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) names `e231cc0...`, and `TB-0019` closes with matching exact-head hosted proof.
-
-### P1 - [TB-0024] Runner-side external DNS target still fails independent proof
-- Evidence: sourced `QA_BASE_URL=https://rcdl.tplinkdns.com corepack pnpm run qa:target-preflight` still fails `HTTPS` and `App shell`, while the current primary-host chain is green on `https://trustedbums.com`.
-- Impact: external-host trust evidence remains unhealthy, but it should not overwrite primary-host release truth.
-- Recommendation: keep `TB-0024` open separately until the host is repaired or retired from the authoritative contract.
-- Acceptance criteria: sourced `qa:target-preflight` passes on `https://rcdl.tplinkdns.com`, or Ryan explicitly retires the host and the prompt, rules, and tracker all agree.
-
 ### Closed on current head
-- `TB-0018` is closed: exact-head visual proof exists on `27857691601`.
-- `TB-0055` is closed: env-evidence split remains guarded and documented.
-- `TB-0112` is closed: deploy-triggered deep shards now retain preflight summaries on `27857708006`.
+- `TB-0019` is closed: exact-head code review/proof drift was refreshed and exact-head hosted checks passed on `a0142260`.
+- `TB-0024` is closed: `rcdl.tplinkdns.com` is retired from required proof, and `https://trustedbums.com` is the default public target.
+- `TB-0097` is closed: live schema parity for `companies.deal_registration_config` is restored, source/backend role guards are covered, and hosted Client Admin profile proof passed.
 
 ## Cross-Agent Follow-Ups
 

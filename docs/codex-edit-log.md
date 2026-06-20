@@ -13,6 +13,15 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-20 - Close TB-0097 client profile schema parity
+
+- Trigger: Ryan approved fixing `TB-0097` after reviewing the client profile governance and deal-registration schema issue.
+- Implementation branch: local `main` at `a0142260f502446a2e0aacedea219f22df233c8e`.
+- What changed: Applied the existing additive deal-registration config migration to live Supabase project `vaoqvtxqvbptyxddpoju`, creating `public.companies.deal_registration_config` as `jsonb not null` with the expected default and object-shape constraint. Updated [docs/release-verification-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/release-verification-backlog.md), [docs/qa-test-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-test-backlog.md), [docs/product-ops-workflow-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/product-ops-workflow-backlog.md), and [docs/lead-developer-recommendations.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/lead-developer-recommendations.md) so they no longer carry the stale live-schema blocker.
+- Validation: live SQL shows the column exists, `companies_deal_registration_config_object_check` is present, all `89` company rows have object-shaped config values, and the live migration ledger includes `20260620134628 add_client_deal_registration_config`. Focused Vitest passed for `dealRegistrationBetaWorkflow`, `adminAccessReviewWorkflow`, `clientLegalItRoles`, and `scrumQueueRegression`. Hosted Playwright passed Client Admin, Client Finance, and Client Member role smoke, and hosted Client Admin visual audit passed through Client Profile. A broader go-live Client Admin run reached Client Profile but failed later on an unrelated opportunities query-tab navigation check, so it was not used as closure proof.
+- Result: `TB-0097` is ready to close against `a0142260` plus the live schema proof. The only remaining enhancement is adding a `QA_CLIENT_IT` account so future browser proof can cover Client IT directly instead of relying on source and focused tests for that allow path.
+- Recheck agents: Release Verification Agent, QA Test Engineer, Product Ops Workflow Analyst, Lead Developer, Security Engineer, and Code Review Agent.
+
 ### 2026-06-20 - Close the next five scrum items from the live queue
 
 - Trigger: Ryan asked to complete the next five items: `TB-0024`, `TB-0019`, `TB-0060`, `TB-0040`, and `TB-0046`.

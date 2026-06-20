@@ -1,35 +1,33 @@
 # Trusted Bums Lead Developer Recommendations
 
-_Last updated: 2026-06-20 by Codex daily lead developer automation._
+_Last updated: 2026-06-20 by Codex TB-0097 closeout._
 
 ## Executive Read
 
-Current release status is `HOTFIX-FORWARD` for `main` head `e231cc07ee6959bc8eac9d04ed3b68b80d76f6c4`.
+Current release status is `GO WITH WATCHLIST` for `main` head `a0142260f502446a2e0aacedea219f22df233c8e`.
 
 - Completed work:
-  - Exact-head hosted proof is green on `e231cc0`: GitHub `QA` `27857690007`, DreamHost deploy `27857689995`, `Visual UI Audit` `27857691601`, and `E2E Smoke` `27857708006` all completed `success`.
+  - Exact-head hosted proof is green on `a0142260`: GitHub `QA` `27869628177`, DreamHost deploy `27869628178`, `E2E Smoke` `27869672430`, and `Visual UI Audit` `27869672437` all completed `success`.
+  - `TB-0097` is closed: live production now has `public.companies.deal_registration_config`, all current company rows have object-shaped config values, and hosted Client Admin profile proof passed after the live schema fix.
   - The overnight specialist wave correctly removed stale lead work from the active queue. Live tracker or exact-head backlog truth now keeps `TB-0027`, `TB-0047`, `TB-0051`, `TB-0065`, `TB-0089`, `TB-0102`, and `TB-0113` out of the current implementation queue.
-  - Current lead-critical open items are now narrower: `TB-0097` same-head schema parity for `deal_registration_config`, `TB-0019` stale Code Review marker, `TB-0060` authenticated-mobile privacy-control overlap, `TB-0040` remaining `Prospect` wording seam, `TB-0046` bounded admin-email drilldowns, `TB-0049` remaining advisor debt, `TB-0052` finance exception readiness, `TB-0024` runner-side external DNS drift, and access-blocked `TB-0023`.
+  - Current lead-critical open items are now narrower: `TB-0049` remaining advisor debt, `TB-0052` finance exception readiness, and access-blocked `TB-0023`, plus product or GTM items that need Ryan input before implementation.
 - Current priorities:
-  1. Restore same-head release truth by proving or applying the missing production schema and migration-ledger parity behind `TB-0097`.
-  2. Refresh exact-head Code Review on `e231cc0` for `TB-0019` immediately after schema parity is proven.
-  3. Keep the next implementation wave small and current-head only: `TB-0060`, `TB-0040`, and `TB-0046`, then `TB-0049` and `TB-0052`.
+  1. Continue the remaining low-risk implementation queue with `TB-0025`, `TB-0026`, `TB-0033`, `TB-0049`, and `TB-0052`.
+  2. Keep `TB-0023` blocked until Supabase Auth leaked-password protection can be directly verified or enabled.
+  3. Treat `QA_CLIENT_IT` as a QA-account enhancement, not a blocker to the now-restored client profile schema parity.
 - Current blockers:
-  - [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still approves older head `b2c6c44`, so release evidence is mixed-surface until `TB-0019` is refreshed.
-  - Production Supabase still lacks `public.companies.deal_registration_config`, and the live migration ledger is missing repo rows `20260611195500` and `20260620012000`, so `TB-0097` remains the real release blocker even though hosted proof is green.
-  - `https://rcdl.tplinkdns.com` still fails runner-side TLS or app-shell proof, so `TB-0024` stays separate from primary-host release evidence.
   - `TB-0023` still lacks direct Auth-settings visibility for leaked-password protection.
 - Recommended next actions:
-  1. Hotfix-forward or otherwise prove the missing live schema and migration parity on project `vaoqvtxqvbptyxddpoju`, then rerun the intended `CLIENT_ADMIN` and `CLIENT_IT` role proof on the same head.
-  2. Refresh exact-head Code Review on `e231cc0` before any `GO` claim.
-  3. After release truth is clean, implement the remaining narrow product-facing queue in this order: `TB-0060`, `TB-0040`, `TB-0046`, `TB-0049`, `TB-0052`.
+  1. Work the remaining proof-first items: `TB-0025` and `TB-0026`.
+  2. Then work operational cleanup: `TB-0033`, `TB-0049`, and `TB-0052`.
+  3. Add a `QA_CLIENT_IT` account when available so future client-profile role proof can cover the IT browser allow path directly.
 
 ## Recommendation Classification
 
-- `TB-0097 Same-head schema parity for client profile and beta setup`: `READY`.
-  - Reason: exact-head source depends on `companies.deal_registration_config`, but live production still lacks the column and the matching migration-ledger rows.
-  - Next owner: Lead Developer with Product Ops, Release Verification, and QA follow-through.
-  - Implementation queue: yes.
+- `TB-0097 Same-head schema parity for client profile and beta setup`: `CLOSED`.
+  - Reason: live production now has `companies.deal_registration_config`, object-shape proof is clean, and hosted Client Admin profile proof passed.
+  - Next owner: QA/Test Engineer only if a future `QA_CLIENT_IT` account is added for fuller browser role proof.
+  - Implementation queue: no.
 - `TB-0019 Refresh exact-head Code Review for e231cc0`: `BLOCKED BY ANOTHER SPECIALIST`.
   - Reason: hosted proof is current, but the pre-main review marker is still pinned to `b2c6c44`.
   - Next owner: Code Review Agent.
@@ -77,15 +75,11 @@ Current release status is `HOTFIX-FORWARD` for `main` head `e231cc07ee6959bc8eac
 
 ## Recommended Implementation Queue
 
-### P0 - Restore same-head schema parity and release truth on `e231cc0`
-- Classification: `READY`.
+### Closed - Client profile schema parity and release truth
+- Classification: `CLOSED`.
 - Source: [docs/release-verification-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/release-verification-backlog.md), [docs/qa-test-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/qa-test-backlog.md), [docs/product-ops-workflow-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/product-ops-workflow-backlog.md), live SQL on project `vaoqvtxqvbptyxddpoju`, and current exact-head tracker rows for `TB-0019` and `TB-0097`.
-- Why now: this is the real release blocker. The primary host, browser smoke, and visual proof are green, but the live schema behind the client beta setup flow is not current.
-- Recommended fix: apply or prove the missing `deal_registration_config` schema change and missing migration-ledger rows on production, then rerun the intended role proof and refresh exact-head Code Review before any `GO` claim.
-- Likely files/routes: [supabase/migrations/20260611195500_add_client_deal_registration_config.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260611195500_add_client_deal_registration_config.sql), [supabase/migrations/20260620012000_add_route_advisor_indexes.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260620012000_add_route_advisor_indexes.sql), [`scripts/verify-supabase-release-provenance.mjs`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/verify-supabase-release-provenance.mjs), [src/pages/client/ClientProfile.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientProfile.tsx), [src/pages/admin/AdminClients.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/admin/AdminClients.tsx), [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts), release docs, and the Code Review marker.
-- Dependencies/risks: do not promote release back to `GO` from hosted green alone. The current escape was a live-schema gap surviving a provenance check that only printed local migration filenames.
-- Acceptance criteria: live SQL shows `public.companies.deal_registration_config`, the live migration ledger contains the missing repo rows, exact-head role proof passes for `CLIENT_ADMIN` and `CLIENT_IT` with deny-path checks for unrelated client roles, and [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) is refreshed to `e231cc0`.
-- Validation: live SQL against `information_schema.columns` and `supabase_migrations.schema_migrations`, exact-head hosted `QA` or smoke follow-up as needed, refreshed Code Review marker, and same-head tracker closeout notes for `TB-0019` and `TB-0097`.
+- Result: live production now has `public.companies.deal_registration_config`, the object-shape constraint is present, all `89` company rows have object config values, and hosted Client Admin visual proof reached the Client Profile route.
+- Remaining watchlist: add a `QA_CLIENT_IT` account for future browser-level IT proof; this is not a release blocker because source and focused tests already guard the IT allow path and non-admin denial behavior.
 
 ### P1 - Clear the remaining authenticated-mobile privacy-control overlap
 - Classification: `READY`.
