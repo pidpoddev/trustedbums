@@ -519,7 +519,7 @@ export default function AdminEmails() {
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Email templates</p><p className="text-2xl font-semibold">{templates.length}</p><p className="text-xs text-muted-foreground">{triggerRules.length} triggers</p></CardContent></Card>
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Campaigns sent</p><p className="text-2xl font-semibold">{sentCampaigns}</p><p className="text-xs text-muted-foreground">{metrics?.total_campaigns ?? campaigns.length} total</p></CardContent></Card>
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Sendable preview</p><p className="text-2xl font-semibold">{previewCount}</p><p className="text-xs text-muted-foreground">{suppressedCount} suppressed</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Deliveries sent</p><p className="text-2xl font-semibold">{sentDeliveries}</p><p className="text-xs text-muted-foreground">{failedDeliveries} failed</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Deliveries sent</p><p className="text-2xl font-semibold">{sentDeliveries}</p><p className="text-xs text-muted-foreground">{failedDeliveries} delivery exceptions</p></CardContent></Card>
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Click engagement</p><p className="text-2xl font-semibold">{clickEvents}</p><p className="text-xs text-muted-foreground">{openProxyEvents} open proxy signals</p></CardContent></Card>
       </div>
 

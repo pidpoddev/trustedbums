@@ -36,6 +36,7 @@ describe("scrum batch implementation guardrails", () => {
     expect(sendAdminEmail).toContain("getAdminEmailMetrics");
     expect(adminEmails).toContain("getAdminEmailMetrics");
     expect(adminEmails).toContain("clickEvents");
+    expect(adminEmails).toContain("delivery exceptions");
     expect(adminEmails).toContain("open proxy signals");
     expect(adminEmails).not.toContain("Tracked engagement");
     expect(adminEmails).not.toContain("opens / clicks");
