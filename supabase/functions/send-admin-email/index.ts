@@ -16,6 +16,7 @@ type AdminEmailOperation =
   | "list_templates"
   | "create_template"
   | "update_template"
+  | "get_metrics"
   | "list_deliveries"
   | "list_engagement"
   | "list_campaigns"
@@ -202,6 +203,56 @@ async function auditAdminEmailEvent(profile: ProfileRow, eventType: string, enti
   if (error) console.warn("Unable to write admin email audit event", error);
 }
 
+async function countRows(table: string, column?: string, value?: string) {
+  let query = supabaseAdmin.from(table).select("id", { count: "exact", head: true });
+  if (column && value) query = query.eq(column, value);
+  const { count, error } = await query;
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function getAdminEmailMetrics() {
+  const [
+    totalDeliveries,
+    sentDeliveries,
+    failedDeliveries,
+    totalCampaigns,
+    sentCampaigns,
+    totalEvents,
+    openEvents,
+    clickEvents,
+  ] = await Promise.all([
+    countRows("admin_email_deliveries"),
+    countRows("admin_email_deliveries", "status", "SENT"),
+    countRows("admin_email_deliveries", "status", "FAILED"),
+    countRows("admin_email_campaigns"),
+    countRows("admin_email_campaigns", "status", "SENT"),
+    countRows("admin_email_events"),
+    countRows("admin_email_events", "event_type", "OPEN"),
+    countRows("admin_email_events", "event_type", "CLICK"),
+  ]);
+
+  const { data: latestDelivery, error: latestDeliveryError } = await supabaseAdmin
+    .from("admin_email_deliveries")
+    .select("created_at")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ created_at: string }>();
+  if (latestDeliveryError) throw latestDeliveryError;
+
+  return {
+    total_deliveries: totalDeliveries,
+    sent_deliveries: sentDeliveries,
+    failed_deliveries: failedDeliveries,
+    total_campaigns: totalCampaigns,
+    sent_campaigns: sentCampaigns,
+    total_events: totalEvents,
+    open_events: openEvents,
+    click_events: clickEvents,
+    latest_delivery_at: latestDelivery?.created_at ?? null,
+  };
+}
+
 function templateInput(payload: Record<string, unknown>, profile: ProfileRow, includeCreatedBy: boolean) {
   const name = requireText(payload, "name");
   const values: Record<string, unknown> = {
@@ -290,6 +341,9 @@ async function handleAdminEmailOperation(operation: AdminEmailOperation, payload
       if (error) throw error;
       await auditAdminEmailEvent(currentProfile, "admin_email_template_updated", "admin_email_templates", data.id, { slug: data.slug, recipient_group: data.recipient_group, trigger_event: data.trigger_event });
       return json(200, { data });
+    }
+    case "get_metrics": {
+      return json(200, { data: await getAdminEmailMetrics() });
     }
     case "list_deliveries": {
       const { data, error } = await supabaseAdmin.from("admin_email_deliveries").select("*").order("created_at", { ascending: false }).limit(50);

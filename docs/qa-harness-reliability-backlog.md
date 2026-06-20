@@ -1,10 +1,10 @@
 # Trusted Bums QA Harness Reliability Backlog
 
-_Last updated: 2026-06-19 by Codex daily QA harness reliability automation._
+_Last updated: 2026-06-20 by Codex TB-0112/TB-0055 implementation pass._
 
 ## Executive Read
 
-Current `main` head `a17a85639a1b24dfda36da87d763eb4ecd3457af` does not reproduce a primary-host harness-chain failure. Exact-head hosted QA, deploy, smoke, and deploy-triggered deep QA are all green on `https://trustedbums.com`. The remaining live harness work is narrower: keep the raw-shell versus sourced `.env.qa` versus hosted env states separate, and restore per-shard preflight summaries for deploy-triggered Deep QA so a later shard-only failure can still be classified cleanly.
+Current local head now implements the narrow harness fixes for `TB-0112` and adds a source guard for the `TB-0055` evidence split. Deploy-triggered Deep QA shards in [e2e-smoke.yml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml) now run `pnpm run qa:target-preflight` before `pnpm run qa:env && pnpm run qa:deep`, using each shard's existing `qa-target-preflight-artifacts/${{ matrix.deep_suite }}` output directory. The raw-shell versus sourced `.env.qa` versus hosted env states remain explicitly separate in this backlog and are now guarded by [scrumFiveBatch.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumFiveBatch.test.ts).
 
 - GitHub `QA` run `27798687806` on `a17a856`: passed.
 - GitHub `Deploy TrustedBums to DreamHost` run `27798687708` on `a17a856`: passed.
@@ -22,13 +22,13 @@ Current `main` head `a17a85639a1b24dfda36da87d763eb4ecd3457af` does not reproduc
 ## Active Harness Fixes
 
 ### P2 - [TB-0112] Add per-shard preflight summaries to deploy-triggered Deep QA
-- Evidence: [`.github/workflows/e2e-smoke.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml) runs deploy-triggered deep shards with `pnpm run qa:env && pnpm run qa:deep`, not `pnpm run qa:target-preflight`. Exact-head logs for `Deep QA (admin)` and `Deep QA (client)` in `27798711531` show `QA_TARGET_PREFLIGHT_OUTPUT_DIR` being set and uploaded, but no `qa-target-preflight` execution. Downloaded deep artifacts for `admin`, `client`, and `bum` contain no suite-scoped `summary.json` or `summary.txt`.
+- Evidence: Implemented locally on 2026-06-20. [`.github/workflows/e2e-smoke.yml`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/e2e-smoke.yml) now runs each deploy-triggered deep shard with `pnpm run qa:target-preflight && pnpm run qa:env && pnpm run qa:deep`, while keeping `QA_TARGET_PREFLIGHT_OUTPUT_DIR` suite-scoped as `qa-target-preflight-artifacts/${{ matrix.deep_suite }}`.
 - Why it matters: if a single deep shard later fails because the target, TLS chain, app shell, or auth bootstrap drifted after smoke already passed, the shard artifact cannot prove whether the failure belongs to target availability or route-level product behavior. That raises the risk of false product handoffs.
-- Recommendation: add a per-shard `pnpm run qa:target-preflight` step before `pnpm run qa:deep` in deploy-triggered deep jobs, or add an equivalent helper that always writes suite-scoped `summary.json` and `summary.txt` into each deep artifact before route auditing starts.
+- Recommendation: Push the workflow change, then verify the next deploy-triggered `E2E Smoke` run includes suite-scoped preflight summaries in each `deep-qa-hotfix-audit-*` artifact.
 - Acceptance criteria: each deploy-triggered deep artifact contains suite-scoped preflight summaries, and a failed shard can be classified from its own artifact without relying only on the earlier smoke-stage summary.
 
 ### P2 - [TB-0055] Keep raw-shell, sourced `.env.qa`, and hosted workflow env states separate in every handoff
-- Evidence: raw `pnpm run qa:env` still fails in this shell because `QA_BASE_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `QA_ADMIN_EMAIL`, `QA_CLIENT_ADMIN_EMAIL`, `QA_CLIENT_FINANCE_EMAIL`, `QA_CLIENT_MEMBER_EMAIL`, and `QA_BUM_EMAIL` are not exported by default. After sourcing `.env.qa`, `QA_EXTENSION_API_EXPECTATION=skip pnpm run qa:env` passes, sourced preflight against `https://trustedbums.com` passes, and hosted `QA` `27798687806`, deploy `27798687708`, and `E2E Smoke` `27798711531` all passed on the exact current head.
+- Evidence: The backlog keeps the three states split and [scrumFiveBatch.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumFiveBatch.test.ts) now guards that wording so future handoffs do not collapse raw shell, sourced `.env.qa`, and hosted workflow evidence into one generic QA statement. Historical raw `pnpm run qa:env` still fails in a bare shell when QA secrets are not exported; sourced `.env.qa` and hosted workflow proof must continue to be reported separately.
 - Why it matters: collapsing those three states into one “QA env passed” sentence still hides whether the problem belongs to local shell setup, `.env.qa` drift, or GitHub Actions configuration.
 - Recommendation: keep raw shell, sourced `.env.qa`, and hosted workflow results split in every QA, release, and harness handoff, and mention only variable names when the raw shell is missing exports.
 - Acceptance criteria: future handoffs preserve all three env states distinctly without implying that a sourced or hosted pass means the raw shell was healthy.

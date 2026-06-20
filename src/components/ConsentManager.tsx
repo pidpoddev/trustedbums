@@ -91,16 +91,16 @@ export function ConsentManager() {
     <>
       {isOpen ? (
         <div className="fixed inset-x-0 bottom-0 z-[100] px-3 pb-3 sm:px-6 sm:pb-6">
-          <div className="mx-auto grid max-h-[78vh] w-full max-w-4xl gap-4 overflow-auto rounded-lg border bg-background p-4 text-foreground shadow-2xl animate-in slide-in-from-bottom-4 duration-300 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:p-5">
-            <div className="max-w-4xl space-y-3">
+          <div className={`mx-auto grid w-full gap-3 overflow-auto rounded-lg border bg-background text-foreground shadow-2xl animate-in slide-in-from-bottom-4 duration-300 md:grid-cols-[minmax(0,1fr)_auto] md:items-start ${showSettings ? "max-h-[78vh] max-w-4xl p-4 md:p-5" : "max-h-[52vh] max-w-3xl p-3 md:p-4"}`}>
+            <div className="max-w-4xl space-y-2">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-                <h2 className="font-display text-xl font-semibold">Privacy choices</h2>
+                <ShieldCheck className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
+                <h2 className="font-display text-base font-semibold sm:text-xl">Privacy choices</h2>
               </div>
-              <p className="text-sm leading-6 text-muted-foreground">
-We use necessary storage and performance monitoring to run, secure, and maintain the site. Optional preferences, product analytics, and outreach measurement stay off unless you choose them.
+              <p className="text-xs leading-5 text-muted-foreground sm:text-sm">
+                Necessary storage and performance monitoring keep the site running. Optional preferences, analytics, and outreach measurement stay off unless you choose them.
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className={`text-xs text-muted-foreground ${showSettings ? "" : "hidden sm:block"}`}>
                 See the <Link to="/privacy-policy" className="font-medium text-primary underline-offset-4 hover:underline">Privacy Policy</Link> for more detail.
               </p>
 
@@ -126,13 +126,13 @@ We use necessary storage and performance monitoring to run, secure, and maintain
               ) : null}
             </div>
 
-            <div className="flex flex-col gap-2 md:min-w-44">
+            <div className="grid grid-cols-2 gap-2 md:min-w-44 md:grid-cols-1">
               <Button variant="outline" onClick={() => savePreferences(defaultConsentPreferences, "banner")}>Reject all</Button>
               <Button onClick={() => savePreferences({ necessary: true, preferences: true, analytics: true, marketing: true }, "banner")}>Accept all</Button>
-              <Button variant="ghost" onClick={() => setShowSettings((current) => !current)}>
+              <Button variant="ghost" className="col-span-2 md:col-span-1" onClick={() => setShowSettings((current) => !current)}>
                 {showSettings ? "Hide settings" : "Customize"}
               </Button>
-              {showSettings ? <Button variant="outline" onClick={() => savePreferences(draft, "settings")}>Save choices</Button> : null}
+              {showSettings ? <Button variant="outline" className="col-span-2 md:col-span-1" onClick={() => savePreferences(draft, "settings")}>Save choices</Button> : null}
             </div>
           </div>
         </div>

@@ -22,6 +22,7 @@ import {
   createAdminEmailSchedule,
   createAdminEmailTemplate,
   createAdminEmailTriggerRule,
+  getAdminEmailMetrics,
   getAdminEmailBrandSettings,
   listAdminEmailCampaigns,
   listAdminEmailDeliveries,
@@ -204,6 +205,7 @@ export default function AdminEmails() {
   const canLoadAdminEmailData = user?.role === "ADMIN";
 
   const templatesQuery = useQuery({ queryKey: ["admin-email-templates", user?.id], queryFn: listAdminEmailTemplates, enabled: canLoadAdminEmailData });
+  const metricsQuery = useQuery({ queryKey: ["admin-email-metrics", user?.id], queryFn: getAdminEmailMetrics, enabled: canLoadAdminEmailData });
   const deliveriesQuery = useQuery({ queryKey: ["admin-email-deliveries", user?.id], queryFn: listAdminEmailDeliveries, enabled: canLoadAdminEmailData });
   const engagementQuery = useQuery({ queryKey: ["admin-email-engagement", user?.id], queryFn: listAdminEmailEngagementSummary, enabled: canLoadAdminEmailData });
   const campaignsQuery = useQuery({ queryKey: ["admin-email-campaigns", user?.id], queryFn: listAdminEmailCampaigns, enabled: canLoadAdminEmailData });
@@ -369,6 +371,7 @@ export default function AdminEmails() {
         queryClient.invalidateQueries({ queryKey: ["admin-email-deliveries", user?.id] }),
         queryClient.invalidateQueries({ queryKey: ["admin-email-campaigns", user?.id] }),
         queryClient.invalidateQueries({ queryKey: ["admin-email-engagement", user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-email-metrics", user?.id] }),
       ]);
       toast({ title: result.mode === "test" ? "Test email sent" : "Campaign sent", description: result.sent + " sent" + (result.failed ? ", " + result.failed + " failed" : "") + (result.suppressed ? ", " + result.suppressed + " suppressed" : "") + "." });
     },
@@ -490,12 +493,15 @@ export default function AdminEmails() {
     });
   };
 
-  const totalOpens = deliveries.filter((delivery) => delivery.opened_at).length;
-  const totalClicks = deliveries.filter((delivery) => delivery.clicked_at).length;
-  const sentCampaigns = campaigns.filter((campaign) => campaign.status === "SENT").length;
-  const activeAutomations = schedules.filter((schedule) => schedule.is_active).length + triggerRules.filter((rule) => rule.is_active).length;
+  const metrics = metricsQuery.data;
+  const sentCampaigns = metrics?.sent_campaigns ?? campaigns.filter((campaign) => campaign.status === "SENT").length;
+  const sentDeliveries = metrics?.sent_deliveries ?? deliveries.filter((delivery) => delivery.status === "SENT").length;
+  const failedDeliveries = metrics?.failed_deliveries ?? deliveries.filter((delivery) => delivery.status === "FAILED").length;
+  const openProxyEvents = metrics?.open_events ?? deliveries.filter((delivery) => delivery.opened_at).length;
+  const clickEvents = metrics?.click_events ?? deliveries.filter((delivery) => delivery.clicked_at).length;
   const loadErrors = [
     templatesQuery.error ? "Email templates: " + errorMessage(templatesQuery.error) : "",
+    metricsQuery.error ? "Email metrics: " + errorMessage(metricsQuery.error) : "",
     triggerRulesQuery.error ? "Triggered emails: " + errorMessage(triggerRulesQuery.error) : "",
     schedulesQuery.error ? "Recurring emails: " + errorMessage(schedulesQuery.error) : "",
   ].filter(Boolean);
@@ -511,10 +517,10 @@ export default function AdminEmails() {
 
       <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Email templates</p><p className="text-2xl font-semibold">{templates.length}</p><p className="text-xs text-muted-foreground">{triggerRules.length} triggers</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Campaigns sent</p><p className="text-2xl font-semibold">{sentCampaigns}</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Campaigns sent</p><p className="text-2xl font-semibold">{sentCampaigns}</p><p className="text-xs text-muted-foreground">{metrics?.total_campaigns ?? campaigns.length} total</p></CardContent></Card>
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Sendable preview</p><p className="text-2xl font-semibold">{previewCount}</p><p className="text-xs text-muted-foreground">{suppressedCount} suppressed</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Automations active</p><p className="text-2xl font-semibold">{activeAutomations}</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Tracked engagement</p><p className="text-2xl font-semibold">{totalOpens}/{totalClicks}</p><p className="text-xs text-muted-foreground">opens / clicks</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Deliveries sent</p><p className="text-2xl font-semibold">{sentDeliveries}</p><p className="text-xs text-muted-foreground">{failedDeliveries} failed</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Click engagement</p><p className="text-2xl font-semibold">{clickEvents}</p><p className="text-xs text-muted-foreground">{openProxyEvents} open proxy signals</p></CardContent></Card>
       </div>
 
       {loadErrors.length ? (

@@ -1,10 +1,10 @@
 # Trusted Bums UX Optimization Backlog
 
-_Last updated: 2026-06-19 by Codex daily UX consultant automation._
+_Last updated: 2026-06-20 by Codex TB-0065 implementation pass._
 
 ## Executive Read
 
-Current `main` head `a17a85639a1b24dfda36da87d763eb4ecd3457af` narrows the UX queue to one still-open mobile issue. Exact-head hosted `QA` `27798687806`, deploy `27798687708`, and `E2E Smoke` `27798711531` all passed on 2026-06-19 UTC. A sourced local public smoke rerun passed `4/4` on 2026-06-19 against `http://127.0.0.1:8080`, and the fixed local `mobile-chrome` public visual rerun also passed on the same head.
+Current local source implements the remaining mobile consent footprint fix for `TB-0065`. Exact-head hosted `QA` `27856701037`, deploy `27856701048`, and `E2E Smoke` `27856722276` all passed on pre-implementation commit `78f337b`; pre-implementation `Visual UI Audit` run `27857012621` is still in flight. The consent change needs a fresh pushed-head visual run before `TB-0065` can be closed from hosted proof.
 
 The older public header concern `[TB-0082]` should stay closed. Current public source after the original closure head `c02b18b` only changed the client claim-review workflow in [ClientOpportunityNew.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientOpportunityNew.tsx:1494); it did not touch [Index.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/Index.tsx:296), [BumLanding.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/BumLanding.tsx:57), or [ConsentManager.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/ConsentManager.tsx:93). A fresh Pixel 7 viewport capture of `/bums` now shows a readable `For Clients` switch, visible accessibility control, and fully readable `Apply as a Bum` CTA with no overlap, so reopening `TB-0082` would preserve stale backlog text instead of current-head truth.
 
@@ -13,9 +13,9 @@ Two other older UX items also remain closed on current source. The homepage clie
 ## Active Recommendations
 
 ### P2 - [TB-0065] Reduce the first-layer consent banner footprint on mobile
-- Evidence: A fresh Pixel 7 viewport capture on `http://127.0.0.1:8080/?consent=reset` still shows the first-visit consent layer pushing the main `Create Client account` CTA below the fold on current head `a17a856`. Current source still renders that layer with `max-h-[78vh]`, two text blocks, and a stacked action group in [ConsentManager.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/ConsentManager.tsx:93). Sourced local public smoke passed `4/4`, and the local `mobile-chrome` public visual audit passed after the CTA-selector fix, so the issue is presentation weight rather than a broken consent flow. Current ICO guidance still says consent mechanisms should make refusal as easy as acceptance, and current WCAG 2.2 reflow guidance still requires content to work without loss of information or functionality at narrow widths: [ICO consent in practice guidance](https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communications/guidance-on-the-use-of-storage-and-access-technologies/how-do-we-manage-consent-in-practice/) and [WCAG 2.2 Reflow](https://www.w3.org/TR/WCAG22/#reflow).
+- Evidence: Implemented locally on 2026-06-20. [ConsentManager.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/ConsentManager.tsx) now gives the first consent layer a smaller `max-h-[52vh]`, narrower `max-w-3xl`, shorter copy, and two-column mobile action layout while preserving visible `Reject all`, `Accept all`, and `Customize` controls. The expanded settings state still uses the taller `max-h-[78vh]` treatment so category-level consent remains usable. [scrumFiveBatch.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/scrumFiveBatch.test.ts) guards the compact source shape.
 - Why it matters: The first mobile conversion moment is still dominated by compliance chrome instead of the product message and primary CTA. That makes the first visit feel heavier and less confident than the buyer-intent workflow underneath it.
-- Recommendation: Keep equally prominent accept and reject choices, but tighten the first-layer copy and action layout so the hero headline and main client CTA remain visible on first mobile visit. Keep the detailed category explanations and switches behind `Customize`, and route copy or layout changes through Trust or Legal review.
+- Recommendation: Push the implementation and verify it with the current-head Visual UI Audit plus the standard hosted QA chain.
 - Acceptance criteria: On first visit at mobile widths, the first consent layer preserves equally prominent choice controls while keeping the hero headline and main client CTA visible without scrolling; detailed category explanations stay behind `Customize`; and the revised presentation is reviewed by the Trust or Legal owner.
 
 ## Watchlist

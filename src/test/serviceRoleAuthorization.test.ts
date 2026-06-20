@@ -125,6 +125,10 @@ describe("service-role edge function authorization contracts", () => {
     expect(sendAdminEmailSource).toContain('data.status === "APPROVED"');
     expect(sendAdminEmailSource).toContain("Only admins can manage email tools.");
     expect(sendAdminEmailSource).toContain("Only admins can use manual messaging tools.");
+    expect(sendAdminEmailSource).toContain('"get_metrics"');
+    expect(sendAdminEmailSource).toContain("getAdminEmailMetrics");
+    expect(sendAdminEmailSource).toContain('countRows("admin_email_deliveries"');
+    expect(sendAdminEmailSource).toContain('countRows("admin_email_events"');
     expect(sendAdminEmailSource).toContain("Manual-only templates cannot be action triggered.");
     expect(sendAdminEmailSource).toContain("Custom action-triggered email requires an admin.");
     expect(sendAdminEmailSource).toContain("Action-triggered email cannot override the template recipient group.");

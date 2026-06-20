@@ -366,6 +366,17 @@ export interface AdminEmailSendResult {
   results: Array<{ email: string; status: "SENT" | "FAILED"; error?: string }>;
 }
 
+export interface AdminEmailMetricsRecord {
+  total_deliveries: number;
+  sent_deliveries: number;
+  failed_deliveries: number;
+  total_campaigns: number;
+  sent_campaigns: number;
+  total_events: number;
+  open_events: number;
+  click_events: number;
+  latest_delivery_at: string | null;
+}
 
 export interface AdminEmailEngagementSummaryRecord {
   recipient_email: string;
@@ -6144,6 +6155,10 @@ export async function saveAdminEmailTemplate(user: AuthUser, template: AdminEmai
     rate_limit_per_hour: template.rate_limit_per_hour,
     is_active: template.is_active,
   });
+}
+
+export async function getAdminEmailMetrics() {
+  return await invokeAdminEmailOperation<AdminEmailMetricsRecord>("get_metrics");
 }
 
 export async function listAdminEmailDeliveries() {
