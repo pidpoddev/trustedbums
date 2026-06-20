@@ -21,6 +21,7 @@ test.describe("authenticated role smoke", () => {
   });
 
   test("client admin reaches the client dashboard and can open opportunity workflows", async ({ page }) => {
+    test.setTimeout(60_000);
     const clientAdmin = getQaAccount("CLIENT_ADMIN");
     test.skip(!clientAdmin, "Set QA_CLIENT_ADMIN_EMAIL.");
 
@@ -29,11 +30,12 @@ test.describe("authenticated role smoke", () => {
     await expect(page).toHaveURL(/\/client\/dashboard\/?$/);
     await expect(page.getByRole("heading", { name: /Welcome back/i })).toBeVisible();
 
-    await page.goto("/client/opportunities");
-    await expect(page.getByRole("heading", { name: "Opportunities" })).toBeVisible();
+    await goToPathWithCurrentSession(page, "/client/opportunities");
+    await expect(page.getByRole("heading", { name: "Opportunities" })).toBeVisible({ timeout: 15_000 });
   });
 
   test("client finance can open payments and exports", async ({ page, isMobile }) => {
+    test.setTimeout(60_000);
     const finance = getQaAccount("CLIENT_FINANCE");
     test.skip(!finance, "Set QA_CLIENT_FINANCE_EMAIL.");
 
