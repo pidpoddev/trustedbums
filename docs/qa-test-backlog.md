@@ -66,6 +66,11 @@ Current-session local preflight stayed split across the expected QA env surfaces
 - Missing allow or deny proof: one current-head live proof that Managing Bum invite or membership changes remain bounded to the intended company or team and do not leak broader admin access.
 - Seed data needed: one managing Bum, one invite target, and one unrelated deny user.
 
+### Bum represented contacts
+- Current proof: source and focused regression tests keep represented-contact reads scoped to intended Bum-owned or admin-reviewed paths.
+- Missing allow or deny proof: one authenticated browser or direct-data proof that the owning Bum and Admin allow, while unrelated Bums and client-company users deny.
+- Seed data needed: one represented contact owned by a Bum, one admin reviewer, and one foreign Bum deny case.
+
 ## Cross-Agent Follow-Ups
 
 ### Release Verification / Lead Developer - [TB-0097] schema parity is the real current blocker
