@@ -110,6 +110,15 @@ describe("E2E smoke regression coverage", () => {
     expect(workflowQaMatrixSource).toContain("expectAdminCanSeeOpportunity");
     expect(workflowQaMatrixSource).toContain("expectBumCanSeeOpportunity");
     expect(workflowQaMatrixSource).toContain("deleteUnclaimedOpportunity");
+    expect(workflowQaMatrixSource).toContain("Bum imports a LinkedIn CSV export");
+    expect(workflowQaMatrixSource).toContain("#linkedinProfileCsv");
+    expect(workflowQaMatrixSource).toContain("#linkedinPositionsCsv");
+    expect(workflowQaMatrixSource).toContain("#linkedinSkillsCsv");
+    expect(workflowQaMatrixSource).toContain("#linkedinCertificationsCsv");
+    expect(workflowQaMatrixSource).toContain("#linkedinConnectionsCsv");
+    expect(workflowQaMatrixSource).toContain("import and prefill");
+    expect(workflowQaMatrixSource).toContain("restoreBumProfileSnapshot");
+    expect(workflowQaMatrixSource).toContain("QA LinkedIn Import");
     expect(deepQaHelperSource).toContain("function isWorkflowRelevantUrl");
     expect(deepQaHelperSource).toContain("function isIgnoredWorkflowConsoleError");
     expect(deepQaHelperSource).toContain("function isIgnoredWorkflowRequestFailure");

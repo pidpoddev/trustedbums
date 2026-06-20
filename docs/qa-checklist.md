@@ -44,9 +44,11 @@ Mutating deep QA tags created records with a unique `qa-deep-*` run id and attem
 
 Deep QA is not complete until the role-based business workflows in [business-workflow-qa-contract.md](./business-workflow-qa-contract.md) are covered or explicitly marked blocked. Page loads, route navigation, button actionability, and non-destructive clicks are necessary but not sufficient. For Admin, Client, Bum, and Managing Bum workflows, QA must prove the end-to-end business job: user action, data side effect, audit or notification effect, next-role visibility, duplicate/idempotency behavior, and cleanup.
 
-Mutating role workflow QA must use visibly QA-owned data only. Records should use `QA DO NOT USE` or `qa-*` run identifiers, avoid real client or contact names, and be deleted in the same test run. A cleanup failure or unexpected red browser/Supabase error is release-blocking unless Ryan explicitly approves retaining that QA record for investigation.
+Mutating role workflow QA must use visibly QA-owned data only. Records should use `QA DO NOT USE` or `qa-*` run identifiers, avoid real client or contact names, and be deleted or restored in the same test run. A cleanup failure or unexpected red browser/Supabase error is release-blocking unless Ryan explicitly approves retaining that QA record for investigation.
 
 The mutating workflow error gate may ignore documented third-party telemetry noise and navigation-aborted background probes, but it must not ignore app routes, Supabase REST calls, Edge Functions, RLS denials, user-visible errors, failed mutations, or unexpected 4xx/5xx responses.
+
+The `qa:workflow` mutation gate includes the client opportunity lifecycle and the Bum LinkedIn CSV import workflow. The import case uploads synthetic LinkedIn Profile, Positions, Skills, Certifications, and Connections CSV files, verifies draft field mapping, saves the profile, reloads persisted data, and restores the QA Bum profile snapshot afterward.
 
 Escaped defects from live founder, client, Bum, or admin testing must become durable QA coverage. When a defect such as an admin delete failure, claim request failure, or duplicate contact creation escapes, update the business workflow contract and add or recommend the executable regression before the QA item is closed.
 
@@ -131,6 +133,7 @@ Use [business-workflow-qa-contract.md](./business-workflow-qa-contract.md) as th
 - Admin can delete records that business rules say are deletable, and cannot delete claimed or locked records without an approved override.
 - Client can create, edit, delete, and manage unclaimed opportunities, and sees clear locked-state behavior once a claim exists.
 - Bum can open opportunity details, request a claim, add multiple stakeholders, retry safely, and avoid duplicate claim/contact side effects.
+- Bum can import LinkedIn CSV profile data, review the prefilled draft, save it, reload persisted profile fields, and restore the QA profile snapshot after the run.
 - Client receives or is eligible to receive claim-created notifications, and Claims shows a redacted sent-message preview without client recipient names or emails.
 - Manual contacts can be deleted only when unattached, and claim-backed contacts remain protected.
 - Duplicate form submits, refreshes, retries, and repeated clicks do not create duplicate records.

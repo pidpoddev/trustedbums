@@ -97,6 +97,12 @@ These are release-blocking workflow scenarios. Deep QA must prove them with real
 - Claim creation does not create duplicate My Contacts rows when claim-backed contacts are already projected into contacts.
 - A Bum can delete manual contacts that are not attached to a claim and cannot delete claim-backed contacts.
 
+### Bum Profile And Import
+- Bum can upload LinkedIn Profile, Positions, Skills, Certifications, and Connections CSV exports.
+- The LinkedIn import pre-fills the expected profile fields, relationship companies, past companies, skills, certifications, and notable wins without red browser or Supabase errors.
+- Imported profile data remains a draft until the Bum saves it.
+- Saved imported profile data persists after refresh and can be restored to the pre-test QA profile snapshot during mutating workflow QA.
+
 ### Cross-Role Claim Handoff
 - A Bum claim becomes visible to the correct client company.
 - The correct client admin audience receives or is eligible to receive the claim-created notification.

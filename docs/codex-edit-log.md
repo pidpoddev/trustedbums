@@ -13,6 +13,14 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-20 - Add LinkedIn CSV import to mutating workflow QA
+
+- Trigger: Ryan asked whether the mutation workflow covered data import scenarios and then asked to continue adding test cases.
+- Implementation branch: local `main`, pending commit at time of log entry.
+- What changed: Expanded [workflow-qa-matrix.spec.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/workflow-qa-matrix.spec.ts) with a Bum LinkedIn CSV import mutation case. The test signs in as the QA Bum, snapshots the existing Bum profile through service-role REST, uploads synthetic Profile, Positions, Skills, Certifications, and Connections CSV files, verifies imported draft fields, saves the profile, reloads persisted fields, and restores the original QA Bum profile snapshot. Updated the workflow QA contract, checklist, backlog, and smoke regression guard so import coverage stays part of the expected mutating gate.
+- Validation: `corepack pnpm exec eslint tests/e2e/workflow-qa-matrix.spec.ts src/test/e2eSmokeRegression.test.ts` passed. `corepack pnpm exec vitest run src/test/e2eSmokeRegression.test.ts` passed `9/9`. Full local `corepack pnpm run qa` passed: lint had the pre-existing React hook warning in `ClientOpportunityNew.tsx`, Vitest passed `265/265`, and the production build/render step completed. Hosted mutating workflow passed against `https://trustedbums.com`: `QA_BASE_URL=https://trustedbums.com QA_WORKFLOW_MUTATION=1 corepack pnpm run qa:workflow` completed `2 passed`, covering the existing opportunity lifecycle plus the new LinkedIn CSV import/save/reload/cleanup case. Post-run cleanup verification found `0` remaining `QA LinkedIn Import` Bum profile rows.
+- Recheck agents: QA Test Engineer, QA Harness Reliability Agent, Product Ops Workflow Analyst, Security Engineer, Release Verification Agent, Lead Developer, and Code Review Agent.
+
 ### 2026-06-20 - Prove mutating role workflow QA and repair live blockers
 
 - Trigger: Ryan asked to run the new workflow QA with mutation and keep resolving discovered errors until it ran correctly.
