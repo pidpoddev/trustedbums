@@ -27,6 +27,9 @@ import {
 } from "@/lib/portalApi";
 
 const TARGETS_PAGE_SIZE = 8;
+const BUM_INBOX_THREAD_LIMIT = 50;
+const BUM_INBOX_TARGET_LIMIT = 50;
+const BUM_INBOX_MEETING_LIMIT = 25;
 
 function targetVariant(status: CustomerTargetStatus) {
   if (status === "CLOSED_WON") {
@@ -69,17 +72,17 @@ export default function BumLiveConversations() {
   const timeZone = useUserTimeZone();
   const [targetsPage, setTargetsPage] = useState(1);
   const conversationsQuery = useQuery({
-    queryKey: ["conversation-threads"],
-    queryFn: listConversationThreads,
+    queryKey: ["conversation-threads", BUM_INBOX_THREAD_LIMIT],
+    queryFn: () => listConversationThreads({ limit: BUM_INBOX_THREAD_LIMIT }),
     enabled: Boolean(user?.id),
   });
   const targetsQuery = useQuery({
-    queryKey: ["bum-customer-targets"],
-    queryFn: () => listCustomerTargets(null),
+    queryKey: ["bum-customer-targets", BUM_INBOX_TARGET_LIMIT],
+    queryFn: () => listCustomerTargets(null, { limit: BUM_INBOX_TARGET_LIMIT }),
   });
   const meetingsQuery = useQuery({
-    queryKey: ["bum-teams-meetings"],
-    queryFn: listTeamsMeetings,
+    queryKey: ["bum-teams-meetings", BUM_INBOX_MEETING_LIMIT],
+    queryFn: () => listTeamsMeetings({ limit: BUM_INBOX_MEETING_LIMIT }),
   });
 
   const conversations = useMemo(() => conversationsQuery.data ?? [], [conversationsQuery.data]);

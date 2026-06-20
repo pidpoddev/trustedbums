@@ -141,7 +141,11 @@ export default function ClientPayments() {
   const [reportTypeFilter, setReportTypeFilter] = useState<ClientReportTypeFilter>("ALL");
   const [paymentEntryMode, setPaymentEntryMode] = useState<PaymentEntryMode>("import");
 
-  const claimsQuery = useQuery({ queryKey: ["client-opportunity-claims"], queryFn: () => listOpportunityClaims() });
+  const claimsQuery = useQuery({
+    queryKey: ["client-opportunity-claims", user?.clientId],
+    queryFn: () => listOpportunityClaims(undefined, { clientCompanyId: user!.clientId ?? undefined }),
+    enabled: Boolean(user?.clientId),
+  });
   const reportsQuery = useQuery({
     queryKey: ["customer-payment-reports", user?.id],
     queryFn: () => listCustomerPaymentReports(user!),

@@ -3173,6 +3173,15 @@ This file is the running handoff log for implementation work Codex has made in t
 - Recheck agents: Release Verification Agent, Code Review Agent, UI Consultant, UX Consultant, QA/Test Engineer, Security Engineer, and Lead Developer.
 - Next run should verify: whether `main` has advanced beyond `4dfca61`; if not, preserve the `GO` release-evidence state and move to `TB-0102` mailbox operations or `TB-0089` issuer/JWKS pinning.
 
+### 2026-06-19 - Implement `TB-0047` route-scoped high-traffic reads
+
+- Trigger: Ryan asked to do `TB-0047` after reviewing the performance scrum item.
+- What changed: Added route-scoped dashboard summaries in [src/lib/portalApi.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/lib/portalApi.ts) so client and Bum dashboards use count queries and small first-render slices instead of broad list hydration. Updated [ClientDashboard.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/client/ClientDashboard.tsx) and [BumDashboard.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumDashboard.tsx) to consume those summaries. Added client company scoping to claim, finance, meeting export, and client claim reads; added limit options to marketplace, saved item, contact picker, customer target, Teams meeting, conversation-thread, reverse opportunity, and claim-summary helpers; and bounded first-render reads in [BumOpportunities.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumOpportunities.tsx) and [BumLiveConversations.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/pages/bum/BumLiveConversations.tsx). Added [highTrafficRouteHydration.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/highTrafficRouteHydration.test.ts) to guard the route-shape contract.
+- Checks run: `corepack pnpm exec vitest run src/test/highTrafficRouteHydration.test.ts src/test/clientDashboardLayout.test.ts src/test/clientExportsAccess.test.ts src/test/clientClaimsWorkflow.test.ts`; `corepack pnpm run build`; `corepack pnpm exec tsc --noEmit`; live Supabase tracker schema/read for `TB-0047`.
+- Result: `TB-0047` is source-complete locally. Keep the tracker pending until the commit is pushed and hosted QA/deploy evidence lands for the new head.
+- Recheck agents: Performance Engineer, QA/Test Engineer, Release Verification Agent, Lead Developer.
+- Next run should verify: pushed commit SHA, GitHub QA/deploy status, and whether live telemetry starts improving on `/client/dashboard`, `/bum/dashboard`, `/bum/opportunities`, and `/bum/live-conversations`.
+
 ### 2026-06-18 - Low-risk scrum pass for `TB-0042`, `TB-0082`, and `TB-0080`
 
 - Trigger: Ryan asked Codex to do the three low-risk scrum items first.

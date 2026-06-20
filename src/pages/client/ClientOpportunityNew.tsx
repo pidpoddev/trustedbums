@@ -435,7 +435,7 @@ export default function ClientOpportunityNew() {
   });
   const claimsQuery = useQuery({
     queryKey: ["client-opportunity-claims", user?.clientId],
-    queryFn: () => listOpportunityClaims(undefined, { includeDisabled: true }),
+    queryFn: () => listOpportunityClaims(undefined, { includeDisabled: true, clientCompanyId: user!.clientId ?? undefined }),
     enabled: Boolean(user?.clientId),
   });
   const targetResponsesQuery = useQuery({

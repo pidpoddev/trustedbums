@@ -25,6 +25,12 @@ export const REGISTRATION_STATUSES: RegistrationStatus[] = [
   "Needs Clarification",
 ];
 
+type ListQueryOptions = {
+  limit?: number;
+};
+
+const DASHBOARD_ACTIVE_REGISTRATION_STATUSES: RegistrationStatus[] = ["Submitted", "Accepted", "Needs Clarification"];
+
 export type CompanyRelationshipStage = "PROSPECT" | "INVITED" | "CLIENT" | "INACTIVE";
 export type ProspectInviteOwner = "BUM" | "TRUSTED_BUMS";
 export type ProspectRecommendationStatus = "PROSPECT" | "INVITED" | "CLIENT" | "CLOSED_LOST";
@@ -1231,6 +1237,55 @@ export interface OpportunityRegistration {
   companies?: Pick<CompanyRecord, "id" | "name" | "relationship_stage"> | null;
   client_pay_programs?: ClientPayProgramRecord | null;
   profiles?: Pick<ProfileRecord, "full_name" | "email"> | null;
+}
+
+export type ClientDashboardOpportunityPreview = Pick<
+  OpportunityRegistration,
+  "id" | "target_account_name" | "business_unit" | "expected_product_service" | "status" | "created_at"
+>;
+
+export type ClientDashboardInvoicePreview = Pick<
+  ClaimInvoiceRecord,
+  "id" | "invoice_number" | "invoice_amount" | "status" | "created_at" | "paid_at" | "sent_at" | "generated_at"
+> & {
+  customer_payment_reports?: Pick<CustomerPaymentReportRecord, "customer_name" | "customer_payment_received_at"> | null;
+  opportunity_registrations?: Pick<OpportunityRegistration, "target_account_name"> | null;
+};
+
+export interface ClientDashboardSummary {
+  opportunities: {
+    total: number;
+    active: number;
+    accepted: number;
+    draft: number;
+    recent: ClientDashboardOpportunityPreview[];
+  };
+  targetResponses: {
+    pending: number;
+  };
+  reverseOpportunities: {
+    total: number;
+  };
+  finance: {
+    paymentReports: {
+      total: number;
+      pending: number;
+      commissionableRevenue: number;
+    };
+    invoices: {
+      total: number;
+      unpaid: number;
+      invoiceAmount: number;
+      recent: ClientDashboardInvoicePreview[];
+    };
+  };
+}
+
+export interface BumDashboardSummary {
+  prospectiveClients: number;
+  customerLeads: number;
+  openOpportunities: number;
+  claims: number;
 }
 
 export interface OpportunityInput {
@@ -3118,13 +3173,18 @@ export async function listOpportunityRegistrations(status?: string) {
   return data ?? [];
 }
 
-export async function listMarketplaceOpportunities() {
-  const { data, error } = await supabase
+export async function listMarketplaceOpportunities(options: ListQueryOptions = {}) {
+  let query = supabase
     .from("opportunity_registrations")
     .select("*, companies(id, name, relationship_stage), client_pay_programs(*)")
     .eq("status", "Accepted")
-    .order("created_at", { ascending: false })
-    .returns<OpportunityRegistration[]>();
+    .order("created_at", { ascending: false });
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<OpportunityRegistration[]>();
 
   if (error) {
     throw error;
@@ -3133,13 +3193,227 @@ export async function listMarketplaceOpportunities() {
   return (data ?? []).filter((opportunity) => isActiveCompany(opportunity.companies));
 }
 
-export async function listBumSavedItems(userId: string) {
-  const { data, error } = await supabase
+function countValue(count: number | null | undefined) {
+  return count ?? 0;
+}
+
+async function countOpportunityRegistrationsForClient(clientId: string, statuses?: RegistrationStatus[]) {
+  let query = supabase
+    .from("opportunity_registrations")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", clientId);
+
+  if (statuses?.length === 1) {
+    query = query.eq("status", statuses[0]);
+  } else if (statuses?.length) {
+    query = query.in("status", statuses);
+  }
+
+  const { count, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return countValue(count);
+}
+
+async function countRows(table: "opportunity_claims" | "prospect_recommendations" | "reverse_opportunities", column: string, value: string) {
+  const { count, error } = await supabase
+    .from(table)
+    .select("id", { count: "exact", head: true })
+    .eq(column, value);
+
+  if (error) {
+    throw error;
+  }
+
+  return countValue(count);
+}
+
+export async function getClientDashboardSummary(user: AuthUser): Promise<ClientDashboardSummary> {
+  if (user.role !== "CLIENT" || !user.clientId) {
+    throw new Error("Only client users linked to a company can load dashboard summaries.");
+  }
+
+  const clientAccessRole = user.clientAccessRole ?? DEFAULT_CLIENT_ACCESS_ROLE;
+  const canReadPipeline = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_MEMBER";
+  const canReadFinance = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_FINANCE";
+
+  const emptyFinance: ClientDashboardSummary["finance"] = {
+    paymentReports: {
+      total: 0,
+      pending: 0,
+      commissionableRevenue: 0,
+    },
+    invoices: {
+      total: 0,
+      unpaid: 0,
+      invoiceAmount: 0,
+      recent: [],
+    },
+  };
+
+  const pipelineSummaryPromise = canReadPipeline
+    ? Promise.all([
+      countOpportunityRegistrationsForClient(user.clientId),
+      countOpportunityRegistrationsForClient(user.clientId, DASHBOARD_ACTIVE_REGISTRATION_STATUSES),
+      countOpportunityRegistrationsForClient(user.clientId, ["Accepted"]),
+      countOpportunityRegistrationsForClient(user.clientId, ["Draft"]),
+      supabase
+        .from("opportunity_registrations")
+        .select("id, target_account_name, business_unit, expected_product_service, status, created_at")
+        .eq("company_id", user.clientId)
+        .order("created_at", { ascending: false })
+        .limit(6)
+        .returns<ClientDashboardOpportunityPreview[]>(),
+      supabase
+        .from("customer_target_responses")
+        .select("id", { count: "exact", head: true })
+        .eq("client_company_id", user.clientId)
+        .eq("status", "PROPOSED"),
+      supabase
+        .from("reverse_opportunities")
+        .select("id", { count: "exact", head: true })
+        .eq("vendor_company_id", user.clientId),
+    ])
+    : Promise.resolve([
+      0,
+      0,
+      0,
+      0,
+      { data: [], error: null },
+      { count: 0, error: null },
+      { count: 0, error: null },
+    ] as const);
+
+  const financeSummaryPromise = canReadFinance
+    ? Promise.all([
+      supabase
+        .from("customer_payment_reports")
+        .select("id, status, commissionable_amount")
+        .eq("company_id", user.clientId)
+        .returns<Array<Pick<CustomerPaymentReportRecord, "id" | "status" | "commissionable_amount">>>(),
+      supabase
+        .from("claim_invoices")
+        .select("id, invoice_number, invoice_amount, status, created_at, paid_at, sent_at, generated_at, customer_payment_reports(customer_name, customer_payment_received_at), opportunity_registrations(target_account_name)")
+        .eq("company_id", user.clientId)
+        .order("created_at", { ascending: false })
+        .returns<ClientDashboardInvoicePreview[]>(),
+    ])
+    : Promise.resolve(null);
+
+  const [
+    [
+      totalOpportunities,
+      activeOpportunities,
+      acceptedOpportunities,
+      draftOpportunities,
+      recentOpportunitiesResult,
+      targetResponsesResult,
+      reverseOpportunitiesResult,
+    ],
+    financeResults,
+  ] = await Promise.all([pipelineSummaryPromise, financeSummaryPromise]);
+
+  if (recentOpportunitiesResult.error) {
+    throw recentOpportunitiesResult.error;
+  }
+  if (targetResponsesResult.error) {
+    throw targetResponsesResult.error;
+  }
+  if (reverseOpportunitiesResult.error) {
+    throw reverseOpportunitiesResult.error;
+  }
+
+  let finance = emptyFinance;
+
+  if (financeResults) {
+    const [paymentsResult, invoicesResult] = financeResults;
+
+    if (paymentsResult.error) {
+      throw paymentsResult.error;
+    }
+    if (invoicesResult.error) {
+      throw invoicesResult.error;
+    }
+
+    const paymentReports = paymentsResult.data ?? [];
+    const invoices = sortByBusinessDate(invoicesResult.data ?? [], claimInvoiceBusinessDate);
+
+    finance = {
+      paymentReports: {
+        total: paymentReports.length,
+        pending: paymentReports.filter((report) => report.status !== "INVOICE_GENERATED").length,
+        commissionableRevenue: paymentReports.reduce((sum, report) => sum + Number(report.commissionable_amount ?? 0), 0),
+      },
+      invoices: {
+        total: invoices.length,
+        unpaid: invoices.filter((invoice) => !["PAID", "VOID"].includes(invoice.status)).length,
+        invoiceAmount: invoices.reduce((sum, invoice) => sum + Number(invoice.invoice_amount ?? 0), 0),
+        recent: invoices.slice(0, 6),
+      },
+    };
+  }
+
+  return {
+    opportunities: {
+      total: totalOpportunities,
+      active: activeOpportunities,
+      accepted: acceptedOpportunities,
+      draft: draftOpportunities,
+      recent: recentOpportunitiesResult.data ?? [],
+    },
+    targetResponses: {
+      pending: countValue(targetResponsesResult.count),
+    },
+    reverseOpportunities: {
+      total: countValue(reverseOpportunitiesResult.count),
+    },
+    finance,
+  };
+}
+
+export async function getBumDashboardSummary(userId: string): Promise<BumDashboardSummary> {
+  const [
+    prospectiveClients,
+    customerLeads,
+    claims,
+    opportunitiesResult,
+  ] = await Promise.all([
+    countRows("prospect_recommendations", "bum_user_id", userId),
+    countRows("reverse_opportunities", "bum_user_id", userId),
+    countRows("opportunity_claims", "bum_user_id", userId),
+    supabase
+      .from("opportunity_registrations")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "Accepted"),
+  ]);
+
+  if (opportunitiesResult.error) {
+    throw opportunitiesResult.error;
+  }
+
+  return {
+    prospectiveClients,
+    customerLeads,
+    openOpportunities: countValue(opportunitiesResult.count),
+    claims,
+  };
+}
+
+export async function listBumSavedItems(userId: string, options: ListQueryOptions = {}) {
+  let query = supabase
     .from("bum_saved_items")
     .select("*")
     .eq("bum_user_id", userId)
-    .order("created_at", { ascending: false })
-    .returns<BumSavedItemRecord[]>();
+    .order("created_at", { ascending: false });
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<BumSavedItemRecord[]>();
 
   if (error) {
     throw error;
@@ -3603,17 +3877,22 @@ export async function listSelectableClientPayPrograms(user: AuthUser) {
   return programs.filter((program) => program.status === "ACTIVE" && program.approval_status !== "DENIED");
 }
 
-export async function listOwnOpportunityRegistrations(user: AuthUser) {
+export async function listOwnOpportunityRegistrations(user: AuthUser, options: ListQueryOptions = {}) {
   if (user.role !== "CLIENT" || !user.clientId) {
     throw new Error("Only client users can load their opportunity registrations.");
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("opportunity_registrations")
     .select("*, companies(name), client_pay_programs(*)")
     .eq("company_id", user.clientId)
-    .order("created_at", { ascending: false })
-    .returns<OpportunityRegistration[]>();
+    .order("created_at", { ascending: false });
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<OpportunityRegistration[]>();
 
   if (error) {
     throw error;
@@ -3713,14 +3992,32 @@ export async function reviewClientPayProgram(
   return data;
 }
 
-export async function listOpportunityClaims(opportunityId?: string, options: { includeDisabled?: boolean } = {}) {
+export async function listOpportunityClaims(
+  opportunityId?: string,
+  options: { includeDisabled?: boolean; clientCompanyId?: string; bumUserId?: string; limit?: number } = {},
+) {
+  const opportunityRegistrationSelect = options.clientCompanyId
+    ? "opportunity_registrations!inner(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, companies(id, name, relationship_stage), client_pay_programs(*))"
+    : "opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, companies(id, name, relationship_stage), client_pay_programs(*))";
   let query = supabase
     .from("opportunity_claims")
-    .select("*, opportunity_claim_contacts(*), opportunity_registrations(id, target_account_name, commission_rate, company_id, pay_program_id, commission_schedule_start_at, companies(id, name, relationship_stage), client_pay_programs(*)), profiles(id, full_name, email, access_status, disabled_at)")
+    .select("*, opportunity_claim_contacts(*), " + opportunityRegistrationSelect + ", profiles(id, full_name, email, access_status, disabled_at)")
     .order("created_at", { ascending: false });
 
   if (opportunityId) {
     query = query.eq("opportunity_registration_id", opportunityId);
+  }
+
+  if (options.clientCompanyId) {
+    query = query.eq("opportunity_registrations.company_id", options.clientCompanyId);
+  }
+
+  if (options.bumUserId) {
+    query = query.eq("bum_user_id", options.bumUserId);
+  }
+
+  if (options.limit) {
+    query = query.limit(options.limit);
   }
 
   const { data, error } = await query.returns<OpportunityClaimRecord[]>();
@@ -3823,17 +4120,26 @@ const CUSTOMER_PAYMENT_REPORT_SELECT =
 const CUSTOMER_PAYMENT_REPORT_FINANCE_SAFE_SELECT =
   "id, opportunity_registration_id, company_id, source, customer_name, gross_amount, commissionable_amount, excluded_amount, currency, customer_payment_received_at, notes, status, created_at, updated_at, opportunity_registrations(id, target_account_name, commission_rate, commission_schedule_start_at), companies(id, name)";
 
-export async function listCustomerPaymentReports(user?: AuthUser) {
+export async function listCustomerPaymentReports(user?: AuthUser, options: ListQueryOptions = {}) {
   if (user) {
     assertClientFinanceAccess(user, "You do not have access to customer payment reporting.");
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("customer_payment_reports")
     .select(shouldUseFinanceSafeProjection(user) ? CUSTOMER_PAYMENT_REPORT_FINANCE_SAFE_SELECT : CUSTOMER_PAYMENT_REPORT_SELECT)
     .order("customer_payment_received_at", { ascending: false })
-    .order("created_at", { ascending: false })
-    .returns<CustomerPaymentReportRecord[]>();
+    .order("created_at", { ascending: false });
+
+  if (user?.role === "CLIENT" && user.clientId) {
+    query = query.eq("company_id", user.clientId);
+  }
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<CustomerPaymentReportRecord[]>();
 
   if (error) {
     throw error;
@@ -3935,16 +4241,25 @@ const CLAIM_INVOICE_SELECT =
 const CLAIM_INVOICE_FINANCE_SAFE_SELECT =
   "id, customer_payment_report_id, opportunity_registration_id, company_id, invoice_number, invoice_amount, commission_rate, currency, status, generated_at, sent_at, paid_at, notes, created_at, updated_at, customer_payment_reports(id, customer_name, commissionable_amount, customer_payment_received_at), opportunity_registrations(id, target_account_name), companies(id, name)";
 
-export async function listClaimInvoices(user?: AuthUser) {
+export async function listClaimInvoices(user?: AuthUser, options: ListQueryOptions = {}) {
   if (user) {
     assertClientFinanceAccess(user, "You do not have access to generated claim invoices.");
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("claim_invoices")
     .select(shouldUseFinanceSafeProjection(user) ? CLAIM_INVOICE_FINANCE_SAFE_SELECT : CLAIM_INVOICE_SELECT)
-    .order("created_at", { ascending: false })
-    .returns<ClaimInvoiceRecord[]>();
+    .order("created_at", { ascending: false });
+
+  if (user?.role === "CLIENT" && user.clientId) {
+    query = query.eq("company_id", user.clientId);
+  }
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<ClaimInvoiceRecord[]>();
 
   if (error) {
     throw error;
@@ -4917,13 +5232,18 @@ async function clientParticipantIds(companyId: string | null) {
   return (data ?? []).map((profile) => profile.id);
 }
 
-export async function listConversationThreads() {
-  const { data, error } = await supabase
+export async function listConversationThreads(options: ListQueryOptions = {}) {
+  let query = supabase
     .from("conversation_threads")
     .select(CONVERSATION_THREAD_SELECT)
     .eq("status", "OPEN")
-    .order("updated_at", { ascending: false })
-    .returns<ConversationThreadRecord[]>();
+    .order("updated_at", { ascending: false });
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<ConversationThreadRecord[]>();
 
   if (error) {
     throw error;
@@ -6574,30 +6894,34 @@ function extensionCaptureDetailUrl(capture: ExtensionPageCaptureRecord, companyN
 }
 
 
-async function listBumRepresentedContactsFromTables(userId: string) {
+async function listBumRepresentedContactsFromTables(userId: string, options: ListQueryOptions = {}) {
   const [claimsResult, recommendationsResult, contactsResult, targetResponsesResult, extensionCapturesResult] = await Promise.all([
     supabase
       .from("opportunity_claims")
       .select("*, opportunity_registrations(id, target_account_name, company_id, companies(name))")
       .eq("bum_user_id", userId)
       .order("created_at", { ascending: false })
+      .limit(options.limit ?? 100)
       .returns<Array<OpportunityClaimRecord & { opportunity_registrations?: Pick<OpportunityRegistration, "id" | "target_account_name" | "company_id"> & { companies?: Pick<CompanyRecord, "name"> | null } | null }>>(),
     supabase
       .from("prospect_recommendations")
       .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
       .eq("bum_user_id", userId)
       .order("created_at", { ascending: false })
+      .limit(options.limit ?? 100)
       .returns<ProspectRecommendationRecord[]>(),
     supabase
       .from("prospect_contacts")
       .select("*, prospect_recommendations(id, bum_user_id)")
       .order("created_at", { ascending: false })
+      .limit(options.limit ?? 100)
       .returns<ProspectContactRecord[]>(),
     supabase
       .from("customer_target_responses")
       .select(CUSTOMER_TARGET_RESPONSE_SELECT)
       .eq("bum_user_id", userId)
       .order("created_at", { ascending: false })
+      .limit(options.limit ?? 100)
       .returns<CustomerTargetResponseRecord[]>(),
     supabase
       .from("extension_page_captures")
@@ -6605,6 +6929,7 @@ async function listBumRepresentedContactsFromTables(userId: string) {
       .eq("created_by", userId)
       .eq("capture_type", "LINKEDIN_PROFILE")
       .order("created_at", { ascending: false })
+      .limit(options.limit ?? 100)
       .returns<ExtensionPageCaptureRecord[]>(),
   ]);
 
@@ -6732,10 +7057,10 @@ async function invokePortalContacts<T>(body: Record<string, unknown>): Promise<T
   return payload;
 }
 
-export async function listBumRepresentedContacts(userId: string) {
-  const payload = await invokePortalContacts<{ contacts?: BumRepresentedContactRecord[] }>({ action: "list" });
-  if (payload) return payload.contacts ?? [];
-  return listBumRepresentedContactsFromTables(userId);
+export async function listBumRepresentedContacts(userId: string, options: ListQueryOptions = {}) {
+  const payload = await invokePortalContacts<{ contacts?: BumRepresentedContactRecord[] }>({ action: "list", limit: options.limit });
+  if (payload) return (payload.contacts ?? []).slice(0, options.limit);
+  return listBumRepresentedContactsFromTables(userId, options);
 }
 
 export async function getBumRepresentedContact(contactId: string) {
@@ -6973,13 +7298,18 @@ export async function findCustomerLeadDuplicate(vendorCompanyId: string, custome
   return payload.duplicate ?? null;
 }
 
-export async function listOwnReverseOpportunities(userId: string) {
-  const { data, error } = await supabase
+export async function listOwnReverseOpportunities(userId: string, options: ListQueryOptions = {}) {
+  let query = supabase
     .from("reverse_opportunities")
     .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email)")
     .eq("bum_user_id", userId)
-    .order("created_at", { ascending: false })
-    .returns<ReverseOpportunityRecord[]>();
+    .order("created_at", { ascending: false });
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<ReverseOpportunityRecord[]>();
 
   if (error) {
     throw error;
@@ -7002,17 +7332,22 @@ export async function listAdminReverseOpportunities() {
   return data ?? [];
 }
 
-export async function listClientReverseOpportunities(user: AuthUser) {
+export async function listClientReverseOpportunities(user: AuthUser, options: ListQueryOptions = {}) {
   if (user.role !== "CLIENT" || !user.clientId) {
     throw new Error("Only client users linked to a company can read customer leads.");
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("reverse_opportunities")
     .select("*, companies(id, name, website, relationship_stage, linkedin_company_url), profiles(id, full_name, email, access_status, disabled_at)")
     .eq("vendor_company_id", user.clientId)
-    .order("created_at", { ascending: false })
-    .returns<ReverseOpportunityRecord[]>();
+    .order("created_at", { ascending: false });
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<ReverseOpportunityRecord[]>();
 
   if (error) {
     throw error;
@@ -7139,7 +7474,7 @@ export async function createCustomerTarget(user: AuthUser, input: CustomerTarget
   return targetRecord;
 }
 
-export async function listCustomerTargets(user?: Pick<AuthUser, "role" | "clientId"> | null, options: { includeDisabled?: boolean } = {}) {
+export async function listCustomerTargets(user?: Pick<AuthUser, "role" | "clientId"> | null, options: { includeDisabled?: boolean; limit?: number } = {}) {
   let query = supabase
     .from("customer_targets")
     .select("*, client_companies:companies!customer_targets_client_company_id_fkey(id, name, relationship_stage), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url), profiles(id, full_name, email, access_status, disabled_at)")
@@ -7147,6 +7482,10 @@ export async function listCustomerTargets(user?: Pick<AuthUser, "role" | "client
 
   if (user?.role === "CLIENT" && user.clientId) {
     query = query.eq("client_company_id", user.clientId);
+  }
+
+  if (options.limit) {
+    query = query.limit(options.limit);
   }
 
   const { data, error } = await query.returns<CustomerTargetRecord[]>();
@@ -7158,12 +7497,21 @@ export async function listCustomerTargets(user?: Pick<AuthUser, "role" | "client
   return options.includeDisabled ? data ?? [] : (data ?? []).filter((target) => isActiveCompany(target.client_companies) && isActiveProfile(target.profiles));
 }
 
-export async function listTeamsMeetings(options: { includeDisabled?: boolean } = {}) {
-  const { data, error } = await supabase
+export async function listTeamsMeetings(options: { includeDisabled?: boolean; clientCompanyId?: string; limit?: number } = {}) {
+  let query = supabase
     .from("teams_meetings")
     .select("*, customer_targets(id, target_account_name, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name, relationship_stage), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website)), profiles(id, full_name, email, access_status, disabled_at)")
-    .order("start_time", { ascending: true })
-    .returns<TeamsMeetingRecord[]>();
+    .order("start_time", { ascending: true });
+
+  if (options.clientCompanyId) {
+    query = query.eq("client_company_id", options.clientCompanyId);
+  }
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<TeamsMeetingRecord[]>();
 
   if (error) {
     throw error;
@@ -7422,7 +7770,7 @@ export async function claimClientBumIntroRequest(user: AuthUser, requestId: stri
 
 const CUSTOMER_TARGET_RESPONSE_SELECT = "*, customer_targets(id, target_account_name, business_unit, expected_product_service, estimated_deal_value, expected_timeline, notes, key_contact_name, key_contact_email, client_companies:companies!customer_targets_client_company_id_fkey(id, name, relationship_stage), target_companies:companies!customer_targets_target_company_id_fkey(id, name, website, linkedin_company_url)), profiles(id, full_name, email, access_status, disabled_at), conversation_threads(id)";
 
-export async function listCustomerTargetResponses(user: AuthUser) {
+export async function listCustomerTargetResponses(user: AuthUser, options: ListQueryOptions = {}) {
   if (user.role !== "CLIENT" && user.role !== "ADMIN") {
     throw new Error("Only Clients and Admins can load Bum target responses.");
   }
@@ -7437,6 +7785,10 @@ export async function listCustomerTargetResponses(user: AuthUser) {
       throw new Error("Your client account is not linked to a company.");
     }
     query = query.eq("client_company_id", user.clientId);
+  }
+
+  if (options.limit) {
+    query = query.limit(options.limit);
   }
 
   const { data, error } = await query.returns<CustomerTargetResponseRecord[]>();
@@ -7781,12 +8133,17 @@ export async function createCustomerTargetQuestion(user: AuthUser, input: Custom
   return normalizeCustomerTargetResponse({ ...data, conversation_thread_id: conversationThreadId });
 }
 
-export async function listOpportunityClaimSummaries() {
-  const { data, error } = await supabase
+export async function listOpportunityClaimSummaries(options: ListQueryOptions = {}) {
+  let query = supabase
     .from("opportunity_claim_public_summaries")
     .select("*")
-    .order("created_at", { ascending: false })
-    .returns<OpportunityClaimSummaryRecord[]>();
+    .order("created_at", { ascending: false });
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query.returns<OpportunityClaimSummaryRecord[]>();
 
   if (error) {
     throw error;

@@ -7,15 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentTermsState } from "@/hooks/use-current-terms";
-import { useUserTimeZone } from "@/hooks/use-user-timezone";
 import {
-  listClaimInvoices,
-  listClientReverseOpportunities,
-  listCustomerPaymentReports,
-  listCustomerTargetResponses,
-  listOpportunityRegistrations,
+  getClientDashboardSummary,
 } from "@/lib/portalApi";
-import { formatDateTimeForTimeZone } from "@/lib/timezone";
 import { Target, FileCheck, Clock, PlusCircle, ArrowRight, CreditCard, Download, Handshake } from "lucide-react";
 
 type DashboardAction = {
@@ -108,7 +102,6 @@ export default function ClientDashboard() {
   const { user } = useAuth();
   const location = useLocation();
   const deniedFrom = (location.state as DashboardLocationState | null)?.deniedFrom;
-  const timeZone = useUserTimeZone();
   const clientAccessRole = user?.role === "CLIENT" ? user.clientAccessRole ?? "CLIENT_ADMIN" : undefined;
   const isFinanceUser = clientAccessRole === "CLIENT_FINANCE";
   const isLegalUser = clientAccessRole === "CLIENT_LEGAL";
@@ -117,57 +110,31 @@ export default function ClientDashboard() {
   const deniedAccessRecovery = getDeniedAccessRecovery(deniedFrom, isFinanceUser);
   const canManagePayments = clientAccessRole === "CLIENT_ADMIN" || clientAccessRole === "CLIENT_FINANCE";
   const { hasAcceptedCurrentTerms } = useCurrentTermsState();
-  const opportunitiesQuery = useQuery({
-    queryKey: ["client-opportunity-registrations", user?.id],
-    queryFn: () => listOpportunityRegistrations(),
-    enabled: Boolean(user?.id) && isWorkspaceUser,
+  const dashboardSummaryQuery = useQuery({
+    queryKey: ["client-dashboard-summary", user?.clientId, clientAccessRole],
+    queryFn: () => getClientDashboardSummary(user!),
+    enabled: Boolean(user?.clientId) && (isWorkspaceUser || isFinanceUser),
   });
-  const reportsQuery = useQuery({
-    queryKey: ["customer-payment-reports", user?.clientId],
-    queryFn: () => listCustomerPaymentReports(user!),
-    enabled: Boolean(user?.clientId) && isFinanceUser,
-  });
-  const invoicesQuery = useQuery({
-    queryKey: ["claim-invoices", user?.clientId],
-    queryFn: () => listClaimInvoices(user!),
-    enabled: Boolean(user?.clientId) && isFinanceUser,
-  });
-  const reverseOpportunitiesQuery = useQuery({
-    queryKey: ["client-reverse-opportunities", user?.clientId],
-    queryFn: () => listClientReverseOpportunities(user!),
-    enabled: Boolean(user?.clientId) && isWorkspaceUser,
-  });
-  const targetResponsesQuery = useQuery({
-    queryKey: ["client-target-responses", user?.clientId],
-    queryFn: () => listCustomerTargetResponses(user!),
-    enabled: Boolean(user?.clientId) && isWorkspaceUser,
-  });
-  const opportunities = opportunitiesQuery.data ?? [];
-  const reverseOpportunities = reverseOpportunitiesQuery.data ?? [];
-  const targetResponses = targetResponsesQuery.data ?? [];
-  const pendingTargetResponses = targetResponses.filter((response) => response.status === "PROPOSED");
-  const paymentReports = reportsQuery.data ?? [];
-  const invoices = invoicesQuery.data ?? [];
-  const activeCount = opportunities.filter((opportunity) =>
-    ["Submitted", "Accepted", "Needs Clarification"].includes(opportunity.status),
-  ).length;
-  const acceptedCount = opportunities.filter((opportunity) => opportunity.status === "Accepted").length;
-  const draftCount = opportunities.filter((opportunity) => opportunity.status === "Draft").length;
-  const totalCommissionableRevenue = paymentReports.reduce(
-    (sum, report) => sum + Number(report.commissionable_amount ?? 0),
-    0,
-  );
-  const generatedInvoiceAmount = invoices.reduce(
-    (sum, invoice) => sum + Number(invoice.invoice_amount ?? 0),
-    0,
-  );
-  const pendingPaymentReports = paymentReports.filter((report) => report.status !== "INVOICE_GENERATED").length;
-  const unpaidInvoices = invoices.filter((invoice) => !["PAID", "VOID"].includes(invoice.status)).length;
+  const dashboardSummary = dashboardSummaryQuery.data;
+  const opportunities = dashboardSummary?.opportunities.recent ?? [];
+  const activeCount = dashboardSummary?.opportunities.active ?? 0;
+  const acceptedCount = dashboardSummary?.opportunities.accepted ?? 0;
+  const draftCount = dashboardSummary?.opportunities.draft ?? 0;
+  const opportunityCount = dashboardSummary?.opportunities.total ?? 0;
+  const pendingTargetResponsesCount = dashboardSummary?.targetResponses.pending ?? 0;
+  const reverseOpportunitiesCount = dashboardSummary?.reverseOpportunities.total ?? 0;
+  const paymentReportsCount = dashboardSummary?.finance.paymentReports.total ?? 0;
+  const invoices = dashboardSummary?.finance.invoices.recent ?? [];
+  const invoicesCount = dashboardSummary?.finance.invoices.total ?? 0;
+  const totalCommissionableRevenue = dashboardSummary?.finance.paymentReports.commissionableRevenue ?? 0;
+  const generatedInvoiceAmount = dashboardSummary?.finance.invoices.invoiceAmount ?? 0;
+  const pendingPaymentReports = dashboardSummary?.finance.paymentReports.pending ?? 0;
+  const unpaidInvoices = dashboardSummary?.finance.invoices.unpaid ?? 0;
   const financeNextActions: DashboardAction[] = [
     !hasAcceptedCurrentTerms
       ? { title: "Review Agreements", description: "The current Client Agreement needs acceptance before the workspace is current.", to: "/client/agreements", primary: true }
       : null,
-    paymentReports.length
+    paymentReportsCount
       ? { title: "Import next Customer Payment Report", description: "Add the latest Customer revenue CSV after Customers pay you directly.", to: "/client/payments", primary: !pendingPaymentReports && !unpaidInvoices }
       : { title: "Import first Customer Payment Report", description: "Calculate Trusted Bums commission invoices from Client-reported Customer revenue.", to: "/client/payments", primary: true },
     pendingPaymentReports
@@ -182,17 +149,17 @@ export default function ClientDashboard() {
     !hasAcceptedCurrentTerms
       ? { title: "Review Agreements", description: "Open Agreements to review and accept the current Client Agreement.", to: "/client/agreements", primary: true }
       : null,
-    opportunities.length
+    opportunityCount
       ? { title: "Add another opportunity", description: "Create the next customer account or deal your team wants help with.", to: "/client/opportunities/new", primary: !activeCount }
       : { title: "Create first opportunity", description: "Start with the customer company you want to sell into.", to: "/client/opportunities/new", primary: true },
     draftCount
       ? { title: "Publish draft opportunities", description: `${draftCount} draft opportunit${draftCount === 1 ? "y is" : "ies are"} waiting before Bums can match.`, to: "/client/opportunities" }
       : null,
-    pendingTargetResponses.length
-      ? { title: "Review Bum responses", description: `${pendingTargetResponses.length} Bum response${pendingTargetResponses.length === 1 ? "" : "s"} awaiting approval.`, to: "/client/opportunities?tab=responses", primary: true }
+    pendingTargetResponsesCount
+      ? { title: "Review Bum responses", description: `${pendingTargetResponsesCount} Bum response${pendingTargetResponsesCount === 1 ? "" : "s"} awaiting approval.`, to: "/client/opportunities?tab=responses", primary: true }
       : null,
-    reverseOpportunities.length
-      ? { title: "Review Bum-Originated Opportunities", description: `${reverseOpportunities.length} Bum-originated opportunit${reverseOpportunities.length === 1 ? "y needs" : "ies need"} review.`, to: "/client/opportunities?tab=bum-originated" }
+    reverseOpportunitiesCount
+      ? { title: "Review Bum-Originated Opportunities", description: `${reverseOpportunitiesCount} Bum-originated opportunit${reverseOpportunitiesCount === 1 ? "y needs" : "ies need"} review.`, to: "/client/opportunities?tab=bum-originated" }
       : null,
     activeCount
       ? { title: "Check active opportunities", description: `${activeCount} active opportunit${activeCount === 1 ? "y" : "ies"} need progress tracking.`, to: "/client/opportunities" }
@@ -324,8 +291,8 @@ export default function ClientDashboard() {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <StatCard title="Customer Payment Reports" value={paymentReports.length} icon={CreditCard} to="/client/payments" />
-          <StatCard title="Commission Invoices" value={invoices.length} icon={FileCheck} to="/client/payments" />
+          <StatCard title="Customer Payment Reports" value={paymentReportsCount} icon={CreditCard} to="/client/payments" />
+          <StatCard title="Commission Invoices" value={invoicesCount} icon={FileCheck} to="/client/payments" />
           <StatCard title="Commissionable Revenue" value={`$${totalCommissionableRevenue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Target} to="/client/payments" />
           <StatCard title="Commission Invoice Value" value={`$${generatedInvoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={Download} to="/client/payments" />
         </div>
@@ -431,30 +398,22 @@ export default function ClientDashboard() {
             <StatCard title="Active" value={activeCount} icon={Target} subtitle="In progress" to="/client/opportunities" />
             <StatCard title="Published" value={acceptedCount} icon={FileCheck} subtitle="Visible to Bums" to="/client/opportunities" />
             <StatCard title="Drafts" value={draftCount} icon={Clock} subtitle="Private" to="/client/opportunities" />
-            <StatCard title="Responses" value={pendingTargetResponses.length} icon={Handshake} subtitle="Awaiting review" to="/client/opportunities?tab=responses" />
-            <StatCard title="Bum-Originated" value={reverseOpportunities.length} icon={Clock} subtitle="From Bums" to="/client/opportunities?tab=bum-originated" />
+            <StatCard title="Responses" value={pendingTargetResponsesCount} icon={Handshake} subtitle="Awaiting review" to="/client/opportunities?tab=responses" />
+            <StatCard title="Bum-Originated" value={reverseOpportunitiesCount} icon={Clock} subtitle="From Bums" to="/client/opportunities?tab=bum-originated" />
           </div>
 
-          {pendingTargetResponses.length ? (
+          {pendingTargetResponsesCount ? (
             <Card>
               <CardHeader>
                 <CardTitle className="font-display">Bum responses awaiting approval</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {pendingTargetResponses.slice(0, 4).map((response) => (
-                  <div key={response.id} className="flex flex-col gap-3 border-b py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium">{response.customer_targets?.target_companies?.name ?? response.customer_targets?.target_account_name ?? "Target account"}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {response.profiles?.full_name ?? response.profiles?.email ?? "A Bum"} knows {response.contact_name} · {response.relationship_strength}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Submitted {formatDateTimeForTimeZone(response.created_at, timeZone)}</p>
-                    </div>
-                    <Button asChild size="sm">
-                      <Link to={`/client/opportunities?tab=responses&targetResponseId=${response.id}`}>Review</Link>
-                    </Button>
-                  </div>
-                ))}
+              <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {pendingTargetResponsesCount} response{pendingTargetResponsesCount === 1 ? "" : "s"} need review in the opportunity workspace.
+                </p>
+                <Button asChild size="sm">
+                  <Link to="/client/opportunities?tab=responses">Review responses</Link>
+                </Button>
               </CardContent>
             </Card>
           ) : null}

@@ -51,7 +51,7 @@ export default function ClientExports() {
   });
   const meetingsQuery = useQuery({
     queryKey: ["client-export-meetings", user?.clientId],
-    queryFn: listTeamsMeetings,
+    queryFn: () => listTeamsMeetings({ clientCompanyId: user?.clientId }),
     enabled: Boolean(user && canExportOperationalData),
   });
   const outcomesQuery = useQuery({

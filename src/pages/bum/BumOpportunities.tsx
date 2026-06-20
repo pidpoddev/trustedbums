@@ -45,6 +45,7 @@ import { Search, Briefcase, Calendar, DollarSign, Target, Handshake, Heart, Chev
 import { Link, useSearchParams } from "react-router-dom";
 
 const MARKETPLACE_PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 50] as const;
+const BUM_OPPORTUNITIES_INITIAL_LIMIT = 100;
 type MarketplacePageSize = (typeof MARKETPLACE_PAGE_SIZE_OPTIONS)[number];
 
 function storedMarketplacePageSize(): MarketplacePageSize {
@@ -177,27 +178,27 @@ export default function BumOpportunities() {
     }
   }, [marketplacePageSize]);
   const opportunitiesQuery = useQuery({
-    queryKey: ["bum-marketplace-opportunities"],
-    queryFn: listMarketplaceOpportunities,
+    queryKey: ["bum-marketplace-opportunities", BUM_OPPORTUNITIES_INITIAL_LIMIT],
+    queryFn: () => listMarketplaceOpportunities({ limit: BUM_OPPORTUNITIES_INITIAL_LIMIT }),
   });
   const targetsQuery = useQuery({
-    queryKey: ["bum-customer-target-opportunities"],
-    queryFn: () => listCustomerTargets(null),
+    queryKey: ["bum-customer-target-opportunities", BUM_OPPORTUNITIES_INITIAL_LIMIT],
+    queryFn: () => listCustomerTargets(null, { limit: BUM_OPPORTUNITIES_INITIAL_LIMIT }),
   });
   const savedItemsQuery = useQuery({
-    queryKey: ["bum-saved-items", user?.id],
-    queryFn: () => listBumSavedItems(user!.id),
+    queryKey: ["bum-saved-items", user?.id, BUM_OPPORTUNITIES_INITIAL_LIMIT],
+    queryFn: () => listBumSavedItems(user!.id, { limit: BUM_OPPORTUNITIES_INITIAL_LIMIT }),
     enabled: Boolean(user?.id),
   });
   const contactsQuery = useQuery({
-    queryKey: ["opportunity-contact-picker", user?.id],
-    queryFn: () => listBumRepresentedContacts(user!.id),
+    queryKey: ["opportunity-contact-picker", user?.id, BUM_OPPORTUNITIES_INITIAL_LIMIT],
+    queryFn: () => listBumRepresentedContacts(user!.id, { limit: BUM_OPPORTUNITIES_INITIAL_LIMIT }),
     enabled: Boolean(user?.id),
     staleTime: 30_000,
   });
   const claimSummariesQuery = useQuery({
-    queryKey: ["marketplace-claim-summaries"],
-    queryFn: listOpportunityClaimSummaries,
+    queryKey: ["marketplace-claim-summaries", BUM_OPPORTUNITIES_INITIAL_LIMIT],
+    queryFn: () => listOpportunityClaimSummaries({ limit: BUM_OPPORTUNITIES_INITIAL_LIMIT }),
   });
   const opportunities = opportunitiesQuery.data ?? [];
   const targets = targetsQuery.data ?? [];

@@ -73,7 +73,7 @@ export default function ClientClaims() {
 
   const claimsQuery = useQuery({
     queryKey: ["client-claims", user?.clientId],
-    queryFn: () => listOpportunityClaims(undefined, { includeDisabled: true }),
+    queryFn: () => listOpportunityClaims(undefined, { includeDisabled: true, clientCompanyId: user!.clientId ?? undefined }),
     enabled: Boolean(user?.clientId),
   });
 

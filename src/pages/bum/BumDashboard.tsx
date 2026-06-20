@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIntroClaims } from "@/hooks/use-intro-claims";
 import { useToast } from "@/hooks/use-toast";
 import {
   buildBumProfileInputFromPrompt,
@@ -19,11 +18,9 @@ import {
   type BumProfilePromptKey,
 } from "@/lib/bumProfileCompleteness";
 import {
+  getBumDashboardSummary,
   getOwnBumProfile,
-  listOwnProspectRecommendations,
-  listMarketplaceOpportunities,
   upsertOwnBumProfile,
-  listOwnReverseOpportunities,
   type BumProfileInput,
 } from "@/lib/portalApi";
 import {
@@ -42,13 +39,9 @@ export default function BumDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [promptAnswers, setPromptAnswers] = useState<Partial<Record<BumProfilePromptKey, string>>>({});
-  const opportunitiesQuery = useQuery({
-    queryKey: ["bum-marketplace-opportunities"],
-    queryFn: listMarketplaceOpportunities,
-  });
-  const prospectsQuery = useQuery({
-    queryKey: ["bum-prospects", user?.id],
-    queryFn: () => listOwnProspectRecommendations(user!.id),
+  const dashboardSummaryQuery = useQuery({
+    queryKey: ["bum-dashboard-summary", user?.id],
+    queryFn: () => getBumDashboardSummary(user!.id),
     enabled: Boolean(user?.id),
   });
   const profileQuery = useQuery({
@@ -56,13 +49,7 @@ export default function BumDashboard() {
     queryFn: () => getOwnBumProfile(user!.id),
     enabled: Boolean(user?.id),
   });
-  const reverseOpportunitiesQuery = useQuery({
-    queryKey: ["bum-reverse-opportunities", user?.id],
-    queryFn: () => listOwnReverseOpportunities(user!.id),
-    enabled: Boolean(user?.id),
-  });
-  const { introClaims } = useIntroClaims();
-  const myClaims = introClaims.filter((claim) => claim.bum_user_id === user?.id);
+  const dashboardSummary = dashboardSummaryQuery.data;
   const completeness = useMemo(() => getBumProfileCompleteness(profileQuery.data), [profileQuery.data]);
   const isManagingBum = Boolean(profileQuery.data?.is_managing_bum);
 
@@ -227,10 +214,10 @@ export default function BumDashboard() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Prospective Clients" value={prospectsQuery.data?.length ?? 0} icon={Building2} to="/bum/prospects" />
-        <StatCard title="Customer Leads" value={reverseOpportunitiesQuery.data?.length ?? 0} icon={Sparkles} to="/bum/reverse-opportunities" />
-        <StatCard title="Open Opportunities" value={opportunitiesQuery.data?.length ?? 0} icon={Briefcase} to="/bum/opportunities" />
-        <StatCard title="Claims" value={myClaims.length} icon={Handshake} to="/bum/claims" />
+        <StatCard title="Prospective Clients" value={dashboardSummary?.prospectiveClients ?? 0} icon={Building2} to="/bum/prospects" />
+        <StatCard title="Customer Leads" value={dashboardSummary?.customerLeads ?? 0} icon={Sparkles} to="/bum/reverse-opportunities" />
+        <StatCard title="Open Opportunities" value={dashboardSummary?.openOpportunities ?? 0} icon={Briefcase} to="/bum/opportunities" />
+        <StatCard title="Claims" value={dashboardSummary?.claims ?? 0} icon={Handshake} to="/bum/claims" />
         <StatCard title="Pending Earnings" value="$0" icon={TrendingUp} to="/bum/earnings" />
         <StatCard title="Lifetime Payouts" value="$0" icon={Wallet} to="/bum/earnings" />
       </div>
@@ -290,15 +277,15 @@ export default function BumDashboard() {
             <CardContent className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Prospective Clients submitted</span>
-                <span className="font-medium">{prospectsQuery.data?.length ?? 0}</span>
+                <span className="font-medium">{dashboardSummary?.prospectiveClients ?? 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Marketplace opportunities</span>
-                <span className="font-medium">{opportunitiesQuery.data?.length ?? 0}</span>
+                <span className="font-medium">{dashboardSummary?.openOpportunities ?? 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Customer leads</span>
-                <span className="font-medium">{reverseOpportunitiesQuery.data?.length ?? 0}</span>
+                <span className="font-medium">{dashboardSummary?.customerLeads ?? 0}</span>
               </div>
               <Button asChild variant="outline" className="w-full">
                 <Link to="/bum/reverse-opportunities">Open Customer Leads</Link>
