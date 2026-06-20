@@ -50,6 +50,8 @@ describe("scrum implementation queue regression coverage", () => {
     expect(htaccess).toContain("https://challenges.cloudflare.com");
     expect(htaccess).toContain("https://fonts.googleapis.com");
     expect(htaccess).toContain("https://static.cloudflareinsights.com");
+    expect(htaccess).toContain("https://scripts.clarity.ms");
+    expect(htaccess).toContain("https://www.google.com");
     expect(htaccess).toContain("worker-src 'self' blob:");
     expect(htaccess).toContain("Serve generated public-route metadata snapshots");
     expect(htaccess).toContain("privacy-policy");

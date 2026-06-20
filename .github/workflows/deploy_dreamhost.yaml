@@ -46,12 +46,14 @@ jobs:
           grep -R "$VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID" dist/assets
           grep -Fq "https://www.googletagmanager.com" dist/.htaccess
           grep -Fq "https://www.google-analytics.com" dist/.htaccess
+          grep -Fq "https://www.google.com" dist/.htaccess
 
       - name: Verify Microsoft Clarity production tag
         run: |
           grep -R "x7nevilplm" dist/assets
           grep -Fq "https://www.clarity.ms" dist/.htaccess
           grep -Fq "https://*.clarity.ms" dist/.htaccess
+          grep -Fq "https://scripts.clarity.ms" dist/.htaccess
 
       - name: Verify crawler assets
         run: |

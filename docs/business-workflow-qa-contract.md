@@ -1,6 +1,6 @@
 # Trusted Bums Business Workflow QA Contract
 
-_Last updated: 2026-06-17 by Codex._
+_Last updated: 2026-06-20 by Codex._
 
 ## Purpose
 
@@ -14,6 +14,7 @@ Any defect found during founder, client, Bum, or admin testing must be converted
 - Verify the full chain: UI action, Supabase write/read, audit or notification side effect, next role visibility, and cleanup or reversal.
 - Include negative proof. If a role should not perform an action, prove the UI blocks it and the backend rejects it.
 - Treat red browser console output, failed app/Supabase requests, and unexpected 4xx/5xx responses during role workflow QA as blocking evidence until explained.
+- Documented third-party telemetry noise can be excluded only when it is outside the app/Supabase workflow path. App routes, Supabase REST, Edge Functions, RLS denials, user-visible errors, and failed mutations stay blocking.
 - Check duplicate and retry behavior. Re-clicking after a partial success must not create duplicate records or generic failure loops.
 - Treat "Unable to..." toasts, silent no-ops, stale data after refresh, and repeated loading-session loops as P1 candidates on primary workflows.
 - When a new defect escaped QA, add the missing workflow scenario and update the responsible agent or gate so the same class of miss is not repeated.

@@ -111,6 +111,11 @@ describe("E2E smoke regression coverage", () => {
     expect(workflowQaMatrixSource).toContain("expectBumCanSeeOpportunity");
     expect(workflowQaMatrixSource).toContain("deleteUnclaimedOpportunity");
     expect(deepQaHelperSource).toContain("function isWorkflowRelevantUrl");
+    expect(deepQaHelperSource).toContain("function isIgnoredWorkflowConsoleError");
+    expect(deepQaHelperSource).toContain("function isIgnoredWorkflowRequestFailure");
+    expect(deepQaHelperSource).toContain("net::ERR_ABORTED");
+    expect(deepQaHelperSource).toContain('["GET", "HEAD"].includes(request.method())');
+    expect(deepQaHelperSource).toContain("performance-beacon");
     expect(deepQaHelperSource).toContain("export function installWorkflowQaErrorGate");
     expect(deepQaHelperSource).toContain("export function isQaCleanupSafeRecord");
     expect(deepQaHelperSource).toContain("Cleanup refused");

@@ -179,7 +179,7 @@ When adding a rule, include:
 - Applies to: Data/Analytics, UX, UI, B2B Growth, Product Ops, Trust & Reputation, QA, Release Verification, Lead Developer, public website routes, and authenticated portal routes.
 - Why it matters: Clarity can reveal interaction behavior that aggregate page-view data misses, but it is more sensitive than ordinary aggregate analytics and must stay privacy-controlled.
 - Implementation notes: The production Clarity project ID is `x7nevilplm`. Clarity must load only after the user opts into the Analytics consent category. Do not include raw session recordings, visitor-level timelines, names, emails, company names, customer targets, notes, or other private user data in repo markdown or agent handoffs; summarize aggregate patterns and cite date ranges instead.
-- QA proof: Product code includes a consent-gated Microsoft Clarity component and CSP entries for `https://www.clarity.ms` and `https://*.clarity.ms`.
+- QA proof: Product code includes a consent-gated Microsoft Clarity component and CSP entries for `https://www.clarity.ms`, `https://*.clarity.ms`, and `https://scripts.clarity.ms`.
 - Open questions: Which Clarity dashboard role/access path should each specialist automation use for recurring aggregate heatmap or session-friction evidence?
 
 ### Bing Webmaster Tools is an approved source for search and reputation evidence

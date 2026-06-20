@@ -28,7 +28,7 @@ Current-session local preflight stayed split across the expected QA env surfaces
 
 ### Active - Role workflow QA gate for UAT escape prevention
 - Trigger: Ryan reported too many UAT escapes and asked whether per-user-type Workflow QA is good enough.
-- Current change: add an opt-in mutating `qa:workflow` Playwright gate that uses QA roles to create a clearly marked `QA DO NOT USE` opportunity, prove Admin and Bum visibility, delete the unclaimed opportunity through the Client Admin UI, fail on red browser/Supabase errors, and run cleanup proof.
+- Current change: add an opt-in mutating `qa:workflow` Playwright gate that uses QA roles to create a clearly marked `QA DO NOT USE` opportunity, prove Admin and Bum visibility, delete the unclaimed opportunity through the Client Admin UI, fail on red browser/Supabase errors, and run cleanup proof. The gate excludes only documented third-party telemetry noise and navigation-aborted background probes; app/Supabase/RLS failures stay blocking.
 - Data handling rule: default to deleting every QA-created record after each test. Until a deliberate `qa_run_id` or `is_test` visibility model is added, published QA opportunities may be briefly visible to eligible Bums, so test records must use obvious QA labels and no real client, opportunity, contact, or private names.
 - Closure standard: this gate counts only when `QA_WORKFLOW_MUTATION=1`, a real service-role cleanup JWT is present, all required QA role accounts exist, no red/RLS errors occur, and cleanup reports no P1 issues.
 

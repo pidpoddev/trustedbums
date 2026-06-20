@@ -13,6 +13,15 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-20 - Prove mutating role workflow QA and repair live blockers
+
+- Trigger: Ryan asked to run the new workflow QA with mutation and keep resolving discovered errors until it ran correctly.
+- Implementation branch: local `main`, pending commit at time of log entry.
+- What changed: Restored the live Client Admin delete policy for unclaimed own-company opportunity registrations and added [20260620151519_restore_client_delete_unclaimed_opportunity_policy.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260620151519_restore_client_delete_unclaimed_opportunity_policy.sql). Tightened client delete proof so the app requires the deleted row to be returned instead of accepting a silent zero-row delete. Repaired `admin_dashboard_summary` for the current Clerk token model by keeping the public RPC invoker/admin-gated while moving aggregate table reads behind private definer helper [20260620152414_restore_admin_dashboard_summary_definer.sql](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/supabase/migrations/20260620152414_restore_admin_dashboard_summary_definer.sql). Updated production CSP for the Clarity and GA endpoints actually loaded by the browser, and narrowed [deepQa.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/deepQa.ts) so telemetry noise and navigation-aborted read probes do not mask real app/Supabase/RLS failures.
+- Validation: `corepack pnpm exec vitest run src/test/e2eSmokeRegression.test.ts src/test/accessBoundaryRegression.test.ts src/test/clientOpportunityDelete.test.ts src/test/deepQaTriage.test.ts src/test/scrumQueueRegression.test.ts` passed `27/27`. `corepack pnpm run qa` passed with the pre-existing React hook warning in `ClientOpportunityNew.tsx`. Live SQL verified `public.admin_dashboard_summary` is invoker and `private.admin_dashboard_summary_data` is definer. A targeted QA Admin browser RPC call returned `200` from `admin_dashboard_summary`. Final hosted mutating workflow passed: `QA_BASE_URL=https://trustedbums.com QA_WORKFLOW_MUTATION=1 corepack pnpm run qa:workflow`.
+- Result: The mutating role workflow now creates a `QA DO NOT USE` opportunity as Client Member, proves Admin and Bum visibility, deletes it as Client Admin with returned-row proof, and finishes cleanup without P1 blockers. Service-role cleanup credentials were used only from process environment and were not written to the repo.
+- Recheck agents: QA Test Engineer, QA Harness Reliability Agent, Release Verification Agent, Security Engineer, Product Ops Workflow Analyst, Lead Developer, and Code Review Agent.
+
 ### 2026-06-20 - Add cleanup-safe role workflow QA gate
 
 - Trigger: Ryan asked whether per-user-type Workflow QA is good enough after UAT found too many expected-behavior failures and asked whether QA opportunities/client names can be hidden or deleted after each test.

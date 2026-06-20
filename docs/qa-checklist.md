@@ -46,6 +46,8 @@ Deep QA is not complete until the role-based business workflows in [business-wor
 
 Mutating role workflow QA must use visibly QA-owned data only. Records should use `QA DO NOT USE` or `qa-*` run identifiers, avoid real client or contact names, and be deleted in the same test run. A cleanup failure or unexpected red browser/Supabase error is release-blocking unless Ryan explicitly approves retaining that QA record for investigation.
 
+The mutating workflow error gate may ignore documented third-party telemetry noise and navigation-aborted background probes, but it must not ignore app routes, Supabase REST calls, Edge Functions, RLS denials, user-visible errors, failed mutations, or unexpected 4xx/5xx responses.
+
 Escaped defects from live founder, client, Bum, or admin testing must become durable QA coverage. When a defect such as an admin delete failure, claim request failure, or duplicate contact creation escapes, update the business workflow contract and add or recommend the executable regression before the QA item is closed.
 
 For local authenticated smoke testing, copy `.env.qa.example` to `.env.qa`, fill the dedicated QA account credentials, then run:

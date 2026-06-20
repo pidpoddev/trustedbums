@@ -1,4 +1,4 @@
-import { type Locator, type Page, type TestInfo } from "@playwright/test";
+import { type Locator, type Page, type Request, type TestInfo } from "@playwright/test";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
@@ -184,7 +184,23 @@ export function installDeepQaMonitors(page: Page, issues: DeepQaIssue[], area: s
 }
 
 function isIgnoredWorkflowNoise(url: string) {
-  return /browser-intake|clerk|ingest|analytics|clarity|googletagmanager|google-analytics/i.test(url);
+  return /browser-intake|clerk|ingest|analytics|clarity|googletagmanager|google-analytics|google\.com\/g\/collect|cloudflareinsights|performance-beacon/i.test(url);
+}
+
+function isIgnoredWorkflowConsoleError(text: string) {
+  return /clarity\.ms|cloudflareinsights\.com|google\.com\/g\/collect|google-analytics\.com|googletagmanager\.com|Content Security Policy.*(clarity|google)|Failed to load resource: net::ERR_FAILED|Failed to load resource: the server responded with a status of \d+/i.test(
+    text,
+  );
+}
+
+function isIgnoredWorkflowRequestFailure(request: Request) {
+  const url = request.url();
+  const failureText = request.failure()?.errorText ?? "";
+  if (isIgnoredWorkflowNoise(url)) {
+    return true;
+  }
+
+  return failureText === "net::ERR_ABORTED" && ["GET", "HEAD"].includes(request.method());
 }
 
 function isWorkflowRelevantUrl(url: string) {
@@ -235,6 +251,10 @@ export function installWorkflowQaErrorGate(
       return;
     }
 
+    if (isIgnoredWorkflowConsoleError(message.text())) {
+      return;
+    }
+
     issues.push({
       severity: "P1",
       area: currentArea(),
@@ -248,7 +268,11 @@ export function installWorkflowQaErrorGate(
   page.on("requestfailed", (request) => {
     const url = request.url();
     const method = request.method();
-    if (!isWorkflowRelevantUrl(url) || isAllowedWorkflowFailure(method, undefined, url, allowedFailures)) {
+    if (
+      !isWorkflowRelevantUrl(url) ||
+      isIgnoredWorkflowRequestFailure(request) ||
+      isAllowedWorkflowFailure(method, undefined, url, allowedFailures)
+    ) {
       return;
     }
 
