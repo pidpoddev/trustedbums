@@ -13,6 +13,15 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-20 - Prove and close TB-0025, TB-0026, and TB-0033
+
+- Trigger: Ryan asked to complete `TB-0025`, `TB-0026`, and `TB-0033`.
+- Implementation branch: local `main`, pending commit at time of log entry.
+- What changed: Added repeatable proof helpers [prove-email-track-click.mjs](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/prove-email-track-click.mjs), [prove-invite-redirect-handoff.mjs](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/prove-invite-redirect-handoff.mjs), and [audit-agent-automation-sync.mjs](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/scripts/audit-agent-automation-sync.mjs). Strengthened [invitationRedirect.test.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/test/invitationRedirect.test.ts) so both invite functions are tied to the shared approved-redirect helper before Clerk handoff. Updated [trust-reputation-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/trust-reputation-backlog.md), [agent-operations-backlog.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/agent-operations-backlog.md), [lead-developer-recommendations.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/lead-developer-recommendations.md), and [README.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/agents/README.md) with the new proof and roster audit.
+- Validation: `corepack pnpm exec vitest run src/test/invitationRedirect.test.ts src/test/managingBumInvites.test.ts src/test/agentTrackerRules.test.ts` passed `15/15`. `corepack pnpm email-track:prove-click` created retained `is_test` delivery `bf5632eb-d95c-47b0-bbed-8679f9cba8fa`, received a live `302` to `https://trustedbums.com/privacy-policy/`, and verified one `CLICK` event plus engagement score `3`. `corepack pnpm invite:prove-redirect` sent one Ryan-approved plus-addressed Bum invite to `ryanmp29+tb0026-1781964942272@gmail.com`, received Clerk invitation `inv_3FP7eblOK3TkE1rfWkldkxKmCV7` with status `pending`, and the focused test proves the requested external redirect is normalized before Clerk handoff. Ryan confirmed he received the invite email, clicked `Accept Invitation`, reached signup, and stopped before account creation. `corepack pnpm agent-ops:audit` completed and found one non-blocking drift item: the active Bum Supply Leader repo snapshot has no live recurring automation. `node --check` passed for all three new proof scripts.
+- Result: `TB-0025`, `TB-0026`, and `TB-0033` are ready for tracker closeout after commit/push. Follow-up for Agent Operations: decide whether to create the live Bum Supply Leader automation or retire/mark the snapshot non-recurring.
+- Recheck agents: Trust & Reputation Consultant, Security Engineer, QA Test Engineer, Release Verification Agent, Agent Operations Steward, Lead Developer, and Code Review Agent.
+
 ### 2026-06-20 - Close TB-0097 client profile schema parity
 
 - Trigger: Ryan approved fixing `TB-0097` after reviewing the client profile governance and deal-registration schema issue.

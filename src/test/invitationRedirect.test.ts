@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 
 import { normalizeInvitationRedirectUrl } from "../../supabase/functions/_shared/invitationRedirect";
+
+const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
+const clientTeamFunctionSource = readFileSync("supabase/functions/client-team/index.ts", "utf8");
+const inviteBumFunctionSource = readFileSync("supabase/functions/invite-bum/index.ts", "utf8");
 
 function requestWithOrigin(origin?: string) {
   return new Request("https://vaoqvtxqvbptyxddpoju.supabase.co/functions/v1/invite-bum", {
@@ -54,5 +59,20 @@ describe("normalizeInvitationRedirectUrl", () => {
     });
 
     expect(redirectUrl).toBe("https://trustedbums.com/login");
+  });
+
+  it("hands approved redirect URLs through both invite functions with the shared guard", () => {
+    for (const source of [clientTeamFunctionSource, inviteBumFunctionSource]) {
+      expect(source).toContain("import { normalizeInvitationRedirectUrl } from \"../_shared/invitationRedirect.ts\";");
+      expect(source).toContain("normalizeInvitationRedirectUrl(body.redirectUrl, request, {");
+      expect(source).toContain("allowedOrigins: invitationRedirectAllowedOrigins");
+      expect(source).toContain("fallbackUrl: invitationRedirectFallbackUrl");
+      expect(source).toContain("clerkFrontendApiUrl");
+      expect(source).toContain("redirect_url: input.redirectUrl");
+    }
+  });
+
+  it("sends portal invite requests with a same-origin login redirect for Clerk handoff", () => {
+    expect(portalApiSource).toContain('redirectUrl: new URL(`${import.meta.env.BASE_URL || "/"}login`, window.location.origin).toString()');
   });
 });

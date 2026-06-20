@@ -1,6 +1,6 @@
 # Trusted Bums Lead Developer Recommendations
 
-_Last updated: 2026-06-20 by Codex TB-0097 closeout._
+_Last updated: 2026-06-20 by Codex TB-0025/TB-0026/TB-0033 closeout._
 
 ## Executive Read
 
@@ -9,17 +9,18 @@ Current release status is `GO WITH WATCHLIST` for `main` head `a0142260f502446a2
 - Completed work:
   - Exact-head hosted proof is green on `a0142260`: GitHub `QA` `27869628177`, DreamHost deploy `27869628178`, `E2E Smoke` `27869672430`, and `Visual UI Audit` `27869672437` all completed `success`.
   - `TB-0097` is closed: live production now has `public.companies.deal_registration_config`, all current company rows have object-shaped config values, and hosted Client Admin profile proof passed after the live schema fix.
+  - `TB-0025`, `TB-0026`, and `TB-0033` are ready to close: email-track valid click proof is retained in live Supabase, the live authenticated Bum invite smoke sent one Ryan-approved plus-addressed invitation, and the first agent automation sync audit is complete.
   - The overnight specialist wave correctly removed stale lead work from the active queue. Live tracker or exact-head backlog truth now keeps `TB-0027`, `TB-0047`, `TB-0051`, `TB-0065`, `TB-0089`, `TB-0102`, and `TB-0113` out of the current implementation queue.
   - Current lead-critical open items are now narrower: `TB-0049` remaining advisor debt, `TB-0052` finance exception readiness, and access-blocked `TB-0023`, plus product or GTM items that need Ryan input before implementation.
 - Current priorities:
-  1. Continue the remaining low-risk implementation queue with `TB-0025`, `TB-0026`, `TB-0033`, `TB-0049`, and `TB-0052`.
+  1. Continue the remaining low-risk implementation queue with `TB-0049` and `TB-0052`.
   2. Keep `TB-0023` blocked until Supabase Auth leaked-password protection can be directly verified or enabled.
   3. Treat `QA_CLIENT_IT` as a QA-account enhancement, not a blocker to the now-restored client profile schema parity.
 - Current blockers:
   - `TB-0023` still lacks direct Auth-settings visibility for leaked-password protection.
 - Recommended next actions:
-  1. Work the remaining proof-first items: `TB-0025` and `TB-0026`.
-  2. Then work operational cleanup: `TB-0033`, `TB-0049`, and `TB-0052`.
+  1. Close `TB-0025`, `TB-0026`, and `TB-0033` with the proof recorded in the tracker.
+  2. Then work operational cleanup: `TB-0049` and `TB-0052`.
   3. Add a `QA_CLIENT_IT` account when available so future client-profile role proof can cover the IT browser allow path directly.
 
 ## Recommendation Classification
@@ -27,6 +28,18 @@ Current release status is `GO WITH WATCHLIST` for `main` head `a0142260f502446a2
 - `TB-0097 Same-head schema parity for client profile and beta setup`: `CLOSED`.
   - Reason: live production now has `companies.deal_registration_config`, object-shape proof is clean, and hosted Client Admin profile proof passed.
   - Next owner: QA/Test Engineer only if a future `QA_CLIENT_IT` account is added for fuller browser role proof.
+  - Implementation queue: no.
+- `TB-0025 Add valid-delivery email-track click proof`: `CLOSED`.
+  - Reason: `corepack pnpm email-track:prove-click` created retained `is_test` delivery `bf5632eb-d95c-47b0-bbed-8679f9cba8fa`, received a live `302` to `https://trustedbums.com/privacy-policy/`, and verified one click event plus engagement score `3`.
+  - Next owner: Trust & Reputation only if future release verification wants a fresh proof row.
+  - Implementation queue: no.
+- `TB-0026 Add safe authenticated invite smoke for approved redirect handoff`: `CLOSED`.
+  - Reason: `corepack pnpm invite:prove-redirect` signed in as the QA admin and sent one Ryan-approved plus-addressed Bum invitation, Ryan confirmed the email arrived and the `Accept Invitation` click reached signup, and the focused redirect tests prove both invite functions normalize approved redirects through the shared helper before Clerk handoff.
+  - Next owner: QA/Test Engineer only if a future run needs a fresh invite smoke.
+  - Implementation queue: no.
+- `TB-0033 First automation and prompt synchronization audit pending`: `CLOSED`.
+  - Reason: `corepack pnpm agent-ops:audit` completed the registry-vs-snapshot audit. The only follow-up is non-blocking drift for the Bum Supply Leader snapshot missing a live recurring automation.
+  - Next owner: Agent Operations Steward for the Bum Supply Leader create-or-retire decision.
   - Implementation queue: no.
 - `TB-0019 Refresh exact-head Code Review for e231cc0`: `BLOCKED BY ANOTHER SPECIALIST`.
   - Reason: hosted proof is current, but the pre-main review marker is still pinned to `b2c6c44`.

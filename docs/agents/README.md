@@ -99,6 +99,20 @@ Current rebaseline: merged `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2
 - On-demand Legal/Compliance Reviewer: legal, finance, privacy, consent, agreement, commission, endorsement, and claims-sensitive review.
 - On-demand Decision-Maker Researcher: public-web target-account contact mapping, decision-maker scoring, and human-only LinkedIn verification tasks.
 
+## Current Recurring Automation Roster
+
+_Last audited: 2026-06-20 with `corepack pnpm agent-ops:audit`._
+
+| Role | Live cadence | Model | Workspace | Snapshot status |
+| --- | --- | --- | --- | --- |
+| QA Test Engineer | Daily 01:00 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
+| QA Harness Reliability Agent | Daily 01:30 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
+| Release Verification Agent | Daily 02:00 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
+| Accessibility, B2B Growth, Content, Data Analytics, Marketing Graphics, Performance, Product Ops, Security, Trust/Reputation, UI, UX | Daily 03:00 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
+| Bum Supply Leader | Missing live automation | `gpt-5.4` in snapshot | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` in snapshot | Drift: active cron snapshot has no live registry entry |
+| Lead Developer Scrum | Daily 05:00 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
+| Agent Operations Steward | Sunday 06:00 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
+
 ## Updating This Pack
 
 When a role changes, update the matching file in this folder and the active `docs/` source file when applicable. If a local Codex automation prompt changes, refresh the matching file under `automation-prompts/` before pushing.
