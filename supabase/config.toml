@@ -25,7 +25,7 @@ additional_redirect_urls = [
 
 [auth.third_party.clerk]
 enabled = true
-domain = "gorgeous-kit-53.accounts.dev"
+domain = "clerk.trustedbums.com"
 
 [functions.schedule-teams-meeting]
 verify_jwt = false
