@@ -4,6 +4,9 @@ import { describe, expect, it } from "vitest";
 const stagingSmokeSource = readFileSync("tests/e2e/staging-smoke.spec.ts", "utf8");
 const authenticatedRoleSmokeSource = readFileSync("tests/e2e/authenticated-role-smoke.spec.ts", "utf8");
 const opportunityWorkflowSource = readFileSync("tests/e2e/opportunity-workflow.spec.ts", "utf8");
+const workflowQaMatrixSource = readFileSync("tests/e2e/workflow-qa-matrix.spec.ts", "utf8");
+const deepQaHelperSource = readFileSync("tests/e2e/helpers/deepQa.ts", "utf8");
+const packageSource = readFileSync("package.json", "utf8");
 const clientPaymentsSource = readFileSync("src/pages/client/ClientPayments.tsx", "utf8");
 const portalSearchSource = readFileSync("src/components/PortalGlobalSearch.tsx", "utf8");
 const signupIntentSource = readFileSync("src/components/SignupIntentDialog.tsx", "utf8");
@@ -93,5 +96,23 @@ describe("E2E smoke regression coverage", () => {
     expect(opportunityWorkflowSource).toContain("cleanupCreatedRecords(createdRecords, cleanupIssues)");
     expect(opportunityWorkflowSource).toContain("finally");
     expect(opportunityWorkflowSource).toContain('issue.severity === "P1"');
+  });
+
+  it("keeps mutating role workflow QA strict and cleanup-safe", () => {
+    expect(packageSource).toContain('"qa:workflow": "playwright test tests/e2e/workflow-qa-matrix.spec.ts --project=chromium"');
+    expect(workflowQaMatrixSource).toContain("QA_WORKFLOW_MUTATION=1");
+    expect(workflowQaMatrixSource).toContain("QA DO NOT USE");
+    expect(workflowQaMatrixSource).toContain("installWorkflowQaErrorGate");
+    expect(workflowQaMatrixSource).toContain('requireQaAccount("CLIENT_MEMBER")');
+    expect(workflowQaMatrixSource).toContain('requireQaAccount("CLIENT_ADMIN")');
+    expect(workflowQaMatrixSource).toContain('requireQaAccount("ADMIN")');
+    expect(workflowQaMatrixSource).toContain('requireQaAccount("BUM")');
+    expect(workflowQaMatrixSource).toContain("expectAdminCanSeeOpportunity");
+    expect(workflowQaMatrixSource).toContain("expectBumCanSeeOpportunity");
+    expect(workflowQaMatrixSource).toContain("deleteUnclaimedOpportunity");
+    expect(deepQaHelperSource).toContain("function isWorkflowRelevantUrl");
+    expect(deepQaHelperSource).toContain("export function installWorkflowQaErrorGate");
+    expect(deepQaHelperSource).toContain("export function isQaCleanupSafeRecord");
+    expect(deepQaHelperSource).toContain("Cleanup refused");
   });
 });

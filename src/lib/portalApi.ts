@@ -3162,19 +3162,29 @@ export async function deleteOwnOpportunityRegistration(user: AuthUser, opportuni
     throw new Error("Cannot delete this opportunity because a claim exists.");
   }
 
-  const { error } = await supabase
+  const { data: deletedOpportunity, error } = await supabase
     .from("opportunity_registrations")
     .delete()
     .eq("id", opportunity.id)
-    .eq("company_id", user.clientId);
+    .eq("company_id", user.clientId)
+    .select("id")
+    .maybeSingle<Pick<OpportunityRegistration, "id">>();
 
   if (error) {
     throw error;
   }
 
-  await createAuditEvent(user, "client_opportunity_deleted", "opportunity_registrations", opportunity.id, {
-    target_account_name: opportunity.target_account_name,
-  });
+  if (!deletedOpportunity) {
+    throw new Error("Unable to delete this opportunity because no matching row was removed.");
+  }
+
+  try {
+    await createAuditEvent(user, "client_opportunity_deleted", "opportunity_registrations", opportunity.id, {
+      target_account_name: opportunity.target_account_name,
+    });
+  } catch (error) {
+    console.warn("Opportunity was deleted, but the audit event could not be recorded.", error);
+  }
 }
 
 export async function listOpportunityRegistrations(status?: string) {

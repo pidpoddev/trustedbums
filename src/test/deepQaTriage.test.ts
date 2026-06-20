@@ -73,4 +73,11 @@ describe("deep QA triage coverage", () => {
     expect(deepQaWorkflowSource).toContain("QA_EXTENSION_API_EXPECTATION: required");
     expect(e2eSmokeWorkflowSource).toContain("QA_EXTENSION_API_EXPECTATION: required");
   });
+
+  it("runs the role workflow QA gate only when mutating deep QA is requested", () => {
+    expect(deepQaWorkflowSource).toContain("workflow-qa:");
+    expect(deepQaWorkflowSource).toContain("if: ${{ inputs.mutation_mode }}");
+    expect(deepQaWorkflowSource).toContain('QA_WORKFLOW_MUTATION: "1"');
+    expect(deepQaWorkflowSource).toContain("pnpm run qa:workflow");
+  });
 });

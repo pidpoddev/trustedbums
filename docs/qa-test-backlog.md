@@ -26,6 +26,12 @@ Current-session local preflight stayed split across the expected QA env surfaces
 
 ## Active Recommendations
 
+### Active - Role workflow QA gate for UAT escape prevention
+- Trigger: Ryan reported too many UAT escapes and asked whether per-user-type Workflow QA is good enough.
+- Current change: add an opt-in mutating `qa:workflow` Playwright gate that uses QA roles to create a clearly marked `QA DO NOT USE` opportunity, prove Admin and Bum visibility, delete the unclaimed opportunity through the Client Admin UI, fail on red browser/Supabase errors, and run cleanup proof.
+- Data handling rule: default to deleting every QA-created record after each test. Until a deliberate `qa_run_id` or `is_test` visibility model is added, published QA opportunities may be briefly visible to eligible Bums, so test records must use obvious QA labels and no real client, opportunity, contact, or private names.
+- Closure standard: this gate counts only when `QA_WORKFLOW_MUTATION=1`, a real service-role cleanup JWT is present, all required QA role accounts exist, no red/RLS errors occur, and cleanup reports no P1 issues.
+
 ### Closed - [TB-0097] Client profile and beta role governance live schema parity
 - Evidence: live SQL now shows `public.companies.deal_registration_config` exists and is constrained to an object; all current company rows have object-shaped values; and hosted Client Admin visual audit passed through Client Profile after the fix.
 - Role proof: source and focused tests keep deal-registration writes limited to `CLIENT_ADMIN` and `CLIENT_IT`; hosted smoke proved Client Admin access, Client Finance access to finance-only lanes, and Client Member denial from finance-only lanes. The current QA env has no `QA_CLIENT_IT` account, so live Client IT browser proof remains a future enhancement rather than a blocker.

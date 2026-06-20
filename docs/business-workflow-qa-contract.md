@@ -13,9 +13,25 @@ Any defect found during founder, client, Bum, or admin testing must be converted
 - Test the role's job, not the route. Start from the business outcome the user expects.
 - Verify the full chain: UI action, Supabase write/read, audit or notification side effect, next role visibility, and cleanup or reversal.
 - Include negative proof. If a role should not perform an action, prove the UI blocks it and the backend rejects it.
+- Treat red browser console output, failed app/Supabase requests, and unexpected 4xx/5xx responses during role workflow QA as blocking evidence until explained.
 - Check duplicate and retry behavior. Re-clicking after a partial success must not create duplicate records or generic failure loops.
 - Treat "Unable to..." toasts, silent no-ops, stale data after refresh, and repeated loading-session loops as P1 candidates on primary workflows.
 - When a new defect escaped QA, add the missing workflow scenario and update the responsible agent or gate so the same class of miss is not repeated.
+
+## QA Data Handling
+
+Mutating role workflow QA must use dedicated QA users and a dedicated QA client workspace whenever possible. Test data must not use real client names, real opportunity names, or real private contact details.
+
+Every created record must be visibly QA-owned before the test submits it:
+
+- Display names must start with `QA`, `qa-`, or `qa_`; opportunity names should include `QA DO NOT USE`.
+- Notes or descriptions must include the QA run id and `safe to delete`.
+- Synthetic email addresses must use `example.invalid`.
+- Cleanup helpers must refuse to delete records that are not visibly QA-owned.
+
+Default handling is create, prove, and delete in the same test run. Cleanup failure is a QA blocker, not a warning, unless Ryan explicitly asks to retain a specific QA record for investigation.
+
+Current product behavior does not fully hide published QA opportunities from every real Bum user while the test is running. RLS should keep client-private data scoped to the QA client company, but a published opportunity is intentionally visible to eligible Bums until the test deletes it. For now, use obvious `QA DO NOT USE` names and immediate cleanup. If Ryan wants QA records hidden from all real users, add a deliberate `qa_run_id` or `is_test` visibility model with matching RLS/list filters and admin-only cleanup proof as a separate database-backed change.
 
 ## Role Business Goals
 
@@ -61,6 +77,7 @@ These are release-blocking workflow scenarios. Deep QA must prove them with real
 - Client Admin or permitted Client Member can create an opportunity.
 - Client can edit the opportunity while it is unclaimed.
 - Client can delete the opportunity while it is unclaimed.
+- Client-created QA opportunities are visible to Admin and Bum roles only long enough to prove the handoff, then must be deleted by the creating company workflow or service-role cleanup.
 - Once a claim exists, restricted opportunity fields and delete actions are blocked with a clear explanation.
 - Client sees claim details and the redacted client notification preview after a claim notification is sent.
 

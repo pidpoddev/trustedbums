@@ -44,6 +44,8 @@ Mutating deep QA tags created records with a unique `qa-deep-*` run id and attem
 
 Deep QA is not complete until the role-based business workflows in [business-workflow-qa-contract.md](./business-workflow-qa-contract.md) are covered or explicitly marked blocked. Page loads, route navigation, button actionability, and non-destructive clicks are necessary but not sufficient. For Admin, Client, Bum, and Managing Bum workflows, QA must prove the end-to-end business job: user action, data side effect, audit or notification effect, next-role visibility, duplicate/idempotency behavior, and cleanup.
 
+Mutating role workflow QA must use visibly QA-owned data only. Records should use `QA DO NOT USE` or `qa-*` run identifiers, avoid real client or contact names, and be deleted in the same test run. A cleanup failure or unexpected red browser/Supabase error is release-blocking unless Ryan explicitly approves retaining that QA record for investigation.
+
 Escaped defects from live founder, client, Bum, or admin testing must become durable QA coverage. When a defect such as an admin delete failure, claim request failure, or duplicate contact creation escapes, update the business workflow contract and add or recommend the executable regression before the QA item is closed.
 
 For local authenticated smoke testing, copy `.env.qa.example` to `.env.qa`, fill the dedicated QA account credentials, then run:

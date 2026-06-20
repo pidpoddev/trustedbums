@@ -17,6 +17,13 @@ export interface QaCreatedRecord {
   value: string;
 }
 
+export interface WorkflowQaAllowedFailure {
+  method?: string;
+  status?: number;
+  urlPattern: RegExp;
+  reason: string;
+}
+
 export interface DeepQaRouteResult {
   area: string;
   workflow: string;
@@ -50,8 +57,16 @@ export function createDeepQaRunId() {
   return `qa-deep-${new Date().toISOString().replace(/[:.]/g, "-")}`;
 }
 
+export function createWorkflowQaRunId() {
+  return `qa-workflow-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+}
+
 export function isDeepMutationEnabled() {
   return process.env.QA_DEEP_MUTATION === "1";
+}
+
+export function isWorkflowMutationEnabled() {
+  return process.env.QA_WORKFLOW_MUTATION === "1" || isDeepMutationEnabled();
 }
 
 export function hasQaCleanupCredential() {
@@ -68,6 +83,11 @@ export function hasQaCleanupCredential() {
   } catch {
     return false;
   }
+}
+
+export function isQaCleanupSafeRecord(record: QaCreatedRecord) {
+  const value = record.value.trim();
+  return /(^qa[\s_-]|qa[\s_-]|@example\.invalid$|created by qa[\s_-]|playwright qa|qa_authorization)/i.test(value);
 }
 
 export async function attachLeadDevHotfixReport(
@@ -160,6 +180,104 @@ export function installDeepQaMonitors(page: Page, issues: DeepQaIssue[], area: s
         url: page.url(),
       });
     }
+  });
+}
+
+function isIgnoredWorkflowNoise(url: string) {
+  return /browser-intake|clerk|ingest|analytics|clarity|googletagmanager|google-analytics/i.test(url);
+}
+
+function isWorkflowRelevantUrl(url: string) {
+  if (isIgnoredWorkflowNoise(url)) {
+    return false;
+  }
+
+  if (isAppPageUrl(url)) {
+    return true;
+  }
+
+  return /\/rest\/v1\/|\/functions\/v1\/|\.supabase\.co\//i.test(url);
+}
+
+function isAllowedWorkflowFailure(requestMethod: string, status: number | undefined, url: string, allowedFailures: WorkflowQaAllowedFailure[]) {
+  return allowedFailures.some((allowed) => {
+    const methodMatches = !allowed.method || allowed.method.toUpperCase() === requestMethod.toUpperCase();
+    const statusMatches = allowed.status === undefined || allowed.status === status;
+    return methodMatches && statusMatches && allowed.urlPattern.test(url);
+  });
+}
+
+export function installWorkflowQaErrorGate(
+  page: Page,
+  issues: DeepQaIssue[],
+  area: string | (() => string),
+  allowedFailures: WorkflowQaAllowedFailure[] = [],
+) {
+  const currentArea = () => (typeof area === "function" ? area() : area);
+
+  page.on("pageerror", (error) => {
+    if (!isAppPageUrl(page.url())) {
+      return;
+    }
+
+    issues.push({
+      severity: "P1",
+      area: currentArea(),
+      workflow: "Workflow runtime",
+      evidence: `Uncaught page error: ${error.message}`,
+      recommendation: "Fix the runtime exception before treating the role workflow as UAT-safe.",
+      url: page.url(),
+    });
+  });
+
+  page.on("console", (message) => {
+    if (message.type() !== "error" || !isAppPageUrl(page.url())) {
+      return;
+    }
+
+    issues.push({
+      severity: "P1",
+      area: currentArea(),
+      workflow: "Browser console",
+      evidence: `Console error: ${message.text()}`,
+      recommendation: "Treat red console output during role workflow QA as a product or harness blocker until explained.",
+      url: page.url(),
+    });
+  });
+
+  page.on("requestfailed", (request) => {
+    const url = request.url();
+    const method = request.method();
+    if (!isWorkflowRelevantUrl(url) || isAllowedWorkflowFailure(method, undefined, url, allowedFailures)) {
+      return;
+    }
+
+    issues.push({
+      severity: "P1",
+      area: currentArea(),
+      workflow: "Network request",
+      evidence: `${method} request failed for ${url}: ${request.failure()?.errorText ?? "unknown failure"}`,
+      recommendation: "Fix failed app/Supabase requests or explicitly document the expected negative-proof denial.",
+      url: page.url(),
+    });
+  });
+
+  page.on("response", (response) => {
+    const status = response.status();
+    const url = response.url();
+    const method = response.request().method();
+    if (status < 400 || !isWorkflowRelevantUrl(url) || isAllowedWorkflowFailure(method, status, url, allowedFailures)) {
+      return;
+    }
+
+    issues.push({
+      severity: "P1",
+      area: currentArea(),
+      workflow: "Network response",
+      evidence: `${method} ${status} response from ${url}`,
+      recommendation: "Fix RLS/API failures before closing the workflow, or add a scoped allowed failure for deliberate negative proof.",
+      url: page.url(),
+    });
   });
 }
 
@@ -333,6 +451,17 @@ export async function cleanupCreatedRecords(records: QaCreatedRecord[], issues: 
   const orderedRecords = [...records].sort((a, b) => (cleanupOrder[a.table] ?? 1) - (cleanupOrder[b.table] ?? 1));
 
   for (const record of orderedRecords) {
+    if (!isQaCleanupSafeRecord(record)) {
+      issues.push({
+        severity: "P1",
+        area: "QA cleanup",
+        workflow: record.table,
+        evidence: `Cleanup refused for ${record.table}.${record.field}=${record.value} because the value is not visibly QA-owned.`,
+        recommendation: "Use a qa-* run id, QA-prefixed display value, qa_authorization marker, or example.invalid email before creating mutating QA data.",
+      });
+      continue;
+    }
+
     const result = await deleteByField(record.table, record.field, record.value);
     if (result.skipped) {
       issues.push({

@@ -78,3 +78,60 @@ jobs:
             test-results/
           retention-days: 7
           if-no-files-found: ignore
+
+  workflow-qa:
+    name: Role Workflow QA
+    if: ${{ inputs.mutation_mode }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.1.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run role workflow QA matrix
+        env:
+          QA_BASE_URL: ${{ inputs.target_url }}
+          QA_WORKFLOW_MUTATION: "1"
+          QA_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          QA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          QA_TARGET_PREFLIGHT_OUTPUT_DIR: qa-target-preflight-artifacts/workflow
+          QA_EXTENSION_API_EXPECTATION: required
+          QA_EXTENSION_API_BASE_URL: ${{ vars.QA_EXTENSION_API_BASE_URL || secrets.QA_EXTENSION_API_BASE_URL }}
+          QA_EXTENSION_API_TOKEN: ${{ secrets.QA_EXTENSION_API_TOKEN }}
+          QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
+          QA_CLIENT_ADMIN_EMAIL: ${{ secrets.QA_CLIENT_ADMIN_EMAIL }}
+          QA_CLIENT_MEMBER_EMAIL: ${{ secrets.QA_CLIENT_MEMBER_EMAIL }}
+          QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
+        run: pnpm run qa:target-preflight && pnpm run qa:env && pnpm run qa:workflow
+
+      - name: Upload role workflow QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: role-workflow-qa
+          path: |
+            qa-target-preflight-artifacts/
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore

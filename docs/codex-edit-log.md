@@ -13,6 +13,14 @@ This file is the running handoff log for implementation work Codex has made in t
 
 ## Additional Agent Recheck Requests
 
+### 2026-06-20 - Add cleanup-safe role workflow QA gate
+
+- Trigger: Ryan asked whether per-user-type Workflow QA is good enough after UAT found too many expected-behavior failures and asked whether QA opportunities/client names can be hidden or deleted after each test.
+- Implementation branch: local `main`, pending commit at time of log entry.
+- What changed: Added opt-in mutating role workflow QA in [workflow-qa-matrix.spec.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/workflow-qa-matrix.spec.ts) and `pnpm run qa:workflow`. The gate uses Client Member, Client Admin, Admin, and Bum QA roles; creates a `QA DO NOT USE` opportunity; proves Admin and Bum visibility; deletes the unclaimed opportunity through Client Admin UI; and fails on red browser/Supabase errors. Hardened [deepQa.ts](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/tests/e2e/helpers/deepQa.ts) so cleanup refuses records that are not visibly QA-owned. Added an opt-in `workflow-qa` job to [deep-qa-hotfix-audit.yml](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.github/workflows/deep-qa-hotfix-audit.yml) when mutation mode is explicitly enabled.
+- Data handling decision: default is create, prove, and delete in the same run. Full hiding from all real users remains a separate database/RLS/list-filter feature because published opportunities are intentionally visible to eligible Bums until cleanup.
+- Recheck agents: QA Test Engineer, QA Harness Reliability Agent, Lead Developer, Release Verification Agent, Product Ops Workflow Analyst, Security Engineer, and Code Review Agent.
+
 ### 2026-06-20 - Prove and close TB-0025, TB-0026, and TB-0033
 
 - Trigger: Ryan asked to complete `TB-0025`, `TB-0026`, and `TB-0033`.
