@@ -13,9 +13,38 @@ on:
         default: ADMIN,CLIENT_ADMIN,CLIENT_FINANCE,BUM
 
 jobs:
-  visual-audit:
+  visual-audit-matrix:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    outputs:
+      roles: ${{ steps.roles.outputs.roles }}
+
+    steps:
+      - name: Build selected role matrix
+        id: roles
+        env:
+          QA_VISUAL_ROLES_INPUT: ${{ inputs.roles }}
+        run: |
+          node <<'NODE' >> "$GITHUB_OUTPUT"
+          const allowed = ["ADMIN", "CLIENT_ADMIN", "CLIENT_FINANCE", "BUM"];
+          const raw = process.env.QA_VISUAL_ROLES_INPUT || "";
+          const selected = raw
+            .split(",")
+            .map((role) => role.trim().toUpperCase())
+            .filter(Boolean);
+          const roles = selected.length ? selected : allowed;
+          const invalid = roles.filter((role) => !allowed.includes(role));
+
+          if (invalid.length) {
+            console.error(`Invalid role(s): ${invalid.join(", ")}. Allowed values: ${allowed.join(", ")}.`);
+            process.exit(1);
+          }
+
+          console.log(`roles=${JSON.stringify([...new Set(roles)])}`);
+          NODE
+
+  public-visual-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -38,10 +67,10 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run authenticated visual audit
+      - name: Run public visual audit
         env:
           QA_BASE_URL: ${{ inputs.target_url }}
-          QA_VISUAL_ROLES: ${{ inputs.roles }}
+          QA_VISUAL_INCLUDE_AUTH: "false"
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
@@ -49,13 +78,68 @@ jobs:
           QA_CLIENT_FINANCE_EMAIL: ${{ secrets.QA_CLIENT_FINANCE_EMAIL }}
           QA_CLIENT_MEMBER_EMAIL: ${{ secrets.QA_CLIENT_MEMBER_EMAIL }}
           QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
-        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/visual-ui-audit.spec.ts
+        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/visual-ui-audit.spec.ts --workers=1
 
       - name: Upload visual audit artifacts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: visual-ui-audit
+          name: visual-ui-audit-public
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  role-visual-audit:
+    needs: visual-audit-matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        role: ${{ fromJson(needs.visual-audit-matrix.outputs.roles) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.1.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run ${{ matrix.role }} visual audit
+        env:
+          QA_BASE_URL: ${{ inputs.target_url }}
+          QA_VISUAL_ROLES: ${{ matrix.role }}
+          QA_VISUAL_INCLUDE_PUBLIC: "false"
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
+          QA_CLIENT_ADMIN_EMAIL: ${{ secrets.QA_CLIENT_ADMIN_EMAIL }}
+          QA_CLIENT_FINANCE_EMAIL: ${{ secrets.QA_CLIENT_FINANCE_EMAIL }}
+          QA_CLIENT_MEMBER_EMAIL: ${{ secrets.QA_CLIENT_MEMBER_EMAIL }}
+          QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
+        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/visual-ui-audit.spec.ts --workers=1
+
+      - name: Upload visual audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-ui-audit-${{ matrix.role }}
           path: |
             playwright-report/
             test-results/

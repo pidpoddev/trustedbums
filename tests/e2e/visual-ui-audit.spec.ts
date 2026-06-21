@@ -4,6 +4,8 @@ import { getQaAccount, goToAuthedPath, hasExternalQaTarget, type QaAccount } fro
 
 const MAX_SCREENSHOT_HEIGHT = 12_000;
 const visualAuditScope = process.env.QA_VISUAL_AUDIT_SCOPE?.trim().toLowerCase() || "standard";
+const includePublicAudit = process.env.QA_VISUAL_INCLUDE_PUBLIC?.trim().toLowerCase() !== "false";
+const includeAuthenticatedAudit = process.env.QA_VISUAL_INCLUDE_AUTH?.trim().toLowerCase() !== "false";
 
 type RoleKey = "ADMIN" | "CLIENT_ADMIN" | "CLIENT_FINANCE" | "BUM";
 const allRoleKeys: RoleKey[] = ["ADMIN", "CLIENT_ADMIN", "CLIENT_FINANCE", "BUM"];
@@ -376,6 +378,7 @@ async function auditInteraction(page: Page, account: QaAccount, role: RoleKey, i
 
 test.describe("public visual UI audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run public visual UI audit.");
+  test.skip(!includePublicAudit, "Set QA_VISUAL_INCLUDE_PUBLIC=true to run public visual UI audit.");
 
   test("public marketing and privacy states render cleanly", async ({ page }, testInfo) => {
     test.setTimeout(visualAuditScope === "complete" ? 180_000 : 120_000);
@@ -429,6 +432,7 @@ test.describe("public visual UI audit", () => {
 
 test.describe("authenticated visual UI audit", () => {
   test.skip(!hasExternalQaTarget(), "Set QA_BASE_URL to run authenticated visual UI audit.");
+  test.skip(!includeAuthenticatedAudit, "Set QA_VISUAL_INCLUDE_AUTH=true to run authenticated visual UI audit.");
 
   for (const role of getSelectedRoles()) {
     const routes = getRoutesForRole(role);
