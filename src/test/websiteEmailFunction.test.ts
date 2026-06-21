@@ -24,4 +24,14 @@ describe("website email function boundary", () => {
     expect(submitContactSource).toContain('functions.invoke("send-website-email"');
     expect(submitContactSource).toContain("createClient(supabaseUrl, supabaseServiceRoleKey");
   });
+
+  it("notifies all Trusted Bums owners when someone is waiting for support", () => {
+    expect(sendWebsiteEmailSource).toContain('"ryanmp29@gmail.com"');
+    expect(sendWebsiteEmailSource).toContain('"bscott@ourcassell.com"');
+    expect(sendWebsiteEmailSource).toContain('"tomwatsonuscga@gmail.com"');
+    expect(sendWebsiteEmailSource).toContain('"cpetersonluv@gmail.com"');
+    expect(sendWebsiteEmailSource).toContain('"bums@trustedbums.com"');
+    expect(sendWebsiteEmailSource).toContain("Someone is waiting for Trusted Bums support");
+    expect(sendWebsiteEmailSource).toContain("uniqueEmails(websiteContactNotifyTo).map");
+  });
 });

@@ -27,7 +27,7 @@ The first problem is not broad paid marketing. The first problem is credibility 
 - Evidence: Ryan asked on 2026-06-17 to start grabbing future TrustedBums aliases and specifically called out the X/Twitter account name. Social handles are scarce public brand assets, and Trusted Bums is beginning public credibility work.
 - Why it matters: Losing `trustedbums` on major platforms would create avoidable brand confusion, weaken buyer verification, and complicate future founder-led or company-led distribution.
 - CMO recommendation: Reserve the core `trustedbums` aliases using `bums@trustedbums.com` where each platform allows. Keep generated credentials in the local-only secrets file and track non-secret status in `docs/social-alias-reservation-plan.md`.
-- Human approval needed: Ryan or a named account owner must complete email, CAPTCHA, phone, platform, or 2FA verification and must approve any public profile text before publishing.
+- Human approval needed: Ryan, B. Scott, Tom, Christina, or the shared owner mailbox must complete email, CAPTCHA, phone, platform, or 2FA verification and must approve any public profile text before publishing.
 - Acceptance criteria: X/Twitter, Instagram, Facebook/Meta, YouTube, TikTok, Threads, and Bluesky are either reserved or documented as unavailable with the exact attempted handle, account owner, recovery method, and blocker.
 
 ### P0 - Fill public credibility basics before scaling demand
@@ -35,8 +35,8 @@ The first problem is not broad paid marketing. The first problem is credibility 
 - Evidence: The public logged-out LinkedIn company page shows the company name, industry, website, size, and type, but no visible public About description. `docs/claim-safe-proof-spine.md` already provides a conservative public story, and `docs/b2b-marketing-growth-backlog.md` already prioritizes founder-led LinkedIn, referral-led demand, search/citation coverage, manual nurture, and clearer CTA routing over broad paid scale.
 - Why it matters: Trusted Bums depends on trust. If a buyer checks LinkedIn and sees a thin company profile, the brand feels less real before the buyer reaches the product explanation.
 - CEO/CMO recommendation: Make LinkedIn/company-profile completion the first AI CMO work packet. Draft proof-safe company positioning, tagline, specialties, CTA, founder linkage notes, banner brief, and first three founder/company posts for Ryan approval.
-- Human approval needed: Ryan or the named LinkedIn page admin must approve and publish.
-- Acceptance criteria: Approved LinkedIn About copy exists; tagline and specialties are drafted; banner direction is documented; first three proof-safe posts are drafted; page-admin publishing owner is named; unsupported claims are marked `NEEDS RYAN INPUT`.
+- Human approval needed: Ryan, B. Scott, Tom, Christina, or the named LinkedIn page admin must approve and publish.
+- Acceptance criteria: Approved LinkedIn About copy exists; tagline and specialties are drafted; banner direction is documented; first three proof-safe posts are drafted; page-admin publishing owner is named; unsupported claims are marked `NEEDS OWNER INPUT`.
 
 ### P0 - Create the basic marketing strategy foundation
 
@@ -64,6 +64,8 @@ The first problem is not broad paid marketing. The first problem is credibility 
 - End with concrete artifacts changed or approval packets created, not only advice.
 
 ## LinkedIn Company Page Draft Packet
+
+The current owner-review packet is [docs/linkedin-company-approval-packet.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/linkedin-company-approval-packet.md). Do not publish until one of the owner approvers signs off.
 
 ### Tagline Option
 

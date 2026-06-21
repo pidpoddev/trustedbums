@@ -22,10 +22,10 @@ The active creative system stays source-backed and conservative:
 
 | Input | Owner | Needed decision or evidence | Current status | Closeout proof |
 | --- | --- | --- | --- | --- |
-| Brand strategy source | Founder / CMO | Approved positioning, ICP, category point of view, tone, and proof boundaries. | Missing. `docs/brand-strategy.md` does not exist. | Approved strategy doc or named replacement linked from this file. |
+| Brand strategy source | Founder / CMO | Approved positioning, ICP, category point of view, tone, and proof boundaries. | Present locally. [`docs/brand-strategy.md`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/brand-strategy.md) now defines positioning, audience priority, proof boundaries, voice, visual direction, and approval owners, but the downstream logo and campaign-governance kit is still incomplete. | Approved strategy doc or named replacement linked from this file. |
 | Logo usage rules | Founder / Design | Logo variants, clear space, background rules, minimum size, and misuse examples. | Missing. | Approved logo usage page or design note. |
-| Campaign visual guidelines | CMO / Marketing Graphics | Approved motifs, crops, hierarchy, CTA treatment, colors, type, and motion rules. | Partial. Current rules live in `docs/marketing-graphics-campaign-backlog.md`. | Guidelines approved or promoted to a stable brand/design doc. |
-| Audience definitions | CMO / B2B Growth | Buyer, Client Admin, founder, advisor, investor, Bum, and referral-source audience priorities. | Partial. B2B growth docs prioritize Client demand and referral-led acquisition. | Audience map with primary action and disallowed claims per audience. |
+| Campaign visual guidelines | CMO / Marketing Graphics | Approved motifs, crops, hierarchy, CTA treatment, colors, type, and motion rules. | Partial. Current rules live in `docs/marketing-graphics-campaign-backlog.md`, and `docs/brand-strategy.md` now confirms the high-trust text-free direction, but no owner-approved logo/crop/layout standard exists yet. | Guidelines approved or promoted to a stable brand/design doc. |
+| Audience definitions | CMO / B2B Growth | Buyer, Client Admin, founder, advisor, investor, Bum, and referral-source audience priorities. | Partial. `docs/brand-strategy.md` now sets audience priority, but channel-specific audience definitions and disallowed-claim notes are still missing. | Audience map with primary action and disallowed claims per audience. |
 | Campaign calendar | CMO / Founder | Channel, audience, CTA, asset, owner, and review date for each planned campaign. | Partial. Current ideas are non-binding. | Approved campaign calendar with owner and launch criteria. |
 | Ad-account performance exports | CMO / Data | Campaign, spend, impressions, clicks, conversions, creative id, and date range. | Missing. | Export path or dashboard link, with private data excluded from repo docs. |
 | Winning creative references | CMO / Marketing Graphics | Examples of approved or high-performing creative to learn from. | Missing. | Non-secret reference list with why each example is approved. |
@@ -48,4 +48,4 @@ Use this compact packet when an owner supplies an input:
 
 ## Status
 
-`TB-0080` should remain open until the missing inputs above have approved sources. This file makes the blocker actionable; it does not replace the missing approvals.
+`TB-0080` should remain open until the remaining missing inputs above have approved sources. The brand-strategy source itself is now present locally; the open blocker is the rest of the campaign-governance and QA package needed for scale-ready graphics.

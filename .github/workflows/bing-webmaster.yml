@@ -1,0 +1,67 @@
+name: Bing Webmaster Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Bing action to run
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - health
+          - submit
+          - traffic
+
+jobs:
+  bing-webmaster:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.1.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify crawler assets
+        if: ${{ inputs.action == 'all' || inputs.action == 'health' || inputs.action == 'submit' }}
+        run: pnpm run bing:health
+
+      - name: Submit URLs through IndexNow
+        if: ${{ inputs.action == 'all' || inputs.action == 'submit' }}
+        run: pnpm run bing:indexnow
+
+      - name: Run Bing Webmaster API
+        if: ${{ inputs.action == 'all' || inputs.action == 'submit' || inputs.action == 'traffic' }}
+        env:
+          BING_WEBMASTER_API_KEY: ${{ secrets.BING_WEBMASTER_API_KEY }}
+        run: |
+          if [ -z "$BING_WEBMASTER_API_KEY" ]; then
+            echo "BING_WEBMASTER_API_KEY is not configured in GitHub Secrets."
+            exit 1
+          fi
+
+          if [ "${{ inputs.action }}" = "traffic" ]; then
+            pnpm run bing:webmaster traffic
+            exit 0
+          fi
+
+          pnpm run bing:webmaster submit-feed
+          pnpm run bing:webmaster submit-urls
+
+          if [ "${{ inputs.action }}" = "all" ]; then
+            pnpm run bing:webmaster traffic
+          fi

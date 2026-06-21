@@ -88,7 +88,7 @@ Current rebaseline: merged `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2
 - Daily QA Test Engineer: product QA coverage, release-risk findings, business-access test matrix, and cross-agent failure feedback.
 - Daily QA Harness Reliability Agent: QA machinery health, flaky workflow diagnosis, Deep QA splitting, browser/session helpers, artifact capture, and `.env.qa` contract reliability.
 - Daily Release Verification Agent: release evidence status after QA or main changes, including GO/NO-GO/HOLD/HOTFIX/ROLLBACK recommendations.
-- Daily specialist agents: UX, UI, Content, Marketing Graphics, B2B Growth, Bum Supply Leader, Accessibility, Security, Performance, Data, Product Ops, Trust & Reputation.
+- Daily specialist agents currently live: UX, UI, Content, Marketing Graphics, B2B Growth, Accessibility, Security, Performance, Data, Product Ops, Trust & Reputation. Bum Supply Leader remains snapshot-only until a matching live cron is created or the snapshot is retired.
 - Daily Lead Developer Scrum: synthesis, engineering priority, cross-specialist tradeoff classification, and implementation sequencing.
 - Weekly Agent Operations Steward: prompt/schedule/source-of-truth synchronization.
 - On-demand CEO Agent: Co-CEO operating partner for go-live priorities, organizational design, marketplace liquidity, client/opportunity ownership, engineering architecture fit, agent hiring, automations/triggers, goal-agent proposals, and human staffing recommendations.
@@ -101,7 +101,7 @@ Current rebaseline: merged `main` head `dc9bd01cbcf9e02344eb9894ebfab540cdec6fe2
 
 ## Current Recurring Automation Roster
 
-_Last audited: 2026-06-20 with `corepack pnpm agent-ops:audit`._
+_Last audited: 2026-06-21 with `corepack pnpm agent-ops:audit`._
 
 | Role | Live cadence | Model | Workspace | Snapshot status |
 | --- | --- | --- | --- | --- |
@@ -109,7 +109,7 @@ _Last audited: 2026-06-20 with `corepack pnpm agent-ops:audit`._
 | QA Harness Reliability Agent | Daily 01:30 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
 | Release Verification Agent | Daily 02:00 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
 | Accessibility, B2B Growth, Content, Data Analytics, Marketing Graphics, Performance, Product Ops, Security, Trust/Reputation, UI, UX | Daily 03:00 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
-| Bum Supply Leader | Missing live automation | `gpt-5.4` in snapshot | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` in snapshot | Drift: active cron snapshot has no live registry entry |
+| Bum Supply Leader | Snapshot only; no live recurring automation | `gpt-5.4` in snapshot | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` in snapshot | Drift: active cron snapshot has no live registry entry |
 | Lead Developer Scrum | Daily 05:00 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
 | Agent Operations Steward | Sunday 06:00 | `gpt-5.4` | `/Users/macdaddy/CodexWork/TrustedBums/trustedbums` | Aligned |
 

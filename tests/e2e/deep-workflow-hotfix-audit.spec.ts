@@ -175,10 +175,10 @@ async function exerciseTermsAcceptanceIfRequired(page: Page, account: QaAccount,
   }
 }
 
-async function createClientOpportunity(page: Page, runId: string, records: QaCreatedRecord[]) {
+async function createClientOpportunity(page: Page, account: QaAccount, runId: string, records: QaCreatedRecord[]) {
   const name = `${runId} opportunity`;
-  await page.goto("/client/opportunities/new");
-  await expect(page.getByRole("heading", { name: "Opportunities" })).toBeVisible();
+  await goToAuthedPath(page, account, "/client/opportunities/new");
+  await expect(page.getByRole("heading", { name: "Opportunities" })).toBeVisible({ timeout: 20_000 });
   await page.getByLabel("Customer account name", { exact: true }).fill(name);
   await page.getByLabel("Business unit / department", { exact: true }).fill("QA");
   await page.getByLabel("Your internal contact", { exact: true }).fill("QA Client");
@@ -305,6 +305,7 @@ test.describe("deep workflow hotfix audit", () => {
     const runId = createDeepQaRunId();
     const issues: DeepQaIssue[] = [];
     const createdRecords: QaCreatedRecord[] = [];
+    let clientPage: Page | undefined;
     try {
       const bumContext = await browser.newContext();
       const bumPage = await bumContext.newPage();
@@ -319,10 +320,20 @@ test.describe("deep workflow hotfix audit", () => {
       await clientTermsContext.close();
 
       const clientContext = await browser.newContext();
-      const clientPage = await clientContext.newPage();
+      clientPage = await clientContext.newPage();
       installDeepQaMonitors(clientPage, issues, "Client");
-      await createClientOpportunity(clientPage, runId, createdRecords);
+      await createClientOpportunity(clientPage, getRequiredAccount("CLIENT_ADMIN"), runId, createdRecords);
       await clientContext.close();
+    } catch (error) {
+      issues.push({
+        severity: "P1",
+        area: "Client",
+        workflow: "Opportunity registration",
+        evidence: error instanceof Error ? error.message : String(error),
+        recommendation: "Keep the mutating client shard on the shared authenticated navigation helper before treating a protected-route failure as product evidence.",
+        url: clientPage?.url(),
+      });
+      throw error;
     } finally {
       await cleanupCreatedRecords(createdRecords, issues);
       await attachLeadDevHotfixReport(testInfo, runId, issues, createdRecords);

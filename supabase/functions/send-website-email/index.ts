@@ -23,7 +23,20 @@ const microsoftClientSecret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
 const microsoftSenderEmail = Deno.env.get("MICROSOFT_ORGANIZER_EMAIL") ?? "bums@trustedbums.com";
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const websiteEmailInternalSecret = Deno.env.get("WEBSITE_EMAIL_INTERNAL_SECRET");
-const websiteContactNotifyTo = Deno.env.get("WEBSITE_CONTACT_NOTIFY_TO") ?? microsoftSenderEmail;
+const defaultOwnerNotificationEmails = [
+  "ryanmp29@gmail.com",
+  "bscott@ourcassell.com",
+  "tomwatsonuscga@gmail.com",
+  "cpetersonluv@gmail.com",
+  "bums@trustedbums.com",
+];
+const websiteContactNotifyTo = [
+  ...defaultOwnerNotificationEmails,
+  ...(Deno.env.get("WEBSITE_CONTACT_NOTIFY_TO") ?? "")
+    .split(/[;,]/)
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
+];
 
 function json(status: number, payload: Record<string, unknown>) {
   return new Response(JSON.stringify(payload), {
@@ -38,6 +51,10 @@ function toCleanString(value: unknown, maxLength: number) {
 
 function isEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function uniqueEmails(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim().toLowerCase()).filter(isEmail)));
 }
 
 function getBearerToken(request: Request) {
@@ -117,7 +134,7 @@ function buildContactEmail(input: ContactSubmissionEmail) {
     throw new Error("The contact submission is missing required fields.");
   }
 
-  const subject = `Trusted Bums contact: ${name}${companyName ? ` at ${companyName}` : ""}`;
+  const subject = `Trusted Bums support waiting: ${name}${companyName ? ` at ${companyName}` : ""}`;
   const rows = [
     ["Name", name],
     ["Email", email],
@@ -135,7 +152,7 @@ function buildContactEmail(input: ContactSubmissionEmail) {
     replyTo: email,
     bodyHtml: `
       <div>
-        <h2>New Trusted Bums contact submission</h2>
+        <h2>Someone is waiting for Trusted Bums support</h2>
         ${bodyRows}
         <p><strong>Message:</strong></p>
         <p>${escapeHtml(message).replace(/\n/g, "<br>")}</p>
@@ -160,13 +177,9 @@ async function sendMicrosoftEmail(input: { accessToken: string; subject: string;
             contentType: "HTML",
             content: input.bodyHtml,
           },
-          toRecipients: [
-            {
-              emailAddress: {
-                address: websiteContactNotifyTo,
-              },
-            },
-          ],
+          toRecipients: uniqueEmails(websiteContactNotifyTo).map((address) => ({
+            emailAddress: { address },
+          })),
           replyTo: [
             {
               emailAddress: {

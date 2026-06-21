@@ -1,6 +1,6 @@
 # Bing Webmaster And IndexNow Access
 
-_Last updated: 2026-06-15 by Codex._
+_Last updated: 2026-06-20 by Codex._
 
 Trusted Bums uses Bing Webmaster Tools, the public sitemap, and IndexNow to help Microsoft discover and report on public pages. Bing traffic reports are search-performance reports: if Bing shows zero traffic, that can mean the site has no Bing impressions or clicks yet, even when indexing is technically working.
 
@@ -78,11 +78,25 @@ The DreamHost deploy workflow now:
 2. Submits public URLs to IndexNow.
 3. Submits the sitemap and public URLs through Bing Webmaster API when `BING_WEBMASTER_API_KEY` is configured in GitHub Secrets.
 
+## Manual GitHub Proof Path
+
+When local shells do not have `BING_WEBMASTER_API_KEY`, use the manual `Bing Webmaster Proof` GitHub Actions workflow instead of copying the secret into the repo.
+
+Workflow inputs:
+
+- `health`: verify production crawler assets only.
+- `submit`: run health, IndexNow, sitemap submission, and URL submission.
+- `traffic`: pull Bing rank and traffic stats through the GitHub secret.
+- `all`: run health, IndexNow, sitemap submission, URL submission, and traffic proof.
+
+This keeps the recurring proof path usable without storing the Bing key in `.env.qa` or committing it.
+
 ## Agent Rules
 
 - Use `pnpm bing:health` before diagnosing Bing reporting as broken.
 - Use `pnpm bing:indexnow` after public metadata, sitemap, or route changes.
 - Use `pnpm bing:webmaster traffic` for aggregate Bing impressions and clicks when the API key is available.
+- Use the `Bing Webmaster Proof` workflow when the API key is only available as a GitHub Secret.
 - Do not commit the Bing Webmaster API key or export private Bing dashboard data into repo docs.
 
 ## References

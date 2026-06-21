@@ -42,6 +42,11 @@ describe("deep QA triage coverage", () => {
     expect(deepQaSpecSource).toContain("Client Deep QA failed fast because the base app could not load");
   });
 
+  it("authenticates the mutating client shard before the first protected route", () => {
+    expect(deepQaSpecSource).toContain('goToAuthedPath(page, account, "/client/opportunities/new")');
+    expect(deepQaSpecSource).not.toContain('await page.goto("/client/opportunities/new");');
+  });
+
   it("splits GitHub deep QA into admin, client, and bum suites from a single deep pass trigger", () => {
     expect(deepQaSpecSource).toContain('type DeepQaSuite = "admin" | "client" | "bum"');
     expect(deepQaSpecSource).toContain("QA_DEEP_SUITE");

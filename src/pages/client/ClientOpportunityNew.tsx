@@ -761,7 +761,7 @@ export default function ClientOpportunityNew() {
   };
 
   const payPrograms = payProgramsQuery.data ?? [];
-  const opportunities = opportunitiesQuery.data ?? [];
+  const opportunities = useMemo(() => opportunitiesQuery.data ?? [], [opportunitiesQuery.data]);
   const targetResponses = useMemo(() => targetResponsesQuery.data ?? [], [targetResponsesQuery.data]);
   const linkedTargetResponseId = new URLSearchParams(location.search).get("targetResponseId");
   const relationshipTargetResponses = useMemo(() => {
