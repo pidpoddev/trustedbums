@@ -74,8 +74,8 @@ Current `main` head `5af32edeb0cc1290cdbae808207e75276d22a4d6` is product-green 
 
 ### Bum represented contacts
 - Current proof: focused regression tests still keep represented-contact reads scoped to intended workflows, and no current session evidence showed a direct access regression.
-- Missing allow or deny proof: one live allow proof for the owning Bum and Admin, plus one deny proof for an unrelated Bum and an unrelated client-company user.
-- Seed data needed: one represented contact owned by a Bum, one admin reviewer, one foreign Bum deny case, and one unrelated client-company deny account.
+- Missing allow or deny proof: one authenticated browser or direct-data proof for the owning Bum and Admin, plus one deny proof for an unrelated Bum and an unrelated client-company user.
+- Seed data needed: one represented contact owned by a Bum, one admin reviewer, one foreign Bum deny case, and one proof that unrelated Bums and client-company users deny.
 
 ## Cross-Agent Follow-Ups
 

@@ -14,10 +14,11 @@ Current `main` head `5af32edeb0cc1290cdbae808207e75276d22a4d6` has two active ha
 - Current local source now routes `createClientOpportunity` through `goToAuthedPath(...)`, and this shell re-verified that sourced `qa:target-preflight` still passes on `https://trustedbums.com`.
 - The uploaded `role-workflow-qa` artifact from `27894244168` shows `DNS`, `Clerk`, and `Extension API` passed, while `HTTPS` failed with `fetch failed` and `App shell` failed only because the base HTML was never fetched.
 - The same session still returned `HTTP/2 200` and `<div id="root">` from `https://trustedbums.com`, and sibling standalone `Deep QA (admin)` plus `Deep QA (bum)` jobs on `27894244168` completed successfully.
-- Raw-shell versus sourced `.env.qa` versus hosted env states remain explicitly separate in this backlog:
-  - raw `corepack pnpm run qa:env`: failed because the shell did not have the required QA variables exported.
+- raw-shell versus sourced `.env.qa` versus hosted env states remain explicitly separate in this backlog:
+  - raw `pnpm run qa:env` / raw `corepack pnpm run qa:env`: failed because the shell did not have the required QA variables exported.
   - sourced `.env.qa` `corepack pnpm run qa:env`: passed.
-  - sourced `.env.qa` `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://trustedbums.com corepack pnpm run qa:target-preflight`: passed.
+  - Sourced `QA_EXTENSION_API_EXPECTATION=skip QA_BASE_URL=https://trustedbums.com corepack pnpm run qa:target-preflight`: passed.
+  - hosted workflow results split: exact-head hosted runs remain separate from raw-shell and sourced local preflight evidence.
 
 `TB-0055` and `TB-0112` remain closed on current head. The exact-head harness reopens are the standalone preflight fetch flake in `TB-0013` and the standalone client auth-bootstrap omission in `TB-0114`.
 
