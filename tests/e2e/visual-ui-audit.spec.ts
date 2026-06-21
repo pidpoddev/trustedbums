@@ -460,27 +460,24 @@ test.describe("authenticated visual UI audit", () => {
       });
     }
 
-    test(`${roleLabel} interactive states render cleanly`, async ({ page }, testInfo) => {
-      test.setTimeout(180_000);
+    for (const interaction of interactions) {
+      test(`${roleLabel} ${interaction.name} interactive state renders cleanly`, async ({ page }, testInfo) => {
+        test.setTimeout(180_000);
 
-      const account = getQaAccount(role);
-      test.skip(!account, `Set QA_${role}_EMAIL.`);
+        const account = getQaAccount(role);
+        test.skip(!account, `Set QA_${role}_EMAIL.`);
 
-      let auditedAnyRoute = false;
-
-      for (const interaction of interactions) {
         try {
           await auditInteraction(page, account, role, interaction, testInfo);
-          auditedAnyRoute = true;
         } catch (error) {
           test.skip(
-            shouldSkipRoleMismatch(error, role, auditedAnyRoute),
+            shouldSkipRoleMismatch(error, role, false),
             `QA_${role}_EMAIL authenticated into a different portal. Check the Clerk role metadata or set QA_VISUAL_ROLES to the roles configured for this environment.`,
           );
 
           throw error;
         }
-      }
-    });
+      });
+    }
   }
 });

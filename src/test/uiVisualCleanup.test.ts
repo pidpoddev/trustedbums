@@ -162,4 +162,10 @@ describe("UI visual cleanup guardrails", () => {
     expect(visualAuditSource).toContain("route not found");
     expect(visualAuditSource).not.toContain("configuration needed|set a production clerk publishable key|404|page not found");
   });
+
+  it("keeps visual interaction audits isolated per state", () => {
+    expect(visualAuditSource).toContain('for (const interaction of interactions)');
+    expect(visualAuditSource).toContain('${roleLabel} ${interaction.name} interactive state renders cleanly');
+    expect(visualAuditSource).not.toContain('${roleLabel} interactive states render cleanly');
+  });
 });
