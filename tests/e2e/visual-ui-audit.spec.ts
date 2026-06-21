@@ -9,12 +9,7 @@ const includeAuthenticatedAudit = process.env.QA_VISUAL_INCLUDE_AUTH?.trim().toL
 
 type RoleKey = "ADMIN" | "CLIENT_ADMIN" | "CLIENT_FINANCE" | "BUM";
 const allRoleKeys: RoleKey[] = ["ADMIN", "CLIENT_ADMIN", "CLIENT_FINANCE", "BUM"];
-const rolePortalTimeouts: Record<RoleKey, number> = {
-  ADMIN: 240_000,
-  CLIENT_ADMIN: 240_000,
-  CLIENT_FINANCE: 240_000,
-  BUM: 600_000,
-};
+const portalRouteTimeoutMs = 120_000;
 
 if (!["standard", "complete"].includes(visualAuditScope)) {
   throw new Error("Invalid QA_VISUAL_AUDIT_SCOPE value: " + visualAuditScope + ". Allowed values: standard, complete.");
@@ -443,31 +438,29 @@ test.describe("authenticated visual UI audit", () => {
   for (const role of getSelectedRoles()) {
     const routes = getRoutesForRole(role);
     const interactions = getInteractionsForRole(role);
+    const roleLabel = role.toLowerCase().replaceAll("_", " ");
 
-    test(`${role.toLowerCase().replaceAll("_", " ")} portal pages render cleanly`, async ({ page }, testInfo) => {
-      test.setTimeout(rolePortalTimeouts[role]);
+    for (const route of routes) {
+      test(`${roleLabel} ${route.name} page renders cleanly`, async ({ page }, testInfo) => {
+        test.setTimeout(portalRouteTimeoutMs);
 
-      const account = getQaAccount(role);
-      test.skip(!account, `Set QA_${role}_EMAIL.`);
+        const account = getQaAccount(role);
+        test.skip(!account, `Set QA_${role}_EMAIL.`);
 
-      let auditedAnyRoute = false;
-
-      for (const route of routes) {
         try {
           await auditRoute(page, account, role, route, testInfo);
-          auditedAnyRoute = true;
         } catch (error) {
           test.skip(
-            shouldSkipRoleMismatch(error, role, auditedAnyRoute),
+            shouldSkipRoleMismatch(error, role, false),
             `QA_${role}_EMAIL authenticated into a different portal. Check the Clerk role metadata or set QA_VISUAL_ROLES to the roles configured for this environment.`,
           );
 
           throw error;
         }
-      }
-    });
+      });
+    }
 
-    test(`${role.toLowerCase().replaceAll("_", " ")} interactive states render cleanly`, async ({ page }, testInfo) => {
+    test(`${roleLabel} interactive states render cleanly`, async ({ page }, testInfo) => {
       test.setTimeout(180_000);
 
       const account = getQaAccount(role);

@@ -133,7 +133,7 @@ jobs:
           QA_CLIENT_FINANCE_EMAIL: ${{ secrets.QA_CLIENT_FINANCE_EMAIL }}
           QA_CLIENT_MEMBER_EMAIL: ${{ secrets.QA_CLIENT_MEMBER_EMAIL }}
           QA_BUM_EMAIL: ${{ secrets.QA_BUM_EMAIL }}
-        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/visual-ui-audit.spec.ts --workers=1
+        run: pnpm run qa:env && pnpm exec playwright test tests/e2e/visual-ui-audit.spec.ts --workers=2
 
       - name: Upload visual audit artifacts
         if: always()
