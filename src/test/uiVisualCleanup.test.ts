@@ -23,6 +23,7 @@ const adminReportsSource = readFileSync("src/pages/admin/AdminReports.tsx", "utf
 const portalGlobalSearchSource = readFileSync("src/components/PortalGlobalSearch.tsx", "utf8");
 const portalApiSource = readFileSync("src/lib/portalApi.ts", "utf8");
 const visualAuditSource = readFileSync("tests/e2e/visual-ui-audit.spec.ts", "utf8");
+const visualAuditWorkflowSource = readFileSync(".github/workflows/visual-ui-audit.yml", "utf8");
 const publicIndexSource = readFileSync("src/pages/Index.tsx", "utf8");
 const bumLandingSource = readFileSync("src/pages/BumLanding.tsx", "utf8");
 const reportsWorkspaceSource = readFileSync("src/components/reports/ReportsWorkspace.tsx", "utf8");
@@ -167,5 +168,10 @@ describe("UI visual cleanup guardrails", () => {
     expect(visualAuditSource).toContain('for (const interaction of interactions)');
     expect(visualAuditSource).toContain('${roleLabel} ${interaction.name} interactive state renders cleanly');
     expect(visualAuditSource).not.toContain('${roleLabel} interactive states render cleanly');
+  });
+
+  it("keeps authenticated role visual shards single-worker", () => {
+    expect(visualAuditWorkflowSource).toContain("pnpm exec playwright test tests/e2e/visual-ui-audit.spec.ts --workers=1");
+    expect(visualAuditWorkflowSource).not.toContain("pnpm exec playwright test tests/e2e/visual-ui-audit.spec.ts --workers=2");
   });
 });
