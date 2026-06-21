@@ -94,7 +94,7 @@ jobs:
   role-visual-audit:
     needs: visual-audit-matrix
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:

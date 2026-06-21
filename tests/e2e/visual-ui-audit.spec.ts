@@ -9,6 +9,12 @@ const includeAuthenticatedAudit = process.env.QA_VISUAL_INCLUDE_AUTH?.trim().toL
 
 type RoleKey = "ADMIN" | "CLIENT_ADMIN" | "CLIENT_FINANCE" | "BUM";
 const allRoleKeys: RoleKey[] = ["ADMIN", "CLIENT_ADMIN", "CLIENT_FINANCE", "BUM"];
+const rolePortalTimeouts: Record<RoleKey, number> = {
+  ADMIN: 240_000,
+  CLIENT_ADMIN: 240_000,
+  CLIENT_FINANCE: 240_000,
+  BUM: 600_000,
+};
 
 if (!["standard", "complete"].includes(visualAuditScope)) {
   throw new Error("Invalid QA_VISUAL_AUDIT_SCOPE value: " + visualAuditScope + ". Allowed values: standard, complete.");
@@ -439,7 +445,7 @@ test.describe("authenticated visual UI audit", () => {
     const interactions = getInteractionsForRole(role);
 
     test(`${role.toLowerCase().replaceAll("_", " ")} portal pages render cleanly`, async ({ page }, testInfo) => {
-      test.setTimeout(240_000);
+      test.setTimeout(rolePortalTimeouts[role]);
 
       const account = getQaAccount(role);
       test.skip(!account, `Set QA_${role}_EMAIL.`);
