@@ -49,6 +49,8 @@ describe("legal agreement queue", () => {
     expect(reminderFunctionSource).toContain("getMicrosoftAccessToken");
     expect(reminderFunctionSource).toContain("https://graph.microsoft.com/v1.0/users/");
     expect(reminderFunctionSource).toContain("Daily reminders continue until the review is signed, declined, superseded, or the scrum item is closed.");
+    expect(reminderFunctionSource).toContain("function nextDailyOwnerReminderAt");
+    expect(reminderFunctionSource).toContain("now.getUTCDate() + 1");
     expect(migrationSource).toContain("legal-agreement-owner-reminders-daily");
     expect(migrationSource).toContain("'0 13 * * *'");
     expect(migrationSource).toContain("trusted_bums_legal_queue_reminder_secret");

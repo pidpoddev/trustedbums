@@ -223,6 +223,18 @@ function isDue(review: LegalAgreementReviewRow, nowMs: number) {
   return Date.parse(review.next_owner_prompt_at) <= nowMs;
 }
 
+function nextDailyOwnerReminderAt(now: Date) {
+  return new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() + 1,
+    13,
+    0,
+    0,
+    0,
+  )).toISOString();
+}
+
 async function loadDueReviews() {
   const { data, error } = await supabaseAdmin
     .from("legal_agreement_reviews")
@@ -251,7 +263,7 @@ Deno.serve(async (request) => {
         const email = buildReminderEmail(review, recipients);
         await sendMicrosoftEmail({ accessToken, recipients, ...email });
         const now = new Date();
-        const nextPrompt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+        const nextPrompt = nextDailyOwnerReminderAt(now);
         await supabaseAdmin
           .from("legal_agreement_reviews")
           .update({
