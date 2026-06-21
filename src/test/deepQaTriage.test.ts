@@ -83,6 +83,7 @@ describe("deep QA triage coverage", () => {
     expect(deepQaWorkflowSource).toContain("workflow-qa:");
     expect(deepQaWorkflowSource).toContain("if: ${{ inputs.mutation_mode }}");
     expect(deepQaWorkflowSource).toContain('QA_WORKFLOW_MUTATION: "1"');
+    expect(deepQaWorkflowSource).toContain("QA_CLIENT_FINANCE_EMAIL: ${{ secrets.QA_CLIENT_FINANCE_EMAIL }}");
     expect(deepQaWorkflowSource).toContain("pnpm run qa:workflow");
   });
 });
