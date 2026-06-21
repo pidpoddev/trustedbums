@@ -17,7 +17,7 @@ Older public-route UX conclusions still hold from current source plus unchanged 
 ## Watchlist
 
 - `TB-0060` should stay a watchlist item until exact-head hosted screenshots confirm whether the lower-left mobile placement in [ConsentManager.tsx](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/src/components/ConsentManager.tsx:143) fully clears authenticated routes. The live tracker row is currently still `CLOSED`, and the last hosted artifact proving overlap was the older `e231cc0` visual run `27857691601`, so the next action is exact-head visual revalidation rather than a stale reopen.
-- The runner-side external DNS target `https://rcdl.tplinkdns.com` still fails TLS verification with `curl: (60)` and should stay separate from primary-host UX evidence on `https://trustedbums.com`.
+- The old runner-side external DNS target `https://rcdl.tplinkdns.com` is retired from required proof paths under `TB-0024`; primary-host UX evidence should default to `https://trustedbums.com`.
 - Public-funnel prioritization is still lighter than it should be because fresh GA, Bing, session-recording, support, and sales-objection evidence were not callable in this shell.
 
 ## Access Requests And Evidence Gaps

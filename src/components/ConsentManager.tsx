@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -19,7 +19,12 @@ function clonePreferences(preferences: ConsentPreferences): ConsentPreferences {
   return { ...preferences, necessary: true };
 }
 
+function isAuthenticatedPortalRoute(pathname: string) {
+  return /^\/(admin|client|bum)(\/|$)/.test(pathname) || pathname === "/dashboard" || pathname === "/terms";
+}
+
 export function ConsentManager() {
+  const { pathname } = useLocation();
   const [record, setRecord] = useState<ConsentRecord | null>(() => readConsentRecord());
   const [isOpen, setIsOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -143,7 +148,7 @@ export function ConsentManager() {
           type="button"
           variant="outline"
           size="sm"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 z-40 min-h-9 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:left-4"
+          className={`fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 z-40 min-h-9 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:left-4 ${isAuthenticatedPortalRoute(pathname) ? "hidden" : ""}`}
           aria-label="Privacy choices"
           title="Privacy choices"
           onClick={() => {

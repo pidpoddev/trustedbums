@@ -1,4 +1,4 @@
-import { HelpCircle, LogOut, Settings } from "lucide-react";
+import { HelpCircle, LogOut, Settings, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ImpersonationControls } from "@/components/ImpersonationControls";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
@@ -66,6 +66,10 @@ export function PortalHeaderActions() {
             <span className="mt-1 block truncate text-xs font-normal text-muted-foreground">{user?.email}</span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => window.dispatchEvent(new Event("trustedbums:open-consent-settings"))}>
+            <ShieldCheck className="mr-2 h-4 w-4" />
+            Privacy choices
+          </DropdownMenuItem>
           {canShowWalkthrough ? (
             <DropdownMenuItem onClick={openFirstLoginWalkthrough}>
               <HelpCircle className="mr-2 h-4 w-4" />

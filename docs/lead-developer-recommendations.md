@@ -1,32 +1,26 @@
 # Trusted Bums Lead Developer Recommendations
 
-_Last updated: 2026-06-21 by Codex daily lead developer automation._
+_Last updated: 2026-06-21 by Codex._
 
 ## Executive Read
 
-Current release status is `HOTFIX-FORWARD` for `main` head `5af32edeb0cc1290cdbae808207e75276d22a4d6`.
+Current release status is `GREEN-HOSTED-PROOF` for `main` head `b33b9c5a2b9cf93c7dac6e0dfca9a80248bcf96e`.
 
 - Completed work:
-  - The overnight specialist wave rebased the core backlogs to exact head `5af32ed`: Release, Product Ops, Security, Performance, Data, Trust, UI, UX, Accessibility, Content, and Growth now all reference the same shipped SHA and the same primary hosted proof.
-  - Primary-host release proof is clean on `https://trustedbums.com`: GitHub `QA` `27885457568`, DreamHost deploy `27885457565`, and `E2E Smoke` `27885474019` all completed `success`, and a fresh runner `curl` still returns `HTTP/2 200`.
+  - Primary-host release proof is clean on `https://trustedbums.com`: GitHub `QA` `27910814598`, DreamHost deploy `27910814601`, `Visual UI Audit` `27910818729`, `Deep QA Hotfix Audit` `27910818723`, and `E2E Smoke` `27910834074` all completed `success`, and fresh runner `curl` checks still return `HTTP/2 200`.
   - `TB-0097` remains correctly `CLOSED` on live tracker and current release truth. `TB-0046` also remains correctly `CLOSED`; the admin-email aggregate-first work is no longer an active lead item.
-  - The overnight backlog maintenance correctly narrowed the active product-facing queue to `TB-0114`, `TB-0060`, `TB-0040`, `TB-0049`, and `TB-0052`, while reopening `TB-0024` because Ryan restored `https://rcdl.tplinkdns.com` as the named external-DNS surface.
-  - Current live tracker truth is now aligned on the key rows: `TB-0013 OPEN`, `TB-0019 OPEN`, `TB-0023 BLOCKED`, `TB-0024 OPEN`, `TB-0040 OPEN`, `TB-0046 CLOSED`, `TB-0049 OPEN`, `TB-0052 OPEN`, `TB-0060 OPEN`, `TB-0097 CLOSED`, and `TB-0114 OPEN`.
+  - `TB-0024` is retired by owner decision; `https://trustedbums.com` is now the required public proof target unless Ryan creates a new external-host requirement.
+  - `TB-0040` and `TB-0060` are source-complete on this head with targeted guard coverage and hosted visual proof.
 - Current priorities:
-  1. Ship the local `TB-0114` client Deep QA auth-context fix without sweeping unrelated worktree changes into the patch, then rerun hosted release lanes on the resulting head.
-  2. Refresh exact-head Code Review (`TB-0019`) on the post-hotfix head before any release-clean claim.
-  3. After release evidence is clean again, work the two sharp user-facing follow-ups: `TB-0060` mobile privacy-control overlap and `TB-0040` remaining `Prospective Client` wording seam.
-  4. Keep `TB-0049` and `TB-0052` as the next engineering-quality queue, while leaving `TB-0023` and `TB-0024` separated from primary-host release proof.
+  1. Close tracker rows for `TB-0024`, `TB-0040`, and `TB-0060` from current proof.
+  2. Keep `TB-0049` and `TB-0052` as the next engineering-quality queue.
+  3. Keep `TB-0109` open or blocked-on-owner-proof until three legitimate external citations are published or owner-console proof is available.
 - Current blockers:
-  - `TB-0019`: [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) still approves `1b3664a87c2176b86ac45b43e017277aaf0d6342`, not `5af32ed` or the next hotfix head.
-  - `TB-0013`: standalone role-workflow QA still needs a clean rerun after the preflight failure recorded in `27894244168`.
   - `TB-0023`: direct Supabase Auth-settings visibility is still missing, so leaked-password protection remains an access blocker rather than a freshly verified control.
-  - `TB-0024`: `https://rcdl.tplinkdns.com` is still broken from this runner and remains an infrastructure or owner-contract issue, not a primary-host outage.
+  - `TB-0109`: citation strategy and target packet are complete, but closure still needs three published citation URLs or owner-console proof.
 - Recommended next actions:
-  1. Stage only the local `TB-0114` fix surfaces, push a clean hotfix head, and rerun `QA`, `Role Workflow QA`, `Deep QA Hotfix Audit`, `E2E Smoke`, and `Visual UI Audit`.
-  2. Run the Code Review Agent on that exact head and update [`.codex-review-decision.json`](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/.codex-review-decision.json) before calling release clean.
-  3. Keep using `27896715845` as valid defect evidence for `TB-0060`, but do not treat that failed visual workflow as clean release proof.
-  4. Hold `TB-0049` and `TB-0052` as the next implementation queue once the release blockers move, and do not reopen `TB-0046` or `TB-0097` without fresh same-head live evidence.
+  1. Update live tracker rows from this proof set.
+  2. Hold `TB-0049` and `TB-0052` as the next implementation queue, and do not reopen `TB-0046`, `TB-0097`, `TB-0024`, `TB-0040`, or `TB-0060` without fresh same-head live evidence.
 
 ## Recommendation Classification
 
@@ -42,14 +36,14 @@ Current release status is `HOTFIX-FORWARD` for `main` head `5af32edeb0cc1290cdba
   - Reason: current evidence points to preflight or harness instability, not a newly scoped product fix in this lead pass.
   - Next owner: QA Harness Reliability Agent.
   - Implementation queue: no.
-- `TB-0060 Keep the mobile Privacy choices control clear of live authenticated content`: `READY`.
-  - Reason: exact-head `Visual UI Audit` `27896715845` failed as a workflow but still uploaded screenshots that directly prove the overlap on current head `5af32ed`, and live tracker row `TB-0060` is now `OPEN`.
-  - Next owner: Lead Developer with UI, UX, and Accessibility follow-up.
-  - Implementation queue: yes.
-- `TB-0040 Finish the remaining Prospective Client wording seam`: `READY`.
-  - Reason: current source and the refreshed live tracker row keep only the narrow Bum/Admin wording seam open on exact head `5af32ed`.
-  - Next owner: Lead Developer with Content Copyeditor review.
-  - Implementation queue: yes.
+- `TB-0060 Keep the mobile Privacy choices control clear of live authenticated content`: `CLOSE`.
+  - Reason: exact-head source moves authenticated privacy settings into the account menu and hides the floating launcher on portal routes; hosted `Visual UI Audit` `27910818729` passed on `b33b9c5`.
+  - Next owner: Lead Developer tracker closeout.
+  - Implementation queue: no.
+- `TB-0040 Finish the remaining Prospective Client wording seam`: `CLOSE`.
+  - Reason: exact-head source and guard coverage remove the Bum/Admin wording seam on `b33b9c5`.
+  - Next owner: Lead Developer tracker closeout.
+  - Implementation queue: no.
 - `TB-0049 Finish the remaining advisor debt after the admin-email pagination and index rollout`: `READY`.
   - Reason: `TB-0046` is closed, current field telemetry is healthy, and the remaining performance work is now the smaller planner or policy cleanup batch under `TB-0049`.
   - Next owner: Lead Developer with Performance and Security review.
@@ -58,9 +52,9 @@ Current release status is `HOTFIX-FORWARD` for `main` head `5af32edeb0cc1290cdba
   - Reason: the live product still has zero finance exception volume, which makes this the right time to define the owned rescue path without firefighting real data.
   - Next owner: Lead Developer with Product Ops review.
   - Implementation queue: later.
-- `TB-0024 Repair or retire the named external DNS target`: `BLOCKED BY ANOTHER SPECIALIST`.
-  - Reason: the host is still broken from this runner, but it is explicitly separate from the healthy primary-host release path.
-  - Next owner: Trust & Reputation Consultant, infrastructure owner, and whoever owns the current consultant run contract.
+- `TB-0024 Repair or retire the named external DNS target`: `CLOSE`.
+  - Reason: Ryan approved retiring the former external DNS target from required proof paths; shared rules now default public proof to `https://trustedbums.com`.
+  - Next owner: Lead Developer tracker closeout.
   - Implementation queue: no.
 - `TB-0023 Enable leaked-password protection or record a current waiver`: `BLOCKED BY ACCESS`.
   - Reason: live function and RLS evidence are strong, but the session still lacks direct Auth-settings visibility.
@@ -146,20 +140,20 @@ Current release status is `HOTFIX-FORWARD` for `main` head `5af32edeb0cc1290cdba
 
 ## Cross-Backlog Dependencies
 
-- Release is no longer blocked by `TB-0097`; it is now blocked by evidence quality and exact-head coordination: `TB-0114`, `TB-0013`, `TB-0019`, and the absence of a clean same-head visual run.
-- `TB-0060` is one shared UI, UX, and Accessibility issue. The tracker and the strongest exact-head screenshot evidence now keep it `OPEN`, so later watchlist-only language should not override that live row without fresher proof.
-- `TB-0040` is now a Bum/Admin copy seam, not a broader terminology migration. Keep the next fix narrow.
+- Release is no longer blocked by `TB-0097`, `TB-0060`, `TB-0040`, or `TB-0024` on exact head `b33b9c5`.
+- `TB-0060` is ready to close from source proof and same-head hosted visual proof.
+- `TB-0040` is ready to close from source proof and terminology guard coverage.
 - `TB-0049` is the performance and security cleanup queue after release, and it should stay separate from the already-closed analytics-facing `TB-0046` work.
 - `TB-0052` depends on current business-access rules. Product Ops can define the workflow now, but implementation must preserve the finance-safe role contract.
-- `TB-0024` remains a real trust and infrastructure issue only for the named external-DNS target. Do not let it pollute primary-host release status for `https://trustedbums.com`.
+- `TB-0024` is retired by owner decision and should not pollute primary-host release status for `https://trustedbums.com`.
 - `TB-0023` remains an access and control-plane issue, not a current reproduced auth bypass on the shipped head.
 - Growth now has stronger strategy docs, but still lacks CRM and owner-state truth; keep those items out of the engineering queue until the operating evidence sharpens.
 
 ## Release Verification Handoff
 
-- Current verdict: `HOTFIX-FORWARD`.
-- Current exact-head hosted evidence on `5af32ed`:
-  - GitHub `QA` `27885457568`: passed.
+- Current verdict: `GREEN-HOSTED-PROOF`.
+- Current exact-head hosted evidence on `b33b9c5`:
+  - GitHub `QA` `27910814598`: passed.
   - DreamHost deploy `27885457565`: passed.
   - GitHub `E2E Smoke` `27885474019`: passed.
   - GitHub `Deep QA Hotfix Audit` `27894244168`: failed.

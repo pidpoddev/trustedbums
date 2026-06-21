@@ -1,10 +1,10 @@
 # Trusted Bums B2B Marketing Growth Backlog
 
-_Last updated: 2026-06-21 by Codex daily B2B growth marketer automation._
+_Last updated: 2026-06-21 by Codex._
 
 ## Executive Growth Thesis
 
-Exact head `5af32edeb0cc1290cdbae808207e75276d22a4d6` is current on `main`, and the authoritative hosted product lane is still green: GitHub `QA` `27885457568`, DreamHost deploy `27885457565`, and hosted `E2E Smoke` `27885474019` all completed successfully on 2026-06-20 UTC. Exact-head `Visual UI Audit` `27896715845` is now in progress. The later standalone `Deep QA Hotfix Audit` `27894244168` failed on 2026-06-21 UTC, but the failure was a test-lane issue on `/client/opportunities/new` rather than a changed public acquisition surface: the latest commit only added workflow-QA docs and tests, and the public growth code stayed unchanged. Fresh runner checks still show `https://trustedbums.com` returning `HTTP/2 200`, `/bums` redirecting cleanly to `/bums/`, `https://trustedbums.com/sitemap.xml` returning `HTTP/2 200`, and the runner-side external DNS target `https://rcdl.tplinkdns.com` still returning `HTTP/1.1 403`, so external-host checks remain separate from primary-host growth proof.
+Exact head `b33b9c5a2b9cf93c7dac6e0dfca9a80248bcf96e` is current on `main`, and the authoritative hosted product lane is green: GitHub `QA` `27910814598`, DreamHost deploy `27910814601`, hosted `Visual UI Audit` `27910818729`, hosted `Deep QA Hotfix Audit` `27910818723`, and hosted `E2E Smoke` `27910834074` all completed successfully on 2026-06-21 UTC. Fresh runner checks still show `https://trustedbums.com`, `/sitemap.xml`, and `/robots.txt` returning `HTTP/2 200`.
 
 The current growth constraint is still qualified Client demand, and the live gap is conversion truth plus operator follow-through, not missing public product surface area. The public site still routes buyer demand through a Client-first homepage while Bum recruiting stays isolated on `/bums`, and the homepage form already captures buyer role, target-account count, target-account context, blocker, urgency, referral source, and commercial reason. What the live evidence shows is that traffic is not yet turning into enough trusted demand signals to justify more scale:
 
@@ -25,7 +25,7 @@ That means the safest next move is still not paid scale or broader Bum acquisiti
 - Channel guardrail: keep email, DMs, referral asks, and any paid pilot low-volume and human-reviewed until CRM truth, suppression handling, objection logging, and qualification ownership are durable.
 - Analytics guardrail: the documented keyless GA path works from this checkout when this shell exports `GA4_PROPERTY_ID`, `GOOGLE_CLOUD_PROJECT`, and `GA4_IMPERSONATE_SERVICE_ACCOUNT`, but `.env.qa` still does not export those values and `BING_WEBMASTER_API_KEY` is still missing after sourcing `.env.qa`.
 - Search guardrail: use Search Console, Bing Webmaster Tools, IndexNow, and legitimate citations to improve discovery and trust. Do not buy backlinks, exchange links, mass-submit directories, or publish thin guest posts.
-- Runner constraint: use port `8080` only for local testing. When external DNS context is needed, use `https://rcdl.tplinkdns.com` and treat runner-local failure there as partial evidence only.
+- Runner constraint: use port `8080` only for local testing. Use `https://trustedbums.com` as the default public proof target; the old `https://rcdl.tplinkdns.com` external DNS path is retired under `TB-0024`.
 
 ## Active Growth Plays
 
@@ -69,13 +69,14 @@ That means the safest next move is still not paid scale or broader Bum acquisiti
 - Growth goal: make the public site easier to discover and verify without weakening trust.
 - Audience: search engines, prospective Clients checking legitimacy, Bums checking the company before joining, and referral sources who need a credible public page to share.
 - Channel: Google Search Console, Bing Webmaster Tools, IndexNow, LinkedIn company profile, approved founder or company profiles, partner or customer announcements, and selective industry listings where Trusted Bums truly belongs.
-- Evidence: current runner checks and `corepack pnpm bing:health` both confirm the homepage, `robots.txt`, XML sitemap, and IndexNow key file are live on `https://trustedbums.com`. The recurring blocker is not public-site availability; it is operator follow-through and report access. This shell can verify the public host and GA, but `corepack pnpm bing:webmaster traffic` still fails because `BING_WEBMASTER_API_KEY` is missing after sourcing `.env.qa`.
+- Evidence: current runner checks confirm the homepage, `robots.txt`, and XML sitemap are live on `https://trustedbums.com`; hosted QA, deploy, Visual UI Audit, Deep QA, and E2E Smoke are green on `b33b9c5`; and [search-citation-coverage.md](/Users/macdaddy/CodexWork/TrustedBums/trustedbums/docs/search-citation-coverage.md) now defines the approved citation targets, copy boundaries, and closure evidence checklist. Current Google and Bing guidance still supports sitemap submission, Search Console or Webmaster Tools follow-up, IndexNow, and real citation quality over manipulative link tactics.
 - Message and offer: point citations to useful public pages that explain the marketplace and the strategy-review path, not to generic signup.
 - Activation path: search or citation visit -> trust or explainer page -> strategy request or founder conversation -> manual qualification.
 - Metric: sitemap processing status, indexed public pages, brand-query impressions, organic or referral strategy requests, and citation quality.
 - Trust and brand risk: paid backlinks, reciprocal links, low-quality directories, and thin guest posts would make Trusted Bums look like a search-manipulation project instead of a trust marketplace.
-- Recommendation: resubmit `https://trustedbums.com/sitemap.xml` through Google Search Console, use the existing `Bing Webmaster Proof` workflow or deploy-capable path until the recurring shell regains a Bing key, and create an approved citation list of three to five high-quality profiles or editorial mentions. Pair this with one strong public explainer page before chasing broader search reach.
-- Acceptance criteria: Google Search Console and Bing show the sitemap submitted or read against deployed canonical URLs; at least three approved external citations point to useful public Trusted Bums pages; and no paid, exchanged, mass-directory, or unapproved guest-post links are used.
+- Recommendation: use the approved packet to publish or verify three to five citations through owner-controlled channels: LinkedIn company page, Google or Bing owner-console surfaces, founder or operator profiles, and genuine customer, partner, or advisor mentions. Do not treat the packet itself as publication proof.
+- Acceptance criteria: Google Search Console and Bing show the sitemap submitted or read against deployed canonical URLs; at least three approved external citations point to useful public Trusted Bums pages; no paid, exchanged, mass-directory, or unapproved guest-post links are used; and each citation has a published URL or owner-console proof entry.
+- Current closure status: implementation packet complete; external publication proof still pending owner access or owner-provided published URLs. Keep `TB-0109` open or blocked-on-owner-proof until three citations are verified.
 
 ## ICP And Offer Matrix
 

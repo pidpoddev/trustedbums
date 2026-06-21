@@ -59,6 +59,13 @@ function stageVariant(stage: CompanyRelationshipStage) {
   return "info" as const;
 }
 
+function companyRelationshipStageLabel(stage: CompanyRelationshipStage) {
+  if (stage === "PROSPECT") return "Prospective Client";
+  if (stage === "INVITED") return "Invited";
+  if (stage === "CLIENT") return "Client";
+  return "Inactive";
+}
+
 type ClientTypeFilter = "ALL" | "ACTIVE_CLIENT" | "HAS_OPPORTUNITIES" | "BUM_CONNECTED" | "INACTIVE";
 
 const clientTypeFilters: { value: ClientTypeFilter; label: string }[] = [
@@ -250,7 +257,7 @@ function AdminClientEditButton({ company }: { company: CompanyRecord }) {
                 <Select value={form.relationshipStage} onValueChange={(value) => setForm((current) => ({ ...current, relationshipStage: value as CompanyRelationshipStage }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PROSPECT">Prospect</SelectItem>
+                    <SelectItem value="PROSPECT">Prospective Client</SelectItem>
                     <SelectItem value="INVITED">Invited</SelectItem>
                     <SelectItem value="CLIENT">Client</SelectItem>
                     <SelectItem value="INACTIVE">Inactive</SelectItem>
@@ -562,7 +569,7 @@ export default function AdminClients() {
 
   return (
     <div>
-      <PageHeader title="Clients" description="Manage companies, prospect overlap, and who owns the path into each account.">
+      <PageHeader title="Clients" description="Manage companies, Prospective Client overlap, and who owns the path into each account.">
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-2" /> Add Client</Button>
@@ -799,7 +806,7 @@ export default function AdminClients() {
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium">{company.name}</p>
-                          <StatusBadge label={company.relationship_stage} variant={stageVariant(company.relationship_stage)} />
+                          <StatusBadge label={companyRelationshipStageLabel(company.relationship_stage)} variant={stageVariant(company.relationship_stage)} />
                           {company.relationship_stage === "INACTIVE" ? <Badge variant="destructive">Disabled</Badge> : null}
                           <Badge variant={dealRegistrationConfig.is_beta_enabled ? "secondary" : "outline"}>
                             Deal Reg {dealRegistrationConfig.is_beta_enabled ? "Beta" : dealRegistrationMethodLabel(dealRegistrationConfig.method)}
@@ -822,7 +829,7 @@ export default function AdminClients() {
                       <div className="flex gap-2 flex-wrap text-xs">
                         {company.inviteOwners.includes("BUM") ? <Badge variant="secondary">Bum-led path</Badge> : null}
                         {company.inviteOwners.includes("TRUSTED_BUMS") ? <Badge variant="secondary">Trusted Bums invite</Badge> : null}
-                        {!company.inviteOwners.length ? <Badge variant="outline">No prospect recommendations yet</Badge> : null}
+                        {!company.inviteOwners.length ? <Badge variant="outline">No Prospective Client recommendations yet</Badge> : null}
                       </div>
 
                       {company.description ? <p className="max-w-3xl text-sm text-muted-foreground">{company.description}</p> : null}

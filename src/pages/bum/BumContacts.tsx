@@ -257,7 +257,7 @@ export default function BumContacts() {
     <div className="space-y-6">
       <PageHeader
         title="Contacts"
-        description="See the people you represent across claims, prospect recommendations, client target responses, LinkedIn captures, and your Inner Circle."
+        description="See the people you represent across claims, Prospective Client contacts, client target responses, LinkedIn captures, and your Inner Circle."
       >
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setAddCompanyOpen(true)} disabled={innerCircleCompanies.length >= 3}>

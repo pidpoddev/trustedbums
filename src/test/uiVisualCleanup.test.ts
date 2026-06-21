@@ -6,6 +6,7 @@ const feedbackSource = readFileSync("src/components/SubmitFeedbackButton.tsx", "
 const conversationDockSource = readFileSync("src/components/ConversationDock.tsx", "utf8");
 const consentManagerSource = readFileSync("src/components/ConsentManager.tsx", "utf8");
 const headerActionsSource = readFileSync("src/components/PortalHeaderActions.tsx", "utf8");
+const adminClientsSource = readFileSync("src/pages/admin/AdminClients.tsx", "utf8");
 const bumOpportunitiesSource = readFileSync("src/pages/bum/BumOpportunities.tsx", "utf8");
 const adminCreditsSource = readFileSync("src/pages/admin/AdminCredits.tsx", "utf8");
 const contactSubmissionsSource = readFileSync("src/components/admin/ContactSubmissionsPanel.tsx", "utf8");
@@ -45,9 +46,13 @@ describe("UI visual cleanup guardrails", () => {
     expect(conversationDockSource).toContain("showLauncher = true");
   });
 
-  it("keeps the collapsed privacy control away from the mobile chat corner", () => {
+  it("keeps the collapsed privacy control off authenticated portal routes", () => {
     expect(consentManagerSource).toContain("bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-3 z-40");
     expect(consentManagerSource).toContain("sm:bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:left-4");
+    expect(consentManagerSource).toContain("useLocation");
+    expect(consentManagerSource).toContain("isAuthenticatedPortalRoute(pathname) ? \"hidden\" : \"\"");
+    expect(headerActionsSource).toContain("trustedbums:open-consent-settings");
+    expect(headerActionsSource).toContain("Privacy choices");
     expect(consentManagerSource).not.toContain("sm:right-4");
   });
 
@@ -105,6 +110,7 @@ describe("UI visual cleanup guardrails", () => {
       portalGlobalSearchSource,
       clientTargetsSource,
       portalApiSource,
+      adminClientsSource,
     ].join("\n");
 
     expect(visibleSources).toContain("Prospective Client");
@@ -117,6 +123,10 @@ describe("UI visual cleanup guardrails", () => {
     expect(visibleSources).not.toContain("Prospect saved");
     expect(visibleSources).not.toContain("Unable to save prospect");
     expect(visibleSources).not.toContain("prospect client company name");
+    expect(visibleSources).not.toContain("prospect recommendations");
+    expect(visibleSources).not.toContain("No prospect recommendations yet");
+    expect(adminClientsSource).toContain("companyRelationshipStageLabel");
+    expect(adminClientsSource).toContain("Prospective Client overlap");
   });
 
   it("keeps public mobile header actions readable at narrow widths", () => {
