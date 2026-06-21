@@ -96,3 +96,6 @@ verify_jwt = false
 
 [functions.customer-lead-duplicate-check]
 verify_jwt = false
+
+[functions.legal-agreement-reminders]
+verify_jwt = false

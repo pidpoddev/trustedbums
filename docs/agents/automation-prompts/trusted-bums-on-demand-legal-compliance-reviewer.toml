@@ -10,6 +10,13 @@ Before reviewing, read docs/company-wide-rules.md, docs/consultant-team-rules.md
 
 Focus on: commission and payout claims, client agreement flows, partner terms, privacy disclosures, email consent and sender reputation, endorsement/referral disclosure, testimonial/case-study proof, data retention, mailbox-derived data, exportable finance fields, public form promises, support/legal request intake, and whether Legal/Finance owner approval is required before implementation or release.
 
+Speed-to-market posture:
+
+Trusted Bums prefers a commercially practical legal review. Do not turn every vendor paper issue into a blocker. Separate:
+- Must-haves: signature authority and correct parties; commission economics, reporting, payment timing, exclusions, and tail/survival; confidentiality and data handling; no uncontrolled delivery/customer-performance/broker-dealer obligations; no disproportionate uncapped or one-way indemnity, liability, termination, or dispute risk.
+- Recommended changes: cleanup that would reduce ambiguity or improve enforceability but can be handled through a short redline, rider, side letter, or email confirmation.
+- Acceptable tradeoffs: formatting, minor boilerplate, preferred governing law, notice mechanics, template style, and other ordinary commercial terms when they do not materially change money, control, confidentiality, or liability.
+
 Output structure:
 
 # Trusted Bums Legal And Compliance Review
@@ -29,6 +36,10 @@ Decision: NO LEGAL BLOCKER IDENTIFIED, NEEDS LEGAL OWNER REVIEW, NEEDS FINANCE O
 - Acceptance criteria: Concrete proof required before release.
 
 ## Required Handoffs
+
+## Legal Queue Update
+
+When an unhandled agreement is found in `bums@trustedbums.com`, create or update the matching `/admin/scrum` task and attach a legal agreement review. Include owner question, must-haves, recommended changes, acceptable tradeoffs, and whether daily owner reminders should continue.
 
 Content, Growth, Trust, Product Ops, Data, Security, QA, Lead Developer, Finance, Privacy, or external legal owner follow-up.
 

@@ -59,7 +59,9 @@ describe("admin scrum tracker", () => {
     expect(pageSource).toContain("Evidence links");
     expect(pageSource).toContain("Closeout note");
     expect(pageSource).toContain("P0 / P1");
+    expect(pageSource).toContain("Legal queue");
     expect(pageSource).toContain("statusFilter");
+    expect(pageSource).toContain("legalQueueOnly");
     expect(pageSource).toContain("Closeout proof required");
     expect(pageSource).toContain('htmlFor="scrum-search"');
     expect(pageSource).toContain('id="scrum-status-filter"');

@@ -44,6 +44,14 @@ The Microsoft app should not have practical read access to unrelated employee or
 | `support`, `question` | Admin owns response or routing, with next-business-day follow-up unless escalated. | Raw body may remain in the admin mailbox record for response context. | Reply/send event or linked support/action note. |
 | `client_criteria` | Admin/Product Ops converts approved criteria into structured routing fields. | Summarize into structured fields; do not copy raw body into product docs unless founder/admin approves. | Criteria update or opportunity-routing note with the approving operator. |
 
+## Legal Queue
+
+Legal agreement messages that require action should be attached to a scrum item through a `legal_agreement_reviews` record. The legal queue is part of `/admin/scrum`, not a separate shadow list, so each agreement keeps a `TB-` owner, status, evidence, and closeout trail.
+
+The legal bot should be commercially practical. It should separate must-have terms from recommended changes and acceptable tradeoffs. The default posture is `SPEED_TO_MARKET`: fix the terms that protect signature authority, commission economics, confidentiality/data handling, uncontrolled obligations, and disproportionate indemnity/liability/termination risk, but do not block signature over formatting, minor boilerplate, or preferences that do not materially change Trusted Bums risk.
+
+Unhandled legal agreement reviews trigger daily owner reminders to Ryan, B. Scott, Tom, Christina, and `bums@trustedbums.com` until the review is marked signed, declined, superseded, or the scrum item is closed. Each reminder should include the agreement source, owner question, must-have terms, recommended changes, and the current speed-to-market posture.
+
 ## Implementation Queue
 
 1. Store parsed DMARC aggregate results in an admin-only table for trend review.
@@ -51,8 +59,9 @@ The Microsoft app should not have practical read access to unrelated employee or
 3. Add categories for DMARC, legal, question, complaint, privacy, abuse, support, client criteria, and uncategorized. The shared mailbox sync now assigns these first-pass categories for admin triage.
 4. Add an Admin Portal shared inbox/reputation intake surface. `/admin/inbox` now gives admins a shared Inbox with an External mail switch, mailbox sync, compose, reply, reply-all, claim-to-owner, category, and handled/in-progress status actions.
 5. Add retention and redaction rules before storing attachments. Message bodies are stored only for the admin shared-mailbox workflow; attachments remain metadata-only in this slice.
-6. Add a client-criteria intake path that can turn approved client replies into structured opportunity-routing rules.
-7. Keep claim-decision reply handling observable after client-side junk-folder delivery. On 2026-06-18, Ryan relayed that Akshay found the CoreWeave test claim email in junk, did not see an accept/decline prompt in the Trusted Bums account, and replied `approved` by email. Follow-up live reads confirmed `sync-claim-decision-replies` processed the reply and sent the Bum next-step email. The remaining work is to retain safe header diagnostics for future decision replies and verify the local portal-link fix after release.
+6. Add the Legal Queue for action-bearing legal agreements. `20260621211500_add_legal_agreement_queue.sql` adds `legal_agreement_reviews`, `legal_agreement_review_events`, a K2View/Concentrix seed review, and the daily owner reminder cron. `legal-agreement-reminders` sends the Microsoft-backed owner email.
+7. Add a client-criteria intake path that can turn approved client replies into structured opportunity-routing rules.
+8. Keep claim-decision reply handling observable after client-side junk-folder delivery. On 2026-06-18, Ryan relayed that Akshay found the CoreWeave test claim email in junk, did not see an accept/decline prompt in the Trusted Bums account, and replied `approved` by email. Follow-up live reads confirmed `sync-claim-decision-replies` processed the reply and sent the Bum next-step email. The remaining work is to retain safe header diagnostics for future decision replies and verify the local portal-link fix after release.
 
 ## Evidence Status
 

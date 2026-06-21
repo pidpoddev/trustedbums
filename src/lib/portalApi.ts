@@ -156,6 +156,26 @@ export const ADMIN_SCRUM_ITEM_PRIORITIES: AdminScrumItemPriority[] = ["P0", "P1"
 export const ADMIN_SCRUM_ITEM_SOURCES: AdminScrumItemSource[] = ["Scrum", "QA", "Security", "Lead Dev", "Release", "User", "Product Ops", "Other"];
 export const ADMIN_SCRUM_ITEM_TYPES: AdminScrumItemType[] = ["BUG", "TASK", "QA", "SECURITY", "RELEASE", "DOCS", "INFRA"];
 
+export interface LegalAgreementReviewRecord {
+  id: string;
+  scrum_item_id: string;
+  mailbox_message_id: string | null;
+  counterparty: string;
+  agreement_subject: string;
+  review_status: "NEEDS_REVIEW" | "AWAITING_OWNER" | "REDLINES_REQUESTED" | "SIGNABLE_WITH_APPROVAL" | "SIGNED" | "DECLINED" | "SUPERSEDED";
+  risk_posture: "SPEED_TO_MARKET" | "BALANCED" | "STRICT";
+  must_have_terms: string[];
+  recommended_changes: string[];
+  acceptable_tradeoffs: string[];
+  owner_emails: string[];
+  owner_question: string | null;
+  next_owner_prompt_at: string | null;
+  last_owner_ping_at: string | null;
+  reminder_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AdminScrumItemRecord {
   id: string;
   tracking_number: number;
@@ -180,6 +200,7 @@ export interface AdminScrumItemRecord {
   closed_at: string | null;
   created_at: string;
   updated_at: string;
+  legal_agreement_reviews?: LegalAgreementReviewRecord[] | null;
 }
 
 export interface AdminScrumItemInput {
@@ -8458,7 +8479,7 @@ function cleanScrumLinks(value?: string[]) {
 export async function listAdminScrumItems() {
   const { data, error } = await supabase
     .from("admin_scrum_items")
-    .select("*")
+    .select("*, legal_agreement_reviews(*)")
     .order("created_at", { ascending: false })
     .limit(250)
     .returns<AdminScrumItemRecord[]>();

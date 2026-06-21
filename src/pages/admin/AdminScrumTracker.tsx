@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, ClipboardList, ExternalLink, Plus, RefreshCw, Save, Search } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardList, ExternalLink, Plus, RefreshCw, Save, Scale, Search } from "lucide-react";
 import { FieldLabel } from "@/components/FieldHelp";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +91,16 @@ function typeBadge(type: AdminScrumItemType) {
   return <Badge variant="outline">{type.charAt(0) + type.slice(1).toLowerCase()}</Badge>;
 }
 
+function reviewStatusLabel(status: string) {
+  return status.replace(/_/g, " ").toLowerCase().replace(/(^|\s)\w/g, (letter) => letter.toUpperCase());
+}
+
+function riskPostureLabel(posture: string) {
+  if (posture === "STRICT") return "Strict";
+  if (posture === "BALANCED") return "Balanced";
+  return "Speed to market";
+}
+
 function ScrumItemRow({ item }: { item: AdminScrumItemRecord }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -101,6 +111,8 @@ function ScrumItemRow({ item }: { item: AdminScrumItemRecord }) {
   const [closureNote, setClosureNote] = useState(item.closure_note ?? "");
   const [evidenceText, setEvidenceText] = useState((item.evidence_links ?? []).join("\n"));
   const rowId = item.tracking_id.toLowerCase();
+  const legalReviews = item.legal_agreement_reviews ?? [];
+  const legalReview = legalReviews[0];
   const parsedEvidenceLinks = parseEvidenceLinks(evidenceText);
   const needsCloseoutProof = status === "CLOSED" || status === "WONT_FIX";
   const hasCloseoutProof = closureNote.trim().length > 0 && parsedEvidenceLinks.length > 0;
@@ -142,9 +154,29 @@ function ScrumItemRow({ item }: { item: AdminScrumItemRecord }) {
           {typeBadge(item.item_type)}
           {priorityBadge(item.priority)}
           {statusBadge(item.status)}
+          {legalReview ? (
+            <Badge variant="secondary" className="inline-flex items-center gap-1">
+              <Scale className="h-3 w-3" />
+              Legal queue
+            </Badge>
+          ) : null}
         </div>
         <p className="mt-2 font-medium">{item.title}</p>
         <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{item.description || "No description yet."}</p>
+        {legalReview ? (
+          <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{reviewStatusLabel(legalReview.review_status)}</Badge>
+              <Badge variant="outline">{riskPostureLabel(legalReview.risk_posture)}</Badge>
+              <Badge variant="outline">{legalReview.reminder_count} reminders</Badge>
+            </div>
+            <p className="mt-2 font-medium">{legalReview.counterparty}: {legalReview.agreement_subject}</p>
+            {legalReview.owner_question ? <p className="mt-1">{legalReview.owner_question}</p> : null}
+            <p className="mt-2 text-xs">
+              Next owner ping: {legalReview.next_owner_prompt_at ? formatDateTimeForTimeZone(legalReview.next_owner_prompt_at, timeZone) : "Not scheduled"}
+            </p>
+          </div>
+        ) : null}
         <p className="mt-3 text-xs text-muted-foreground">
           Opened {formatDateTimeForTimeZone(item.created_at, timeZone)}
           {item.closed_at ? `, closed ${formatDateTimeForTimeZone(item.closed_at, timeZone)}` : ""}
@@ -155,6 +187,22 @@ function ScrumItemRow({ item }: { item: AdminScrumItemRecord }) {
           <p><span className="text-muted-foreground">Source:</span> {item.source}</p>
           <p><span className="text-muted-foreground">Added by:</span> {item.added_by_agent}</p>
           <p><span className="text-muted-foreground">Area:</span> {item.related_area || "Unassigned"}</p>
+          {legalReview ? (
+            <>
+              <p><span className="text-muted-foreground">Must-haves:</span></p>
+              <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                {legalReview.must_have_terms.slice(0, 5).map((term) => <li key={term}>{term}</li>)}
+              </ul>
+              {legalReview.recommended_changes.length ? (
+                <>
+                  <p><span className="text-muted-foreground">Recommended changes:</span></p>
+                  <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                    {legalReview.recommended_changes.slice(0, 5).map((change) => <li key={change}>{change}</li>)}
+                  </ul>
+                </>
+              ) : null}
+            </>
+          ) : null}
           {item.github_commit ? <p className="break-all"><span className="text-muted-foreground">Commit:</span> {item.github_commit}</p> : null}
           {item.github_run_id ? <p className="break-all"><span className="text-muted-foreground">Run:</span> {item.github_run_id}</p> : null}
         </div>
@@ -229,6 +277,7 @@ export default function AdminScrumTracker() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ACTIVE");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("ALL");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
+  const [legalQueueOnly, setLegalQueueOnly] = useState(false);
 
   const scrumQuery = useQuery({
     queryKey: ["admin-scrum-items"],
@@ -257,6 +306,8 @@ export default function AdminScrumTracker() {
       if (statusFilter !== "ACTIVE" && statusFilter !== "ALL" && item.status !== statusFilter) return false;
       if (priorityFilter !== "ALL" && item.priority !== priorityFilter) return false;
       if (typeFilter !== "ALL" && item.item_type !== typeFilter) return false;
+      const legalReviews = item.legal_agreement_reviews ?? [];
+      if (legalQueueOnly && !legalReviews.length) return false;
       if (!query) return true;
       return [
         item.tracking_id,
@@ -269,18 +320,28 @@ export default function AdminScrumTracker() {
         item.item_type,
         item.source,
         item.closure_note,
+        ...legalReviews.flatMap((review) => [
+          review.counterparty,
+          review.agreement_subject,
+          review.review_status,
+          review.risk_posture,
+          review.owner_question,
+          ...review.must_have_terms,
+          ...review.recommended_changes,
+        ]),
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
         .includes(query);
     });
-  }, [items, priorityFilter, search, statusFilter, typeFilter]);
+  }, [items, legalQueueOnly, priorityFilter, search, statusFilter, typeFilter]);
 
   const summary = useMemo(() => ({
     active: items.filter((item) => !["CLOSED", "WONT_FIX"].includes(item.status)).length,
     bugs: items.filter((item) => !["CLOSED", "WONT_FIX"].includes(item.status) && item.item_type === "BUG").length,
     urgent: items.filter((item) => !["CLOSED", "WONT_FIX"].includes(item.status) && ["P0", "P1"].includes(item.priority)).length,
+    legal: items.filter((item) => !["CLOSED", "WONT_FIX"].includes(item.status) && (item.legal_agreement_reviews ?? []).length > 0).length,
     blocked: items.filter((item) => item.status === "BLOCKED").length,
     closed: items.filter((item) => item.status === "CLOSED" || item.status === "WONT_FIX").length,
   }), [items]);
@@ -297,7 +358,7 @@ export default function AdminScrumTracker() {
         </Button>
       </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-6">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{summary.active}</p></CardContent>
@@ -309,6 +370,10 @@ export default function AdminScrumTracker() {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">P0 / P1</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{summary.urgent}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Legal queue</CardTitle></CardHeader>
+          <CardContent><p className="text-3xl font-bold">{summary.legal}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Blocked</CardTitle></CardHeader>
@@ -422,7 +487,7 @@ export default function AdminScrumTracker() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_160px_160px]">
+          <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_160px_160px_160px]">
             <div className="relative">
               <Label htmlFor="scrum-search" className="sr-only">Search scrum items</Label>
               <p id="scrum-search-help" className="sr-only">Search by tracking ID, title, area, owner, agent, or evidence text.</p>
@@ -469,6 +534,15 @@ export default function AdminScrumTracker() {
                 </SelectContent>
               </Select>
             </div>
+            <Button
+              type="button"
+              variant={legalQueueOnly ? "default" : "outline"}
+              onClick={() => setLegalQueueOnly((current) => !current)}
+              className="justify-start"
+            >
+              <Scale className="mr-2 h-4 w-4" />
+              Legal queue
+            </Button>
           </div>
 
           {scrumQuery.isLoading ? (

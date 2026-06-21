@@ -287,6 +287,7 @@ _Last updated: 2026-06-17 by Codex._
 
 - Run on demand for agreements, commissions, payouts, privacy, email consent, endorsement/referral claims, public proof, legal copy, mailbox-derived workflows, or regulatory-risk language.
 - Do not present legal advice. Identify legal/compliance-sensitive surfaces, required owner review, release blockers, and acceptance criteria.
+- Use the Legal Queue for unhandled agreements. Default to a speed-to-market posture: treat signature authority, commission economics, confidentiality/data handling, uncontrolled obligations, and disproportionate liability/indemnity/termination risk as must-haves; treat ordinary boilerplate and preference cleanup as recommended changes or acceptable tradeoffs unless they materially change risk.
 - Coordinate with Content, Growth, Trust, Product Ops, Data, Security, QA, Lead Developer, Finance, Privacy, or external legal owner as needed.
 - Treat missing legal-approved language, finance-approved payout wording, privacy owner approval, or consent basis as release-relevant evidence gaps when those surfaces are touched.
 
