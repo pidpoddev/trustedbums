@@ -3644,3 +3644,11 @@ This file is the running handoff log for implementation work Codex has made in t
 - Checks run: `corepack pnpm agent-ops:audit`; `git rev-parse HEAD`; `find /Users/macdaddy/.codex/automations -maxdepth 2 -name automation.toml | rg trusted-bums`; `diff -u` for `consultant-team-rules`, `company-wide-rules`, `consultant-access-needs`, and `business-access-rules`; `rg` heading scans across README and access docs; and local automation `automation.toml` field inspection.
 - Recheck agents: Agent Operations Steward, Lead Developer, and any role editing shared rules or access docs.
 - Next run should verify: whether Ryan wants a live Bum Supply Leader cron, and whether one authoritative shared-doc path or a generated mirror replaces the drifting duplicate copies.
+
+
+### 2026-11-09 — Add Who Benefits and charity approval
+
+- Added Bum profile beneficiary selection and charity suggestions, admin Finance → Charity Reviews, a three-part approval checklist, review reasons, reviewer timestamps, and review history.
+- Added RLS and ownership checks for both Clerk database roles, server-side approval enforcement, immutable new-payout beneficiary snapshots, payout labels, and withdrawal payment blocks. Existing unrelated local edits were preserved.
+- Validation: feature UI tests pass; isolated PostgreSQL migration/access/beneficiary checks pass for both roles; lint and production build pass. Full suite reports two existing documentation assertion failures in scrumFiveBatch and scrumQueueRegression. Standalone type checking reports existing app errors; no errors in the new feature files with the app’s existing replaceAll usage supported.
+- Release state: implementation and migration prepared locally; no live migration, charity approval, payment, or frontend deployment performed.

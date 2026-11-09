@@ -1659,6 +1659,8 @@ export interface ClaimInvoiceRecord {
 export type BumPayoutStatus = "PENDING_ALLOCATION" | "APPROVED" | "PAID" | "VOID";
 
 export interface BumPayoutRecord {
+  beneficiary_charity_id?: string | null;
+  beneficiary_name?: string | null;
   id: string;
   claim_invoice_id: string;
   opportunity_claim_id: string;

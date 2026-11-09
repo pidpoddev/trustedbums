@@ -1,3 +1,4 @@
+import { payoutBeneficiaryLabel } from "@/lib/beneficiaries";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Search } from "lucide-react";
@@ -57,6 +58,7 @@ function PayoutRow({ payout }: { payout: BumPayoutRecord }) {
       <td className="py-3">{money(payout.claim_invoices?.invoice_amount)}</td>
       <td className="py-3 min-w-[220px]">
         <p className="font-medium">{money(payout.payout_amount)}</p>
+        <p className="text-sm">Benefits: {payoutBeneficiaryLabel(payout)}</p>
         <p className="text-xs text-muted-foreground">
           {Number(payout.share_percent ?? 0).toLocaleString()}% of TB commission · {calculateTopLineSharePercent(payout.claim_invoices?.commission_rate, payout.share_percent).toLocaleString()}% top line
         </p>

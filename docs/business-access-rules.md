@@ -653,3 +653,13 @@ The Lead Developer should not recommend implementing an RLS hardening change unl
 - Direct data-path test plan.
 - Portal/API/extension test plan where relevant.
 - Rollback plan for broken legitimate access.
+
+
+## Who Benefits — 2026-11-09
+
+- Rule: Bums may choose themselves or an approved charity for future payouts and suggest charities for admin review. Suggestions require approval before selection.
+- Applies to: Bum profiles, admin charity review, payout beneficiary records, and direct database access.
+- Why it matters: Participation may support a cause while preserving Trusted Bums’ nonpolitical ethos and accountable payout records.
+- Implementation: Admins verify charitable identity/status, political activity/affiliations, and ethos alignment; record sources/reasons and reviewer/time. Bums cannot self-approve or change another Bum’s preference. Both Clerk database roles (`anon` with a signed subject and `authenticated`) use the same identity and role predicates; visitors have no access. Preferences affect newly created payouts only. Withdrawn approval blocks future selection and outstanding charity payments.
+- QA proof: `src/test/whoBenefits.test.tsx` and `scripts/verify-who-benefits.mjs` cover approval gates, ownership, withdrawn approval, and immutable payout beneficiaries. See `docs/who-benefits.md` for release instructions.
+- Open questions: Admin policy must define the exact boundaries of political affiliation and ethos alignment. No tax deduction or employer-conflict clearance is promised.

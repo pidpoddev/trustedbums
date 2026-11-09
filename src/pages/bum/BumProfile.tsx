@@ -1,3 +1,4 @@
+import { WhoBenefitsCard } from "@/components/WhoBenefitsCard";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -384,6 +385,7 @@ export default function BumProfile() {
   return (
     <div className="space-y-6">
       <PageHeader title="Profile" description="Build the Bum profile that admins and clients will review." />
+      <WhoBenefitsCard />
 
       <div className="grid gap-4 xl:grid-cols-3">
         <UserTimeZoneCard description="Your time zone controls how meetings and timestamps appear throughout the Bum portal." />

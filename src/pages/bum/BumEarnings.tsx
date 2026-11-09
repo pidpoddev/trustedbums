@@ -1,3 +1,4 @@
+import { payoutBeneficiaryLabel } from "@/lib/beneficiaries";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,7 @@ export default function BumEarnings() {
                 {" · "}
                 {calculateTopLineSharePercent(payout.claim_invoices?.commission_rate, payout.share_percent).toLocaleString()}% of top-line revenue at this invoice rate
               </p>
+              <p className="text-sm">Benefits: {payoutBeneficiaryLabel(payout)}</p>
               {payout.paid_at ? <p className="text-xs text-muted-foreground">Paid {formatDateTimeForTimeZone(payout.paid_at, timeZone)}</p> : null}
             </div>
           ))}

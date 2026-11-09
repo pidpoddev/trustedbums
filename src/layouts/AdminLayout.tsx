@@ -65,6 +65,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
       { title: "Credits", url: "/admin/credits", icon: Award },
       { title: "Commission Plans", url: "/admin/commission-plans", icon: FileText },
       { title: "Payments", url: "/admin/payments", icon: CreditCard },
+      { title: "Charity Reviews", url: "/admin/charities", icon: Award },
       { title: "Payouts", url: "/admin/payouts", icon: DollarSign },
     ],
   },

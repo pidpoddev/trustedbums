@@ -38,6 +38,7 @@ const AdminPayouts = lazy(() => import("./pages/admin/AdminPayouts"));
 const AdminInbox = lazy(() => import("./pages/admin/AdminInbox"));
 const AdminLiveConversations = lazy(() => import("./pages/admin/AdminLiveConversations"));
 const AdminEmails = lazy(() => import("./pages/admin/AdminEmails"));
+const AdminCharities = lazy(() => import("./pages/admin/AdminCharities"));
 const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminScrumTracker = lazy(() => import("./pages/admin/AdminScrumTracker"));
@@ -145,6 +146,7 @@ const App = () => (
                       <Route path="troubleshooting" element={<AdminTroubleshooting />} />
                       <Route path="legal" element={<AdminLegal />} />
                       <Route path="profile" element={<AdminProfile />} />
+                      <Route path="charities" element={<AdminCharities />} />
                     </Route>
                   </Route>
                 </Route>
